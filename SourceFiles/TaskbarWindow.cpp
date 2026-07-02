@@ -38,6 +38,19 @@ OrbState g_orbState = OrbState::Normal;
 bool g_bOrbTrackingMouse = false;
 
 LRESULT CALLBACK TrayNotifyProc(HWND hwnd, UINT uMsg, WPARAM wParam, LPARAM lParam) {
+    switch (uMsg) {
+    case WM_PAINT: {
+        PAINTSTRUCT ps;
+        HDC hdc = BeginPaint(hwnd, &ps);
+        RECT rcClient;
+        GetClientRect(hwnd, &rcClient);
+        DrawThemeParentBackground(hwnd, hdc, &rcClient);
+        EndPaint(hwnd, &ps);
+        return 0;
+    }
+    case WM_ERASEBKGND:
+        return 1;
+    }
     return DefWindowProcW(hwnd, uMsg, wParam, lParam);
 }
 
@@ -62,6 +75,8 @@ LRESULT CALLBACK TrayClockProc(HWND hwnd, UINT uMsg, WPARAM wParam, LPARAM lPara
         HPAINTBUFFER hBufferedPaint = BeginBufferedPaint(hdc, &rcClient, BPBF_TOPDOWNDIB, &params, &hdcBuffer);
         
         if (hBufferedPaint) {
+            DrawThemeParentBackground(hwnd, hdcBuffer, &rcClient);
+            
             HTHEME hTheme = OpenThemeData(hwnd, L"Taskbar");
             if (hTheme) {
                 SYSTEMTIME st;
@@ -96,6 +111,8 @@ LRESULT CALLBACK TrayClockProc(HWND hwnd, UINT uMsg, WPARAM wParam, LPARAM lPara
     case WM_DESTROY:
         KillTimer(hwnd, 1);
         return 0;
+    case WM_ERASEBKGND:
+        return 1;
     }
     return DefWindowProcW(hwnd, uMsg, wParam, lParam);
 }
@@ -112,10 +129,23 @@ LRESULT CALLBACK TrayShowDesktopButtonProc(HWND hwnd, UINT uMsg, WPARAM wParam, 
     case WM_PAINT: {
         PAINTSTRUCT ps;
         HDC hdc = BeginPaint(hwnd, &ps);
-        // It's mostly transparent, so we don't draw much, maybe a subtle edge.
+        RECT rcClient;
+        GetClientRect(hwnd, &rcClient);
+        DrawThemeParentBackground(hwnd, hdc, &rcClient);
+        
+        // Draw a subtle vertical line to mimic the Windows 7 show desktop button
+        HPEN hPen = CreatePen(PS_SOLID, 1, RGB(128, 128, 128));
+        HPEN hOldPen = (HPEN)SelectObject(hdc, hPen);
+        MoveToEx(hdc, 0, 0, NULL);
+        LineTo(hdc, 0, rcClient.bottom);
+        SelectObject(hdc, hOldPen);
+        DeleteObject(hPen);
+        
         EndPaint(hwnd, &ps);
         return 0;
     }
+    case WM_ERASEBKGND:
+        return 1;
     }
     return DefWindowProcW(hwnd, uMsg, wParam, lParam);
 }
@@ -314,8 +344,8 @@ bool TaskbarWindow::Initialize(HINSTANCE hInstance) {
     g_hReBar = CreateWindowExW(0, L"ReBarWindow32", L"", WS_CHILD | WS_VISIBLE | WS_CLIPSIBLINGS | WS_CLIPCHILDREN | RBS_VARHEIGHT | RBS_BANDBORDERS, 
         45, 0, screenWidth - 260, taskbarHeight, g_hTaskbar, NULL, hInstance, NULL);
 
-    // Tray area
-    g_hTrayNotify = CreateWindowExW(0, L"TrayNotifyWnd", L"", WS_CHILD | WS_VISIBLE, screenWidth - 200, 0, 200, taskbarHeight, g_hTaskbar, NULL, hInstance, NULL);
+    // Tray area (Moved left by 15px to avoid overlapping with Show Desktop button)
+    g_hTrayNotify = CreateWindowExW(0, L"TrayNotifyWnd", L"", WS_CHILD | WS_VISIBLE, screenWidth - 215, 0, 200, taskbarHeight, g_hTaskbar, NULL, hInstance, NULL);
     
     // Hide SysPager and ToolbarWindow32 until Phase 6 when we implement custom rendering
     g_hSysPager = CreateWindowExW(0, L"SysPager", L"", WS_CHILD, 0, 0, 110, taskbarHeight, g_hTrayNotify, NULL, hInstance, NULL);
