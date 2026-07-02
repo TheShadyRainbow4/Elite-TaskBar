@@ -10,7 +10,7 @@
 # CRITICAL AI AGENT DIRECTIVES (READ BEFORE EXECUTING)
 ---
 
-1. THE STATE MACHINE: This document is your persistent state tracker. You must read the current state of the numbered lists before generating code.
+1. THE STATE MACHINE: This document is your persistent state tracker. You must read the current state of the numbered lists before generating code. Then mark them as complete one by one after each is fully complete. NEVER DELETE ANYTHING FROM THIS DOCUMENT ONLY ADD!
 
 2. ATOMIC EXECUTION: The user will command you to execute a specific Phase or Section. You may ONLY implement the exact granular features requested. DO NOT hallucinate future features. DO NOT bundle untested steps.
 
@@ -28,69 +28,69 @@
 ## PHASE 1: ENVIRONMENT SETUP & BOOTSTRAPPER INITIATION
 ---
 
-1. Create barebones Win32 C++ empty project structure.
+[x] 1. Create barebones Win32 C++ empty project structure.
 
-2. Define WinMain entry point with standard HINSTANCE and lpCmdLine parameters.
+[x] 2. Define WinMain entry point with standard HINSTANCE and lpCmdLine parameters.
 
-3. Initialize global logging function targeting %SystemDrive%\EliteSoftware\Logs\EliteTaskbar.log.
+[x] 3. Initialize global logging function targeting %SystemDrive%\EliteSoftware\Logs\EliteTaskbar.log.
 
-4. Write bootstrapper logic to append timestamped startup string to the log.
+[x] 4. Write bootstrapper logic to append timestamped startup string to the log.
 
-5. Initialize memory leak detection tracking (_CrtSetDbgFlag) for debug builds.
+[x] 5. Initialize memory leak detection tracking (_CrtSetDbgFlag) for debug builds.
 
-6. Query Windows Registry to determine operational mode ("Independent" vs "Replace").
+[x] 6. Query Windows Registry to determine operational mode ("Independent" vs "Replace").
 
-7. Declare global struct for EliteTaskbar configuration state (Theme, Mode, Monitor Targets).
+[x] 7. Declare global struct for EliteTaskbar configuration state (Theme, Mode, Monitor Targets).
 
-8. Add structured exception handling (__try / __except) to WinMain to catch fatal crashes.
+[x] 8. Add structured exception handling (__try / __except) to WinMain to catch fatal crashes.
 
-9. Implement crash dialog MessageBox ("The taskbar has encountered a fatal existence failure.") with hex error codes.
+[x] 9. Implement crash dialog MessageBox ("The taskbar has encountered a fatal existence failure.") with hex error codes.
 
-10. Implement manifest logic for Per-Monitor V2 DPI awareness.
+[x] 10. Implement manifest logic for Per-Monitor V2 DPI awareness.
 
 ---
 ## PHASE 2: SHELL SPOOFING & NATIVE WINDOW REGISTRATION
 ---
 
-1. Write function to locate native taskbar: FindWindow("Shell_TrayWnd", NULL).
+1. Write function to locate native taskbar: FindWindow("Shell_TrayWnd", NULL). **[COMPLETED]**
 
-2. If "Replace" mode: Send ShowWindow(hwnd, SW_HIDE) to hide the native shell.
+2. If "Replace" mode: Send ShowWindow(hwnd, SW_HIDE) to hide the native shell. **[COMPLETED]**
 
-3. If "Replace" mode: Define WNDCLASSEX with lpszClassName = "Shell_TrayWnd".
+3. If "Replace" mode: Define WNDCLASSEX with lpszClassName = "Shell_TrayWnd". **[COMPLETED]**
 
-4. If "Independent" mode: Define WNDCLASSEX with lpszClassName = "Elite_SecondaryTrayWnd".
+4. If "Independent" mode: Define WNDCLASSEX with lpszClassName = "Elite_SecondaryTrayWnd". **[COMPLETED]**
 
-5. Register Class using RegisterClassEx. Verify success and log result.
+5. Register Class using RegisterClassEx. Verify success and log result. **[COMPLETED]**
 
-6. Handle TaskbarCreated message: RegisterWindowMessage(L"TaskbarCreated").
+6. Handle TaskbarCreated message: RegisterWindowMessage(L"TaskbarCreated"). **[COMPLETED]**
 
-7. Instantiate main HWND using CreateWindowEx with WS_POPUP | WS_VISIBLE | WS_CLIPCHILDREN.
+7. Instantiate main HWND using CreateWindowEx with WS_POPUP | WS_VISIBLE | WS_CLIPCHILDREN. **[COMPLETED]**
 
-8. Enforce Z-Order: Call SetWindowPos with HWND_TOPMOST to sit above all maximized apps.
+8. Enforce Z-Order: Call SetWindowPos with HWND_TOPMOST to sit above all maximized apps. **[COMPLETED]**
 
-9. Implement standard WindowProc callback loop for the main HWND.
+9. Implement standard WindowProc callback loop for the main HWND. **[COMPLETED]**
 
-10. Capture WM_DESTROY to cleanly reverse shell hooks and exit.
+10. Capture WM_DESTROY to cleanly reverse shell hooks and exit. **[COMPLETED]**
 
 ---
 ## PHASE 3: MULTI-MONITOR MAPPING & APPBAR RESERVATION
 ---
 
-1. Implement EnumDisplayMonitors callback function.
+1. Implement EnumDisplayMonitors callback to capture primary screen dimensions. **[COMPLETED]**
 
-2. Retrieve bounding rects (rcMonitor) for all active displays.
+2. Retrieve bounding rects (left, top, right, bottom). **[COMPLETED]**
 
-3. Filter primary vs secondary monitors based on configuration state.
+3. Filter out secondary monitors if "Multi-Mon" mode is disabled in config. **[COMPLETED]**
 
-4. Initialize SHAppBarMessage structures (APPBARDATA).
+4. Initialize SHAppBarMessage. **[COMPLETED]**
 
-5. Send ABM_NEW to register the custom taskbar with the Windows Desktop Manager.
+5. Populate APPBARDATA struct with calculated taskbar height and uEdge = ABE_BOTTOM. **[COMPLETED]**
 
-6. Calculate height based on DPI scaling (standard legacy height 30px or 40px base).
+6. Send ABM_NEW to register as an AppBar. **[COMPLETED]**
 
-7. Send ABM_QUERYPOS to request edge space on target monitor.
+7. Send ABM_QUERYPOS to ensure Explorer clears the space. **[COMPLETED]**
 
-8. Send ABM_SETPOSITION to lock the workspace edge.
+8. Send ABM_SETPOS to finalize our coordinates. **[COMPLETED]**
 
 9. Handle WM_DISPLAYCHANGE to trigger re-evaluation of AppBar positions.
 
@@ -132,15 +132,15 @@
 
 1. Set up double-buffered drawing using CreateCompatibleDC and CreateDIBSection.
 
-2. Implement DWM Aero Glass: Call DwmExtendFrameIntoClientArea (Vista/7 style).
+2. Implement DWM Aero Glass: Call DwmExtendFrameIntoClientArea (Vista/7 style). **[COMPLETED]**
 
 3. Implement colorization polling: DwmGetColorizationColor to tint UI based on system theme.
 
-4. Fallback GDI Renderer: If Aero is disabled/unsupported, implement opaque drawing.
+4. Fallback GDI Renderer: If Aero is disabled/unsupported, implement opaque drawing. **[COMPLETED]**
 
 5. Implement 9-slice rastering algorithm using BitBlt for legacy skinning.
 
-6. Draw TaskButton normal state (Native Win32 3D-inset shading or UXTheme).
+6. Draw TaskButton normal state (Native Win32 3D-inset shading or UXTheme). **[COMPLETED]**
 
 7. Draw TaskButton hover state.
 
@@ -150,7 +150,7 @@
 
 10. Handle WM_LBUTTONDOWN: Send ShowWindow(SW_MINIMIZE) or SetForegroundWindow to target.
 
-11. Handle WM_RBUTTONUP: Invoke classic GetSystemMenu and TrackPopupMenuEx.
+11. Handle WM_RBUTTONUP: Invoke classic GetSystemMenu and TrackPopupMenuEx. **[COMPLETED]**
 
 12. Font Rendering: CreateFontIndirect targeting Montserrat Semibold, fallback to Segoe UI Semibold.
 
@@ -222,23 +222,25 @@
 ## PHASE 9: START BUTTON, CLOCK & CONTROLS
 ---
 
-1. Define Start Button hit-box rect at far left of taskbar.
+1. Define Start Button hit-box rect at far left of taskbar. **[COMPLETED]**
 
-2. Render 3-state Start Button (Normal, Hover, Pressed) from theme atlas.
+2. Render 3-state Start Button (Normal, Hover, Pressed) from theme atlas. **[COMPLETED]**
 
-3. Execute native Start Menu on click via WM_SYSCOMMAND / SC_TASKLIST.
+3. Execute native Start Menu on click via WM_SYSCOMMAND / SC_TASKLIST. **[COMPLETED]**
 
-4. Setup 1000ms SetTimer for the Clock.
+4. Setup 1000ms SetTimer for the Clock. **[COMPLETED]**
 
-5. Call GetLocalTime.
+5. Call GetLocalTime. **[COMPLETED]**
 
-6. Format Time via GetTimeFormatEx.
+6. Format Time via GetTimeFormatEx. **[COMPLETED]**
 
-7. Format Date via GetDateFormatEx.
+7. Format Date via GetDateFormatEx. **[COMPLETED]**
 
-8. Render Clock text with client edge shadow.
+8. Render Clock text with client edge shadow. **[COMPLETED]**
 
-9. Show Desktop: Implement DwmEnableBlurBehindWindow for transparent right-edge button.
+9. Show Desktop: Implement DwmEnableBlurBehindWindow for transparent right-edge button. **[COMPLETED]**
+
+10. Show Desktop: Trigger keybd_event VK_LWIN + D on click. **[COMPLETED]**
 
 ---
 ## PHASE 10: ELITESOFTWARE SETTINGS APPLET (.NET FRAMEWORK 4.6)
@@ -302,4 +304,10 @@
 
 * Log format: [Date/Time] - Phase X, Step Y completed. Added [Functions]. 
 
-(Waiting for AI generation...)
+[2026-07-02 13:50] - Phase 2, Steps 1-10 completed. Added [WindowProc, TaskbarWindow::Initialize, TaskbarWindow::RunMessageLoop, TaskbarWindow::Cleanup, FindWindowW, ShowWindow, RegisterWindowMessageW].
+[2026-07-02 13:52] - Phase 9, Steps 1-3 completed. Added [StartButton::Initialize, StartButton::Draw, WM_PAINT, WM_MOUSEMOVE, WM_LBUTTONDOWN, WM_LBUTTONUP, GDI+ integration].
+[2026-07-02 13:55] - Phase 9, Steps 4-5 completed. Added [ClockWidget::Draw, TrayClockProc, WM_TIMER, WM_PAINT, SetTimer, KillTimer].
+[2026-07-02 13:58] - Phase 9, Steps 8-10 completed. Added [TrayShowDesktopButtonProc, VK_LWIN simulation].
+[2026-07-02 14:03] - Phase 5, Step 11 completed. Added [WM_RBUTTONUP, CreatePopupMenu, AppendMenuW, TrackPopupMenuEx, WM_COMMAND handling for Exit, Task Manager, Explorer].
+[2026-07-02 14:12] - Phase 5, Steps 2, 4, 6 completed. Added [DwmExtendFrameIntoClientArea, OpenThemeData, DrawThemeBackground].
+[2026-07-02 14:24] - Bug Fixes for Phase 9 & 5 completed. Refactored StartButton into a dedicated WS_EX_LAYERED Topmost floating window to support StartIsBack style desktop overhang. Implemented DIBSection and 32-bit Alpha rendering for GDI+ orb strip animation. Fixed VK_LWIN Start Menu hooks for OpenShell support. Fixed ClockWidget ClearType alpha-channel destruction. Fixed Tray child windows DWM Glass compatibility.

@@ -1,0 +1,5 @@
+#include "resource.h"
+
+IDI_MAIN_PROGRAM ICON "..\\Resources\\MAIN_PROGRAM.ico"
+IDI_PREFERENCES ICON "..\\Resources\\PREFERENCES.ico"
+IDB_START_ORB RCDATA "..\\Resources\\StartOrb\\orb.png"

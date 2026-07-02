@@ -1,0 +1,59 @@
+# ELITETASKBAR - ADVANCED COM & NATIVE EXTENSION REFERENCE
+---
+#### Company: EliteSoftwareTech Co.
+#### Authors: EliteSoftware - Zachary Whiteman - Susan Gemm
+#### Version Target: 1.0.42.6 (Format: Major.Minor.FeatureAdd.BugFix)
+#### Target OS: Windows 10 IoT Enterprise LTSC (Legacy compatible: Vista / 7)
+#### Core Technologies: Native Unmanaged C++ (Taskbar) & COM Interfaces
+
+---
+# I. ADVANCED COM HOSTING & DESKBANDS (IDeskBand)
+---
+
+1. IDeskBand Interface Host: Implement IDeskBand, IDeskBand2, IObjectWithSite, and IOleWindow to natively host legacy toolbars (e.g., Windows Media Player toolbar).
+
+2. Band Instantiation: Use CoCreateInstance with the CLSID of the target deskband to load it in-process.
+
+3. Rebar Container Setup: Initialize INITCOMMONCONTROLSEX with ICC_COOL_CLASSES to create a ReBarWindow32 control. This is the native container that Windows uses to manage movable toolbars.
+
+4. Site Implementation: The C++ host must pass its IUnknown to the deskband via IObjectWithSite::SetSite, allowing the band to negotiate window placement and input focus.
+
+5. Band Enumeration: Query the registry at HKLM\SOFTWARE\Microsoft\Internet Explorer\Toolbar or HKCU\Software\Microsoft\Windows\CurrentVersion\Explorer\Discardable\PostSetup\Component Categories to list available bands.
+
+---
+# II. JUMP LISTS & APPLICATION CONTEXT MENUS (ICustomDestinationList)
+---
+
+1. Application ID Extraction: Use SHGetPropertyStoreForWindow to retrieve the PKEY_AppUserModel_ID of the target window. This is critical for matching a running process to its specific Jump List.
+
+2. Jump List Retrieval: Instantiate the IApplicationDocumentLists COM object (CLSID_ApplicationDocumentLists) using the extracted AppUserModelID.
+
+3. List Enumeration: Call GetList on the object, requesting ADLT_RECENT or ADLT_FREQUENT to get an IObjectArray or IEnumObjects containing IShellItem or IShellLink objects.
+
+4. Custom Task Execution: Parse the IShellLink objects found in the jump list to extract the command line parameters and icons for custom application tasks (like Opening a New Incognito Window).
+
+5. Native Context Menu Invocation: When a user right-clicks a taskband button, construct an IContextMenu from the retrieved jump list data and use TrackPopupMenuEx to display it natively.
+
+---
+# III. OFFICIAL TASKBAR CONTEXT MENUS (IContextMenu)
+---
+
+1. System Taskbar Menu: To show the official right-click menu on the empty space of the taskbar (Toolbars, Cascade windows, Task Manager, etc.), you must invoke the shell's internal menu.
+
+2. Explorer.exe Bridging: Because the native taskbar menu relies on internal explorer state, passing the context menu request to the native shell is the cleanest implementation.
+
+3. The Proxy Method: Send a WM_CONTEXTMENU message to the hidden, real Shell_TrayWnd. The native shell will calculate the menu and display it natively, thinking the user clicked the real taskbar.
+
+---
+# IV. STARTISBACK ORB RENDERING (3-State PNG)
+---
+
+1. GDI+ Initialization: Initialize GDI+ using GdiplusStartup to handle PNG alpha channels correctly, which standard GDI BitBlt cannot do cleanly without severe artifacting.
+
+2. Image Slicing: Load the StartIsBack format PNG. These are typically vertically stacked images containing 3 states (Normal, Hover, Pressed).
+
+3. State Calculation: Calculate the Y-offset based on the mouse state. If the PNG is 54x162, each state is 54x54. Normal (Y=0), Hover (Y=54), Pressed (Y=108).
+
+4. Alpha Blended Drawing: Use GDI+ Graphics::DrawImage to render the specific slice onto the taskbar DC.
+
+5. Edge Interpolation: Ensure the InterpolationModeHighQualityBicubic flag is set if scaling is needed, preserving the transparent anti-aliased edges of the orb over the Aero Glass background.

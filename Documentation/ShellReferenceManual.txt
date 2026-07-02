@@ -1,0 +1,97 @@
+1. The Core Class Hierarchy (Spoofing the Shell)
+
+Windows expects a very specific nested tree of window classes. If these don't exist, native applets and installers will fail to find the taskbar. You must register these exact strings using RegisterClassEx.
+
+    Shell_TrayWnd: The master parent window class. This is the holy grail. If you own this, you own the taskbar identity.
+
+    TrayNotifyWnd: The child window that acts as the container for the System Tray (Notification Area) and the Clock.
+
+    TrayClockWClass: The child window specifically designated for the system clock rendering.
+
+    SysPager: Used internally by Windows to handle scrolling/pagination when toolbars exceed the screen space.
+
+    ReBarWindow32: The standard Common Control class used to host IDeskBand toolbars natively.
+
+    ToolbarWindow32: The class used for the actual button rows (Quick Launch and the legacy App Buttons).
+
+    Button / TrayButton: The Start Button class (depending on the OS era, Vista/7 often just paints this directly onto the Shell_TrayWnd device context, but legacy 95/XP used actual button subclasses).
+
+🗺️ 2. The AppBar API (Desktop Reservation)
+
+To prevent maximized windows from overlapping your taskbar, you must communicate with the Desktop Window Manager using the SHAppBarMessage function and the APPBARDATA structure.
+
+    ABM_NEW: Registers your taskbar with the system.
+
+    ABM_REMOVE: Unregisters the taskbar (vital for clean exits).
+
+    ABM_QUERYPOS: Asks Windows for permission to occupy a specific bounding rectangle (RECT) on the screen edge.
+
+    ABM_SETPOSITION: Locks in the requested bounding rectangle.
+
+    ABM_GETSTATE: Checks if the taskbar is set to Auto-Hide or Always-On-Top.
+
+    ABM_WINDOWPOSCHANGED: A message you must catch to defend your Z-order and screen edge if a fullscreen DirectX game alters the display state.
+
+🪝 3. Global Shell Hooks (Window Tracking)
+
+To draw the app buttons, you need to know when applications open, close, or demand attention. You achieve this by calling RegisterShellHookWindow(hwnd). Once registered, your WindowProc will receive a WH_SHELL message with the following wParam flags:
+
+    HSHELL_WINDOWCREATED: Fired when a top-level unowned window is created. Extract the HWND and draw a new taskband button.
+
+    HSHELL_WINDOWDESTROYED: Fired when an app closes. Destroy your corresponding button and free the memory.
+
+    HSHELL_WINDOWACTIVATED / HSHELL_RUDEAPPACTIVATED: Fired when focus shifts. Redraw your buttons to reflect the active "pressed" state.
+
+    HSHELL_FLASH: Fired when an application calls FlashWindowEx. You must implement the flashing logic (usually an orange highlight) using a GDI timer.
+
+    HSHELL_REDRAW: Fired when a window changes its title or icon dynamically.
+
+Associated Calls:
+
+    GetWindowTextW / GetWindowTextLengthW: To extract the title for your button.
+
+    SendMessageTimeoutW(hwnd, WM_GETICON, ICON_SMALL, ...): To extract the 16x16 icon.
+
+    GetClassLongPtrW(hwnd, GCLP_HICONSM): The fallback if WM_GETICON fails.
+
+🔔 4. The Notification Area (System Tray)
+
+When an application wants to put an icon in the tray, it calls Shell_NotifyIcon. Because you are Shell_TrayWnd, the OS will attempt to route these NOTIFYICONDATA structures to your TrayNotifyWnd child.
+
+    NIM_ADD: The app is pushing a new icon, tooltip string, and uCallbackMessage ID.
+
+    NIM_MODIFY: The app is changing its icon state or tooltip string (e.g., a download percentage updating).
+
+    NIM_DELETE: The app is closing and removing its tray icon.
+
+    NIIF_INFO / NIIF_WARNING / NIIF_ERROR: Flags used within NIM_MODIFY to trigger yellow legacy balloon tooltips.
+
+    Interaction: When a user clicks your rendered tray icon, you must use PostMessage to send the uCallbackMessage back to the originating application's HWND with WM_LBUTTONDOWN or WM_RBUTTONDOWN so it knows to show its context menu.
+
+🔌 5. COM Extensibility (Deskbands & TaskbarList)
+
+To support legacy features, your C++ engine must act as a Component Object Model (COM) host.
+
+    IDeskBand / IDeskBand2: The interface you must implement to host old-school toolbars (like the Windows Media Player mini-player or custom address bars).
+
+    IObjectWithSite: You must provide a "site" (a bounding container) for the deskbands to live in.
+
+    IShellLinkW / IPersistFile: Required to parse .lnk files in the Quick Launch directory to extract their targets and icons.
+
+    ITaskbarList (Through ITaskbarList4): In modern Windows (7 and up), applications call this COM interface to update progress bars on their taskbar buttons, add overlay icons, or create thumbnail toolbars. If you want true Windows 7/10 parity, your engine must implement this interface to receive those visual updates.
+
+🎨 6. The Visuals (Aero Glass & GDI)
+
+To maintain the visual fidelity of the Vista/7 eras, you rely on the Desktop Window Manager (DWM) and the legacy Theme Engine (UXTheme).
+
+    DwmExtendFrameIntoClientArea: This is the magic call that turns your standard opaque Win32 window into translucent Aero Glass.
+
+    DwmGetColorizationColor: Poll this to tint your UI based on the user's current Windows theme color.
+
+    DwmEnableBlurBehindWindow: Used specifically for the Windows 7 style "Show Desktop" peek button on the far right.
+
+    OpenThemeData(hwnd, L"Taskbar"): Hooks into the native Windows theme engine.
+
+    DrawThemeBackground: Allows you to ask Windows to paint a button exactly as the current OS theme dictates, rather than manually drawing lines with GDI.
+
+    WM_SYSCOMMAND + SC_TASKLIST: The exact message you send to the OS when the user clicks your Start Button to natively invoke the real Windows Start Menu.

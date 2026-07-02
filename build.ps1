@@ -6,12 +6,25 @@ param(
 $ErrorActionPreference = 'Stop'
 $ScriptDir = Split-Path -Parent $MyInvocation.MyCommand.Definition
 
+Write-Host "Triggering pre-build backup..." -ForegroundColor Cyan
+$BackupScript = Join-Path $ScriptDir "backup.ps1"
+if (Test-Path $BackupScript) {
+    & $BackupScript
+} else {
+    Write-Warning "Backup script not found. Skipping backup."
+}
+
 Write-Host "Starting build process for Elite-TaskBar..." -ForegroundColor Cyan
 
 # Define directories
 $SourceDir = Join-Path $ScriptDir "SourceFiles"
 $ResourcesDir = Join-Path $ScriptDir "Resources"
 $OutputDir = $ScriptDir
+$BuildDir = Join-Path $ScriptDir "BuildOutput"
+
+if (-not (Test-Path $BuildDir)) {
+    New-Item -ItemType Directory -Path $BuildDir | Out-Null
+}
 
 # Validate SourceFiles exists
 if (-not (Test-Path $SourceDir)) {
@@ -19,12 +32,39 @@ if (-not (Test-Path $SourceDir)) {
     exit 0
 }
 
-# Example MSBuild execution logic (adjust based on actual solution names)
-# $MsBuildPath = "C:\Program Files (x86)\Microsoft Visual Studio\2019\Enterprise\MSBuild\Current\Bin\MSBuild.exe"
-# if (Test-Path $MsBuildPath) {
-#     & $MsBuildPath "$SourceDir\EliteTaskBar.sln" /p:Configuration=$Configuration /p:OutputPath=$OutputDir
-# } else {
-#     Write-Error "MSBuild not found."
-# }
+# Setup MSVC Environment
+$vsPath = "C:\Program Files (x86)\Microsoft Visual Studio\2022\BuildTools"
 
-Write-Host "Build finished. Output binaries should be placed in $OutputDir." -ForegroundColor Green
+if (-not $vsPath) {
+    Write-Error "Visual Studio C++ build tools not found!"
+    exit 1
+}
+
+$vsDevCmd = Join-Path $vsPath "Common7\Tools\VsDevCmd.bat"
+$compileCmd = "cl.exe /EHsc /Zi /MTd /D_DEBUG /Fe`"$BuildDir\EliteTaskbar.exe`" `"$SourceDir\main.cpp`" `"$SourceDir\Logger.cpp`" `"$SourceDir\TaskbarWindow.cpp`" `"$SourceDir\StartButton.cpp`" `"$SourceDir\ClockWidget.cpp`" `"$BuildDir\resources.res`" user32.lib advapi32.lib shell32.lib gdi32.lib dwmapi.lib comctl32.lib gdiplus.lib ole32.lib uxtheme.lib /link /MANIFEST:EMBED /MANIFESTINPUT:`"$SourceDir\app.manifest`""
+
+Write-Host "Compiling Resources..." -ForegroundColor Cyan
+cmd.exe /c "cd /d `"$BuildDir`" && call `"$vsDevCmd`" -arch=x64 && rc.exe /fo `"$BuildDir\resources.res`" `"$SourceDir\resources.rc`""
+
+Write-Host "Compiling C++ sources..." -ForegroundColor Cyan
+cmd.exe /c "cd /d `"$BuildDir`" && call `"$vsDevCmd`" -arch=x64 && $compileCmd"
+if ($LASTEXITCODE -ne 0) {
+    Write-Host "Build failed! Cleaning up recent backup..." -ForegroundColor Red
+    $latestBackup = Get-ChildItem -Path (Join-Path $ScriptDir "Backups") -Filter *.cab | Sort-Object LastWriteTime -Descending | Select-Object -First 1
+    if ($latestBackup -and (New-TimeSpan -Start $latestBackup.LastWriteTime -End (Get-Date)).TotalMinutes -lt 5) {
+        Remove-Item $latestBackup.FullName -Force
+        Write-Host "Deleted backup ($($latestBackup.Name)) because the build failed." -ForegroundColor Yellow
+    }
+    Write-Error "Compilation failed!"
+    exit $LASTEXITCODE
+}
+
+Write-Host "Build finished. Copying binaries to root..." -ForegroundColor Green
+Copy-Item "$BuildDir\EliteTaskbar.exe" -Destination "$ScriptDir\EliteTaskbar.exe" -Force
+
+Write-Host "Auto-committing and pushing to repository..." -ForegroundColor Cyan
+Set-Location -Path $ScriptDir
+git add .
+git commit -m "Auto-commit after successful build (build.ps1)"
+git push origin master
+Write-Host "Done!" -ForegroundColor Green
