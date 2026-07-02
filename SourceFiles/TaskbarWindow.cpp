@@ -169,6 +169,32 @@ LRESULT CALLBACK WindowProc(HWND hwnd, UINT uMsg, WPARAM wParam, LPARAM lParam) 
         DwmEnableBlurBehindWindow(hwnd, &bb);
         return 0;
     }
+    case WM_PRINTCLIENT: {
+        HDC hdc = (HDC)wParam;
+        RECT rcClient;
+        GetClientRect(hwnd, &rcClient);
+        HTHEME hTheme = OpenThemeData(hwnd, L"Taskbar");
+        if (hTheme) {
+            DrawThemeBackground(hTheme, hdc, 1 /*TBP_BACKGROUNDBOTTOM*/, 0, &rcClient, NULL);
+            CloseThemeData(hTheme);
+        } else {
+            FillRect(hdc, &rcClient, (HBRUSH)GetStockObject(BLACK_BRUSH));
+        }
+        return 0;
+    }
+    case WM_ERASEBKGND: {
+        HDC hdc = (HDC)wParam;
+        RECT rcClient;
+        GetClientRect(hwnd, &rcClient);
+        HTHEME hTheme = OpenThemeData(hwnd, L"Taskbar");
+        if (hTheme) {
+            DrawThemeBackground(hTheme, hdc, 1 /*TBP_BACKGROUNDBOTTOM*/, 0, &rcClient, NULL);
+            CloseThemeData(hTheme);
+        } else {
+            FillRect(hdc, &rcClient, (HBRUSH)GetStockObject(BLACK_BRUSH));
+        }
+        return 1;
+    }
     case WM_PAINT: {
         PAINTSTRUCT ps;
         HDC hdc = BeginPaint(hwnd, &ps);
