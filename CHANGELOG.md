@@ -64,3 +64,11 @@ All notable changes to this project will be documented in this file.
 - Fully implemented missing Context Menu commands (`IDM_TASKBAR_CASCADE`, `IDM_TASKBAR_STACKED`, `IDM_TASKBAR_SIDEBYSIDE`, `IDM_TASKBAR_SHOWDESKTOP`) utilizing standard Windows APIs.
 - Updated Context Menu `ShellExecuteW` calls to default verbs to ensure UAC elevations function correctly for standard users attempting to launch `taskmgr.exe` or `rundll32.exe`.
 - Created comprehensive `Documentation/SourceMap_And_Architecture.md` providing a detailed breakdown of all source files, their purposes, and the overall lifecycle of the taskbar shell extension.
+- Removed EverythingSDK and search toolbar from the project.
+- Added binary signing to all executables in the build scripts.
+- Removed all third-party SDK sources from git tracking (git rm -r --cached).
+- Fixed multi-monitor window label assignment by passing valid title pointers via 	bb.iString.
+- Implemented GetWindowMonitor that properly detects the cNormalPosition of minimized windows to prevent them jumping taskbars.
+- Rewrote StartButton logic to support 3-frame and 4-frame dynamic height ORB images.
+- Improved TaskbarProperties UI to preview Orbs via GDI+ and properly isolate Per-Monitor configurations in the Registry.
+- Modified StartButton native menu triggers to use SendMessageW and lCursorParam alongside simulated VK_SHIFT injections to handle interactions with Open-Shell accurately.
