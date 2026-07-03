@@ -316,6 +316,46 @@ LRESULT CALLBACK TrayClockProc(HWND hwnd, UINT uMsg, WPARAM wParam, LPARAM lPara
     }
     return DefWindowProcW(hwnd, uMsg, wParam, lParam);
 }
+typedef void (WINAPI *RUNFILEDLG)(HWND hwndOwner, HICON hIcon, LPCWSTR lpstrDirectory, LPCWSTR lpstrTitle, LPCWSTR lpstrDescription, UINT uFlags);
+
+static HHOOK g_hRunDlgCbtHook = NULL;
+static LRESULT CALLBACK RunDlgCbtProc(int nCode, WPARAM wParam, LPARAM lParam) {
+    if (nCode == HCBT_ACTIVATE) {
+        HWND hwnd = (HWND)wParam;
+        WCHAR szClass[256];
+        GetClassNameW(hwnd, szClass, 256);
+        if (wcscmp(szClass, L"#32770") == 0) {
+            int screenWidth = GetSystemMetrics(SM_CXSCREEN);
+            int screenHeight = GetSystemMetrics(SM_CYSCREEN);
+            RECT rc;
+            GetWindowRect(hwnd, &rc);
+            int width = rc.right - rc.left;
+            int height = rc.bottom - rc.top;
+            int x = (screenWidth - width) / 2;
+            int y = (screenHeight - height) / 2 + 100;
+            SetWindowPos(hwnd, NULL, x, y, 0, 0, SWP_NOZORDER | SWP_NOSIZE | SWP_NOACTIVATE);
+            UnhookWindowsHookEx(g_hRunDlgCbtHook);
+            g_hRunDlgCbtHook = NULL;
+        }
+    }
+    return CallNextHookEx(g_hRunDlgCbtHook, nCode, wParam, lParam);
+}
+
+static void InvokeNativeRunDialog(HWND hwndOwner) {
+    HMODULE hShell32 = LoadLibraryW(L"shell32.dll");
+    if (hShell32) {
+        RUNFILEDLG RunFileDlg = (RUNFILEDLG)GetProcAddress(hShell32, (LPCSTR)61);
+        if (RunFileDlg) {
+            g_hRunDlgCbtHook = SetWindowsHookExW(WH_CBT, RunDlgCbtProc, NULL, GetCurrentThreadId());
+            RunFileDlg(hwndOwner, NULL, NULL, NULL, NULL, 0);
+            if (g_hRunDlgCbtHook) {
+                UnhookWindowsHookEx(g_hRunDlgCbtHook);
+                g_hRunDlgCbtHook = NULL;
+            }
+        }
+        FreeLibrary(hShell32);
+    }
+}
 
 LRESULT CALLBACK TrayShowDesktopButtonProc(HWND hwnd, UINT uMsg, WPARAM wParam, LPARAM lParam) {
     switch (uMsg) {
@@ -475,7 +515,7 @@ LRESULT CALLBACK WindowProc(HWND hwnd, UINT uMsg, WPARAM wParam, LPARAM lParam) 
                 break;
             case IDM_TASKBAR_RUN:
                 if (g_hNativeTaskbar) PostMessageW(g_hNativeTaskbar, WM_COMMAND, 401, 0); // Native 'Run...' (401 on modern Windows)
-                else ShellExecuteW(hwnd, L"open", L"explorer.exe", L"Shell:::{2559a1f3-21d7-11d4-bdaf-00c04f60b9f0}", NULL, SW_SHOWNORMAL); // Native Run Dialog CLSID
+                else InvokeNativeRunDialog(hwnd); // Native Run Dialog undocumented ordinal 61
                 break;
             case IDM_TASKBAR_PROPERTIES:
                 // Always show our custom property sheet instead of native Run dialog
