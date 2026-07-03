@@ -4,6 +4,7 @@
 #include "Logger.h"
 #include "TaskbarWindow.h"
 #include "StartButton.h"
+#include "TaskbarProperties.h"
 #include "resource.h"
 #include <commctrl.h>
 #include <uxtheme.h>
@@ -46,6 +47,14 @@ void RunApplication(HINSTANCE hInstance) {
     // 3 & 4. Initialize global logging function & Bootstrapper logic
     Logger::Initialize();
     
+    // Check for /settings command line argument to launch Settings dialog directly
+    for (int i = 1; i < __argc; i++) {
+        if (_wcsicmp(__wargv[i], L"/settings") == 0) {
+            ShowTaskbarProperties(NULL);
+            return;
+        }
+    }
+
     bool allowMultiple = false;
     for (int i = 1; i < __argc; i++) {
         if (_wcsicmp(__wargv[i], L"-allowMultiple") == 0) allowMultiple = true;

@@ -42,34 +42,74 @@ typedef struct Win32ClockVtbl {
 interface Win32Clock {
     CONST_VTBL struct Win32ClockVtbl* lpVtbl;
 };
-extern HWND g_hNativeTaskbar;
-
-BOOL ShowLegacyClockExperience(HWND hWnd) {
-    // Because we are an overlay and not a full shell replacement, the native taskbar is still running underneath.
-    // We can simply find the native clock window and send it a click to natively trigger the flyout!
-    if (g_hNativeTaskbar) {
-        HWND hwndNotify = FindWindowExW(g_hNativeTaskbar, NULL, L"TrayNotifyWnd", NULL);
-        if (hwndNotify) {
-            HWND hwndClock = FindWindowExW(hwndNotify, NULL, L"TrayClockWClass", NULL);
-            if (hwndClock) {
-                PostMessageW(hwndClock, WM_LBUTTONDOWN, MK_LBUTTON, MAKELPARAM(5, 5));
-                PostMessageW(hwndClock, WM_LBUTTONUP, 0, MAKELPARAM(5, 5));
-                return TRUE;
-            }
-        }
-    }
-    
-    Logger::Log(L"Failed to find native TrayClockWClass. Cannot summon flyout.");
-    return FALSE;
-}
 
 HWND g_hTaskbar = NULL;
 HWND g_hNativeTaskbar = NULL;
 HWND g_hTrayNotify = NULL;
 HWND g_hTrayClock = NULL;
 HWND g_hSysPager = NULL;
-HWND g_hReBar = NULL;
 HWND g_hToolbar = NULL;
+HWND g_hReBar = NULL;
+
+LRESULT CALLBACK TaskbarPropertiesProc(HWND hwnd, UINT uMsg, WPARAM wParam, LPARAM lParam);
+
+HWINEVENTHOOK g_hClockFlyoutHook = NULL;
+void CALLBACK ClockFlyoutWinEventProc(HWINEVENTHOOK hWinEventHook, DWORD event, HWND hwnd, LONG idObject, LONG idChild, DWORD dwEventThread, DWORD dwmsEventTime) {
+    if (hwnd && idObject == OBJID_WINDOW) {
+        WCHAR szClass[256];
+        GetClassNameW(hwnd, szClass, 256);
+        if (wcscmp(szClass, L"ClockFlyoutWindow") == 0) {
+            RECT rc;
+            GetWindowRect(hwnd, &rc);
+            int width = rc.right - rc.left;
+            int height = rc.bottom - rc.top;
+            
+            RECT rcTaskbar;
+            GetWindowRect(g_hTaskbar, &rcTaskbar);
+            int x = rcTaskbar.right - width;
+            int y = rcTaskbar.top - height;
+            SetWindowPos(hwnd, NULL, x, y, 0, 0, SWP_NOZORDER | SWP_NOSIZE | SWP_NOACTIVATE);
+            
+            UnhookWinEvent(g_hClockFlyoutHook);
+            g_hClockFlyoutHook = NULL;
+        }
+    }
+}
+
+BOOL ShowLegacyClockExperience(HWND hWnd) {
+    HRESULT hr = CoInitialize(NULL);
+    Win32Clock* pClock = NULL;
+    hr = CoCreateInstance(GUID_Win32Clock, NULL, CLSCTX_LOCAL_SERVER, IID_Win32Clock, (void**)&pClock);
+    if (SUCCEEDED(hr) && pClock) {
+        RECT rc;
+        GetWindowRect(hWnd, &rc);
+        pClock->lpVtbl->ShowWin32Clock(pClock, hWnd, &rc);
+        pClock->lpVtbl->Release(pClock);
+        CoUninitialize();
+        return TRUE;
+    }
+    
+    // Fallback if COM fails
+    if (g_hNativeTaskbar) {
+        HWND hwndNotify = FindWindowExW(g_hNativeTaskbar, NULL, L"TrayNotifyWnd", NULL);
+        if (hwndNotify) {
+            HWND hwndClock = FindWindowExW(hwndNotify, NULL, L"TrayClockWClass", NULL);
+            if (hwndClock) {
+                if (!g_hClockFlyoutHook) {
+                    g_hClockFlyoutHook = SetWinEventHook(EVENT_OBJECT_SHOW, EVENT_OBJECT_SHOW, NULL, ClockFlyoutWinEventProc, 0, 0, WINEVENT_OUTOFCONTEXT);
+                }
+                PostMessageW(hwndClock, WM_LBUTTONDOWN, MK_LBUTTON, MAKELPARAM(5, 5));
+                PostMessageW(hwndClock, WM_LBUTTONUP, 0, MAKELPARAM(5, 5));
+                CoUninitialize();
+                return TRUE;
+            }
+        }
+    }
+    
+    CoUninitialize();
+    Logger::Log(L"Failed to instantiate native TrayClockWClass via COM or fallback.");
+    return FALSE;
+}
 
 #define CLASS_NAME L"Shell_TrayWnd"
 #define TRAY_CLASS_NAME L"Elite_SecondaryTrayWnd"
