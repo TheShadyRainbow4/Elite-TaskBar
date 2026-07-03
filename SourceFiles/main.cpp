@@ -55,17 +55,25 @@ void RunApplication(HINSTANCE hInstance) {
     InitCommonControlsEx(&icex);
     
     // Check for /settings command line argument to launch Settings dialog directly
-    for (int i = 1; i < __argc; i++) {
-        if (_wcsicmp(__wargv[i], L"/settings") == 0) {
-            ShowTaskbarProperties(NULL);
-            CoUninitialize();
-            return;
+    int argc = 0;
+    LPWSTR* argv = CommandLineToArgvW(GetCommandLineW(), &argc);
+    if (argv) {
+        for (int i = 1; i < argc; i++) {
+            if (_wcsicmp(argv[i], L"/settings") == 0) {
+                ShowTaskbarProperties(NULL);
+                CoUninitialize();
+                LocalFree(argv);
+                return;
+            }
         }
     }
 
     bool allowMultiple = false;
-    for (int i = 1; i < __argc; i++) {
-        if (_wcsicmp(__wargv[i], L"-allowMultiple") == 0) allowMultiple = true;
+    if (argv) {
+        for (int i = 1; i < argc; i++) {
+            if (_wcsicmp(argv[i], L"-allowMultiple") == 0) allowMultiple = true;
+        }
+        LocalFree(argv);
     }
     
     HANDLE hMutex = NULL;

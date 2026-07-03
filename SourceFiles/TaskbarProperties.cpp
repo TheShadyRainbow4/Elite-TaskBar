@@ -155,6 +155,7 @@ INT_PTR CALLBACK GenericPageDlgProc(HWND hwndDlg, UINT uMsg, WPARAM wParam, LPAR
 }
 
 void ShowTaskbarProperties(HWND hwndOwner) {
+    Logger::Log(L"ShowTaskbarProperties called");
     std::vector<HPROPSHEETPAGE> pages;
     PROPSHEETPAGEW psp[6] = {0};
 
@@ -167,6 +168,7 @@ void ShowTaskbarProperties(HWND hwndOwner) {
     psp[0].pszTemplate = MAKEINTRESOURCEW(IDD_TASKBAR_PROPS);
     psp[0].pfnDlgProc = TaskbarSettingsDlgProc;
     psp[0].pszTitle = L"Taskbar";
+    Logger::Log(L"Creating Taskbar Page...");
     hPage = CreatePropertySheetPageW(&psp[0]);
     if (hPage) pages.push_back(hPage);
 
