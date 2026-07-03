@@ -258,11 +258,12 @@ LRESULT CALLBACK TrayClockProc(HWND hwnd, UINT uMsg, WPARAM wParam, LPARAM lPara
                 HFONT hOldFont = (HFONT)SelectObject(hdcBuffer, hFont);
 
                 DTTOPTS dttOpts = { sizeof(DTTOPTS) };
-                dttOpts.dwFlags = DTT_COMPOSITED | DTT_TEXTCOLOR;
+                dttOpts.dwFlags = DTT_COMPOSITED | DTT_GLOWSIZE | DTT_TEXTCOLOR;
+                dttOpts.iGlowSize = 0; // Set to 0 to fix alpha channel without adding visual glow
                 dttOpts.crText = RGB(255, 255, 255);
                 
-                rcClient.right -= 12; // Pad from the right edge
-                DrawThemeTextEx(hTheme, hdcBuffer, 0, 0, clockText, -1, DT_RIGHT | DT_VCENTER, &rcClient, &dttOpts);
+                // Use DT_CENTER, because 140px is wide enough to contain the text + padding
+                DrawThemeTextEx(hTheme, hdcBuffer, 0, 0, clockText, -1, DT_CENTER | DT_VCENTER, &rcClient, &dttOpts);
                 
                 SelectObject(hdcBuffer, hOldFont);
                 DeleteObject(hFont);
