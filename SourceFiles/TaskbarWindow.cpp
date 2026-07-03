@@ -259,11 +259,21 @@ LRESULT CALLBACK TrayClockProc(HWND hwnd, UINT uMsg, WPARAM wParam, LPARAM lPara
 
                 DTTOPTS dttOpts = { sizeof(DTTOPTS) };
                 dttOpts.dwFlags = DTT_COMPOSITED | DTT_GLOWSIZE | DTT_TEXTCOLOR;
-                dttOpts.iGlowSize = 0; // Set to 0 to fix alpha channel without adding visual glow
+                dttOpts.iGlowSize = 0; // Neutralize glow but keep alpha channel intact
                 dttOpts.crText = RGB(255, 255, 255);
                 
-                // Use DT_CENTER, because 140px is wide enough to contain the text + padding
-                DrawThemeTextEx(hTheme, hdcBuffer, 0, 0, clockText, -1, DT_CENTER | DT_VCENTER, &rcClient, &dttOpts);
+                // First calculate the exact bounding box of the text
+                RECT rcText = rcClient;
+                DrawThemeTextEx(hTheme, hdcBuffer, 0, 0, clockText, -1, DT_CALCRECT | DT_RIGHT, &rcText, &dttOpts);
+                
+                int textHeight = rcText.bottom - rcText.top;
+                
+                // Center vertically and pad 15px from the right edge
+                rcClient.top = (rcClient.bottom - textHeight) / 2;
+                rcClient.bottom = rcClient.top + textHeight;
+                rcClient.right -= 15; 
+                
+                DrawThemeTextEx(hTheme, hdcBuffer, 0, 0, clockText, -1, DT_RIGHT, &rcClient, &dttOpts);
                 
                 SelectObject(hdcBuffer, hOldFont);
                 DeleteObject(hFont);
@@ -589,17 +599,17 @@ bool TaskbarWindow::Initialize(HINSTANCE hInstance) {
         45, 0, screenWidth - 325, taskbarHeight, g_hTaskbar, NULL, hInstance, NULL);
 
     // Tray area (Moved left to give clock plenty of room and padding)
-    g_hTrayNotify = CreateWindowExW(0, L"TrayNotifyWnd", L"", WS_CHILD | WS_VISIBLE, screenWidth - 280, 0, 265, taskbarHeight, g_hTaskbar, NULL, hInstance, NULL);
+    g_hTrayNotify = CreateWindowExW(0, L"TrayNotifyWnd", L"", WS_CHILD | WS_VISIBLE | WS_CLIPSIBLINGS | WS_CLIPCHILDREN, screenWidth - 320, 0, 300, taskbarHeight, g_hTaskbar, NULL, hInstance, NULL);
     
     // Hide SysPager and ToolbarWindow32 until Phase 6 when we implement custom rendering
-    g_hSysPager = CreateWindowExW(0, L"SysPager", L"", WS_CHILD, 0, 0, 125, taskbarHeight, g_hTrayNotify, NULL, hInstance, NULL);
-    g_hToolbar = CreateWindowExW(0, L"ToolbarWindow32", L"", WS_CHILD | WS_CLIPSIBLINGS | WS_CLIPCHILDREN, 0, 0, 125, taskbarHeight, g_hSysPager, NULL, hInstance, NULL);
+    g_hSysPager = CreateWindowExW(0, L"SysPager", L"", WS_CHILD, 0, 0, 140, taskbarHeight, g_hTrayNotify, NULL, hInstance, NULL);
+    g_hToolbar = CreateWindowExW(0, L"ToolbarWindow32", L"", WS_CHILD | WS_CLIPSIBLINGS | WS_CLIPCHILDREN, 0, 0, 140, taskbarHeight, g_hSysPager, NULL, hInstance, NULL);
     
     // Clock widget placed with wide bounds to fit any date format
-    g_hTrayClock = CreateWindowExW(0, L"TrayClockWClass", L"", WS_CHILD | WS_VISIBLE, 125, 0, 140, taskbarHeight, g_hTrayNotify, NULL, hInstance, NULL);
+    g_hTrayClock = CreateWindowExW(0, L"TrayClockWClass", L"", WS_CHILD | WS_VISIBLE | WS_CLIPSIBLINGS, 140, 0, 160, taskbarHeight, g_hTrayNotify, NULL, hInstance, NULL);
     
-    // Show Desktop button at far right
-    CreateWindowExW(0, L"TrayShowDesktopButtonWClass", L"", WS_CHILD | WS_VISIBLE, screenWidth - 15, 0, 15, taskbarHeight, g_hTaskbar, NULL, hInstance, NULL);
+    // Show Desktop button at far right (Width 15, positioned at screenWidth - 15)
+    CreateWindowExW(0, L"TrayShowDesktopButtonWClass", L"", WS_CHILD | WS_VISIBLE | WS_CLIPSIBLINGS, screenWidth - 15, 0, 15, taskbarHeight, g_hTaskbar, NULL, hInstance, NULL);
 
     // Apply DWM Aero Glass Effect
     MARGINS margins = { -1, -1, -1, -1 };
