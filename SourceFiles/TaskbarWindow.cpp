@@ -124,14 +124,17 @@ LRESULT CALLBACK TrayClockProc(HWND hwnd, UINT uMsg, WPARAM wParam, LPARAM lPara
         return 0;
     }
     case WM_LBUTTONDOWN: {
-        INPUT inputs[6] = {0};
-        inputs[0].type = INPUT_KEYBOARD; inputs[0].ki.wVk = VK_LWIN;
-        inputs[1].type = INPUT_KEYBOARD; inputs[1].ki.wVk = VK_MENU; // Alt
-        inputs[2].type = INPUT_KEYBOARD; inputs[2].ki.wVk = 'D';
-        inputs[3].type = INPUT_KEYBOARD; inputs[3].ki.wVk = 'D'; inputs[3].ki.dwFlags = KEYEVENTF_KEYUP;
-        inputs[4].type = INPUT_KEYBOARD; inputs[4].ki.wVk = VK_MENU; inputs[4].ki.dwFlags = KEYEVENTF_KEYUP;
-        inputs[5].type = INPUT_KEYBOARD; inputs[5].ki.wVk = VK_LWIN; inputs[5].ki.dwFlags = KEYEVENTF_KEYUP;
-        SendInput(6, inputs, sizeof(INPUT));
+        HWND hTray = FindWindowW(L"Shell_TrayWnd", NULL);
+        if (hTray) {
+            HWND hNotify = FindWindowExW(hTray, NULL, L"TrayNotifyWnd", NULL);
+            if (hNotify) {
+                HWND hClock = FindWindowExW(hNotify, NULL, L"TrayClockWClass", NULL);
+                if (hClock) {
+                    PostMessageW(hClock, WM_LBUTTONDOWN, MK_LBUTTON, MAKELPARAM(0, 0));
+                    PostMessageW(hClock, WM_LBUTTONUP, 0, MAKELPARAM(0, 0));
+                }
+            }
+        }
         return 0;
     }
     case WM_DESTROY:
