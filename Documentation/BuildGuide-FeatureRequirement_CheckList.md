@@ -100,27 +100,27 @@
 ## PHASE 4: WINDOW TRACKING & TASKBAND POPULATION (APP BUTTONS)
 ---
 
-1. Register global shell hook: RegisterShellHookWindow(hwndMain).
+1. Register global shell hook: RegisterShellHookWindow(hwndMain). **[COMPLETED]**
 
-2. Add custom message switch for WH_SHELL in WindowProc.
+2. Add custom message switch for WH_SHELL in WindowProc. **[COMPLETED]**
 
-3. Handle HSHELL_WINDOWCREATED: Extract HWND of new application.
+3. Handle HSHELL_WINDOWCREATED: Extract HWND of new application. **[COMPLETED]**
 
-4. Validate HWND (Ignore hidden windows, tooltips, zero-size rects).
+4. Validate HWND (Ignore hidden windows, tooltips, zero-size rects). **[COMPLETED]**
 
-5. Allocate custom unmanaged TaskButton struct containing HWND, Title, and HICON.
+5. Allocate custom unmanaged TaskButton struct containing HWND, Title, and HICON. **[COMPLETED]**
 
-6. Extract Title: GetWindowText and GetWindowTextLength.
+6. Extract Title: GetWindowText and GetWindowTextLength. **[COMPLETED]**
 
-7. Extract Icon: SendMessageTimeout(WM_GETICON, ICON_SMALL).
+7. Extract Icon: SendMessageTimeout(WM_GETICON, ICON_SMALL). **[COMPLETED]**
 
-8. Fallback Icon: GetClassLongPtr(GCLP_HICONSM).
+8. Fallback Icon: GetClassLongPtr(GCLP_HICONSM). **[COMPLETED]**
 
-9. Handle HSHELL_WINDOWDESTROYED: Locate struct, free memory, trigger UI redraw.
+9. Handle HSHELL_WINDOWDESTROYED: Locate struct, free memory, trigger UI redraw. **[COMPLETED]**
 
-10. Handle HSHELL_WINDOWACTIVATED: Update "active" state flag on the specific TaskButton.
+10. Handle HSHELL_WINDOWACTIVATED: Update "active" state flag on the specific TaskButton. **[COMPLETED]**
 
-11. Handle HSHELL_REDRAW: Update title/icon if the application dynamically changes them.
+11. Handle HSHELL_REDRAW: Update title/icon if the application dynamically changes them. **[COMPLETED]**
 
 12. Handle HSHELL_FLASH: Implement native window attention flashing logic via GDI timer.
 
@@ -282,6 +282,12 @@
 
 6. Conduct full memory leak sweep using CRT debug heap.
 
+7. Convert Settings Dialog to save/read standard Windows features (Lock Taskbar, Auto-Hide, Small Icons) from native Registry locations (`HKCU\Software\Microsoft\Windows\CurrentVersion\Explorer\Advanced` and `StuckRects3`).
+
+8. Implement a toggle in the Custom Settings Property Sheet to switch between Elite's Custom Feature implementations and the real Native Registry Mode, preserving the combined UI.
+
+9. Refactor `TaskbarWindow` architecture to instantiate dynamically across an array of `HWND` objects to populate additional identical taskbars on all secondary monitors detected by `EnumDisplayMonitors`.
+
 ---
 ## RESOURCE ASSETS
 ---
@@ -323,3 +329,13 @@
 [2026-07-02 14:03] - Phase 5, Step 11 completed. Added [WM_RBUTTONUP, CreatePopupMenu, AppendMenuW, TrackPopupMenuEx, WM_COMMAND handling for Exit, Task Manager, Explorer].
 [2026-07-02 14:12] - Phase 5, Steps 2, 4, 6 completed. Added [DwmExtendFrameIntoClientArea, OpenThemeData, DrawThemeBackground].
 [2026-07-02 14:24] - Bug Fixes for Phase 9 & 5 completed. Refactored StartButton into a dedicated WS_EX_LAYERED Topmost floating window to support StartIsBack style desktop overhang. Implemented DIBSection and 32-bit Alpha rendering for GDI+ orb strip animation. Fixed VK_LWIN Start Menu hooks for OpenShell support. Fixed ClockWidget ClearType alpha-channel destruction. Fixed Tray child windows DWM Glass compatibility.
+---
+# MISSING NATIVE FEATURES & PENDING REQUESTS
+---
+
+1. **Full Deskband Support & Folders**: Native implementation of QuickLaunch, toolbars, deskbands and folder toolbars, allowing different toolbars per taskbar monitor.
+2. **Explorer Integration**: File browser compatibility must remain fully functional while running as shell.
+3. **Native Windows 7 Flyout Mode**: Restore and integrate native Windows 7 Notification Area flyout UI functionality.
+4. **Legacy Tray Mode**: Implement ReactOS-style classic linear tray logic as an alternate selectable mode.
+5. **Settings Menu Expansion**: Populate all tabs with all settings, implementing switching between OpenShell, Native Menu, and custom combinations based on triggers.
+[2026-07-03 02:26] - Phase 4, Steps 1-11 completed. Added [TaskButtonInfo, RegisterShellHookWindow, HSHELL_WINDOWCREATED, HSHELL_WINDOWDESTROYED, HSHELL_WINDOWACTIVATED, HSHELL_REDRAW, Taskbar buttons rendering with Vista style wide labels and small icons, StartButton unconditionally created on all monitors].

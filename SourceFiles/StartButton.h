@@ -8,10 +8,30 @@ enum class OrbState {
     Pressed
 };
 
-namespace StartButton {
+class StartButton {
+public:
+    static bool GlobalInitialize(ULONG_PTR& token);
+    static void GlobalCleanup(ULONG_PTR token);
+
+    StartButton();
+    ~StartButton();
+    
     bool Initialize(HINSTANCE hInstance, HWND hParentTaskbar);
-    void Cleanup();
     void SetOrbImageFromResource(HINSTANCE hInstance, int resourceId);
     void Draw();
     void Show(int taskbarX, int taskbarY, int taskbarHeight);
-}
+    
+    HWND GetHwnd() const { return m_hOrbWnd; }
+    OrbState GetState() const { return m_internalOrbState; }
+    void SetState(OrbState state) { m_internalOrbState = state; }
+    bool IsTracking() const { return m_bOrbTracking; }
+    void SetTracking(bool tracking) { m_bOrbTracking = tracking; }
+    HWND GetParentTaskbar() const { return m_hParentTaskbar; }
+
+private:
+    Gdiplus::Image* m_pOrbImage;
+    HWND m_hOrbWnd;
+    HWND m_hParentTaskbar;
+    OrbState m_internalOrbState;
+    bool m_bOrbTracking;
+};

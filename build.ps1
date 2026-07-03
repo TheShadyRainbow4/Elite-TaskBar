@@ -4,7 +4,7 @@ param(
 
 # Elite-TaskBar Build Script
 $ErrorActionPreference = 'Stop'
-$ScriptDir = Split-Path -Parent $MyInvocation.MyCommand.Definition
+$ScriptDir = $PSScriptRoot
 
 Write-Host "Triggering pre-build backup..." -ForegroundColor Cyan
 $BackupScript = Join-Path $ScriptDir "backup.ps1"
@@ -80,18 +80,25 @@ if (Test-Path $rootSettingsIconPath) {
     }
 }
 
-$stubCompileCmd64 = "cl.exe /EHsc /Zi /MTd /D_DEBUG /Fe`"$BuildDir\EliteSettings.exe`" `"$SourceDir\EliteSettingsStub.cpp`" `"$BuildDir\stub_resources.res`" user32.lib shell32.lib shlwapi.lib /link"
-$stubCompileCmd86 = "cl.exe /EHsc /Zi /MTd /D_DEBUG /Fe`"$BuildDirx86\EliteSettings_x86.exe`" `"$SourceDir\EliteSettingsStub.cpp`" `"$BuildDirx86\stub_resources.res`" user32.lib shell32.lib shlwapi.lib /link"
+$job1 = Start-Job -ScriptBlock { param($s, $b, $v) & "$s\..\build_x64.ps1" -SourceDir $s -BuildDir $b -VsDevCmd $v } -ArgumentList $SourceDir, $BuildDir, $vsDevCmd
+$job2 = Start-Job -ScriptBlock { param($s, $b, $v) & "$s\..\build_x86.ps1" -SourceDir $s -BuildDir $b -VsDevCmd $v } -ArgumentList $SourceDir, $BuildDirx86, $vsDevCmd
+$job3 = Start-Job -ScriptBlock { param($s, $b, $bx86, $v) & "$s\..\build_settings.ps1" -SourceDir $s -BuildDir $b -BuildDirx86 $bx86 -VsDevCmd $v } -ArgumentList $SourceDir, $BuildDir, $BuildDirx86, $vsDevCmd
 
-Write-Host "Compiling x64 Resources and C++..." -ForegroundColor Cyan
-cmd.exe /c "cd /d `"$BuildDir`" && call `"$vsDevCmd`" -arch=x64 && rc.exe /fo `"$BuildDir\resources.res`" `"$SourceDir\resources.rc`" && rc.exe /fo `"$BuildDir\stub_resources.res`" `"$SourceDir\EliteSettingsStub.rc`" && $compileCmd64 && $stubCompileCmd64"
-$exit64 = $LASTEXITCODE
+Write-Host "Waiting for concurrent builds to finish..." -ForegroundColor Cyan
+$jobs = @($job1, $job2, $job3)
+Wait-Job -Job $jobs | Out-Null
 
-Write-Host "Compiling x86 Resources and C++..." -ForegroundColor Cyan
-cmd.exe /c "cd /d `"$BuildDirx86`" && call `"$vsDevCmd`" -arch=x86 && rc.exe /fo `"$BuildDirx86\resources.res`" `"$SourceDir\resources.rc`" && rc.exe /fo `"$BuildDirx86\stub_resources.res`" `"$SourceDir\EliteSettingsStub.rc`" && $compileCmd86 && $stubCompileCmd86"
-$exit86 = $LASTEXITCODE
+$failed = $false
+foreach ($job in $jobs) {
+    Receive-Job -Job $job | Write-Host
+    if ($job.State -ne 'Completed') {
+        Write-Error "Build job $($job.Id) failed!"
+        $failed = $true
+    }
+}
+Remove-Job -Job $jobs
 
-if ($exit64 -ne 0 -or $exit86 -ne 0) {
+if ($failed) {
     Write-Host "Build failed! Cleaning up recent backup..." -ForegroundColor Red
     $latestBackup = Get-ChildItem -Path (Join-Path $ScriptDir "Backups") -Filter *.cab | Sort-Object LastWriteTime -Descending | Select-Object -First 1
     if ($latestBackup -and (New-TimeSpan -Start $latestBackup.LastWriteTime -End (Get-Date)).TotalMinutes -lt 5) {

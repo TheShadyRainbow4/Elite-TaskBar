@@ -5,24 +5,31 @@
 
 using namespace Gdiplus;
 
-ULONG_PTR g_gdiplusToken;
-Image* g_pOrbImage = nullptr;
-HWND g_hOrbWnd = NULL;
-HWND g_hParentTaskbar = NULL;
-OrbState g_internalOrbState = OrbState::Normal;
-bool g_bOrbTracking = false;
-
 LRESULT CALLBACK OrbWndProc(HWND hwnd, UINT uMsg, WPARAM wParam, LPARAM lParam);
 
-bool StartButton::Initialize(HINSTANCE hInstance, HWND hParentTaskbar) {
+bool StartButton::GlobalInitialize(ULONG_PTR& token) {
     GdiplusStartupInput gdiplusStartupInput;
-    Status status = GdiplusStartup(&g_gdiplusToken, &gdiplusStartupInput, NULL);
+    Status status = GdiplusStartup(&token, &gdiplusStartupInput, NULL);
     if (status != Ok) {
         Logger::Log(L"Failed to initialize GDI+");
         return false;
     }
-    
-    g_hParentTaskbar = hParentTaskbar;
+    return true;
+}
+
+void StartButton::GlobalCleanup(ULONG_PTR token) {
+    GdiplusShutdown(token);
+}
+
+StartButton::StartButton() : m_pOrbImage(nullptr), m_hOrbWnd(NULL), m_hParentTaskbar(NULL), m_internalOrbState(OrbState::Normal), m_bOrbTracking(false) {}
+
+StartButton::~StartButton() {
+    if (m_hOrbWnd) DestroyWindow(m_hOrbWnd);
+    if (m_pOrbImage) delete m_pOrbImage;
+}
+
+bool StartButton::Initialize(HINSTANCE hInstance, HWND hParentTaskbar) {
+    m_hParentTaskbar = hParentTaskbar;
     
     WNDCLASSEXW wc = {0};
     wc.cbSize = sizeof(WNDCLASSEXW);
@@ -30,35 +37,29 @@ bool StartButton::Initialize(HINSTANCE hInstance, HWND hParentTaskbar) {
     wc.hInstance = hInstance;
     wc.lpszClassName = L"Elite_StartOrbWnd";
     wc.hCursor = LoadCursor(NULL, IDC_ARROW);
+    // Ignore register errors if class already exists
     RegisterClassExW(&wc);
     
-    g_hOrbWnd = CreateWindowExW(
+    m_hOrbWnd = CreateWindowExW(
         WS_EX_LAYERED | WS_EX_TOOLWINDOW | WS_EX_TOPMOST,
         L"Elite_StartOrbWnd", L"",
         WS_POPUP,
         0, 0, 54, 54,
-        NULL, NULL, hInstance, NULL
+        NULL, NULL, hInstance, this
     );
     
-    // Force orb to always stay above start menus
-    SetTimer(g_hOrbWnd, 1, 50, NULL);
-    
-    return true;
-}
-
-void StartButton::Cleanup() {
-    if (g_hOrbWnd) DestroyWindow(g_hOrbWnd);
-    if (g_pOrbImage) {
-        delete g_pOrbImage;
-        g_pOrbImage = nullptr;
+    if (m_hOrbWnd) {
+        SetWindowLongPtr(m_hOrbWnd, GWLP_USERDATA, (LONG_PTR)this);
+        SetTimer(m_hOrbWnd, 1, 50, NULL);
     }
-    GdiplusShutdown(g_gdiplusToken);
+    
+    return m_hOrbWnd != NULL;
 }
 
 void StartButton::SetOrbImageFromResource(HINSTANCE hInstance, int resourceId) {
-    if (g_pOrbImage) {
-        delete g_pOrbImage;
-        g_pOrbImage = nullptr;
+    if (m_pOrbImage) {
+        delete m_pOrbImage;
+        m_pOrbImage = nullptr;
     }
 
     HRSRC hResInfo = FindResourceW(hInstance, MAKEINTRESOURCEW(resourceId), (LPCWSTR)RT_RCDATA);
@@ -82,25 +83,25 @@ void StartButton::SetOrbImageFromResource(HINSTANCE hInstance, int resourceId) {
 
     IStream* pStream = NULL;
     if (CreateStreamOnHGlobal(hGlobal, TRUE, &pStream) == S_OK) {
-        g_pOrbImage = Image::FromStream(pStream);
+        m_pOrbImage = Image::FromStream(pStream);
         pStream->Release();
     }
 
-    if (!g_pOrbImage || g_pOrbImage->GetLastStatus() != Ok) {
+    if (!m_pOrbImage || m_pOrbImage->GetLastStatus() != Ok) {
         Logger::Log(L"Failed to decode Start Orb image stream.");
     }
 }
 
 void StartButton::Draw() {
-    if (!g_pOrbImage || !g_hOrbWnd || g_pOrbImage->GetLastStatus() != Ok) {
+    if (!m_pOrbImage || !m_hOrbWnd || m_pOrbImage->GetLastStatus() != Ok) {
         return;
     }
 
-    UINT imgWidth = g_pOrbImage->GetWidth();
-    UINT sliceHeight = g_pOrbImage->GetHeight() / 3;
+    UINT imgWidth = m_pOrbImage->GetWidth();
+    UINT sliceHeight = m_pOrbImage->GetHeight() / 3;
 
     int srcY = 0;
-    switch (g_internalOrbState) {
+    switch (m_internalOrbState) {
         case OrbState::Normal:  srcY = 0; break;
         case OrbState::Hover:   srcY = sliceHeight; break;
         case OrbState::Pressed: srcY = sliceHeight * 2; break;
@@ -128,7 +129,7 @@ void StartButton::Draw() {
         graphics.Clear(Color(0, 0, 0, 0));
 
         Rect destRect(0, 0, imgWidth, sliceHeight);
-        graphics.DrawImage(g_pOrbImage, destRect, 0, srcY, imgWidth, sliceHeight, UnitPixel);
+        graphics.DrawImage(m_pOrbImage, destRect, 0, srcY, imgWidth, sliceHeight, UnitPixel);
     }
 
     POINT ptSrc = {0, 0};
@@ -138,7 +139,7 @@ void StartButton::Draw() {
     blend.SourceConstantAlpha = 255;
     blend.AlphaFormat = AC_SRC_ALPHA; // Per-pixel alpha!
 
-    UpdateLayeredWindow(g_hOrbWnd, hdcScreen, NULL, &size, hdcMem, &ptSrc, 0, &blend, ULW_ALPHA);
+    UpdateLayeredWindow(m_hOrbWnd, hdcScreen, NULL, &size, hdcMem, &ptSrc, 0, &blend, ULW_ALPHA);
 
     SelectObject(hdcMem, hbmOld);
     DeleteObject(hbmMem);
@@ -147,53 +148,54 @@ void StartButton::Draw() {
 }
 
 void StartButton::Show(int taskbarX, int taskbarY, int taskbarHeight) {
-    if (!g_pOrbImage || !g_hOrbWnd) return;
-    UINT imgWidth = g_pOrbImage->GetWidth();
-    UINT sliceHeight = g_pOrbImage->GetHeight() / 3;
+    if (!m_pOrbImage || !m_hOrbWnd) return;
+    UINT imgWidth = m_pOrbImage->GetWidth();
+    UINT sliceHeight = m_pOrbImage->GetHeight() / 3;
     
-    // Center vertically on the taskbar. This creates the classic Windows 7 effect where 
-    // the top overhangs onto the desktop, and the bottom gets cropped by the screen edge.
     int yPos = taskbarY + (taskbarHeight - (int)sliceHeight) / 2;
-    SetWindowPos(g_hOrbWnd, HWND_TOPMOST, taskbarX, yPos, imgWidth, sliceHeight, SWP_SHOWWINDOW);
+    SetWindowPos(m_hOrbWnd, HWND_TOPMOST, taskbarX, yPos, imgWidth, sliceHeight, SWP_SHOWWINDOW);
     Draw();
 }
 
 LRESULT CALLBACK OrbWndProc(HWND hwnd, UINT uMsg, WPARAM wParam, LPARAM lParam) {
+    StartButton* pThis = (StartButton*)GetWindowLongPtr(hwnd, GWLP_USERDATA);
+    if (!pThis) return DefWindowProcW(hwnd, uMsg, wParam, lParam);
+
     switch (uMsg) {
         case WM_MOUSEMOVE: {
-            if (!g_bOrbTracking) {
+            if (!pThis->IsTracking()) {
                 TRACKMOUSEEVENT tme = {0};
                 tme.cbSize = sizeof(TRACKMOUSEEVENT);
                 tme.dwFlags = TME_LEAVE;
                 tme.hwndTrack = hwnd;
                 TrackMouseEvent(&tme);
-                g_bOrbTracking = true;
+                pThis->SetTracking(true);
             }
-            if (g_internalOrbState != OrbState::Pressed) {
-                if (g_internalOrbState != OrbState::Hover) {
-                    g_internalOrbState = OrbState::Hover;
-                    StartButton::Draw();
+            if (pThis->GetState() != OrbState::Pressed) {
+                if (pThis->GetState() != OrbState::Hover) {
+                    pThis->SetState(OrbState::Hover);
+                    pThis->Draw();
                 }
             }
             return 0;
         }
         case WM_MOUSELEAVE: {
-            g_bOrbTracking = false;
-            if (g_internalOrbState != OrbState::Normal) {
-                g_internalOrbState = OrbState::Normal;
-                StartButton::Draw();
+            pThis->SetTracking(false);
+            if (pThis->GetState() != OrbState::Normal) {
+                pThis->SetState(OrbState::Normal);
+                pThis->Draw();
             }
             return 0;
         }
         case WM_LBUTTONDOWN: {
-            g_internalOrbState = OrbState::Pressed;
-            StartButton::Draw();
+            pThis->SetState(OrbState::Pressed);
+            pThis->Draw();
             return 0;
         }
         case WM_LBUTTONUP: {
-            if (g_internalOrbState == OrbState::Pressed) {
-                g_internalOrbState = OrbState::Hover;
-                StartButton::Draw();
+            if (pThis->GetState() == OrbState::Pressed) {
+                pThis->SetState(OrbState::Hover);
+                pThis->Draw();
                 
                 SetWindowPos(hwnd, HWND_TOPMOST, 0, 0, 0, 0, SWP_NOMOVE | SWP_NOSIZE | SWP_NOACTIVATE);
                 
@@ -231,9 +233,9 @@ LRESULT CALLBACK OrbWndProc(HWND hwnd, UINT uMsg, WPARAM wParam, LPARAM lParam) 
             return 0;
         }
         case WM_RBUTTONUP: {
-            if (g_hParentTaskbar) {
-                // Trick the taskbar into thinking we clicked at x=0 so it opens the start menu context
-                SendMessageW(g_hParentTaskbar, WM_RBUTTONUP, wParam, MAKELPARAM(0, 0));
+            HWND hParent = pThis->GetParentTaskbar();
+            if (hParent) {
+                SendMessageW(hParent, WM_RBUTTONUP, wParam, MAKELPARAM(0, 0));
             }
             return 0;
         }

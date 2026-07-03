@@ -26,11 +26,16 @@ void QueryOperationalMode() {
         if (RegQueryValueExW(hKey, L"TaskbarMode", NULL, NULL, (LPBYTE)&dwValue, &bufferSize) == ERROR_SUCCESS) {
             if (dwValue == 1) {
                 g_Config.Mode = TaskbarMode::Replace;
+            } else if (dwValue == 2) {
+                g_Config.Mode = TaskbarMode::SecondaryOnly;
             }
         }
         RegCloseKey(hKey);
     }
-    Logger::Log(g_Config.Mode == TaskbarMode::Replace ? L"Mode: Replace Native Shell" : L"Mode: Independent");
+    const wchar_t* modeStr = L"Mode: Independent";
+    if (g_Config.Mode == TaskbarMode::Replace) modeStr = L"Mode: Replace Native Shell";
+    else if (g_Config.Mode == TaskbarMode::SecondaryOnly) modeStr = L"Mode: Secondary Monitors Only";
+    Logger::Log(modeStr);
 }
 
 int EXCEPTION_EXECUTE_HANDLER_FUNC(unsigned int code, struct _EXCEPTION_POINTERS* ep) {
@@ -92,6 +97,9 @@ void RunApplication(HINSTANCE hInstance) {
     QueryOperationalMode();
     
     BufferedPaintInit();
+    
+    ULONG_PTR gdiToken = 0;
+    StartButton::GlobalInitialize(gdiToken);
 
     if (TaskbarWindow::Initialize(hInstance)) {
         Logger::Log(L"EliteTaskbar window initialized successfully. Entering message loop.");
@@ -99,7 +107,7 @@ void RunApplication(HINSTANCE hInstance) {
         TaskbarWindow::Cleanup();
     }
     
-    StartButton::Cleanup();
+    StartButton::GlobalCleanup(gdiToken);
     BufferedPaintUnInit();
     
     if (SUCCEEDED(hrCoInit)) {

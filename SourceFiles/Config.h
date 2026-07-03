@@ -5,7 +5,8 @@
 
 enum class TaskbarMode {
     Independent,
-    Replace
+    Replace,
+    SecondaryOnly
 };
 
 struct EliteTaskbarConfig {

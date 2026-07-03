@@ -18,6 +18,7 @@
 
 #define IDC_MODE_INDEPENDENT  210
 #define IDC_MODE_REPLACE      211
+#define IDC_MODE_SECONDARY_ONLY 223
 
 // Taskbar UI
 #define IDC_TRAY_NATIVE       212
@@ -34,3 +35,5 @@
 // Toolbars UI
 #define IDC_TOOLBAR_LIST      220
 #define IDC_TOOLBAR_NEW       221
+
+#define IDC_NATIVE_REGISTRY_MODE 222

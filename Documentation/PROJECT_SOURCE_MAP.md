@@ -3,12 +3,12 @@
 This document serves as a high-level map and explanation for all files within the `SourceFiles` directory and the root directory. It explains what each file does, how the architecture works, and acts as a master reference to ensure context is never lost.
 
 ## Root Directory Scripts
-- **build.ps1**: The master MSVC build script. It locates Visual Studio, copies `EliteTaskbar.ico` from the root into `Resources\elite_icon.ico`, compiles resources (`rc.exe`), and compiles the `SourceFiles` into `BuildOutput\x64` and `BuildOutput\x86`. It copies the final 64-bit EXE to the root and auto-commits the repository on success.
+- **build.ps1**: The master MSVC build script. It locates Visual Studio, copies icons, compiles resources (`rc.exe`), and compiles the `SourceFiles` into `BuildOutput\x64` and `BuildOutput\x86`. It handles building both the main `EliteTaskbar.exe` and the `EliteSettings.exe` stub executable, auto-committing the repository on success.
 - **backup.ps1**: A utility script triggered by `build.ps1` to zip/cab the project into the `Backups` folder before compilation to prevent data loss.
 - **install_prereqs.ps1**: Installs necessary Windows SDK and MSVC components required to build the project.
 
 ## Core Application Logic
-- **main.cpp**: The application entry point (`WinMain`). Initializes COM, GDI+, creates the main `TaskbarWindow`, parses command-line arguments (like `/devmode`), and runs the primary message pump (Event Loop). It also manages single-instance mutextes and loads global configurations (like `TaskbarMode`).
+- **main.cpp**: The application entry point (`WinMain`). Initializes COM, GDI+, creates the main `TaskbarWindow`, handles the `/settings` argument to launch the custom property sheet, parses command-line arguments (like `-allowMultiple`), and runs the primary message pump (Event Loop). It also manages single-instance mutexes and loads global configurations.
 - **Config.h**: Defines the `g_Config` global structure and enums (like `TaskbarMode::Independent` vs `TaskbarMode::Replace`) so that various UI components know how the shell is currently configured to operate.
 
 ## Taskbar Shell (The Main GUI)
@@ -17,7 +17,7 @@ This document serves as a high-level map and explanation for all files within th
     - Generates the main taskbar window class and applies DWM Aero Glass (`DwmExtendFrameIntoClientArea`).
     - Spawns child windows (`StartButton`, `ReBarWindow32`, `TrayNotifyWnd`, `TrayClockWClass`, `TrayShowDesktopButtonWClass`).
     - In `Replace` mode, it sets a background timer to actively hide and move the native Windows taskbar off-screen to bypass UIPI (User Interface Privilege Isolation) constraints for standard users.
-    - Handles the taskbar Right-Click Context Menu, accurately mapping native commands (like Task Manager, Show Desktop) either to the native shell (via `PostMessageW`) or providing native standalone fallbacks.
+    - Handles the taskbar Right-Click Context Menu, accurately mapping native commands (like Task Manager, Show Desktop) either to the native shell (via `PostMessageW` sending native command IDs like 410, 401) or providing native standalone fallbacks.
     - Listens for `WM_SETTINGCHANGE` (specifically "TraySettings") to dynamically restart the shell when the user changes modes.
 
 ## Start Button (The Orb)
@@ -35,24 +35,28 @@ This document serves as a high-level map and explanation for all files within th
     - Renders the time and date using GDI+ with `StringAlignmentCenter` to perfectly replicate the Windows 7/10 dual-line clock.
 
 ## Settings & Properties Dialogs
+- **EliteSettingsStub.cpp**: The source file for the `EliteSettings.exe` stub executable. It exists solely to call `ShellExecuteW` to launch `EliteTaskbar.exe /settings`, ensuring that launching the settings dialog from external sources correctly delegates to the main taskbar executable where the property sheet resources live.
 - **TaskbarProperties.h / TaskbarProperties.cpp**: Implements the **Custom Settings** tabbed property sheet.
   - **Responsibilities**:
     - Replicates the native Windows properties look using `CreatePropertySheetPageW` and `PropertySheetW` (the tabbed applet UI).
-    - Reads/Writes our custom settings to `HKCU\Software\EliteSoftware\Win32Explorer\Advanced`.
-    - Specifically handles the "Taskbar Mode" radio buttons.
-    - Uses `PSN_APPLY` to broadcast changes to the shell so `TaskbarWindow` reloads.
-- **resource.h**: The standard header that maps UI element IDs (like `IDC_MODE_REPLACE`, `IDD_TASKBAR_PROPS`, `IDM_TASKBAR_SETTINGS`) to integer constants.
-- **resources.rc**: The Resource Compiler script. It defines the layout, coordinates, and text for the Property Sheet Dialogs (`IDD_TASKBAR_PROPS`, `IDD_STARTMENU_PROPS`) and binds the Application Icon.
-- **app.manifest**: XML manifest embedded into the final EXE. Crucially requests `Microsoft.Windows.Common-Controls` version 6.0.0.0 to ensure buttons, tabs, and property sheets render with the modern visual style instead of the Windows 95 classic theme.
+    - Contains dialog procedures (`TaskbarSettingsDlgProc`, `StartMenuSettingsDlgProc`, `ToolbarsSettingsDlgProc`, `GenericPageDlgProc`).
+    - Reads/Writes native standard settings (like Taskbar Lock, Auto-hide) to native Windows registry paths, functioning as a 1:1 true functional replacement for `desk.cpl`/`shell32` dialogs.
+    - Reads/Writes our custom extension settings (like Taskbar Mode) to `HKCU\Software\EliteSoftware\Win32Explorer\Advanced`.
+    - Uses `PSN_APPLY` to broadcast changes to the shell so `TaskbarWindow` and native Windows respond.
+- **resource.h**: The standard header that maps UI element IDs (like `IDC_MODE_REPLACE`, `IDD_TASKBAR_PROPS`, `IDM_TASKBAR_SETTINGS`, `IDI_PREFERENCES`) to integer constants.
+- **resources.rc**: The Resource Compiler script. It defines the layout, coordinates, and text for all the Property Sheet Dialog tabs (`IDD_TASKBAR_PROPS`, `IDD_STARTMENU_PROPS`, `IDD_DESKTOP_PROPS`, `IDD_TOOLBARS_PROPS`, plus secret tabs) and embeds Application Icons (`IDI_MAIN_PROGRAM`, `IDI_PREFERENCES`) and the Start Orb (`IDB_START_ORB`).
+- **stub_resources.rc**: Embedded resources specifically for the `EliteSettings.exe` stub to ensure it has the correct `PREFERENCES.ico` icon in Explorer.
+- **app.manifest**: XML manifest embedded into the final EXE. Requests `Microsoft.Windows.Common-Controls` version 6.0.0.0 to ensure buttons, tabs, and property sheets render with the modern visual style instead of the Windows 95 classic theme. Crucially configures DPI awareness (`PerMonitorV2`).
 
 ## Debugging & Utilities
-- **Logger.h / Logger.cpp**: Provides the `Log()` and `LogW()` functions. It strictly appends logs to `C:\EliteSoftware\Logs\Taskbar.log` (falling back to the local directory if permissions fail). It is used to trace UIPI failures, HWND values, and startup states.
+- **Logger.h / Logger.cpp**: Provides the `Log()` and `LogW()` functions. It strictly appends logs to `C:\EliteSoftware\Logs\EliteTaskbar.log`. It is used to trace crashes, verify window states, and log bootstrapper operations.
 
 ## Architecture Workflow
 1. User launches `EliteTaskbar.exe`.
-2. `main.cpp` starts, initializes GDI+, and checks registry for `TaskbarMode`.
-3. `TaskbarWindow::Initialize` runs. If `Replace` mode is active, it actively hooks a timer to push `Shell_TrayWnd` (the native taskbar) off-screen (`-10000, -10000`) and issues `SW_HIDE`.
-4. `TaskbarWindow` creates itself as an `HWND_TOPMOST` layered window at the bottom of the primary monitor.
-5. Child components (`StartButton`, `ClockWidget`) initialize themselves inside the taskbar.
-6. The user right-clicks -> "Properties" calls `desk.cpl` to manage native Windows settings.
-7. The user right-clicks -> "Elite Taskbar Settings" calls `TaskbarProperties.cpp`, generating the custom Property Sheet. Changing mode restarts the shell instantly.
+2. `main.cpp` starts, uses `CommandLineToArgvW` to parse arguments. If `/settings` is passed, it launches the settings property sheet directly and exits.
+3. Otherwise, it initializes GDI+ and checks registry for `TaskbarMode`.
+4. `TaskbarWindow::Initialize` runs. If `Replace` mode is active, it actively hooks a timer to push `Shell_TrayWnd` (the native taskbar) off-screen (`-10000, -10000`) and issues `SW_HIDE`.
+5. `TaskbarWindow` creates itself as an `HWND_TOPMOST` layered window at the bottom of the primary monitor.
+6. Child components (`StartButton`, `ClockWidget`) initialize themselves inside the taskbar.
+7. The user right-clicks -> "Properties" calls the *native* `shell32.dll` properties dialog or uses our 1:1 custom replacement based on config.
+8. The user right-clicks -> "Elite Taskbar Settings" calls `TaskbarProperties.cpp`, generating the custom Property Sheet. Changing mode restarts the shell instantly.
