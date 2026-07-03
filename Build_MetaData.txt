@@ -5,4 +5,4 @@ Company:    EliteSoftware Tech Co.
 Copywrite:  2026 EliteSoftware 
 License:    EliteSoftware Public License (Freely Open Source!)
 Website:    https://main.elitesoftwaretech.cc
-OS:         Windows Vista+
+OS:         Windows Vista & Up
