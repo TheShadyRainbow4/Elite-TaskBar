@@ -51,7 +51,7 @@ void RunApplication(HINSTANCE hInstance) {
     CoInitializeEx(NULL, COINIT_APARTMENTTHREADED);
     INITCOMMONCONTROLSEX icex;
     icex.dwSize = sizeof(INITCOMMONCONTROLSEX);
-    icex.dwICC = ICC_WIN95_CLASSES | ICC_COOL_CLASSES | ICC_BAR_CLASSES | ICC_USEREX_CLASSES;
+    icex.dwICC = ICC_WIN95_CLASSES | ICC_COOL_CLASSES | ICC_BAR_CLASSES | ICC_USEREX_CLASSES | ICC_PAGESCROLLER_CLASS;
     InitCommonControlsEx(&icex);
     
     // Check for /settings command line argument to launch Settings dialog directly
@@ -82,11 +82,6 @@ void RunApplication(HINSTANCE hInstance) {
     
     // 6 & 7. Query Windows Registry & Declare global struct
     QueryOperationalMode();
-
-    INITCOMMONCONTROLSEX icex = {0};
-    icex.dwSize = sizeof(INITCOMMONCONTROLSEX);
-    icex.dwICC = ICC_PAGESCROLLER_CLASS | ICC_BAR_CLASSES;
-    InitCommonControlsEx(&icex);
     
     BufferedPaintInit();
 
