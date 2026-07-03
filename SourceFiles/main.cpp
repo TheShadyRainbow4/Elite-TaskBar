@@ -47,10 +47,18 @@ void RunApplication(HINSTANCE hInstance) {
     // 3 & 4. Initialize global logging function & Bootstrapper logic
     Logger::Initialize();
     
+    // Initialize COM and Common Controls
+    CoInitializeEx(NULL, COINIT_APARTMENTTHREADED);
+    INITCOMMONCONTROLSEX icex;
+    icex.dwSize = sizeof(INITCOMMONCONTROLSEX);
+    icex.dwICC = ICC_WIN95_CLASSES | ICC_COOL_CLASSES | ICC_BAR_CLASSES | ICC_USEREX_CLASSES;
+    InitCommonControlsEx(&icex);
+    
     // Check for /settings command line argument to launch Settings dialog directly
     for (int i = 1; i < __argc; i++) {
         if (_wcsicmp(__wargv[i], L"/settings") == 0) {
             ShowTaskbarProperties(NULL);
+            CoUninitialize();
             return;
         }
     }

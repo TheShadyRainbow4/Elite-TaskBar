@@ -2,3 +2,5 @@ Backups/
 /ReactOS-Source-Shell
 \BuildOutput\ReactOS-Source-Shell\
 
+BuildOutput/ReactOS-Source-Shell
+BuildOutput/Clipboard.txt
