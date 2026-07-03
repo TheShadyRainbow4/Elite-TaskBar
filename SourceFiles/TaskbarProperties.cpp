@@ -156,6 +156,8 @@ void ShowTaskbarProperties(HWND hwndOwner) {
     std::vector<HPROPSHEETPAGE> pages;
     PROPSHEETPAGEW psp[6] = {0};
 
+    HPROPSHEETPAGE hPage;
+    
     // 0: Taskbar
     psp[0].dwSize = sizeof(PROPSHEETPAGEW);
     psp[0].dwFlags = PSP_USETITLE;
@@ -163,7 +165,8 @@ void ShowTaskbarProperties(HWND hwndOwner) {
     psp[0].pszTemplate = MAKEINTRESOURCEW(IDD_TASKBAR_PROPS);
     psp[0].pfnDlgProc = TaskbarSettingsDlgProc;
     psp[0].pszTitle = L"Taskbar";
-    pages.push_back(CreatePropertySheetPageW(&psp[0]));
+    hPage = CreatePropertySheetPageW(&psp[0]);
+    if (hPage) pages.push_back(hPage);
 
     // 1: Start Menu
     psp[1].dwSize = sizeof(PROPSHEETPAGEW);
@@ -172,7 +175,8 @@ void ShowTaskbarProperties(HWND hwndOwner) {
     psp[1].pszTemplate = MAKEINTRESOURCEW(IDD_STARTMENU_PROPS);
     psp[1].pfnDlgProc = StartMenuSettingsDlgProc;
     psp[1].pszTitle = L"Start Menu";
-    pages.push_back(CreatePropertySheetPageW(&psp[1]));
+    hPage = CreatePropertySheetPageW(&psp[1]);
+    if (hPage) pages.push_back(hPage);
 
     // 2: Desktop
     psp[2].dwSize = sizeof(PROPSHEETPAGEW);
@@ -181,7 +185,8 @@ void ShowTaskbarProperties(HWND hwndOwner) {
     psp[2].pszTemplate = MAKEINTRESOURCEW(IDD_DESKTOP_PROPS);
     psp[2].pfnDlgProc = GenericPageDlgProc;
     psp[2].pszTitle = L"Desktop";
-    pages.push_back(CreatePropertySheetPageW(&psp[2]));
+    hPage = CreatePropertySheetPageW(&psp[2]);
+    if (hPage) pages.push_back(hPage);
 
     // 3: Toolbars
     psp[3].dwSize = sizeof(PROPSHEETPAGEW);
@@ -190,7 +195,8 @@ void ShowTaskbarProperties(HWND hwndOwner) {
     psp[3].pszTemplate = MAKEINTRESOURCEW(IDD_TOOLBARS_PROPS);
     psp[3].pfnDlgProc = ToolbarsSettingsDlgProc;
     psp[3].pszTitle = L"Toolbars";
-    pages.push_back(CreatePropertySheetPageW(&psp[3]));
+    hPage = CreatePropertySheetPageW(&psp[3]);
+    if (hPage) pages.push_back(hPage);
 
     // Authentication
     bool showDebugTabs = false;
@@ -214,7 +220,8 @@ void ShowTaskbarProperties(HWND hwndOwner) {
         psp[4].pszTemplate = MAKEINTRESOURCEW(IDD_SECRET_EVERYTHING);
         psp[4].pfnDlgProc = GenericPageDlgProc;
         psp[4].pszTitle = L"Everything Indexer";
-        pages.push_back(CreatePropertySheetPageW(&psp[4]));
+        hPage = CreatePropertySheetPageW(&psp[4]);
+        if (hPage) pages.push_back(hPage);
 
         psp[5].dwSize = sizeof(PROPSHEETPAGEW);
         psp[5].dwFlags = PSP_USETITLE;
@@ -222,7 +229,8 @@ void ShowTaskbarProperties(HWND hwndOwner) {
         psp[5].pszTemplate = MAKEINTRESOURCEW(IDD_SECRET_DLLSCANNER);
         psp[5].pfnDlgProc = GenericPageDlgProc;
         psp[5].pszTitle = L"DLL Scanner";
-        pages.push_back(CreatePropertySheetPageW(&psp[5]));
+        hPage = CreatePropertySheetPageW(&psp[5]);
+        if (hPage) pages.push_back(hPage);
     }
 
     // Determine starting tab
@@ -230,6 +238,11 @@ void ShowTaskbarProperties(HWND hwndOwner) {
     if (wcsstr(cmdLine, L"/tab:startmenu")) startPage = 1;
     else if (wcsstr(cmdLine, L"/tab:desktop")) startPage = 2;
     else if (wcsstr(cmdLine, L"/tab:toolbars")) startPage = 3;
+
+    if (pages.empty()) {
+        MessageBoxW(hwndOwner, L"Failed to load any property sheet pages.", L"Error", MB_ICONERROR);
+        return;
+    }
 
     PROPSHEETHEADERW psh = { sizeof(PROPSHEETHEADERW) };
     psh.dwFlags = PSH_PROPTITLE | PSH_USEICONID;
