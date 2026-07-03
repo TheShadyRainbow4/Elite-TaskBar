@@ -17,13 +17,13 @@ EliteTaskbarConfig g_Config;
 
 void QueryOperationalMode() {
     HKEY hKey;
-    LSTATUS status = RegOpenKeyExW(HKEY_CURRENT_USER, L"Software\\EliteSoftware\\EliteTaskbar", 0, KEY_READ, &hKey);
+    LSTATUS status = RegOpenKeyExW(HKEY_CURRENT_USER, L"Software\\EliteSoftware\\Win32Explorer\\Advanced", 0, KEY_READ, &hKey);
     g_Config.Mode = TaskbarMode::Independent; // Default
     if (status == ERROR_SUCCESS) {
-        wchar_t modeBuffer[256];
-        DWORD bufferSize = sizeof(modeBuffer);
-        if (RegQueryValueExW(hKey, L"Mode", NULL, NULL, (LPBYTE)modeBuffer, &bufferSize) == ERROR_SUCCESS) {
-            if (wcscmp(modeBuffer, L"Replace") == 0) {
+        DWORD dwValue = 0;
+        DWORD bufferSize = sizeof(DWORD);
+        if (RegQueryValueExW(hKey, L"TaskbarMode", NULL, NULL, (LPBYTE)&dwValue, &bufferSize) == ERROR_SUCCESS) {
+            if (dwValue == 1) {
                 g_Config.Mode = TaskbarMode::Replace;
             }
         }

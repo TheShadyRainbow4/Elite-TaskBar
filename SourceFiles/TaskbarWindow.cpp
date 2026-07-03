@@ -4,6 +4,7 @@
 #include "TaskbarProperties.h"
 #include "Logger.h"
 #include "resource.h"
+#include "Config.h"
 #include <dwmapi.h>
 #include <windowsx.h>
 #include <uxtheme.h>
@@ -588,6 +589,25 @@ LRESULT CALLBACK WindowProc(HWND hwnd, UINT uMsg, WPARAM wParam, LPARAM lParam) 
             PostMessageW(hwnd, WM_COMMAND, MAKEWPARAM(cmd, 0), 0);
         }
         DestroyMenu(hMenu);
+        return 0;
+    }
+    case WM_SETTINGCHANGE: {
+        if (lParam && wcscmp((LPCWSTR)lParam, L"TraySettings") == 0) {
+            HKEY hKey;
+            if (RegOpenKeyExW(HKEY_CURRENT_USER, L"Software\\EliteSoftware\\Win32Explorer\\Advanced", 0, KEY_READ, &hKey) == ERROR_SUCCESS) {
+                DWORD dwValue = 0;
+                DWORD cbData = sizeof(DWORD);
+                if (RegQueryValueExW(hKey, L"TaskbarMode", NULL, NULL, (LPBYTE)&dwValue, &cbData) == ERROR_SUCCESS) {
+                    bool newIsReplace = (dwValue == 1);
+                    bool oldIsReplace = (g_Config.Mode == TaskbarMode::Replace);
+                    if (newIsReplace != oldIsReplace) {
+                        PostMessageW(hwnd, WM_COMMAND, IDM_RESTART_SHELL, 0);
+                    }
+                }
+                RegCloseKey(hKey);
+            }
+            InvalidateRect(hwnd, NULL, TRUE);
+        }
         return 0;
     }
     case WM_DESTROY:

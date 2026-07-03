@@ -12,8 +12,10 @@ All notable changes to this project will be documented in this file.
   - Re-implemented `CascadeWindows` and `TileWindows` directly using the user32 API for manual cascading and tiling.
   - Implemented a custom Native Windows Property Sheet using `PropertySheetW` and `PROPSHEETHEADER` to provide our own "Taskbar Properties" dialog when requested, setting the groundwork for managing custom features while remaining faithful to the tabbed applet look.
   - Linked `comctl32.lib` into the build process for standard common controls.
-- **Context Menu 'Run...' Option**: Added a dedicated "Run..." button to the taskbar context menu using ID `3009`. It delegates to the native `ID_SHELL_CMD_RUN` (401) or falls back to invoking the Run dialog CLSID `Shell:::{2559a1f3-21d7-11d4-bdaf-00c04f60b9f0}` in standalone mode.
+- **Context Menu 'Run...' Option**: Added a dedicated "Run..." button to the taskbar context menu using ID `3009`. It perfectly matches native behavior by delegating to the native `ID_SHELL_CMD_RUN` (401) or by falling back to dynamically invoking the undocumented `RunFileDlg` from `shell32.dll` ordinal 61 in standalone mode. Added a WH_CBT hook to forcefully center this dialog on the screen during invocation to prevent weird spawn coordinates.
 - **Properties Override**: Fixed the context menu so that the "Properties" button unconditionally opens our newly implemented custom Property Sheet tabbed applet instead of incorrectly triggering the modern Windows "Run" dialog.
+- **Dynamic Property Sheets**: Reconstructed the Custom Taskbar Properties dialog to strictly adhere to the `CreatePropertySheetPageW` and `PropertySheetW` API flow requested in the Master Ledger. It now dynamically injects tabs for Taskbar, Start Menu, Desktop, and Toolbars.
+- **Secret Debug Tabs**: Implemented registry checks (`HKCU\Software\EliteSoftware\Win32Explorer\Advanced`) and command-line switches (`/devmode`) to dynamically authenticate and inject hidden "Everything Indexer" and "DLL Scanner" property tabs when authorized.
 
 ## [1.1.0.0] - 2026-07-02
 ### Added
