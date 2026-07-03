@@ -1,0 +1,8 @@
+Title:      EliteSoftware Custom Taskbar Shell
+File Name:  EliteTaskbar.exe
+Authors:    EliteSoftware | Zachary Whiteman | Susan Gemm | TheShadyRainbow4
+Company:    EliteSoftware Tech Co.
+Copywrite:  2026 EliteSoftware 
+License:    EliteSoftware Public License (Freely Open Source!)
+Website:    https://main.elitesoftwaretech.cc
+OS:         Windows Vista+
