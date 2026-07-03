@@ -4,11 +4,8 @@ Backups/
 
 \BuildOutput/ReactOS-Source-Shell
 \BuildOutput/Clipboard.txt
-\EverythingSDK-Source
-\Open-Shell-Menu-Source
-\Elite-EasySigner
-Elite-EasySigner
-ExplorerPatcher-Source
-EverythingSDK-Source
-Elite-EasySigner
-tasklist.txt
+Elite-EasySigner/
+EverythingSDK-Source/
+ExplorerPatcher-Source/
+Open-Shell-Menu-Source/
+ReactOS-Source-Shell/

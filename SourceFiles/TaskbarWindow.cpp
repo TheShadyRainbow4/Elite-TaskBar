@@ -327,11 +327,21 @@ LRESULT CALLBACK TaskSwitchSubclassProc(HWND hWnd, UINT uMsg, WPARAM wParam, LPA
 }
 
 void AddTaskButton(TaskButtonInfo& btn);
+HMONITOR GetActualWindowMonitor(HWND hwnd) {
+    if (!hwnd || !IsWindow(hwnd)) return NULL;
+    WINDOWPLACEMENT wp = { sizeof(WINDOWPLACEMENT) };
+    if (GetWindowPlacement(hwnd, &wp)) {
+        if (wp.showCmd == SW_SHOWMINIMIZED) {
+            return MonitorFromRect(&wp.rcNormalPosition, MONITOR_DEFAULTTONEAREST);
+        }
+    }
+    return MonitorFromWindow(hwnd, MONITOR_DEFAULTTONEAREST);
+}
 
 void SyncTaskbarButtonsAcrossMonitors() {
     for (auto* inst : g_Taskbars) {
         if (!inst->hTaskSwitch) continue;
-        HMONITOR hTaskbarMonitor = MonitorFromWindow(inst->hTaskbar, MONITOR_DEFAULTTONULL);
+        HMONITOR hTaskbarMonitor = MonitorFromWindow(inst->hTaskbar, MONITOR_DEFAULTTONEAREST);
         
         int count = SendMessageW(inst->hTaskSwitch, TB_BUTTONCOUNT, 0, 0);
         for (int i = count - 1; i >= 0; i--) {
@@ -339,7 +349,7 @@ void SyncTaskbarButtonsAcrossMonitors() {
             SendMessageW(inst->hTaskSwitch, TB_GETBUTTON, i, (LPARAM)&tbb);
             HWND hwnd = (HWND)tbb.dwData;
             if (hwnd && IsWindow(hwnd)) {
-                HMONITOR hWindowMonitor = MonitorFromWindow(hwnd, MONITOR_DEFAULTTONULL);
+                HMONITOR hWindowMonitor = GetActualWindowMonitor(hwnd);
                 if (hWindowMonitor != hTaskbarMonitor && hWindowMonitor != NULL) {
                     SendMessageW(inst->hTaskSwitch, TB_DELETEBUTTON, i, 0);
                     
@@ -380,12 +390,12 @@ void SyncTaskbarButtonsAcrossMonitors() {
 }
 
 void AddTaskButton(TaskButtonInfo& btn) {
-    HMONITOR hWindowMonitor = MonitorFromWindow(btn.hwnd, MONITOR_DEFAULTTONULL);
+    HMONITOR hWindowMonitor = GetActualWindowMonitor(btn.hwnd);
     
     for (auto* inst : g_Taskbars) {
         if (!inst->hTaskSwitch) continue;
         
-        HMONITOR hTaskbarMonitor = MonitorFromWindow(inst->hTaskbar, MONITOR_DEFAULTTONULL);
+        HMONITOR hTaskbarMonitor = MonitorFromWindow(inst->hTaskbar, MONITOR_DEFAULTTONEAREST);
         if (hWindowMonitor != NULL && hWindowMonitor != hTaskbarMonitor) {
             continue;
         }
@@ -462,8 +472,8 @@ void SyncWindowsAcrossMonitors() {
             SendMessageW(inst->hTaskSwitch, TB_GETBUTTON, i, (LPARAM)&tbb);
             HWND hTarget = (HWND)tbb.dwData;
             if (hTarget && IsWindow(hTarget)) {
-                HMONITOR hWinMon = MonitorFromWindow(hTarget, MONITOR_DEFAULTTONULL);
-                HMONITOR hTaskbarMon = MonitorFromWindow(inst->hTaskbar, MONITOR_DEFAULTTONULL);
+                HMONITOR hWinMon = GetActualWindowMonitor(hTarget);
+                HMONITOR hTaskbarMon = MonitorFromWindow(inst->hTaskbar, MONITOR_DEFAULTTONEAREST);
                 if (hWinMon != hTaskbarMon && hWinMon != NULL) {
                     SendMessageW(inst->hTaskSwitch, TB_DELETEBUTTON, i, 0);
                     i--;
