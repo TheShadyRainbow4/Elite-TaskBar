@@ -37,6 +37,25 @@ UINT g_uTaskbarCreatedMsg = 0;
 OrbState g_orbState = OrbState::Normal;
 bool g_bOrbTrackingMouse = false;
 
+#include <vector>
+
+struct EliteTrayIcon {
+    HWND hWnd;
+    UINT uID;
+    UINT uCallbackMessage;
+    HICON hIcon;
+    WCHAR szTip[128];
+    DWORD dwState;
+};
+
+std::vector<EliteTrayIcon> g_TrayIcons;
+
+struct TRAYDATA {
+    DWORD dwSignature;
+    DWORD dwMessage;
+    NOTIFYICONDATAW nid;
+};
+
 LRESULT CALLBACK TrayNotifyProc(HWND hwnd, UINT uMsg, WPARAM wParam, LPARAM lParam) {
     switch (uMsg) {
     case WM_PRINTCLIENT:
@@ -53,7 +72,86 @@ LRESULT CALLBACK TrayNotifyProc(HWND hwnd, UINT uMsg, WPARAM wParam, LPARAM lPar
         RECT rcClient;
         GetClientRect(hwnd, &rcClient);
         DrawThemeParentBackground(hwnd, hdc, &rcClient);
+
+        int x = 2;
+        int y = (rcClient.bottom - rcClient.top - 16) / 2;
+        for (const auto& icon : g_TrayIcons) {
+            if (icon.hIcon && !(icon.dwState & NIS_HIDDEN)) {
+                DrawIconEx(hdc, x, y, icon.hIcon, 16, 16, 0, NULL, DI_NORMAL);
+                x += 24;
+            }
+        }
+
         EndPaint(hwnd, &ps);
+        return 0;
+    }
+    case WM_COPYDATA: {
+        COPYDATASTRUCT* pcds = (COPYDATASTRUCT*)lParam;
+        if (pcds->dwData == 1 && pcds->cbData >= 8) { // Tray notification
+            TRAYDATA* pTrayData = (TRAYDATA*)pcds->lpData;
+            if (pTrayData->dwSignature == 0x34753423) {
+                DWORD dwMessage = pTrayData->dwMessage;
+                NOTIFYICONDATAW* nid = (NOTIFYICONDATAW*)((BYTE*)pTrayData + 8);
+
+                if (dwMessage == NIM_ADD || dwMessage == NIM_MODIFY) {
+                    bool found = false;
+                    for (auto& icon : g_TrayIcons) {
+                        if (icon.hWnd == nid->hWnd && icon.uID == nid->uID) {
+                            if (nid->uFlags & NIF_ICON) icon.hIcon = CopyIcon(nid->hIcon);
+                            if (nid->uFlags & NIF_TIP) wcscpy_s(icon.szTip, nid->szTip);
+                            if (nid->uFlags & NIF_MESSAGE) icon.uCallbackMessage = nid->uCallbackMessage;
+                            if (nid->uFlags & NIF_STATE) icon.dwState = nid->dwState;
+                            found = true;
+                            break;
+                        }
+                    }
+                    if (!found && dwMessage == NIM_ADD) {
+                        EliteTrayIcon newIcon = {0};
+                        newIcon.hWnd = nid->hWnd;
+                        newIcon.uID = nid->uID;
+                        if (nid->uFlags & NIF_ICON) newIcon.hIcon = CopyIcon(nid->hIcon);
+                        if (nid->uFlags & NIF_TIP) wcscpy_s(newIcon.szTip, nid->szTip);
+                        if (nid->uFlags & NIF_MESSAGE) newIcon.uCallbackMessage = nid->uCallbackMessage;
+                        if (nid->uFlags & NIF_STATE) newIcon.dwState = nid->dwState;
+                        g_TrayIcons.push_back(newIcon);
+                    }
+                    InvalidateRect(hwnd, NULL, FALSE);
+                }
+                else if (dwMessage == NIM_DELETE) {
+                    for (auto it = g_TrayIcons.begin(); it != g_TrayIcons.end(); ++it) {
+                        if (it->hWnd == nid->hWnd && it->uID == nid->uID) {
+                            if (it->hIcon) DestroyIcon(it->hIcon);
+                            g_TrayIcons.erase(it);
+                            break;
+                        }
+                    }
+                    InvalidateRect(hwnd, NULL, FALSE);
+                }
+            }
+        }
+        return TRUE;
+    }
+    case WM_LBUTTONUP:
+    case WM_RBUTTONUP:
+    case WM_LBUTTONDOWN:
+    case WM_RBUTTONDOWN:
+    case WM_MOUSEMOVE:
+    case WM_LBUTTONDBLCLK:
+    case WM_RBUTTONDBLCLK: {
+        int xPos = GET_X_LPARAM(lParam);
+        int iconIndex = (xPos - 2) / 24;
+        if (iconIndex < 0) return 0;
+        
+        int current = 0;
+        for (const auto& icon : g_TrayIcons) {
+            if (icon.hIcon && !(icon.dwState & NIS_HIDDEN)) {
+                if (current == iconIndex) {
+                    PostMessageW(icon.hWnd, icon.uCallbackMessage, icon.uID, uMsg);
+                    break;
+                }
+                current++;
+            }
+        }
         return 0;
     }
     default:
@@ -431,6 +529,10 @@ bool TaskbarWindow::Initialize(HINSTANCE hInstance) {
     StartButton::Initialize(hInstance, g_hTaskbar);
     StartButton::SetOrbImageFromResource(hInstance, IDB_START_ORB);
     StartButton::Show(xPos, yPos, taskbarHeight);
+
+    if (g_uTaskbarCreatedMsg != 0) {
+        PostMessageW(HWND_BROADCAST, g_uTaskbarCreatedMsg, 0, 0);
+    }
 
     return true;
 }
