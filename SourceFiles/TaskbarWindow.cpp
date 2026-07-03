@@ -391,6 +391,20 @@ LRESULT CALLBACK WindowProc(HWND hwnd, UINT uMsg, WPARAM wParam, LPARAM lParam) 
             case IDM_TASKBAR_TASKMGR:
                 ShellExecuteW(NULL, L"open", L"taskmgr.exe", NULL, NULL, SW_SHOWNORMAL);
                 break;
+            case IDM_TASKBAR_LOCK: {
+                HKEY hKey;
+                if (RegOpenKeyExW(HKEY_CURRENT_USER, L"Software\\Microsoft\\Windows\\CurrentVersion\\Explorer\\Advanced", 0, KEY_READ | KEY_WRITE, &hKey) == ERROR_SUCCESS) {
+                    DWORD dwValue = 0;
+                    DWORD cbData = sizeof(DWORD);
+                    if (RegQueryValueExW(hKey, L"TaskbarSizeMove", NULL, NULL, (LPBYTE)&dwValue, &cbData) == ERROR_SUCCESS) {
+                        DWORD newValue = (dwValue == 1) ? 0 : 1;
+                        RegSetValueExW(hKey, L"TaskbarSizeMove", 0, REG_DWORD, (const BYTE*)&newValue, sizeof(DWORD));
+                        SendMessageTimeoutW(HWND_BROADCAST, WM_SETTINGCHANGE, 0, (LPARAM)L"TraySettings", SMTO_ABORTIFHUNG, 5000, NULL);
+                    }
+                    RegCloseKey(hKey);
+                }
+                break;
+            }
             case IDM_EXIT_ELITETASKBAR:
                 SendMessageW(hwnd, WM_CLOSE, 0, 0);
                 break;
@@ -430,7 +444,19 @@ LRESULT CALLBACK WindowProc(HWND hwnd, UINT uMsg, WPARAM wParam, LPARAM lParam) 
             AppendMenuW(hMenu, MF_SEPARATOR, 0, NULL);
             AppendMenuW(hMenu, MF_STRING, IDM_TASKBAR_TASKMGR, L"Task Manager");
             AppendMenuW(hMenu, MF_SEPARATOR, 0, NULL);
-            AppendMenuW(hMenu, MF_STRING, IDM_TASKBAR_LOCK, L"Lock the taskbar");
+            
+            bool isLocked = true; // Default
+            HKEY hKey;
+            if (RegOpenKeyExW(HKEY_CURRENT_USER, L"Software\\Microsoft\\Windows\\CurrentVersion\\Explorer\\Advanced", 0, KEY_READ, &hKey) == ERROR_SUCCESS) {
+                DWORD dwValue = 0;
+                DWORD cbData = sizeof(DWORD);
+                if (RegQueryValueExW(hKey, L"TaskbarSizeMove", NULL, NULL, (LPBYTE)&dwValue, &cbData) == ERROR_SUCCESS) {
+                    isLocked = (dwValue == 0);
+                }
+                RegCloseKey(hKey);
+            }
+            
+            AppendMenuW(hMenu, MF_STRING | (isLocked ? MF_CHECKED : MF_UNCHECKED), IDM_TASKBAR_LOCK, L"Lock the taskbar");
             AppendMenuW(hMenu, MF_STRING, IDM_TASKBAR_PROPERTIES, L"Properties");
             AppendMenuW(hMenu, MF_SEPARATOR, 0, NULL);
             if (GetAsyncKeyState(VK_SHIFT) & 0x8000) {
@@ -468,6 +494,15 @@ bool TaskbarWindow::Initialize(HINSTANCE hInstance) {
     g_uTaskbarCreatedMsg = RegisterWindowMessageW(L"TaskbarCreated");
 
     int taskbarHeight = 40; // Default fallback
+    HKEY hKey;
+    if (RegOpenKeyExW(HKEY_CURRENT_USER, L"Software\\Microsoft\\Windows\\CurrentVersion\\Explorer\\Advanced", 0, KEY_READ, &hKey) == ERROR_SUCCESS) {
+        DWORD dwValue = 0;
+        DWORD cbData = sizeof(DWORD);
+        if (RegQueryValueExW(hKey, L"TaskbarSmallIcons", NULL, NULL, (LPBYTE)&dwValue, &cbData) == ERROR_SUCCESS) {
+            taskbarHeight = (dwValue == 1) ? 30 : 40;
+        }
+        RegCloseKey(hKey);
+    }
 
     // Hide native taskbar if in Replace mode and grab its height to respect user settings (Small/Large)
     g_hNativeTaskbar = FindWindowW(L"Shell_TrayWnd", NULL);
@@ -607,7 +642,9 @@ void TaskbarWindow::Cleanup() {
         SHAppBarMessage(ABM_REMOVE, &abd);
     }
     
-    if (g_hNativeTaskbar) {
+    if (g_hNativeTaskbar && IsWindow(g_hNativeTaskbar)) {
         ShowWindow(g_hNativeTaskbar, SW_SHOW);
+    } else {
+        ShellExecuteW(NULL, L"open", L"explorer.exe", NULL, NULL, SW_SHOWNORMAL);
     }
 }
