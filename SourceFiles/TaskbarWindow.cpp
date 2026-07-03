@@ -42,27 +42,22 @@ interface Win32Clock {
 };
 
 BOOL ShowLegacyClockExperience(HWND hWnd) {
-    if (!hWnd) return FALSE;
-    HRESULT hr = S_OK;
-    Win32Clock* pWin32Clock = NULL;
-    hr = CoCreateInstance(
-        GUID_Win32Clock,
-        NULL,
-        CLSCTX_ALL,
-        IID_Win32Clock,
-        (void**)&pWin32Clock
-    );
-    if (SUCCEEDED(hr)) {
-        RECT rc;
-        GetWindowRect(hWnd, &rc);
-        pWin32Clock->lpVtbl->ShowWin32Clock(pWin32Clock, hWnd, &rc);
-        pWin32Clock->lpVtbl->Release(pWin32Clock);
-        return TRUE;
-    } else {
-        wchar_t buf[256];
-        swprintf_s(buf, L"CoCreateInstance for Win32Clock failed with HRESULT: 0x%08X", hr);
-        Logger::Log(buf);
+    // Because we are an overlay and not a full shell replacement, the native taskbar is still running underneath.
+    // We can simply find the native clock window and send it a click to natively trigger the flyout!
+    HWND hwndTray = FindWindowW(L"Shell_TrayWnd", NULL);
+    if (hwndTray) {
+        HWND hwndNotify = FindWindowExW(hwndTray, NULL, L"TrayNotifyWnd", NULL);
+        if (hwndNotify) {
+            HWND hwndClock = FindWindowExW(hwndNotify, NULL, L"TrayClockWClass", NULL);
+            if (hwndClock) {
+                PostMessageW(hwndClock, WM_LBUTTONDOWN, MK_LBUTTON, MAKELPARAM(5, 5));
+                PostMessageW(hwndClock, WM_LBUTTONUP, 0, MAKELPARAM(5, 5));
+                return TRUE;
+            }
+        }
     }
+    
+    Logger::Log(L"Failed to find native TrayClockWClass. Cannot summon flyout.");
     return FALSE;
 }
 
