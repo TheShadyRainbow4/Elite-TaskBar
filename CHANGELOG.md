@@ -3,6 +3,12 @@
 All notable changes to this project will be documented in this file.
 
 ## [Unreleased]
+### [1.2.0.0] - 2026-07-02
+### Changed
+- **Build System**: Updated `build.ps1` to detect and dynamically copy `EliteTaskbar.ico` from the project root into the `Resources` folder before compilation. This ensures the executable always bakes in the most recent custom icon without manual intervention, while still producing the final binary in both the root and `BuildOutput` folders.
+- **Context Menus**: Rewrote taskbar context menu routing (Cascade, Stacked, Side-by-Side, Show Desktop, Task Manager, Properties, Lock Taskbar). Instead of attempting to emulate these behaviors with raw Win32 API calls (`CascadeWindows`, `TileWindows`, etc.) which fail under restricted standard user contexts, the UI now flawlessly routes the raw undocumented Shell Command IDs (e.g., `410`, `401`, `405`) directly to the hidden native taskbar (`Shell_TrayWnd`) via `PostMessageW`. This delegates the heavy lifting entirely to the native shell, ensuring perfect OS-level functionality.
+
+## [1.1.0.0] - 2026-07-02
 ### Added
 - Initial project structure created.
 - Added `README.md` and `CHANGELOG.md`.

@@ -83,4 +83,36 @@ Expect the unexpected. Embrace the chaos. And have fun!
 
 --- 
 
-No newline at end of file
+## **🚀 Elite-Taskbar Deep Dive & Features**
+
+### 🖼️ Core Features & Capabilities
+Elite-Taskbar is designed from the ground up to seamlessly blend into the Windows environment, providing a perfect legacy Aero Glass experience while retaining 100% of the functionality expected from the Windows Shell.
+
+*   **Aero Glass Rendering**: Utilizes `DwmEnableBlurBehindWindow` and `DrawThemeBackground` to draw pixel-perfect Windows 7 style glass taskbars.
+*   **Orb Overlays**: Features a mathematically perfect Layered Window (`WS_EX_LAYERED`) start button orb that supports 3-state hover animations (Normal, Hover, Pressed) utilizing raw `Gdiplus` for per-pixel alpha.
+*   **Intelligent Context Menus**: The taskbar respects the Windows standard context menus. Rather than attempting to "fake" window cascading or tiling, Elite-Taskbar routes raw, undocumented Shell Command IDs directly to the native (hidden) taskbar. This guarantees 100% stable execution of features like:
+    *   Cascade Windows (`ID 410`)
+    *   Show Windows Stacked (`ID 409`)
+    *   Show Windows Side by Side (`ID 408`)
+    *   Show Desktop (`ID 407`)
+    *   Task Manager (`ID 405`)
+    *   Lock Taskbar (`ID 404`)
+    *   Properties (`ID 401`)
+*   **Robust Tray Clock**: The clock uses the `BeginBufferedPaint` API to draw composited, glowing white text directly onto the Aero Glass frame. It also includes an ironclad fallback mechanism for Standard User environments (or environments hooked by software like Windhawk) falling back to raw GDI `DrawTextW` if the DWM buffer fails, guaranteeing the time is *always* visible.
+*   **Native Flyout Integration**: Clicking the clock summons the *actual* Windows Calendar flyout by locating the native `TrayClockWClass` and firing synthetic mouse clicks at it, bridging the gap between the custom shell and native components.
+
+### 🏗️ Build Automation & Icon Injection
+The project is powered by an advanced PowerShell build script (`build.ps1`) that orchestrates the entire compilation pipeline using the Visual Studio `cl.exe` MSVC compiler.
+
+1.  **Icon Refresh**: The build script dynamically checks the project root for `EliteTaskbar.ico`. If found, it injects it directly into the `Resources` folder right before compilation, guaranteeing that the final executable always reflects the latest brand icon.
+2.  **Resource Compilation**: `rc.exe` builds the `.rc` files into `.res` objects, embedding the icons and manifest into the binary.
+3.  **Dual Deployment**: The final `EliteTaskbar.exe` is deployed both to the `BuildOutput/` directory and directly to the root project directory for immediate testing.
+4.  **Auto-Commits**: Upon a successful compilation, the script automatically stages, commits, and pushes the new binaries and source code to the configured Git repository.
+
+### 📜 Architecture Principles
+Elite-Taskbar strictly follows the EliteSoftwareTech Co. development guidelines:
+*   **No Generic UI**: Avoids modern flat design entirely.
+*   **DPI Awareness**: Manifests ensure `PerMonitorV2` DPI scaling.
+*   **Topmost Z-Order**: Binds to the system with `APPBARDATA` to secure its place on the desktop workspace without being obscured by maximized windows.
+
+For an exhaustive breakdown of individual C++ files and their specific responsibilities, see `Documentation/SourceMap_And_Architecture.md`.

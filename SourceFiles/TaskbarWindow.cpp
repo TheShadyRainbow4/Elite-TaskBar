@@ -416,39 +416,40 @@ LRESULT CALLBACK WindowProc(HWND hwnd, UINT uMsg, WPARAM wParam, LPARAM lParam) 
         int wmId = LOWORD(wParam);
         switch (wmId) {
             case IDM_TASKBAR_CASCADE:
-                CascadeWindows(NULL, MDITILE_ZORDER, NULL, 0, NULL);
+                if (g_hNativeTaskbar) PostMessageW(g_hNativeTaskbar, WM_COMMAND, 410, 0); // ID_SHELL_CMD_CASCADE_WND
                 break;
             case IDM_TASKBAR_STACKED:
-                TileWindows(NULL, MDITILE_HORIZONTAL, NULL, 0, NULL);
+                if (g_hNativeTaskbar) PostMessageW(g_hNativeTaskbar, WM_COMMAND, 409, 0); // ID_SHELL_CMD_TILE_WND_H
                 break;
             case IDM_TASKBAR_SIDEBYSIDE:
-                TileWindows(NULL, MDITILE_VERTICAL, NULL, 0, NULL);
+                if (g_hNativeTaskbar) PostMessageW(g_hNativeTaskbar, WM_COMMAND, 408, 0); // ID_SHELL_CMD_TILE_WND_V
                 break;
             case IDM_TASKBAR_SHOWDESKTOP:
-                keybd_event(VK_LWIN, 0, 0, 0);
-                keybd_event('D', 0, 0, 0);
-                keybd_event('D', 0, KEYEVENTF_KEYUP, 0);
-                keybd_event(VK_LWIN, 0, KEYEVENTF_KEYUP, 0);
+                if (g_hNativeTaskbar) PostMessageW(g_hNativeTaskbar, WM_COMMAND, 407, 0); // ID_SHELL_CMD_SHOW_DESKTOP
                 break;
             case IDM_TASKBAR_TASKMGR:
-                ShellExecuteW(NULL, NULL, L"taskmgr.exe", NULL, NULL, SW_SHOWNORMAL);
+                if (g_hNativeTaskbar) PostMessageW(g_hNativeTaskbar, WM_COMMAND, 405, 0); // ID_SHELL_CMD_OPEN_TASKMGR
+                else ShellExecuteW(hwnd, L"open", L"taskmgr.exe", NULL, NULL, SW_SHOWNORMAL);
                 break;
-            case IDM_TASKBAR_LOCK: {
-                HKEY hKey;
-                if (RegOpenKeyExW(HKEY_CURRENT_USER, L"Software\\Microsoft\\Windows\\CurrentVersion\\Explorer\\Advanced", 0, KEY_READ | KEY_WRITE, &hKey) == ERROR_SUCCESS) {
-                    DWORD dwValue = 0;
-                    DWORD cbData = sizeof(DWORD);
-                    if (RegQueryValueExW(hKey, L"TaskbarSizeMove", NULL, NULL, (LPBYTE)&dwValue, &cbData) == ERROR_SUCCESS) {
-                        DWORD newValue = (dwValue == 1) ? 0 : 1;
-                        RegSetValueExW(hKey, L"TaskbarSizeMove", 0, REG_DWORD, (const BYTE*)&newValue, sizeof(DWORD));
-                        SendMessageTimeoutW(HWND_BROADCAST, WM_SETTINGCHANGE, 0, (LPARAM)L"TraySettings", SMTO_ABORTIFHUNG, 5000, NULL);
+            case IDM_TASKBAR_LOCK:
+                if (g_hNativeTaskbar) PostMessageW(g_hNativeTaskbar, WM_COMMAND, 404 /* ID_LOCKTASKBAR */, 0);
+                else {
+                    HKEY hKey;
+                    if (RegOpenKeyExW(HKEY_CURRENT_USER, L"Software\\Microsoft\\Windows\\CurrentVersion\\Explorer\\Advanced", 0, KEY_READ | KEY_WRITE, &hKey) == ERROR_SUCCESS) {
+                        DWORD dwValue = 0;
+                        DWORD cbData = sizeof(DWORD);
+                        if (RegQueryValueExW(hKey, L"TaskbarSizeMove", NULL, NULL, (LPBYTE)&dwValue, &cbData) == ERROR_SUCCESS) {
+                            DWORD newValue = (dwValue == 1) ? 0 : 1;
+                            RegSetValueExW(hKey, L"TaskbarSizeMove", 0, REG_DWORD, (const BYTE*)&newValue, sizeof(DWORD));
+                            SendMessageTimeoutW(HWND_BROADCAST, WM_SETTINGCHANGE, 0, (LPARAM)L"TraySettings", SMTO_ABORTIFHUNG, 5000, NULL);
+                        }
+                        RegCloseKey(hKey);
                     }
-                    RegCloseKey(hKey);
                 }
                 break;
-            }
             case IDM_TASKBAR_PROPERTIES:
-                ShellExecuteW(NULL, NULL, L"rundll32.exe", L"shell32.dll,Options_RunDLL 1", NULL, SW_SHOWNORMAL);
+                if (g_hNativeTaskbar) PostMessageW(g_hNativeTaskbar, WM_COMMAND, 401, 0); // ID_SHELL_CMD_PROPERTIES
+                else ShellExecuteW(hwnd, L"open", L"rundll32.exe", L"shell32.dll,Options_RunDLL 1", NULL, SW_SHOWNORMAL);
                 break;
             case IDM_EXIT_ELITETASKBAR:
                 SendMessageW(hwnd, WM_CLOSE, 0, 0);

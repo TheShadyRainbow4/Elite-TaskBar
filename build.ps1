@@ -55,6 +55,16 @@ $vsDevCmd = Join-Path $vsPath "Common7\Tools\VsDevCmd.bat"
 $compileCmd64 = "cl.exe /EHsc /Zi /MTd /D_DEBUG /Fe`"$BuildDir\EliteTaskbar.exe`" `"$SourceDir\main.cpp`" `"$SourceDir\Logger.cpp`" `"$SourceDir\TaskbarWindow.cpp`" `"$SourceDir\StartButton.cpp`" `"$SourceDir\ClockWidget.cpp`" `"$BuildDir\resources.res`" user32.lib advapi32.lib shell32.lib gdi32.lib dwmapi.lib comctl32.lib gdiplus.lib ole32.lib uxtheme.lib /link /MANIFEST:EMBED /MANIFESTINPUT:`"$SourceDir\app.manifest`""
 $compileCmd86 = "cl.exe /EHsc /Zi /MTd /D_DEBUG /Fe`"$BuildDirx86\EliteTaskbar_x86.exe`" `"$SourceDir\main.cpp`" `"$SourceDir\Logger.cpp`" `"$SourceDir\TaskbarWindow.cpp`" `"$SourceDir\StartButton.cpp`" `"$SourceDir\ClockWidget.cpp`" `"$BuildDirx86\resources.res`" user32.lib advapi32.lib shell32.lib gdi32.lib dwmapi.lib comctl32.lib gdiplus.lib ole32.lib uxtheme.lib /link /MANIFEST:EMBED /MANIFESTINPUT:`"$SourceDir\app.manifest`""
 
+# Ensure fresh copy of the .ico file based on executable name (EliteTaskbar.ico)
+$rootIconPath = Join-Path $ScriptDir "EliteTaskbar.ico"
+$targetIconPath = Join-Path $ResourcesDir "elite_icon.ico"
+if (Test-Path $rootIconPath) {
+    Write-Host "Found EliteTaskbar.ico in root. Copying to Resources to bake into the executable..." -ForegroundColor Yellow
+    Copy-Item $rootIconPath -Destination $targetIconPath -Force
+} else {
+    Write-Host "No EliteTaskbar.ico found in root. Using existing icon in Resources." -ForegroundColor DarkGray
+}
+
 Write-Host "Compiling x64 Resources and C++..." -ForegroundColor Cyan
 cmd.exe /c "cd /d `"$BuildDir`" && call `"$vsDevCmd`" -arch=x64 && rc.exe /fo `"$BuildDir\resources.res`" `"$SourceDir\resources.rc`" && $compileCmd64"
 $exit64 = $LASTEXITCODE

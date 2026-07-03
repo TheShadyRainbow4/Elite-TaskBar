@@ -30,7 +30,7 @@ The application is structured into discrete components, each managing a specific
   - **`TaskbarWindowProc`**: 
     - Handles core painting (`DrawThemeBackground`) for the glass surface.
     - Captures right-clicks (`WM_RBUTTONUP`) and spawns the legacy-style context menu for cascading windows, task manager, properties, etc.
-    - Handles `WM_COMMAND` to execute the right-click menu commands via standard Windows APIs (`ShellExecuteW`, `CascadeWindows`, etc.).
+    - Handles `WM_COMMAND` to execute the right-click menu commands by routing native undocumented Shell Command IDs (e.g. `410` for Cascade, `401` for Properties) directly to the native `Shell_TrayWnd` via `PostMessageW`. This delegates the heavy lifting to the OS for flawless standard-user execution.
   - **`TrayClockProc`**: Manages the clock drawing. Uses `BeginBufferedPaint` and `DrawThemeTextEx` to draw glowing white text over Aero Glass. Includes a rigorous GDI fallback (`DrawTextW`) if BufferedPaint fails in restricted environments (like standard user accounts injected by Windhawk).
   - **`ShowLegacyClockExperience`**: A complex COM/Window-Hook hack that finds the native (hidden) taskbar's clock and sends synthetic mouse clicks to it in order to natively summon the Windows Calendar flyout.
 
