@@ -32,3 +32,4 @@ All notable changes to this project will be documented in this file.
 - Built an absolute GDI rendering fallback into `TrayClockProc` so the clock remains fully visible if `BeginBufferedPaint` fails entirely when running in restricted environments or via Windhawk injection.
 - Fully implemented missing Context Menu commands (`IDM_TASKBAR_CASCADE`, `IDM_TASKBAR_STACKED`, `IDM_TASKBAR_SIDEBYSIDE`, `IDM_TASKBAR_SHOWDESKTOP`) utilizing standard Windows APIs.
 - Updated Context Menu `ShellExecuteW` calls to default verbs to ensure UAC elevations function correctly for standard users attempting to launch `taskmgr.exe` or `rundll32.exe`.
+- Created comprehensive `Documentation/SourceMap_And_Architecture.md` providing a detailed breakdown of all source files, their purposes, and the overall lifecycle of the taskbar shell extension.
