@@ -119,6 +119,21 @@ LRESULT CALLBACK TrayClockProc(HWND hwnd, UINT uMsg, WPARAM wParam, LPARAM lPara
         EndPaint(hwnd, &ps);
         return 0;
     }
+    case WM_LBUTTONDBLCLK: {
+        ShellExecuteW(NULL, L"open", L"control", L"timedate.cpl", NULL, SW_SHOWNORMAL);
+        return 0;
+    }
+    case WM_LBUTTONDOWN: {
+        INPUT inputs[6] = {0};
+        inputs[0].type = INPUT_KEYBOARD; inputs[0].ki.wVk = VK_LWIN;
+        inputs[1].type = INPUT_KEYBOARD; inputs[1].ki.wVk = VK_MENU; // Alt
+        inputs[2].type = INPUT_KEYBOARD; inputs[2].ki.wVk = 'D';
+        inputs[3].type = INPUT_KEYBOARD; inputs[3].ki.wVk = 'D'; inputs[3].ki.dwFlags = KEYEVENTF_KEYUP;
+        inputs[4].type = INPUT_KEYBOARD; inputs[4].ki.wVk = VK_MENU; inputs[4].ki.dwFlags = KEYEVENTF_KEYUP;
+        inputs[5].type = INPUT_KEYBOARD; inputs[5].ki.wVk = VK_LWIN; inputs[5].ki.dwFlags = KEYEVENTF_KEYUP;
+        SendInput(6, inputs, sizeof(INPUT));
+        return 0;
+    }
     case WM_DESTROY:
         KillTimer(hwnd, 1);
         return 0;
@@ -347,10 +362,12 @@ bool TaskbarWindow::Initialize(HINSTANCE hInstance) {
     wcChild.lpszClassName = L"TrayNotifyWnd";
     RegisterClassExW(&wcChild);
 
+    wcChild.style = CS_DBLCLKS;
     wcChild.lpfnWndProc = TrayClockProc;
     wcChild.lpszClassName = L"TrayClockWClass";
     RegisterClassExW(&wcChild);
 
+    wcChild.style = 0;
     wcChild.lpfnWndProc = TrayShowDesktopButtonProc;
     wcChild.lpszClassName = L"TrayShowDesktopButtonWClass";
     RegisterClassExW(&wcChild);

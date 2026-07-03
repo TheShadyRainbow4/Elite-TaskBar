@@ -14,6 +14,13 @@ if (Test-Path $BackupScript) {
     Write-Warning "Backup script not found. Skipping backup."
 }
 
+Write-Host "========================================================" -ForegroundColor Magenta
+$metaFile = Join-Path $ScriptDir "Build_MetaData.txt"
+if (Test-Path $metaFile) {
+    Get-Content $metaFile | Write-Host -ForegroundColor Cyan
+}
+Write-Host "========================================================" -ForegroundColor Magenta
+
 Write-Host "Starting build process for Elite-TaskBar..." -ForegroundColor Cyan
 
 # Define directories
@@ -21,9 +28,13 @@ $SourceDir = Join-Path $ScriptDir "SourceFiles"
 $ResourcesDir = Join-Path $ScriptDir "Resources"
 $OutputDir = $ScriptDir
 $BuildDir = Join-Path $ScriptDir "BuildOutput"
+$BuildDirx86 = Join-Path $BuildDir "x86"
 
 if (-not (Test-Path $BuildDir)) {
     New-Item -ItemType Directory -Path $BuildDir | Out-Null
+}
+if (-not (Test-Path $BuildDirx86)) {
+    New-Item -ItemType Directory -Path $BuildDirx86 | Out-Null
 }
 
 # Validate SourceFiles exists
@@ -41,14 +52,18 @@ if (-not $vsPath) {
 }
 
 $vsDevCmd = Join-Path $vsPath "Common7\Tools\VsDevCmd.bat"
-$compileCmd = "cl.exe /EHsc /Zi /MTd /D_DEBUG /Fe`"$BuildDir\EliteTaskbar.exe`" `"$SourceDir\main.cpp`" `"$SourceDir\Logger.cpp`" `"$SourceDir\TaskbarWindow.cpp`" `"$SourceDir\StartButton.cpp`" `"$SourceDir\ClockWidget.cpp`" `"$BuildDir\resources.res`" user32.lib advapi32.lib shell32.lib gdi32.lib dwmapi.lib comctl32.lib gdiplus.lib ole32.lib uxtheme.lib /link /MANIFEST:EMBED /MANIFESTINPUT:`"$SourceDir\app.manifest`""
+$compileCmd64 = "cl.exe /EHsc /Zi /MTd /D_DEBUG /Fe`"$BuildDir\EliteTaskbar.exe`" `"$SourceDir\main.cpp`" `"$SourceDir\Logger.cpp`" `"$SourceDir\TaskbarWindow.cpp`" `"$SourceDir\StartButton.cpp`" `"$SourceDir\ClockWidget.cpp`" `"$BuildDir\resources.res`" user32.lib advapi32.lib shell32.lib gdi32.lib dwmapi.lib comctl32.lib gdiplus.lib ole32.lib uxtheme.lib /link /MANIFEST:EMBED /MANIFESTINPUT:`"$SourceDir\app.manifest`""
+$compileCmd86 = "cl.exe /EHsc /Zi /MTd /D_DEBUG /Fe`"$BuildDirx86\EliteTaskbar_x86.exe`" `"$SourceDir\main.cpp`" `"$SourceDir\Logger.cpp`" `"$SourceDir\TaskbarWindow.cpp`" `"$SourceDir\StartButton.cpp`" `"$SourceDir\ClockWidget.cpp`" `"$BuildDirx86\resources.res`" user32.lib advapi32.lib shell32.lib gdi32.lib dwmapi.lib comctl32.lib gdiplus.lib ole32.lib uxtheme.lib /link /MANIFEST:EMBED /MANIFESTINPUT:`"$SourceDir\app.manifest`""
 
-Write-Host "Compiling Resources..." -ForegroundColor Cyan
-cmd.exe /c "cd /d `"$BuildDir`" && call `"$vsDevCmd`" -arch=x64 && rc.exe /fo `"$BuildDir\resources.res`" `"$SourceDir\resources.rc`""
+Write-Host "Compiling x64 Resources and C++..." -ForegroundColor Cyan
+cmd.exe /c "cd /d `"$BuildDir`" && call `"$vsDevCmd`" -arch=x64 && rc.exe /fo `"$BuildDir\resources.res`" `"$SourceDir\resources.rc`" && $compileCmd64"
+$exit64 = $LASTEXITCODE
 
-Write-Host "Compiling C++ sources..." -ForegroundColor Cyan
-cmd.exe /c "cd /d `"$BuildDir`" && call `"$vsDevCmd`" -arch=x64 && $compileCmd"
-if ($LASTEXITCODE -ne 0) {
+Write-Host "Compiling x86 Resources and C++..." -ForegroundColor Cyan
+cmd.exe /c "cd /d `"$BuildDirx86`" && call `"$vsDevCmd`" -arch=x86 && rc.exe /fo `"$BuildDirx86\resources.res`" `"$SourceDir\resources.rc`" && $compileCmd86"
+$exit86 = $LASTEXITCODE
+
+if ($exit64 -ne 0 -or $exit86 -ne 0) {
     Write-Host "Build failed! Cleaning up recent backup..." -ForegroundColor Red
     $latestBackup = Get-ChildItem -Path (Join-Path $ScriptDir "Backups") -Filter *.cab | Sort-Object LastWriteTime -Descending | Select-Object -First 1
     if ($latestBackup -and (New-TimeSpan -Start $latestBackup.LastWriteTime -End (Get-Date)).TotalMinutes -lt 5) {
@@ -56,7 +71,7 @@ if ($LASTEXITCODE -ne 0) {
         Write-Host "Deleted backup ($($latestBackup.Name)) because the build failed." -ForegroundColor Yellow
     }
     Write-Error "Compilation failed!"
-    exit $LASTEXITCODE
+    exit 1
 }
 
 Write-Host "Build finished. Copying binaries to root..." -ForegroundColor Green
