@@ -14,7 +14,7 @@
 #pragma comment(lib, "shell32.lib")
 #pragma comment(lib, "comctl32.lib")
 
-EliteTaskbarConfig g_Config = { L"", TaskbarMode::Independent, ButtonWidthMode::Auto, false, false, {} };
+EliteTaskbarConfig g_Config = { L"", TaskbarMode::Independent, ButtonWidthMode::Auto, false, {} };
 
 void QueryOperationalMode() {
     HKEY hKey;
@@ -48,11 +48,6 @@ void QueryOperationalMode() {
             g_Config.ShowPreviews = (dwValue == 1);
         }
         
-        bufferSize = sizeof(DWORD);
-        if (RegQueryValueExW(hKey, L"TaskbarShowEverything", NULL, NULL, (LPBYTE)&dwValue, &bufferSize) == ERROR_SUCCESS) {
-            g_Config.ShowEverythingToolbar = (dwValue == 1);
-        }
-
         RegCloseKey(hKey);
     }
     const wchar_t* modeStr = L"Mode: Independent";

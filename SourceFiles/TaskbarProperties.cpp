@@ -3,6 +3,48 @@
 #include "Logger.h"
 #include <commctrl.h>
 #include <vector>
+#include <gdiplus.h>
+#pragma comment(lib, "gdiplus.lib")
+
+using namespace Gdiplus;
+
+void UpdateOrbPreview(HWND hwndDlg, DWORD orbId) {
+    HRSRC hResInfo = FindResourceW(GetModuleHandle(NULL), MAKEINTRESOURCEW(orbId), (LPCWSTR)RT_RCDATA);
+    if (!hResInfo) return;
+    HGLOBAL hResData = LoadResource(GetModuleHandle(NULL), hResInfo);
+    if (!hResData) return;
+    DWORD size = SizeofResource(GetModuleHandle(NULL), hResInfo);
+    void* pData = LockResource(hResData);
+    HGLOBAL hGlobal = GlobalAlloc(GMEM_MOVEABLE, size);
+    if (!hGlobal) return;
+    void* pGlobalData = GlobalLock(hGlobal);
+    memcpy(pGlobalData, pData, size);
+    GlobalUnlock(hGlobal);
+    IStream* pStream = NULL;
+    if (CreateStreamOnHGlobal(hGlobal, TRUE, &pStream) == S_OK) {
+        Bitmap* bmp = Bitmap::FromStream(pStream);
+        if (bmp && bmp->GetLastStatus() == Ok) {
+            UINT width = bmp->GetWidth();
+            UINT height = bmp->GetHeight();
+            int numFrames = (height + (width / 2)) / width;
+            if (numFrames < 1) numFrames = 1;
+            UINT sliceHeight = height / numFrames;
+
+            Bitmap* frame = bmp->Clone(0, 0, width, sliceHeight, PixelFormat32bppARGB);
+            if (frame) {
+                HBITMAP hBmp = NULL;
+                frame->GetHBITMAP(Color(255, 255, 255, 255), &hBmp);
+                if (hBmp) {
+                    HBITMAP hOld = (HBITMAP)SendDlgItemMessageW(hwndDlg, IDC_ORB_PREVIEW, STM_SETIMAGE, IMAGE_BITMAP, (LPARAM)hBmp);
+                    if (hOld) DeleteObject(hOld);
+                }
+                delete frame;
+            }
+            delete bmp;
+        }
+        pStream->Release();
+    }
+}
 
 INT_PTR CALLBACK TaskbarSettingsDlgProc(HWND hwndDlg, UINT uMsg, WPARAM wParam, LPARAM lParam) {
     switch (uMsg) {
@@ -158,6 +200,7 @@ INT_PTR CALLBACK TaskbarSettingsDlgProc(HWND hwndDlg, UINT uMsg, WPARAM wParam, 
 
             // Notify shell of setting changes
             SendMessageTimeoutW(HWND_BROADCAST, WM_SETTINGCHANGE, 0, (LPARAM)L"TraySettings", SMTO_ABORTIFHUNG, 5000, NULL);
+            SendMessageW(GetParent(hwndDlg), PSM_UNCHANGED, (WPARAM)hwndDlg, 0);
             
             SetWindowLongPtr(hwndDlg, DWLP_MSGRESULT, PSNRET_NOERROR);
             return TRUE;
@@ -235,10 +278,21 @@ INT_PTR CALLBACK StartMenuSettingsDlgProc(HWND hwndDlg, UINT uMsg, WPARAM wParam
                 SendDlgItemMessageW(hwndDlg, IDC_ORB_SELECTOR, CB_SETCURSEL, selIndex, 0);
                 
                 RegCloseKey(hKey);
+                UpdateOrbPreview(hwndDlg, dwValue);
             }
-            SendDlgItemMessageW(hwndDlg, IDC_START_TRIGGER, CB_ADDSTRING, 0, (LPARAM)L"Left Click Opens Shell");
-            SendDlgItemMessageW(hwndDlg, IDC_START_TRIGGER, CB_ADDSTRING, 0, (LPARAM)L"Shift+Click Opens Native");
-            SendDlgItemMessageW(hwndDlg, IDC_START_TRIGGER, CB_SETCURSEL, 0, 0);
+            SendDlgItemMessageW(hwndDlg, IDC_START_TRIGGER, CB_ADDSTRING, 0, (LPARAM)L"Open-Shell Menu (Default)");
+            SendDlgItemMessageW(hwndDlg, IDC_START_TRIGGER, CB_ADDSTRING, 0, (LPARAM)L"Native Windows Start Menu");
+            SendDlgItemMessageW(hwndDlg, IDC_START_TRIGGER, CB_ADDSTRING, 0, (LPARAM)L"Open-Shell Menu (Shift for Native)");
+            SendDlgItemMessageW(hwndDlg, IDC_START_TRIGGER, CB_ADDSTRING, 0, (LPARAM)L"Native Menu (Shift for Open-Shell)");
+            
+            DWORD currentMode = 0;
+            if (RegOpenKeyExW(HKEY_CURRENT_USER, L"Software\\EliteSoftware\\Win32Explorer\\Advanced", 0, KEY_READ, &hKey) == ERROR_SUCCESS) {
+                DWORD cbData = sizeof(DWORD);
+                RegQueryValueExW(hKey, L"StartMenuMode", NULL, NULL, (LPBYTE)&currentMode, &cbData);
+                RegCloseKey(hKey);
+            }
+            if (currentMode > 3) currentMode = 0;
+            SendDlgItemMessageW(hwndDlg, IDC_START_TRIGGER, CB_SETCURSEL, currentMode, 0);
             
             SendDlgItemMessageW(hwndDlg, IDC_START_MONITOR_LIST, CB_ADDSTRING, 0, (LPARAM)L"Global Configuration");
             SendDlgItemMessageW(hwndDlg, IDC_START_MONITOR_LIST, CB_SETITEMDATA, 0, -1);
@@ -286,6 +340,7 @@ INT_PTR CALLBACK StartMenuSettingsDlgProc(HWND hwndDlg, UINT uMsg, WPARAM wParam
                     }
                     SendDlgItemMessageW(hwndDlg, IDC_ORB_SELECTOR, CB_SETCURSEL, selIndex, 0);
                     RegCloseKey(hKey);
+                    UpdateOrbPreview(hwndDlg, dwValue);
                 }
             }
         }
@@ -296,8 +351,9 @@ INT_PTR CALLBACK StartMenuSettingsDlgProc(HWND hwndDlg, UINT uMsg, WPARAM wParam
                 HKEY hKey;
                 if (RegCreateKeyExW(HKEY_CURRENT_USER, L"Software\\EliteSoftware\\Win32Explorer\\Advanced", 0, NULL, REG_OPTION_NON_VOLATILE, KEY_READ | KEY_WRITE, NULL, &hKey, NULL) == ERROR_SUCCESS) {
                     int selIndex = SendDlgItemMessageW(hwndDlg, IDC_ORB_SELECTOR, CB_GETCURSEL, 0, 0);
+                    DWORD orbId = 0;
                     if (selIndex != CB_ERR) {
-                        DWORD orbId = (DWORD)SendDlgItemMessageW(hwndDlg, IDC_ORB_SELECTOR, CB_GETITEMDATA, selIndex, 0);
+                        orbId = (DWORD)SendDlgItemMessageW(hwndDlg, IDC_ORB_SELECTOR, CB_GETITEMDATA, selIndex, 0);
                         int monSel = SendDlgItemMessageW(hwndDlg, IDC_START_MONITOR_LIST, CB_GETCURSEL, 0, 0);
                         int monIndex = (monSel != CB_ERR) ? SendDlgItemMessageW(hwndDlg, IDC_START_MONITOR_LIST, CB_GETITEMDATA, monSel, 0) : -1;
                         if (monIndex >= 0) {
@@ -309,6 +365,7 @@ INT_PTR CALLBACK StartMenuSettingsDlgProc(HWND hwndDlg, UINT uMsg, WPARAM wParam
                         }
                     }
                     RegCloseKey(hKey);
+                    if (orbId != 0) UpdateOrbPreview(hwndDlg, orbId);
                 }
                 SendMessageTimeoutW(HWND_BROADCAST, WM_SETTINGCHANGE, 0, (LPARAM)L"EliteTaskbarSettings", SMTO_ABORTIFHUNG, 500, NULL);
             }
@@ -319,14 +376,14 @@ INT_PTR CALLBACK StartMenuSettingsDlgProc(HWND hwndDlg, UINT uMsg, WPARAM wParam
         if (lpnm->code == PSN_APPLY) {
             HKEY hKey;
             if (RegCreateKeyExW(HKEY_CURRENT_USER, L"Software\\EliteSoftware\\Win32Explorer\\Advanced", 0, NULL, REG_OPTION_NON_VOLATILE, KEY_READ | KEY_WRITE, NULL, &hKey, NULL) == ERROR_SUCCESS) {
-                DWORD mode = 0;
-                if (SendDlgItemMessageW(hwndDlg, IDC_START_NATIVE, BM_GETCHECK, 0, 0) == BST_CHECKED) mode = 1;
-                else if (SendDlgItemMessageW(hwndDlg, IDC_START_COMBO, BM_GETCHECK, 0, 0) == BST_CHECKED) mode = 2;
+                DWORD mode = SendDlgItemMessageW(hwndDlg, IDC_START_TRIGGER, CB_GETCURSEL, 0, 0);
+                if (mode == CB_ERR) mode = 0;
                 RegSetValueExW(hKey, L"StartMenuMode", 0, REG_DWORD, (const BYTE*)&mode, sizeof(DWORD));
                 
                 int selIndex = SendDlgItemMessageW(hwndDlg, IDC_ORB_SELECTOR, CB_GETCURSEL, 0, 0);
                 if (selIndex != CB_ERR) {
                     DWORD orbId = (DWORD)SendDlgItemMessageW(hwndDlg, IDC_ORB_SELECTOR, CB_GETITEMDATA, selIndex, 0);
+                    UpdateOrbPreview(hwndDlg, orbId);
                     
                     int monSel = SendDlgItemMessageW(hwndDlg, IDC_START_MONITOR_LIST, CB_GETCURSEL, 0, 0);
                     int monIndex = (monSel != CB_ERR) ? SendDlgItemMessageW(hwndDlg, IDC_START_MONITOR_LIST, CB_GETITEMDATA, monSel, 0) : -1;
@@ -337,6 +394,11 @@ INT_PTR CALLBACK StartMenuSettingsDlgProc(HWND hwndDlg, UINT uMsg, WPARAM wParam
                         RegSetValueExW(hKey, valueName, 0, REG_DWORD, (const BYTE*)&orbId, sizeof(DWORD));
                     } else {
                         RegSetValueExW(hKey, L"StartOrbID", 0, REG_DWORD, (const BYTE*)&orbId, sizeof(DWORD));
+                        for (int i = 0; i < 32; i++) {
+                            WCHAR valueName[64];
+                            wsprintfW(valueName, L"StartOrbID_Mon%d", i);
+                            RegDeleteValueW(hKey, valueName);
+                        }
                     }
                 }
                 
@@ -352,6 +414,7 @@ INT_PTR CALLBACK StartMenuSettingsDlgProc(HWND hwndDlg, UINT uMsg, WPARAM wParam
                 return TRUE;
             }, 0);
             SendMessageTimeoutW(HWND_BROADCAST, WM_SETTINGCHANGE, 0, (LPARAM)L"EliteTaskbarSettings", SMTO_ABORTIFHUNG, 500, NULL);
+            SendMessageW(GetParent(hwndDlg), PSM_UNCHANGED, (WPARAM)hwndDlg, 0);
             
             SetWindowLongPtr(hwndDlg, DWLP_MSGRESULT, PSNRET_NOERROR);
             return TRUE;

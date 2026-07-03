@@ -122,7 +122,10 @@ void StartButton::Draw() {
     }
 
     UINT imgWidth = m_pOrbImage->GetWidth();
-    UINT sliceHeight = imgWidth;
+    UINT imgHeight = m_pOrbImage->GetHeight();
+    int numFrames = (imgHeight + (imgWidth / 2)) / imgWidth;
+    if (numFrames < 1) numFrames = 1;
+    UINT sliceHeight = imgHeight / numFrames;
 
     int srcY = 0;
     switch (m_internalOrbState) {
@@ -251,23 +254,25 @@ LRESULT CALLBACK OrbWndProc(HWND hwnd, UINT uMsg, WPARAM wParam, LPARAM lParam) 
                 }
                 if (!hNativeTarget) hNativeTarget = FindWindowW(L"Shell_TrayWnd", NULL);
 
+                POINT pt;
+                GetCursorPos(&pt);
+                LPARAM lCursorParam = MAKELPARAM(pt.x, pt.y);
+
                 // Focus the specific taskbar window so Windows knows which monitor to target
                 SetForegroundWindow(pThis->GetParentTaskbar());
                 
-                if (mode == 1) { // Native
-                    keybd_event(VK_LWIN, 0, 0, 0);
-                    keybd_event(VK_LWIN, 0, KEYEVENTF_KEYUP, 0);
-                } else if (mode == 2) { // Combo
-                    if (isShiftDown) {
-                        keybd_event(VK_LWIN, 0, 0, 0);
-                        keybd_event(VK_LWIN, 0, KEYEVENTF_KEYUP, 0);
-                    } else {
-                        keybd_event(VK_LWIN, 0, 0, 0);
-                        keybd_event(VK_LWIN, 0, KEYEVENTF_KEYUP, 0);
-                    }
-                } else { // OpenShell (Default 0)
-                    keybd_event(VK_LWIN, 0, 0, 0);
-                    keybd_event(VK_LWIN, 0, KEYEVENTF_KEYUP, 0);
+                if (mode == 1 || (mode == 3 && !isShiftDown) || (mode == 2 && isShiftDown)) {
+                    // Open Native
+                    bool injectShift = !isShiftDown;
+                    if (injectShift) keybd_event(VK_SHIFT, 0, 0, 0);
+                    if (hNativeTarget) SendMessageW(hNativeTarget, WM_SYSCOMMAND, SC_TASKLIST, lCursorParam);
+                    if (injectShift) keybd_event(VK_SHIFT, 0, KEYEVENTF_KEYUP, 0);
+                } else {
+                    // Open Open-Shell
+                    bool injectShift = isShiftDown;
+                    if (injectShift) keybd_event(VK_SHIFT, 0, KEYEVENTF_KEYUP, 0);
+                    if (hNativeTarget) SendMessageW(hNativeTarget, WM_SYSCOMMAND, SC_TASKLIST, lCursorParam);
+                    if (injectShift) keybd_event(VK_SHIFT, 0, 0, 0);
                 }
             }
             return 0;

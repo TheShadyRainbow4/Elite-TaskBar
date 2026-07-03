@@ -20,7 +20,6 @@ struct EliteTaskbarConfig {
     TaskbarMode Mode;
     ButtonWidthMode ButtonWidth;
     bool ShowPreviews;
-    bool ShowEverythingToolbar;
     std::vector<HMONITOR> MonitorTargets;
 };
 

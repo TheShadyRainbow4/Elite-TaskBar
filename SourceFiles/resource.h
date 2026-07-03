@@ -36,6 +36,7 @@
 #define IDC_START_COMBO       218
 #define IDC_START_TRIGGER     219
 #define IDC_START_MONITOR_LIST 229
+#define IDC_ORB_PREVIEW 230
 
 // Toolbars UI
 #define IDC_TOOLBAR_LIST      220

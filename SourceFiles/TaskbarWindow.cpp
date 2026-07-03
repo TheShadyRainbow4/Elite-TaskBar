@@ -327,16 +327,6 @@ LRESULT CALLBACK TaskSwitchSubclassProc(HWND hWnd, UINT uMsg, WPARAM wParam, LPA
 }
 
 void AddTaskButton(TaskButtonInfo& btn);
-HMONITOR GetActualWindowMonitor(HWND hwnd) {
-    if (!hwnd || !IsWindow(hwnd)) return NULL;
-    WINDOWPLACEMENT wp = { sizeof(WINDOWPLACEMENT) };
-    if (GetWindowPlacement(hwnd, &wp)) {
-        if (wp.showCmd == SW_SHOWMINIMIZED) {
-            return MonitorFromRect(&wp.rcNormalPosition, MONITOR_DEFAULTTONEAREST);
-        }
-    }
-    return MonitorFromWindow(hwnd, MONITOR_DEFAULTTONEAREST);
-}
 
 void SyncTaskbarButtonsAcrossMonitors() {
     for (auto* inst : g_Taskbars) {
@@ -349,7 +339,7 @@ void SyncTaskbarButtonsAcrossMonitors() {
             SendMessageW(inst->hTaskSwitch, TB_GETBUTTON, i, (LPARAM)&tbb);
             HWND hwnd = (HWND)tbb.dwData;
             if (hwnd && IsWindow(hwnd)) {
-                HMONITOR hWindowMonitor = GetActualWindowMonitor(hwnd);
+                HMONITOR hWindowMonitor = MonitorFromWindow(hwnd, MONITOR_DEFAULTTONEAREST);
                 if (hWindowMonitor != hTaskbarMonitor && hWindowMonitor != NULL) {
                     SendMessageW(inst->hTaskSwitch, TB_DELETEBUTTON, i, 0);
                     
@@ -389,8 +379,19 @@ void SyncTaskbarButtonsAcrossMonitors() {
     }
 }
 
+HMONITOR GetWindowMonitor(HWND hwnd) {
+    if (IsIconic(hwnd)) {
+        WINDOWPLACEMENT wp = { sizeof(WINDOWPLACEMENT) };
+        if (GetWindowPlacement(hwnd, &wp)) {
+            HMONITOR hMon = MonitorFromRect(&wp.rcNormalPosition, MONITOR_DEFAULTTONEAREST);
+            if (hMon) return hMon;
+        }
+    }
+    return MonitorFromWindow(hwnd, MONITOR_DEFAULTTONEAREST);
+}
+
 void AddTaskButton(TaskButtonInfo& btn) {
-    HMONITOR hWindowMonitor = GetActualWindowMonitor(btn.hwnd);
+    HMONITOR hWindowMonitor = GetWindowMonitor(btn.hwnd);
     
     for (auto* inst : g_Taskbars) {
         if (!inst->hTaskSwitch) continue;
@@ -419,7 +420,7 @@ void AddTaskButton(TaskButtonInfo& btn) {
         }
         
         tbb.dwData = (DWORD_PTR)btn.hwnd;
-        tbb.iString = 0;
+        tbb.iString = (INT_PTR)btn.title.c_str();
         
         SendMessageW(inst->hTaskSwitch, TB_ADDBUTTONSW, 1, (LPARAM)&tbb);
         
@@ -472,7 +473,7 @@ void SyncWindowsAcrossMonitors() {
             SendMessageW(inst->hTaskSwitch, TB_GETBUTTON, i, (LPARAM)&tbb);
             HWND hTarget = (HWND)tbb.dwData;
             if (hTarget && IsWindow(hTarget)) {
-                HMONITOR hWinMon = GetActualWindowMonitor(hTarget);
+                HMONITOR hWinMon = GetWindowMonitor(hTarget);
                 HMONITOR hTaskbarMon = MonitorFromWindow(inst->hTaskbar, MONITOR_DEFAULTTONEAREST);
                 if (hWinMon != hTaskbarMon && hWinMon != NULL) {
                     SendMessageW(inst->hTaskSwitch, TB_DELETEBUTTON, i, 0);
@@ -1073,7 +1074,7 @@ LRESULT CALLBACK WindowProc(HWND hwnd, UINT uMsg, WPARAM wParam, LPARAM lParam) 
             AppendMenuW(hToolbars, MF_STRING | MF_UNCHECKED, 3021, L"Links");
             AppendMenuW(hToolbars, MF_STRING | MF_UNCHECKED, 3022, L"Desktop");
             AppendMenuW(hToolbars, MF_SEPARATOR, 0, NULL);
-            AppendMenuW(hToolbars, MF_STRING | (g_Config.ShowEverythingToolbar ? MF_CHECKED : MF_UNCHECKED), 3024, L"Elite Everything Search");
+
             AppendMenuW(hToolbars, MF_STRING, 3023, L"New toolbar...");
             AppendMenuW(hMenu, MF_POPUP, (UINT_PTR)hToolbars, L"Toolbars");
             AppendMenuW(hMenu, MF_SEPARATOR, 0, NULL);
@@ -1203,22 +1204,7 @@ LRESULT CALLBACK WindowProc(HWND hwnd, UINT uMsg, WPARAM wParam, LPARAM lParam) 
             case IDM_TASKBAR_SETTINGS:
                 ShowTaskbarProperties(hwnd);
                 break;
-            case 3024: { // Toggle Elite Everything Search
-                g_Config.ShowEverythingToolbar = !g_Config.ShowEverythingToolbar;
-                HKEY hKey;
-                if (RegCreateKeyExW(HKEY_CURRENT_USER, L"Software\\EliteSoftware\\Win32Explorer\\Advanced", 0, NULL, REG_OPTION_NON_VOLATILE, KEY_WRITE, NULL, &hKey, NULL) == ERROR_SUCCESS) {
-                    DWORD val = g_Config.ShowEverythingToolbar ? 1 : 0;
-                    RegSetValueExW(hKey, L"ShowEverythingToolbar", 0, REG_DWORD, (const BYTE*)&val, sizeof(DWORD));
-                    RegCloseKey(hKey);
-                }
-                
-                for (auto* inst : g_Taskbars) {
-                    if (inst->hReBar) {
-                        SendMessageW(inst->hReBar, RB_SHOWBAND, 0, g_Config.ShowEverythingToolbar ? TRUE : FALSE);
-                    }
-                }
-                break;
-            }
+
             case IDM_EXIT_ELITETASKBAR:
                 SendMessageW(hwnd, WM_CLOSE, 0, 0);
                 break;
@@ -1254,7 +1240,7 @@ LRESULT CALLBACK WindowProc(HWND hwnd, UINT uMsg, WPARAM wParam, LPARAM lParam) 
             AppendMenuW(hToolbars, MF_STRING | MF_UNCHECKED, 3021, L"Links");
             AppendMenuW(hToolbars, MF_STRING | MF_UNCHECKED, 3022, L"Desktop");
             AppendMenuW(hToolbars, MF_SEPARATOR, 0, NULL);
-            AppendMenuW(hToolbars, MF_STRING | (g_Config.ShowEverythingToolbar ? MF_CHECKED : MF_UNCHECKED), 3024, L"Elite Everything Search");
+
             AppendMenuW(hToolbars, MF_STRING, 3023, L"New toolbar...");
             AppendMenuW(hMenu, MF_POPUP, (UINT_PTR)hToolbars, L"Toolbars");
             AppendMenuW(hMenu, MF_SEPARATOR, 0, NULL);
@@ -1531,25 +1517,6 @@ bool TaskbarWindow::Initialize(HINSTANCE hInstance) {
         SetWindowTheme(inst->hTaskSwitch, L"TaskBand", NULL);
         inst->hImageList = ImageList_Create(16, 16, ILC_COLOR32 | ILC_MASK, 0, 10);
         SendMessageW(inst->hTaskSwitch, TB_SETIMAGELIST, 0, (LPARAM)inst->hImageList);
-
-        // Instantiate Independent EverythingToolbar
-        inst->pEverythingToolbar = new EverythingToolbar();
-        HWND hSearchTb = inst->pEverythingToolbar->Create(inst->hReBar, hInstance);
-        
-        REBARBANDINFOW rbBand = {0};
-        rbBand.cbSize = sizeof(REBARBANDINFOW);
-        rbBand.fMask = RBBIM_STYLE | RBBIM_CHILD | RBBIM_CHILDSIZE | RBBIM_SIZE | RBBIM_TEXT;
-        rbBand.fStyle = RBBS_CHILDEDGE | RBBS_GRIPPERALWAYS;
-        rbBand.hwndChild = hSearchTb;
-        rbBand.lpText = (LPWSTR)L"Search";
-        rbBand.cxMinChild = 150;
-        rbBand.cyMinChild = taskbarHeight - 4;
-        rbBand.cx = 250;
-        SendMessageW(inst->hReBar, RB_INSERTBAND, (WPARAM)-1, (LPARAM)&rbBand);
-        
-        if (!g_Config.ShowEverythingToolbar) {
-            SendMessageW(inst->hReBar, RB_SHOWBAND, 0, FALSE);
-        }
 
 
         inst->hTrayNotify = CreateWindowExW(0, L"TrayNotifyWnd", L"", WS_CHILD | WS_VISIBLE | WS_CLIPSIBLINGS | WS_CLIPCHILDREN, screenWidth - 255, 0, 240, taskbarHeight, inst->hTaskbar, NULL, hInstance, NULL);
