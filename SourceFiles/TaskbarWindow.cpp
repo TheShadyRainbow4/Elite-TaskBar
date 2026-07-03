@@ -314,6 +314,10 @@ LRESULT CALLBACK TaskSwitchSubclassProc(HWND hWnd, UINT uMsg, WPARAM wParam, LPA
                         }
                     }
                 }
+            } else {
+                POINT ptObj = { GET_X_LPARAM(lParam), GET_Y_LPARAM(lParam) };
+                MapWindowPoints(hWnd, GetParent(hWnd), &ptObj, 1);
+                PostMessageW(GetParent(hWnd), uMsg, wParam, MAKELPARAM(ptObj.x, ptObj.y));
             }
             return 0;
         }
@@ -1480,10 +1484,10 @@ bool TaskbarWindow::Initialize(HINSTANCE hInstance) {
             bHookRegistered = true;
         }
 
-        inst->hReBar = CreateWindowExW(WS_EX_TRANSPARENT, L"ReBarWindow32", L"", WS_CHILD | WS_VISIBLE | WS_CLIPSIBLINGS | WS_CLIPCHILDREN | RBS_VARHEIGHT | RBS_BANDBORDERS | CCS_NODIVIDER | CCS_NORESIZE, 
+        inst->hReBar = CreateWindowExW(0, L"ReBarWindow32", L"", WS_CHILD | WS_VISIBLE | WS_CLIPSIBLINGS | WS_CLIPCHILDREN | RBS_VARHEIGHT | RBS_BANDBORDERS | CCS_NODIVIDER | CCS_NORESIZE, 
             screenWidth - 555, 0, 300, taskbarHeight, inst->hTaskbar, NULL, hInstance, NULL);
 
-        inst->hTaskSwitch = CreateWindowExW(WS_EX_TRANSPARENT, TOOLBARCLASSNAMEW, L"", 
+        inst->hTaskSwitch = CreateWindowExW(0, TOOLBARCLASSNAMEW, L"", 
             WS_CHILD | WS_VISIBLE | WS_CLIPSIBLINGS | WS_CLIPCHILDREN | TBSTYLE_LIST | TBSTYLE_FLAT | TBSTYLE_WRAPABLE | CCS_NODIVIDER | CCS_NORESIZE | TBSTYLE_TRANSPARENT, 
             60, 0, screenWidth - 615, taskbarHeight, inst->hTaskbar, (HMENU)2000, hInstance, NULL);
         SetWindowSubclass(inst->hTaskSwitch, TaskSwitchSubclassProc, 1, 0);

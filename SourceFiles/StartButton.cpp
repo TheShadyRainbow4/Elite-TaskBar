@@ -254,16 +254,16 @@ LRESULT CALLBACK OrbWndProc(HWND hwnd, UINT uMsg, WPARAM wParam, LPARAM lParam) 
                 if (!hNativeTarget) hNativeTarget = FindWindowW(L"Shell_TrayWnd", NULL);
 
                 if (mode == 1) { // Native
-                    PostMessageW(hNativeTarget, WM_SYSCOMMAND, SC_TASKLIST, 0);
+                    SendMessageW(hNativeTarget, WM_SYSCOMMAND, SC_TASKLIST, 0);
                 } else if (mode == 2) { // Combo
                     if (isShiftDown) {
-                        PostMessageW(hNativeTarget, WM_SYSCOMMAND, SC_TASKLIST, 0);
+                        SendMessageW(hNativeTarget, WM_SYSCOMMAND, SC_TASKLIST, 0);
                     } else {
                         keybd_event(VK_LWIN, 0, 0, 0);
                         keybd_event(VK_LWIN, 0, KEYEVENTF_KEYUP, 0);
                     }
                 } else { // OpenShell (Default 0)
-                    PostMessageW(hNativeTarget, WM_SYSCOMMAND, SC_TASKLIST, 0);
+                    SendMessageW(hNativeTarget, WM_SYSCOMMAND, SC_TASKLIST, 0);
                 }
             }
             return 0;
