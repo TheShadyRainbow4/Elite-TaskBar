@@ -3,8 +3,12 @@
 All notable changes to this project will be documented in this file.
 
 ## [Unreleased]
-### [1.2.0.0] - 2026-07-02
+### [1.2.0.0] - 2026-07-03
 ### Changed
+- **Settings Tabs Implementation**: Populated custom Property Sheet tabs (Taskbar, Start Menu, Toolbars) with functional UI controls corresponding to the requested features (OpenShell vs Native start menu, Notification Area view modes, multi-monitor component configurations, and toolbars list). 
+- **Dynamic Start Menu Triggers**: The Start Orb logic (`StartButton.cpp`) now actively reads `StartMenuMode` from the registry upon click. It programmatically triggers OpenShell via keyboard simulation, native Start Menu via `SC_TASKLIST`, or supports combination triggers (e.g. Shift+Click) based on user preference.
+- **Legacy Clock Flyout Customization**: Integrated the `TrayMode` setting into the Clock Widget. Native Mode instantiates the native Windows `ClockFlyoutWindow` via COM, while Legacy Mode accurately mimics the ReactOS behavior by directly invoking `timedate.cpl`.
+- **Settings UI Logic**: Added comprehensive dialog procedures (`TaskbarSettingsDlgProc`, `StartMenuSettingsDlgProc`, etc.) to intercept interactions on the new Property Sheet tabs, saving the configuration straight into `HKCU\Software\EliteSoftware\Win32Explorer\Advanced` and properly notifying the shell.
 - **Properties and Settings**: Separated the "Properties" and "Settings" options. "Properties" now correctly launches the native Windows desk.cpl applet for native taskbar settings, while the newly added "Elite Taskbar Settings" menu item opens the custom property sheet to manage our shell's features.
 - **Admin Privilege Bypass (Z-Order Fix)**: Implemented an aggressive background timer during 'Replace' mode that continually forces the native taskbar off-screen to `-10000, -10000`. This bypasses UIPI (User Interface Privilege Isolation) issues when running as a Standard User, completely preventing the native Windows clock and Show Desktop buttons from visually piercing through our overlay.
 - **Custom Properties Sheet Cleanup**: Removed native checkboxes (Lock Taskbar, Auto-hide, Small Icons) from the custom Elite Taskbar Settings property sheet to prevent redundant and unsynced data, dedicating it strictly to Elite Taskbar custom mode toggles.
