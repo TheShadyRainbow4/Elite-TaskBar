@@ -2,5 +2,8 @@ Backups/
 /ReactOS-Source-Shell
 \BuildOutput\ReactOS-Source-Shell\
 
-BuildOutput/ReactOS-Source-Shell
-BuildOutput/Clipboard.txt
+\BuildOutput/ReactOS-Source-Shell
+\BuildOutput/Clipboard.txt
+\EverythingSDK-Source
+\Open-Shell-Menu-Source
+\Elite-EasySigner

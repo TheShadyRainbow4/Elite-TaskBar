@@ -183,6 +183,47 @@ INT_PTR CALLBACK StartMenuSettingsDlgProc(HWND hwndDlg, UINT uMsg, WPARAM wParam
                 } else {
                     SendDlgItemMessageW(hwndDlg, IDC_START_OPENSHELL, BM_SETCHECK, BST_CHECKED, 0);
                 }
+                
+                dwValue = IDB_START_ORB;
+                cbData = sizeof(DWORD);
+                if (RegQueryValueExW(hKey, L"StartOrbID", NULL, NULL, (LPBYTE)&dwValue, &cbData) != ERROR_SUCCESS) {
+                    dwValue = IDB_START_ORB;
+                }
+                
+                SendDlgItemMessageW(hwndDlg, IDC_ORB_SELECTOR, CB_ADDSTRING, 0, (LPARAM)L"Default Orb");
+                SendDlgItemMessageW(hwndDlg, IDC_ORB_SELECTOR, CB_SETITEMDATA, 0, IDB_START_ORB);
+                
+                SendDlgItemMessageW(hwndDlg, IDC_ORB_SELECTOR, CB_ADDSTRING, 0, (LPARAM)L"1Orb");
+                SendDlgItemMessageW(hwndDlg, IDC_ORB_SELECTOR, CB_SETITEMDATA, 1, IDB_START_ORB_1ORB);
+                
+                SendDlgItemMessageW(hwndDlg, IDC_ORB_SELECTOR, CB_ADDSTRING, 0, (LPARAM)L"Aqua Bottom");
+                SendDlgItemMessageW(hwndDlg, IDC_ORB_SELECTOR, CB_SETITEMDATA, 2, IDB_START_ORB_AQUABOTTOM);
+                
+                SendDlgItemMessageW(hwndDlg, IDC_ORB_SELECTOR, CB_ADDSTRING, 0, (LPARAM)L"Dunes");
+                SendDlgItemMessageW(hwndDlg, IDC_ORB_SELECTOR, CB_SETITEMDATA, 3, IDB_START_ORB_DUNES);
+                
+                SendDlgItemMessageW(hwndDlg, IDC_ORB_SELECTOR, CB_ADDSTRING, 0, (LPARAM)L"Indigo");
+                SendDlgItemMessageW(hwndDlg, IDC_ORB_SELECTOR, CB_SETITEMDATA, 4, IDB_START_ORB_INDIGO);
+                
+                SendDlgItemMessageW(hwndDlg, IDC_ORB_SELECTOR, CB_ADDSTRING, 0, (LPARAM)L"Sapphire");
+                SendDlgItemMessageW(hwndDlg, IDC_ORB_SELECTOR, CB_SETITEMDATA, 5, IDB_START_ORB_SAPPHIRE);
+                
+                SendDlgItemMessageW(hwndDlg, IDC_ORB_SELECTOR, CB_ADDSTRING, 0, (LPARAM)L"Uranus");
+                SendDlgItemMessageW(hwndDlg, IDC_ORB_SELECTOR, CB_SETITEMDATA, 6, IDB_START_ORB_URANUS);
+                
+                SendDlgItemMessageW(hwndDlg, IDC_ORB_SELECTOR, CB_ADDSTRING, 0, (LPARAM)L"Vienna Bottom");
+                SendDlgItemMessageW(hwndDlg, IDC_ORB_SELECTOR, CB_SETITEMDATA, 7, IDB_START_ORB_VIENNABOTTOM);
+                
+                int selIndex = 0;
+                int count = SendDlgItemMessageW(hwndDlg, IDC_ORB_SELECTOR, CB_GETCOUNT, 0, 0);
+                for (int i = 0; i < count; i++) {
+                    if (SendDlgItemMessageW(hwndDlg, IDC_ORB_SELECTOR, CB_GETITEMDATA, i, 0) == dwValue) {
+                        selIndex = i;
+                        break;
+                    }
+                }
+                SendDlgItemMessageW(hwndDlg, IDC_ORB_SELECTOR, CB_SETCURSEL, selIndex, 0);
+                
                 RegCloseKey(hKey);
             }
             SendDlgItemMessageW(hwndDlg, IDC_START_TRIGGER, CB_ADDSTRING, 0, (LPARAM)L"Left Click Opens Shell");
@@ -204,8 +245,26 @@ INT_PTR CALLBACK StartMenuSettingsDlgProc(HWND hwndDlg, UINT uMsg, WPARAM wParam
                 if (SendDlgItemMessageW(hwndDlg, IDC_START_NATIVE, BM_GETCHECK, 0, 0) == BST_CHECKED) mode = 1;
                 else if (SendDlgItemMessageW(hwndDlg, IDC_START_COMBO, BM_GETCHECK, 0, 0) == BST_CHECKED) mode = 2;
                 RegSetValueExW(hKey, L"StartMenuMode", 0, REG_DWORD, (const BYTE*)&mode, sizeof(DWORD));
+                
+                int selIndex = SendDlgItemMessageW(hwndDlg, IDC_ORB_SELECTOR, CB_GETCURSEL, 0, 0);
+                if (selIndex != CB_ERR) {
+                    DWORD orbId = (DWORD)SendDlgItemMessageW(hwndDlg, IDC_ORB_SELECTOR, CB_GETITEMDATA, selIndex, 0);
+                    RegSetValueExW(hKey, L"StartOrbID", 0, REG_DWORD, (const BYTE*)&orbId, sizeof(DWORD));
+                }
+                
                 RegCloseKey(hKey);
             }
+            
+            // Notify taskbars to update orb
+            EnumWindows([](HWND hwnd, LPARAM lParam) -> BOOL {
+                WCHAR className[256];
+                if (GetClassNameW(hwnd, className, 256) && (wcscmp(className, L"TrayNotifyWnd") == 0 || wcscmp(className, L"StartButtonWClass") == 0)) { // Need a way to notify StartButton to reload. Actually, StartButton uses WM_SETTINGCHANGE
+                     // Let's just broadcast WM_SETTINGCHANGE
+                }
+                return TRUE;
+            }, 0);
+            SendMessageTimeoutW(HWND_BROADCAST, WM_SETTINGCHANGE, 0, (LPARAM)L"EliteTaskbarSettings", SMTO_ABORTIFHUNG, 500, NULL);
+            
             SetWindowLongPtr(hwndDlg, DWLP_MSGRESULT, PSNRET_NOERROR);
             return TRUE;
         }

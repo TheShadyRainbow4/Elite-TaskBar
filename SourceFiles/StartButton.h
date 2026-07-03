@@ -18,6 +18,7 @@ public:
     
     bool Initialize(HINSTANCE hInstance, HWND hParentTaskbar);
     void SetOrbImageFromResource(HINSTANCE hInstance, int resourceId);
+    void ReloadOrbImage(HINSTANCE hInstance);
     void Draw();
     void Show(int taskbarX, int taskbarY, int taskbarHeight);
     

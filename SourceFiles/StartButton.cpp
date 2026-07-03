@@ -92,13 +92,25 @@ void StartButton::SetOrbImageFromResource(HINSTANCE hInstance, int resourceId) {
     }
 }
 
+void StartButton::ReloadOrbImage(HINSTANCE hInstance) {
+    DWORD orbId = 103; // IDB_START_ORB
+    HKEY hKey;
+    if (RegOpenKeyExW(HKEY_CURRENT_USER, L"Software\\EliteSoftware\\Win32Explorer\\Advanced", 0, KEY_READ, &hKey) == ERROR_SUCCESS) {
+        DWORD cbData = sizeof(DWORD);
+        RegQueryValueExW(hKey, L"StartOrbID", NULL, NULL, (LPBYTE)&orbId, &cbData);
+        RegCloseKey(hKey);
+    }
+    SetOrbImageFromResource(hInstance, (int)orbId);
+}
+
 void StartButton::Draw() {
     if (!m_pOrbImage || !m_hOrbWnd || m_pOrbImage->GetLastStatus() != Ok) {
         return;
     }
 
     UINT imgWidth = m_pOrbImage->GetWidth();
-    UINT sliceHeight = m_pOrbImage->GetHeight() / 3;
+    int numStages = (m_pOrbImage->GetHeight() >= imgWidth * 4) ? 4 : 3;
+    UINT sliceHeight = m_pOrbImage->GetHeight() / numStages;
 
     int srcY = 0;
     switch (m_internalOrbState) {
@@ -150,7 +162,8 @@ void StartButton::Draw() {
 void StartButton::Show(int taskbarX, int taskbarY, int taskbarHeight) {
     if (!m_pOrbImage || !m_hOrbWnd) return;
     UINT imgWidth = m_pOrbImage->GetWidth();
-    UINT sliceHeight = m_pOrbImage->GetHeight() / 3;
+    int numStages = (m_pOrbImage->GetHeight() >= imgWidth * 4) ? 4 : 3;
+    UINT sliceHeight = m_pOrbImage->GetHeight() / numStages;
     
     int yPos = taskbarY + (taskbarHeight - (int)sliceHeight) / 2;
     SetWindowPos(m_hOrbWnd, HWND_TOPMOST, taskbarX, yPos, imgWidth, sliceHeight, SWP_SHOWWINDOW);

@@ -118,41 +118,18 @@ if ($failed) {
     exit 1
 }
 
-Write-Host "Build finished. Copying binaries to root..." -ForegroundColor Green
-Copy-Item "$BuildDir\EliteTaskbar.exe" -Destination "$ScriptDir\EliteTaskbar.exe" -Force
-Copy-Item "$BuildDir\EliteSettings.exe" -Destination "$ScriptDir\EliteSettings.exe" -Force
-Copy-Item "$BuildDir\EliteEverything.exe" -Destination "$ScriptDir\EliteEverything.exe" -Force
-Copy-Item "$BuildDir\EliteDLLScanner.exe" -Destination "$ScriptDir\EliteDLLScanner.exe" -Force
-
-Write-Host "Signing executables using signtool..." -ForegroundColor Cyan
-$pfxPath = Join-Path $ScriptDir "Elite-EasySigner\EliteSoftware_Special.pfx"
-$password = "Minecraft145!!"
-$signtool = Get-ChildItem -Path "C:\Program Files (x86)\Windows Kits\10\bin" -Filter "signtool.exe" -Recurse | Where-Object { $_.FullName -match "\\x64\\" } | Select-Object -First 1 -ExpandProperty FullName
-
-if ((Test-Path $pfxPath) -and $signtool) {
-    $exeFiles = @(
-        (Join-Path $ScriptDir "EliteTaskbar.exe"),
-        (Join-Path $ScriptDir "EliteSettings.exe"),
-        (Join-Path $ScriptDir "EliteEverything.exe"),
-        (Join-Path $ScriptDir "EliteDLLScanner.exe"),
-        (Join-Path $BuildDirx86 "EliteTaskbar_x86.exe"),
-        (Join-Path $BuildDirx86 "EliteSettings_x86.exe"),
-        (Join-Path $BuildDirx86 "EliteEverything_x86.exe"),
-        (Join-Path $BuildDirx86 "EliteDLLScanner_x86.exe")
-    )
-    foreach ($file in $exeFiles) {
-        if (Test-Path $file) {
-            Write-Host "Signing $file..." -ForegroundColor Yellow
-            & $signtool sign /f $pfxPath /p $password /fd SHA256 /t http://timestamp.digicert.com /v $file
-        }
-    }
-} else {
-    Write-Warning "signtool.exe or EliteSoftware_Special.pfx not found. Skipping signature."
+if (-not $failed) {
+    Copy-Item "$BuildDir\EliteTaskbar.exe" "$ScriptDir\EliteTaskbar.exe" -Force
+    Copy-Item "$BuildDir\EliteSettings.exe" "$ScriptDir\EliteSettings.exe" -Force
+    Copy-Item "$BuildDir\EliteEverything.exe" "$ScriptDir\EliteEverything.exe" -Force
+    Copy-Item "$BuildDir\EliteDLLScanner.exe" "$ScriptDir\EliteDLLScanner.exe" -Force
+    
+    # Run the separate signing stage
+    & "$ScriptDir\build_sign.ps1" -BuildDir $BuildDir -BuildDirx86 $BuildDirx86
+    
+    Write-Host "Auto-committing and pushing to repository..." -ForegroundColor Cyan
+    git add .
+    git commit -m "Auto-commit after successful build (build.ps1)"
+    git push origin master
+    Write-Host "Done!" -ForegroundColor Green
 }
-
-Write-Host "Auto-committing and pushing to repository..." -ForegroundColor Cyan
-Set-Location -Path $ScriptDir
-git add .
-git commit -m "Auto-commit after successful build (build.ps1)"
-git push origin master
-Write-Host "Done!" -ForegroundColor Green
