@@ -278,11 +278,12 @@ LRESULT CALLBACK TrayClockProc(HWND hwnd, UINT uMsg, WPARAM wParam, LPARAM lPara
         return 0;
     }
     case WM_LBUTTONDBLCLK:
+        ShellExecuteW(NULL, L"open", L"control", L"timedate.cpl", NULL, SW_SHOWNORMAL);
+        return 0;
     case WM_LBUTTONDOWN: {
         if (!FindWindowW(L"ClockFlyoutWindow", NULL)) {
             if (!ShowLegacyClockExperience(hwnd)) {
-                // Fallback to control panel if COM interface fails (e.g., pre-Win10 or corrupted)
-                ShellExecuteW(NULL, L"open", L"control", L"timedate.cpl", NULL, SW_SHOWNORMAL);
+                Logger::Log(L"Native clock flyout COM failed. Need custom C++ flyout implementation.");
             }
         }
         return 0;
@@ -589,17 +590,17 @@ bool TaskbarWindow::Initialize(HINSTANCE hInstance) {
     
     // Create children (Start Button removed, rendered directly on parent DC)
     g_hReBar = CreateWindowExW(0, L"ReBarWindow32", L"", WS_CHILD | WS_VISIBLE | WS_CLIPSIBLINGS | WS_CLIPCHILDREN | RBS_VARHEIGHT | RBS_BANDBORDERS, 
-        45, 0, screenWidth - 400, taskbarHeight, g_hTaskbar, NULL, hInstance, NULL);
+        45, 0, screenWidth - 280, taskbarHeight, g_hTaskbar, NULL, hInstance, NULL);
 
     // Tray area
-    g_hTrayNotify = CreateWindowExW(0, L"TrayNotifyWnd", L"", WS_CHILD | WS_VISIBLE | WS_CLIPSIBLINGS | WS_CLIPCHILDREN, screenWidth - 350, 0, 330, taskbarHeight, g_hTaskbar, NULL, hInstance, NULL);
+    g_hTrayNotify = CreateWindowExW(0, L"TrayNotifyWnd", L"", WS_CHILD | WS_VISIBLE | WS_CLIPSIBLINGS | WS_CLIPCHILDREN, screenWidth - 235, 0, 220, taskbarHeight, g_hTaskbar, NULL, hInstance, NULL);
     
     // Hide SysPager and ToolbarWindow32 until Phase 6 when we implement custom rendering
-    g_hSysPager = CreateWindowExW(0, L"SysPager", L"", WS_CHILD, 0, 0, 130, taskbarHeight, g_hTrayNotify, NULL, hInstance, NULL);
-    g_hToolbar = CreateWindowExW(0, L"ToolbarWindow32", L"", WS_CHILD | WS_CLIPSIBLINGS | WS_CLIPCHILDREN, 0, 0, 130, taskbarHeight, g_hSysPager, NULL, hInstance, NULL);
+    g_hSysPager = CreateWindowExW(0, L"SysPager", L"", WS_CHILD, 0, 0, 100, taskbarHeight, g_hTrayNotify, NULL, hInstance, NULL);
+    g_hToolbar = CreateWindowExW(0, L"ToolbarWindow32", L"", WS_CHILD | WS_CLIPSIBLINGS | WS_CLIPCHILDREN, 0, 0, 100, taskbarHeight, g_hSysPager, NULL, hInstance, NULL);
     
     // Clock widget
-    g_hTrayClock = CreateWindowExW(0, L"TrayClockWClass", L"", WS_CHILD | WS_VISIBLE | WS_CLIPSIBLINGS, 130, 0, 200, taskbarHeight, g_hTrayNotify, NULL, hInstance, NULL);
+    g_hTrayClock = CreateWindowExW(0, L"TrayClockWClass", L"", WS_CHILD | WS_VISIBLE | WS_CLIPSIBLINGS, 100, 0, 120, taskbarHeight, g_hTrayNotify, NULL, hInstance, NULL);
     
     // Show Desktop button at far right (Width 15, positioned at screenWidth - 15)
     CreateWindowExW(0, L"TrayShowDesktopButtonWClass", L"", WS_CHILD | WS_VISIBLE | WS_CLIPSIBLINGS, screenWidth - 15, 0, 15, taskbarHeight, g_hTaskbar, NULL, hInstance, NULL);
