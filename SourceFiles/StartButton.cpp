@@ -254,30 +254,16 @@ LRESULT CALLBACK OrbWndProc(HWND hwnd, UINT uMsg, WPARAM wParam, LPARAM lParam) 
                 if (!hNativeTarget) hNativeTarget = FindWindowW(L"Shell_TrayWnd", NULL);
 
                 if (mode == 1) { // Native
-                    // Natively trigger start menu on correct monitor using Win Key
-                    INPUT inputs[2] = {0};
-                    inputs[0].type = INPUT_KEYBOARD;
-                    inputs[0].ki.wVk = VK_LWIN;
-                    inputs[1].type = INPUT_KEYBOARD;
-                    inputs[1].ki.wVk = VK_LWIN;
-                    inputs[1].ki.dwFlags = KEYEVENTF_KEYUP;
-                    SendInput(2, inputs, sizeof(INPUT));
+                    PostMessageW(hNativeTarget, WM_SYSCOMMAND, SC_TASKLIST, 0);
                 } else if (mode == 2) { // Combo
                     if (isShiftDown) {
-                        INPUT inputs[2] = {0};
-                        inputs[0].type = INPUT_KEYBOARD;
-                        inputs[0].ki.wVk = VK_LWIN;
-                        inputs[1].type = INPUT_KEYBOARD;
-                        inputs[1].ki.wVk = VK_LWIN;
-                        inputs[1].ki.dwFlags = KEYEVENTF_KEYUP;
-                        SendInput(2, inputs, sizeof(INPUT));
+                        PostMessageW(hNativeTarget, WM_SYSCOMMAND, SC_TASKLIST, 0);
                     } else {
                         keybd_event(VK_LWIN, 0, 0, 0);
                         keybd_event(VK_LWIN, 0, KEYEVENTF_KEYUP, 0);
                     }
                 } else { // OpenShell (Default 0)
-                    keybd_event(VK_LWIN, 0, 0, 0);
-                    keybd_event(VK_LWIN, 0, KEYEVENTF_KEYUP, 0);
+                    PostMessageW(hNativeTarget, WM_SYSCOMMAND, SC_TASKLIST, 0);
                 }
             }
             return 0;
