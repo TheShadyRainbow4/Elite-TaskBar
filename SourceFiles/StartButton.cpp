@@ -254,10 +254,23 @@ LRESULT CALLBACK OrbWndProc(HWND hwnd, UINT uMsg, WPARAM wParam, LPARAM lParam) 
                 if (!hNativeTarget) hNativeTarget = FindWindowW(L"Shell_TrayWnd", NULL);
 
                 if (mode == 1) { // Native
-                    SendMessageW(hNativeTarget, WM_SYSCOMMAND, SC_TASKLIST, 0);
+                    // Natively trigger start menu on correct monitor using Win Key
+                    INPUT inputs[2] = {0};
+                    inputs[0].type = INPUT_KEYBOARD;
+                    inputs[0].ki.wVk = VK_LWIN;
+                    inputs[1].type = INPUT_KEYBOARD;
+                    inputs[1].ki.wVk = VK_LWIN;
+                    inputs[1].ki.dwFlags = KEYEVENTF_KEYUP;
+                    SendInput(2, inputs, sizeof(INPUT));
                 } else if (mode == 2) { // Combo
                     if (isShiftDown) {
-                        SendMessageW(hNativeTarget, WM_SYSCOMMAND, SC_TASKLIST, 0);
+                        INPUT inputs[2] = {0};
+                        inputs[0].type = INPUT_KEYBOARD;
+                        inputs[0].ki.wVk = VK_LWIN;
+                        inputs[1].type = INPUT_KEYBOARD;
+                        inputs[1].ki.wVk = VK_LWIN;
+                        inputs[1].ki.dwFlags = KEYEVENTF_KEYUP;
+                        SendInput(2, inputs, sizeof(INPUT));
                     } else {
                         keybd_event(VK_LWIN, 0, 0, 0);
                         keybd_event(VK_LWIN, 0, KEYEVENTF_KEYUP, 0);

@@ -434,6 +434,33 @@ void UpdateTaskButtonActive(HWND hwndActive) {
     }
 }
 
+void SyncWindowsAcrossMonitors() {
+    for (auto* inst : g_Taskbars) {
+        if (!inst->hTaskSwitch) continue;
+        int count = SendMessageW(inst->hTaskSwitch, TB_BUTTONCOUNT, 0, 0);
+        for (int i = 0; i < count; i++) {
+            TBBUTTON tbb = {0};
+            SendMessageW(inst->hTaskSwitch, TB_GETBUTTON, i, (LPARAM)&tbb);
+            HWND hTarget = (HWND)tbb.dwData;
+            if (hTarget && IsWindow(hTarget)) {
+                HMONITOR hWinMon = MonitorFromWindow(hTarget, MONITOR_DEFAULTTONULL);
+                HMONITOR hTaskbarMon = MonitorFromWindow(inst->hTaskbar, MONITOR_DEFAULTTONULL);
+                if (hWinMon != hTaskbarMon && hWinMon != NULL) {
+                    SendMessageW(inst->hTaskSwitch, TB_DELETEBUTTON, i, 0);
+                    i--;
+                    count--;
+                    for (auto& btn : g_TaskButtons) {
+                        if (btn.hwnd == hTarget) {
+                            AddTaskButton(btn);
+                            break;
+                        }
+                    }
+                }
+            }
+        }
+    }
+}
+
 UINT g_uShellHookMsg = 0;
 
 struct EliteTrayIcon {
@@ -908,6 +935,7 @@ LRESULT CALLBACK WindowProc(HWND hwnd, UINT uMsg, WPARAM wParam, LPARAM lParam) 
     switch (uMsg) {
     case WM_CREATE: {
         SetTimer(hwnd, 9999, 100, NULL);
+        SetTimer(hwnd, 9998, 500, NULL);
         DWM_BLURBEHIND bb = {0};
         bb.dwFlags = DWM_BB_ENABLE;
         bb.fEnable = TRUE;
@@ -1240,6 +1268,10 @@ LRESULT CALLBACK WindowProc(HWND hwnd, UINT uMsg, WPARAM wParam, LPARAM lParam) 
         return 0;
     }
     case WM_TIMER: {
+        if (wParam == 9998) {
+            SyncWindowsAcrossMonitors();
+            return 0;
+        }
         if (wParam == 9999 && g_Config.Mode == TaskbarMode::Replace && g_hNativeTaskbar) {
             if (IsWindowVisible(g_hNativeTaskbar)) {
                 ShowWindow(g_hNativeTaskbar, SW_HIDE);
@@ -1448,12 +1480,12 @@ bool TaskbarWindow::Initialize(HINSTANCE hInstance) {
             bHookRegistered = true;
         }
 
-        inst->hReBar = CreateWindowExW(0, L"ReBarWindow32", L"", WS_CHILD | WS_VISIBLE | WS_CLIPSIBLINGS | WS_CLIPCHILDREN | RBS_VARHEIGHT | RBS_BANDBORDERS, 
-            45, 0, screenWidth - 280, taskbarHeight, inst->hTaskbar, NULL, hInstance, NULL);
+        inst->hReBar = CreateWindowExW(WS_EX_TRANSPARENT, L"ReBarWindow32", L"", WS_CHILD | WS_VISIBLE | WS_CLIPSIBLINGS | WS_CLIPCHILDREN | RBS_VARHEIGHT | RBS_BANDBORDERS | CCS_NODIVIDER | CCS_NORESIZE, 
+            screenWidth - 555, 0, 300, taskbarHeight, inst->hTaskbar, NULL, hInstance, NULL);
 
-        inst->hTaskSwitch = CreateWindowExW(0, TOOLBARCLASSNAMEW, L"", 
-            WS_CHILD | WS_VISIBLE | WS_CLIPSIBLINGS | WS_CLIPCHILDREN | TBSTYLE_LIST | TBSTYLE_FLAT | TBSTYLE_WRAPABLE | CCS_NODIVIDER | CCS_NORESIZE, 
-            60, 0, screenWidth - 280 - 60, taskbarHeight, inst->hTaskbar, (HMENU)2000, hInstance, NULL);
+        inst->hTaskSwitch = CreateWindowExW(WS_EX_TRANSPARENT, TOOLBARCLASSNAMEW, L"", 
+            WS_CHILD | WS_VISIBLE | WS_CLIPSIBLINGS | WS_CLIPCHILDREN | TBSTYLE_LIST | TBSTYLE_FLAT | TBSTYLE_WRAPABLE | CCS_NODIVIDER | CCS_NORESIZE | TBSTYLE_TRANSPARENT, 
+            60, 0, screenWidth - 615, taskbarHeight, inst->hTaskbar, (HMENU)2000, hInstance, NULL);
         SetWindowSubclass(inst->hTaskSwitch, TaskSwitchSubclassProc, 1, 0);
         SendMessageW(inst->hTaskSwitch, TB_BUTTONSTRUCTSIZE, sizeof(TBBUTTON), 0);
         
