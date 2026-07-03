@@ -264,9 +264,9 @@ LRESULT CALLBACK TrayClockProc(HWND hwnd, UINT uMsg, WPARAM wParam, LPARAM lPara
                 
                 // Manually offset for vertical centering to avoid DT_CALCRECT bugs
                 rcClient.top += 6; 
-                rcClient.right -= 10; // Give a guaranteed 10px buffer from the right edge
+                rcClient.right -= 15; // Exact 15px buffer from the right edge
                 
-                DrawThemeTextEx(hTheme, hdcBuffer, 0, 0, clockText, -1, DT_CENTER, &rcClient, &dttOpts);
+                DrawThemeTextEx(hTheme, hdcBuffer, 0, 0, clockText, -1, DT_RIGHT, &rcClient, &dttOpts);
                 
                 SelectObject(hdcBuffer, hOldFont);
                 DeleteObject(hFont);
@@ -480,7 +480,7 @@ LRESULT CALLBACK WindowProc(HWND hwnd, UINT uMsg, WPARAM wParam, LPARAM lParam) 
         SetForegroundWindow(hwnd);
         int cmd = TrackPopupMenuEx(hMenu, TPM_LEFTALIGN | TPM_BOTTOMALIGN | TPM_RIGHTBUTTON | TPM_RETURNCMD, pt.x, pt.y, hwnd, NULL);
         if (cmd != 0) {
-            SendMessageW(hwnd, WM_COMMAND, MAKEWPARAM(cmd, 0), 0);
+            PostMessageW(hwnd, WM_COMMAND, MAKEWPARAM(cmd, 0), 0);
         }
         DestroyMenu(hMenu);
         return 0;
