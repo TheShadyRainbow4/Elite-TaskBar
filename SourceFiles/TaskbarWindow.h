@@ -1,5 +1,6 @@
 #pragma once
 #include <windows.h>
+#include <commctrl.h>
 
 struct TaskbarInstance {
     HWND hTaskbar;
@@ -8,6 +9,8 @@ struct TaskbarInstance {
     HWND hSysPager;
     HWND hToolbar;
     HWND hReBar;
+    HWND hTaskSwitch;
+    HIMAGELIST hImageList;
     HMONITOR hMonitor;
     RECT monitorRect;
     int taskbarHeight;

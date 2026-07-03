@@ -18,7 +18,7 @@ INT_PTR CALLBACK TaskbarSettingsDlgProc(HWND hwndDlg, UINT uMsg, WPARAM wParam, 
                     else if (dwValue == 2) SendDlgItemMessageW(hwndDlg, IDC_MODE_SECONDARY_ONLY, BM_SETCHECK, BST_CHECKED, 0);
                     else SendDlgItemMessageW(hwndDlg, IDC_MODE_INDEPENDENT, BM_SETCHECK, BST_CHECKED, 0);
                 } else {
-                    SendDlgItemMessageW(hwndDlg, IDC_MODE_INDEPENDENT, BM_SETCHECK, BST_CHECKED, 0);
+                    SendDlgItemMessageW(hwndDlg, IDC_MODE_SECONDARY_ONLY, BM_SETCHECK, BST_CHECKED, 0);
                 }
                 
                 dwValue = 0;
@@ -32,8 +32,24 @@ INT_PTR CALLBACK TaskbarSettingsDlgProc(HWND hwndDlg, UINT uMsg, WPARAM wParam, 
                 
                 dwValue = 0;
                 cbData = sizeof(DWORD);
+                if (RegQueryValueExW(hKey, L"TaskbarButtonWidthMode", NULL, NULL, (LPBYTE)&dwValue, &cbData) == ERROR_SUCCESS) {
+                    if (dwValue == 1) SendDlgItemMessageW(hwndDlg, IDC_WIDTH_FIXED, BM_SETCHECK, BST_CHECKED, 0);
+                    else if (dwValue == 2) SendDlgItemMessageW(hwndDlg, IDC_WIDTH_ICONS, BM_SETCHECK, BST_CHECKED, 0);
+                    else SendDlgItemMessageW(hwndDlg, IDC_WIDTH_AUTO, BM_SETCHECK, BST_CHECKED, 0);
+                } else {
+                    SendDlgItemMessageW(hwndDlg, IDC_WIDTH_AUTO, BM_SETCHECK, BST_CHECKED, 0);
+                }
+                
+                dwValue = 0;
+                cbData = sizeof(DWORD);
                 if (RegQueryValueExW(hKey, L"NativeRegistryMode", NULL, NULL, (LPBYTE)&dwValue, &cbData) == ERROR_SUCCESS) {
                     if (dwValue == 1) SendDlgItemMessageW(hwndDlg, IDC_NATIVE_REGISTRY_MODE, BM_SETCHECK, BST_CHECKED, 0);
+                }
+
+                dwValue = 0;
+                cbData = sizeof(DWORD);
+                if (RegQueryValueExW(hKey, L"TaskbarHoverPreview", NULL, NULL, (LPBYTE)&dwValue, &cbData) == ERROR_SUCCESS) {
+                    if (dwValue == 1) SendDlgItemMessageW(hwndDlg, IDC_HOVER_PREVIEW, BM_SETCHECK, BST_CHECKED, 0);
                 }
                 RegCloseKey(hKey);
             }
@@ -103,8 +119,16 @@ INT_PTR CALLBACK TaskbarSettingsDlgProc(HWND hwndDlg, UINT uMsg, WPARAM wParam, 
                 DWORD trayMode = (SendDlgItemMessageW(hwndDlg, IDC_TRAY_LEGACY, BM_GETCHECK, 0, 0) == BST_CHECKED) ? 1 : 0;
                 RegSetValueExW(hKey, L"TrayMode", 0, REG_DWORD, (const BYTE*)&trayMode, sizeof(DWORD));
                 
+                DWORD widthMode = 0;
+                if (SendDlgItemMessageW(hwndDlg, IDC_WIDTH_FIXED, BM_GETCHECK, 0, 0) == BST_CHECKED) widthMode = 1;
+                else if (SendDlgItemMessageW(hwndDlg, IDC_WIDTH_ICONS, BM_GETCHECK, 0, 0) == BST_CHECKED) widthMode = 2;
+                RegSetValueExW(hKey, L"TaskbarButtonWidthMode", 0, REG_DWORD, (const BYTE*)&widthMode, sizeof(DWORD));
+                
                 RegSetValueExW(hKey, L"NativeRegistryMode", 0, REG_DWORD, (const BYTE*)&nativeSync, sizeof(DWORD));
                 
+                DWORD hoverPreview = (SendDlgItemMessageW(hwndDlg, IDC_HOVER_PREVIEW, BM_GETCHECK, 0, 0) == BST_CHECKED) ? 1 : 0;
+                RegSetValueExW(hKey, L"TaskbarHoverPreview", 0, REG_DWORD, (const BYTE*)&hoverPreview, sizeof(DWORD));
+
                 RegCloseKey(hKey);
             }
             
@@ -330,6 +354,30 @@ void ShowTaskbarProperties(HWND hwndOwner) {
     psh.phpage = pages.data();
 
     Logger::Log(L"Calling PropertySheetW...");
-    INT_PTR result = PropertySheetW(&psh);
-    Logger::Log(L"PropertySheetW returned");
+    psh.phpage = pages.data();
+    
+    PropertySheetW(&psh);
+    Logger::Log(L"Property sheet closed.");
+}
+
+INT_PTR CALLBACK SecretDlgProc(HWND hwndDlg, UINT uMsg, WPARAM wParam, LPARAM lParam) {
+    switch (uMsg) {
+        case WM_INITDIALOG:
+            return TRUE;
+        case WM_COMMAND:
+            if (LOWORD(wParam) == IDOK || LOWORD(wParam) == IDCANCEL) {
+                EndDialog(hwndDlg, LOWORD(wParam));
+                return TRUE;
+            }
+            break;
+    }
+    return FALSE;
+}
+
+void ShowSecretEverything(HWND hwndOwner) {
+    DialogBoxW(GetModuleHandle(NULL), MAKEINTRESOURCEW(IDD_SECRET_EVERYTHING), hwndOwner, SecretDlgProc);
+}
+
+void ShowSecretDLLScanner(HWND hwndOwner) {
+    DialogBoxW(GetModuleHandle(NULL), MAKEINTRESOURCEW(IDD_SECRET_DLLSCANNER), hwndOwner, SecretDlgProc);
 }

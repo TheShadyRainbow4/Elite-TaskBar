@@ -72,6 +72,7 @@
 
 10. Capture WM_DESTROY to cleanly reverse shell hooks and exit. **[COMPLETED]**
 
+11. Replace Mode Subversion (UIPI Defense): Implement a background timer loop that teleports the hidden native shell off-screen to `(-10000, -10000)`. This prevents the legacy system tray or clock from rendering through the Aero transparency frame if UIPI blocks non-elevated concealment.
 ---
 ## PHASE 3: MULTI-MONITOR MAPPING & APPBAR RESERVATION
 ---
@@ -96,6 +97,9 @@
 
 10. Handle WM_WINDOWPOSCHANGED to defend AppBar edge space against rogue fullscreen apps.
 
+11. Decoupled Geometry Matrix: Completely bypass global singletons like `SM_CXSCREEN`. Leverage `EnumDisplayMonitors` alongside `GetMonitorInfoW` to harvest `rcMonitor` and `rcWork` limits.
+
+12. Independent Screen Allocation: Dynamically spawn a dedicated, independent `HWND` handle per screen, binding an isolated geometry structure instance containing local monitor boundaries to each window.
 ---
 ## PHASE 4: WINDOW TRACKING & TASKBAND POPULATION (APP BUTTONS)
 ---
@@ -126,6 +130,9 @@
 
 13. Grouping Logic: Implement GetWindowThreadProcessId check to group identical app instances.
 
+14. Shell Hook Message ID: Retrieve the unique system message identifier via `UINT g_uShellHookMsg = RegisterWindowMessageW(L"SHELLHOOK");` and use this in the message pump.
+
+15. Strict Window Filtering (HSHELL_WINDOWCREATED): Implement a triple-filter validation check: 1) `IsWindowVisible(hwnd)` must be TRUE, 2) `GetWindowLongPtrW(hwnd, GWL_EXSTYLE)` must not contain `WS_EX_TOOLWINDOW`, and 3) `GetWindow(hwnd, GW_OWNER)` must return `NULL`.
 ---
 ## PHASE 5: UI METRICS, GDI DRAWING & AERO GLASS IMPLEMENTATION
 ---
@@ -314,7 +321,128 @@
 
 3. Clock Click Action: Map the primary clock click event to execute "control.exe timedate.cpl" as a robust Win32 fallback, bypassing the missing legacy TrayClockWClass rendering code in modern LTSC builds.
 
+
 4. ITrayTask COM Integration (Coexistence Mode): Define the undocumented ITrayTask interface (IID: FB2DC9CE-A8FA-44D9-8219-C4A18A222DDF). If ELITE_STATE_COEXISTENCE is active, use CoCreateInstance to bind to the native shell and command flyout visibility via the ShowClock() and ShowVolume() vtable methods.
+
+---
+# XI. DESKTOP WINDOW ROUTING & ICON GRID (PROGMAN)
+---
+
+1. Desktop Window Registration: Register and spawn a borderless, bottom-Z-order window using the class name "Progman".
+2. Wallpaper Rendering: Intercept WM_ERASEBKGND or WM_PAINT on the Progman HWND. Read the wallpaper path from HKCU\Control Panel\Desktop\Wallpaper and use SystemParametersInfo(SPI_GETDESKWALLPAPER) to render the image using GDI BitBlt or StretchBlt.
+3. Icon Grid Initialization: Create a child window of Progman using the "SHELLDLL_DefView" class, and within that, initialize a "SysListView32" common control.
+4. Directory Binding: Populate the SysListView32 by enumerating the IShellFolder interface for CSIDL_DESKTOPDIRECTORY and CSIDL_COMMON_DESKTOPDIRECTORY.
+5. File System Watcher: Implement SHChangeNotifyRegister to catch file creations/deletions on the desktop and automatically refresh the SysListView32 grid.
+
+---
+# XII. GLOBAL HOTKEYS & SHELL SERVICES
+---
+
+1. Hotkey Registration: During bootstrapper init, call RegisterHotKey for vital shell combinations including Win+R, Win+E, and Win+D.
+2. Run Dialog Invocation: In the hotkey message loop, intercept Win+R and dynamically invoke the RunFileDlg function from shell32.dll.
+3. Recycle Bin Polling: Hook SHQueryRecycleBin to update the desktop Recycle Bin icon state (Empty vs. Full) upon initialization and file deletion events.
+
+---
+# XIII. JUMP LIST & CONTEXT MENU EVENT ROUTING
+---
+
+1. Shift-State Detection: In the taskband WindowProc, intercept WM_RBUTTONUP and call GetAsyncKeyState(VK_SHIFT).
+2. Native Legacy Menu (Shift Held): If VK_SHIFT is active, query GetSystemMenu(target_hwnd, FALSE) and render the classic window management context menu via TrackPopupMenuEx.
+3. Jump List Invocation (Shift Released): If VK_SHIFT is not active, execute the IApplicationDocumentLists COM extraction and render the custom Jump List UI.
+
+---
+# XIV. REDUNDANT CONFIGURATION APPLET (STANDALONE)
+---
+
+1. Fallback Config UI: Ensure the EliteTaskbar_Config.exe WinForms applet contains explicit redundant controls for native shell properties (Taskbar location, Auto-hide, Icon size).
+2. Registry Sync: Map the custom config UI to read/write directly to the native HKCU\Software\Microsoft\Windows\CurrentVersion\Explorer\Advanced keys to ensure parity with the native dialogs.
+
+---
+# XV. NATIVE RUN DIALOG INVOCATION & SCREEN CENTERING
+---
+
+1. Dynamic Linkage: Use LoadLibrary("shell32.dll") and GetProcAddress with ordinal 61 to locate the undocumented RunFileDlg function.
+2. Global Hotkey Routing: In the main WindowProc, catch the WM_HOTKEY message for Win+R to trigger the Run dialog launch sequence.
+3. Centering Hook Setup: Before calling RunFileDlg, install a thread-local WH_CBT hook using SetWindowsHookEx to intercept the dialog's creation frame.
+4. Coordinate Math: In the CBT hook callback (HCBT_ACTIVATE), intercept the Run dialog HWND. Calculate the screen center coordinates using GetSystemMetrics(SM_CXSCREEN) and SM_CYSCREEN, and apply a custom vertical offset to pull it slightly closer to the taskbar.
+5. Teleportation: Use SetWindowPos within the CBT hook to move the dialog to the calculated coordinates before the window is fully painted.
+6. Execution & Cleanup: Call the RunFileDlg function pointer passing the Progman HWND (or NULL) as the owner. Immediately unhook the CBT hook after the dialog is closed to prevent memory leaks.
+
+---
+# XVI. ELITE SHELL WRAPPERS (STANDALONE DLL COMPONENT)
+---
+
+1. Project Initialization: Create a new unmanaged C++ Dynamic Link Library project named "EliteShellWrappers".
+2. RunDLL32 Compatibility: Define exported functions using the standard CALLBACK signature (HWND, HINSTANCE, LPSTR, int) to allow execution via rundll32.exe.
+3. Module Linkage: Implement safe LoadLibrary("shell32.dll") calls within each wrapper function to dynamically resolve target APIs at runtime.
+4. Wrapper 1 (Shutdown): Map GetProcAddress to ordinal 60 to invoke SHShutDownDialog.
+5. Wrapper 2 (Format): Map GetProcAddress to "SHFormatDrive" and parse the lpszCmdLine string to determine the target drive letter.
+6. Wrapper 3 (Open With): Map GetProcAddress to "OpenAs_RunDLL" and pass the unassociated file path from lpszCmdLine.
+7. Wrapper 4 (About): Map GetProcAddress to "ShellAboutW", injecting "EliteSoftware Win32Explorer" as the szApp parameter to customize the dialog branding.
+
+---
+# XVII. ELITE DLL EXPORT SCANNER (STANDALONE UTILITY)
+---
+
+1. Initialization: Create a new WinForms or Win32 GUI executable (EliteDllScanner.exe) with a File Picker button, a ListBox for exports, and an Execution button.
+2. PE Header Parsing: Implement a file reader that maps the target DLL into memory (using CreateFileMapping and MapViewOfFile) with READ_ONLY access.
+3. Export Table Extraction: Traverse the DOS and NT headers to locate the IMAGE_DIRECTORY_ENTRY_EXPORT data directory.
+4. Name Enumeration: Iterate through the AddressOfNames array within the export directory, extracting each function name string and populating the UI ListBox.
+5. Execution Routing: On user execution trigger, format a command string dynamically: "rundll32.exe [DLL_Path],[Selected_Export] [Optional_Args]".
+6. Launch: Pass the formatted command string to CreateProcess or ShellExecute to safely test the undocumented entry point.
+
+---
+# XVIII. DUAL-NATURE MONOLITHIC BUILD SYSTEM
+---
+
+1. Preprocessor Configuration: Define a global compiler flag (e.g., /D ELITE_MONOLITHIC_BUILD) in the build script to toggle static linking versus dynamic DLL loading.
+2. Component Embedding: Update the resource script (.rc) to include external dependencies (e.g., OpenWithEx logic, Everything portable service) as RCDATA binary resources when the monolithic flag is active.
+3. Runtime Extraction Logic: If compiled monolithically, implement a bootstrapper function in WinMain that extracts embedded RCDATA tools to %TEMP%\EliteShell\ and executes them dynamically.
+
+---
+# XIX. FALLBACK START MENU (OPEN-SHELL & REACTOS INTEGRATION)
+---
+
+1. Source Assimilation: Extract the core Start Menu rendering logic from the Open-Shell (C++) repository, isolating the skinning engine and ItemList rendering.
+2. Fallback Hook: If FindWindow("Button", "Start") for the native Start Menu fails, initialize the assimilated Open-Shell rendering class and bind it to the EliteTaskbar Start Orb HWND.
+3. WinPE Routing: Map the Start Menu shortcut parsing logic to a local relative directory (.\StartMenu_PE) when the native %ProgramData% paths are unavailable.
+
+---
+# XXI. OPEN-SHELL UNMANAGED C++ ASSIMILATION & THEMING
+---
+
+1. Repository Integration: Clone the Open-Shell unmanaged C++ source tree and isolate the StartMenu and ClassicExplorer (Toolbar) modules.
+2. Skinning Engine Implementation: Port the Open-Shell skin parser to read .skin and .skin7 files from a local, portable directory (e.g., .\Skins\).
+3. Native Override: Wire the Start Button click event to natively spawn the assimilated Open-Shell menu class as the primary UI, discarding the Windows 10/11 modern menu entirely.
+4. Configuration UI Mapping: Map the Open-Shell configuration variables directly into the master EliteTaskbar Settings Dialog to allow runtime customization of menu columns, icon sizes, and glass opacity.
+
+---
+# XXII. POWERSHELL 7 DUAL-COMPILE ORCHESTRATION
+---
+
+1. Script Initialization: Create Build-EliteSuite.ps1 utilizing PowerShell 7 syntax and strict error handling (Try/Catch blocks).
+2. Build Logging: Configure the script to append all MSBuild standard output and error streams to %SystemDrive%\EliteSoftware\Logs\Build-EliteSuite.log, prefixing entries with timestamps.
+3. Target Matrix Definition: Define a build matrix array containing the target names and their corresponding preprocessor directives (e.g., "Monolithic" -> "ELITE_MONOLITHIC", "Taskbar" -> "ELITE_STANDALONE_TASKBAR", "Dialogs" -> "ELITE_STANDALONE_DIALOGS").
+4. Icon Dynamic Swapping: For each standalone pass, instruct the MSBuild command to target the specific .ico file matching the tool's intended identity via resource compiler flags.
+5. Version Stamping: Ensure the script injects the 4-decimal version string (e.g., 1.0.0.0) and "EliteSoftware - Zachary Whiteman - Susan Gemm" author metadata into the compiled headers of all outputs.
+
+---
+# XXIII. ELITE PROPERTIES DIALOG & DYNAMIC PROPERTY SHEETS
+---
+
+1. Resource Definition: Define dialog templates in the .rc file for each configuration page (Taskbar, Start Menu, Desktop, Toolbars) enforcing the DS_CONTROL | WS_CHILD styles required for property pages.
+2. Property Sheet Construction: Implement a C++ function that initializes an array of HPROPSHEETPAGE handles using CreatePropertySheetPage for each standard configuration template.
+3. Command Line Routing: Parse lpCmdLine during initialization. Map arguments (e.g., "/tab:desktop") to the psh.nStartPage integer within the PROPSHEETHEADER structure to mimic the native Options_RunDLL behavior.
+4. Secret Tab Authentication: Query HKCU\Software\EliteSoftware\Win32Explorer\Advanced for the DWORD "EnableDebugTabs". Also parse lpCmdLine for the "/devmode" switch.
+5. Dynamic Tab Injection: If authentication passes, dynamically allocate and append the HPROPSHEETPAGE handles for the "Everything Indexer" and "DLL Scanner" configuration templates to the primary array before invoking PropertySheet().
+
+---
+# XXIV. RESOURCE ICON MULTIPLEXING & WINDOW BRANDING
+---
+
+1. Resource Allocation: Define an array of distinct .ico files within the Win32Explorer.rc file, assigning sequential integer IDs (e.g., IDI_MAIN=101, IDI_TASKBAR=102, IDI_SETTINGS=103).
+2. Window Class Branding: Intercept the PSCB_INITIALIZED callback within the Property Sheet initialization routine.
+3. Message Injection: Execute LoadIcon(hInstance, MAKEINTRESOURCE(IDI_SETTINGS)) and send WM_SETICON (ICON_BIG and ICON_SMALL) to the Property Sheet HWND to override the inherited process icon.
 
 ---
 # CHANGELOG & EXECUTION HISTORY

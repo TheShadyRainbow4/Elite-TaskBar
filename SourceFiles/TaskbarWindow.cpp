@@ -8,8 +8,10 @@
 #include <dwmapi.h>
 #include <windowsx.h>
 #include <uxtheme.h>
-#include <vector>
 #include <windowsx.h>
+#include <uxtheme.h>
+#include <vector>
+#include <commctrl.h>
 
 static void InvokeNativeRunDialog(HWND hwndOwner);
 
@@ -153,15 +155,227 @@ OrbState g_orbState = OrbState::Normal;
 bool g_bOrbTrackingMouse = false;
 
 #include <vector>
+#include <dwmapi.h>
 
 struct TaskButtonInfo {
     HWND hwnd;
     HICON hIcon;
     std::wstring title;
     bool isActive;
+    int cmdId;
 };
 
+HWND g_hPreviewWindow = NULL;
+HTHUMBNAIL g_hPreviewThumb = NULL;
+UINT_PTR g_PreviewTimer = 0;
+HWND g_PreviewTargetHwnd = NULL;
+
+LRESULT CALLBACK PreviewWndProc(HWND hwnd, UINT uMsg, WPARAM wParam, LPARAM lParam) {
+    if (uMsg == WM_PAINT) {
+        PAINTSTRUCT ps;
+        HDC hdc = BeginPaint(hwnd, &ps);
+        FillRect(hdc, &ps.rcPaint, (HBRUSH)GetStockObject(BLACK_BRUSH)); 
+        EndPaint(hwnd, &ps);
+        return 0;
+    }
+    return DefWindowProcW(hwnd, uMsg, wParam, lParam);
+}
+
 std::vector<TaskButtonInfo> g_TaskButtons;
+int g_NextCmdId = 4000;
+
+extern std::vector<TaskbarInstance*> g_Taskbars;
+
+LRESULT CALLBACK TaskSwitchSubclassProc(HWND hWnd, UINT uMsg, WPARAM wParam, LPARAM lParam, UINT_PTR uIdSubclass, DWORD_PTR dwRefData) {
+    static int s_dragIndex = -1;
+    static BOOL s_dragging = FALSE;
+    static POINT s_ptDragStart;
+    
+    switch (uMsg) {
+        case WM_LBUTTONDOWN: {
+            POINT pt = { GET_X_LPARAM(lParam), GET_Y_LPARAM(lParam) };
+            int idx = SendMessageW(hWnd, TB_HITTEST, 0, (LPARAM)&pt);
+            if (idx >= 0) {
+                s_dragIndex = idx;
+                s_dragging = FALSE;
+                s_ptDragStart = pt;
+            }
+            break;
+        }
+        case WM_MOUSEMOVE: {
+            if (s_dragIndex >= 0 && (wParam & MK_LBUTTON)) {
+                POINT pt = { GET_X_LPARAM(lParam), GET_Y_LPARAM(lParam) };
+                if (!s_dragging) {
+                    if (abs(pt.x - s_ptDragStart.x) > 3 || abs(pt.y - s_ptDragStart.y) > 3) {
+                        s_dragging = TRUE;
+                        SetCapture(hWnd);
+                    }
+                }
+                
+                if (s_dragging) {
+                    int currentHover = SendMessageW(hWnd, TB_HITTEST, 0, (LPARAM)&pt);
+                    if (currentHover >= 0 && currentHover != s_dragIndex) {
+                        SendMessageW(hWnd, TB_MOVEBUTTON, s_dragIndex, currentHover);
+                        s_dragIndex = currentHover;
+                    }
+                }
+            }
+            break;
+        }
+        case WM_LBUTTONUP: {
+            if (s_dragging) {
+                ReleaseCapture();
+                s_dragging = FALSE;
+                s_dragIndex = -1;
+                return 0; // Consume the click so it doesn't activate the window!
+            }
+            s_dragIndex = -1;
+            break;
+        }
+        case WM_RBUTTONUP: {
+            POINT pt = { GET_X_LPARAM(lParam), GET_Y_LPARAM(lParam) };
+            int idx = SendMessageW(hWnd, TB_HITTEST, 0, (LPARAM)&pt);
+            if (idx >= 0) {
+                TBBUTTON tbb = {0};
+                SendMessageW(hWnd, TB_GETBUTTON, idx, (LPARAM)&tbb);
+                HWND targetHwnd = (HWND)tbb.dwData;
+                
+                if (targetHwnd && IsWindow(targetHwnd)) {
+                    if (GetAsyncKeyState(VK_SHIFT) & 0x8000) {
+                        // TODO: Implement jump list via COM
+                        MessageBoxW(hWnd, L"Jump List COM Parsing coming soon!", L"Elite Taskbar", MB_OK | MB_ICONINFORMATION);
+                    } else {
+                        HMENU hSysMenu = GetSystemMenu(targetHwnd, FALSE);
+                        if (hSysMenu) {
+                            ClientToScreen(hWnd, &pt);
+                            SetForegroundWindow(hWnd);
+                            int cmd = TrackPopupMenuEx(hSysMenu, TPM_RETURNCMD | TPM_RIGHTBUTTON, pt.x, pt.y, hWnd, NULL);
+                            if (cmd > 0) {
+                                SendMessageW(targetHwnd, WM_SYSCOMMAND, cmd, 0);
+                            }
+                        }
+                    }
+                }
+            }
+            return 0;
+        }
+    }
+    return DefSubclassProc(hWnd, uMsg, wParam, lParam);
+}
+
+void AddTaskButton(TaskButtonInfo& btn);
+
+void SyncTaskbarButtonsAcrossMonitors() {
+    for (auto* inst : g_Taskbars) {
+        if (!inst->hTaskSwitch) continue;
+        HMONITOR hTaskbarMonitor = MonitorFromWindow(inst->hTaskbar, MONITOR_DEFAULTTONULL);
+        
+        int count = SendMessageW(inst->hTaskSwitch, TB_BUTTONCOUNT, 0, 0);
+        for (int i = count - 1; i >= 0; i--) {
+            TBBUTTON tbb = {0};
+            SendMessageW(inst->hTaskSwitch, TB_GETBUTTON, i, (LPARAM)&tbb);
+            HWND hwnd = (HWND)tbb.dwData;
+            if (hwnd && IsWindow(hwnd)) {
+                HMONITOR hWindowMonitor = MonitorFromWindow(hwnd, MONITOR_DEFAULTTONULL);
+                if (hWindowMonitor != hTaskbarMonitor && hWindowMonitor != NULL) {
+                    SendMessageW(inst->hTaskSwitch, TB_DELETEBUTTON, i, 0);
+                    
+                    TaskButtonInfo info;
+                    info.hwnd = hwnd;
+                    info.cmdId = tbb.idCommand;
+                    info.isActive = (tbb.fsState & TBSTATE_CHECKED) != 0;
+                    
+                    WCHAR szTitle[256] = {0};
+                    GetWindowTextW(hwnd, szTitle, 256);
+                    info.title = szTitle;
+                    
+                    DWORD_PTR dwRes;
+                    if (!SendMessageTimeoutW(hwnd, WM_GETICON, ICON_SMALL, 0, SMTO_ABORTIFHUNG, 500, &dwRes)) dwRes = 0;
+                    info.hIcon = (HICON)dwRes;
+                    if (!info.hIcon) info.hIcon = (HICON)GetClassLongPtrW(hwnd, GCLP_HICONSM);
+                    
+                    AddTaskButton(info);
+                }
+            }
+        }
+        SendMessageW(inst->hTaskSwitch, TB_AUTOSIZE, 0, 0);
+    }
+}
+
+void AddTaskButton(TaskButtonInfo& btn) {
+    HMONITOR hWindowMonitor = MonitorFromWindow(btn.hwnd, MONITOR_DEFAULTTONULL);
+    
+    for (auto* inst : g_Taskbars) {
+        if (!inst->hTaskSwitch) continue;
+        
+        HMONITOR hTaskbarMonitor = MonitorFromWindow(inst->hTaskbar, MONITOR_DEFAULTTONULL);
+        if (hWindowMonitor != NULL && hWindowMonitor != hTaskbarMonitor) {
+            continue;
+        }
+
+        int imgIdx = -1;
+        if (btn.hIcon) imgIdx = ImageList_AddIcon(inst->hImageList, btn.hIcon);
+        
+        TBBUTTON tbb = {0};
+        tbb.iBitmap = imgIdx;
+        tbb.idCommand = btn.cmdId;
+        tbb.fsState = TBSTATE_ENABLED;
+        if (btn.isActive) tbb.fsState |= TBSTATE_CHECKED;
+        
+        tbb.fsStyle = BTNS_BUTTON;
+        if (g_Config.ButtonWidth == ButtonWidthMode::Auto) {
+            tbb.fsStyle |= BTNS_AUTOSIZE | BTNS_SHOWTEXT;
+        } else if (g_Config.ButtonWidth == ButtonWidthMode::Fixed) {
+            tbb.fsStyle |= BTNS_SHOWTEXT;
+        } else if (g_Config.ButtonWidth == ButtonWidthMode::IconsOnly) {
+            tbb.fsStyle |= BTNS_NOPREFIX;
+        }
+        
+        tbb.dwData = (DWORD_PTR)btn.hwnd;
+        tbb.iString = 0;
+        
+        SendMessageW(inst->hTaskSwitch, TB_ADDBUTTONSW, 1, (LPARAM)&tbb);
+        
+        TBBUTTONINFOW tbbi = { sizeof(TBBUTTONINFOW) };
+        tbbi.dwMask = TBIF_TEXT;
+        tbbi.pszText = (LPWSTR)btn.title.c_str();
+        SendMessageW(inst->hTaskSwitch, TB_SETBUTTONINFOW, tbb.idCommand, (LPARAM)&tbbi);
+        SendMessageW(inst->hTaskSwitch, TB_AUTOSIZE, 0, 0);
+    }
+}
+
+void RemoveTaskButton(HWND hwnd) {
+    for (auto* inst : g_Taskbars) {
+        if (!inst->hTaskSwitch) continue;
+        int count = SendMessageW(inst->hTaskSwitch, TB_BUTTONCOUNT, 0, 0);
+        for (int i = 0; i < count; i++) {
+            TBBUTTON tbb = {0};
+            SendMessageW(inst->hTaskSwitch, TB_GETBUTTON, i, (LPARAM)&tbb);
+            if (tbb.dwData == (DWORD_PTR)hwnd) {
+                SendMessageW(inst->hTaskSwitch, TB_DELETEBUTTON, i, 0);
+                break;
+            }
+        }
+        SendMessageW(inst->hTaskSwitch, TB_AUTOSIZE, 0, 0);
+    }
+}
+
+void UpdateTaskButtonActive(HWND hwndActive) {
+    for (auto* inst : g_Taskbars) {
+        if (!inst->hTaskSwitch) continue;
+        int count = SendMessageW(inst->hTaskSwitch, TB_BUTTONCOUNT, 0, 0);
+        for (int i = 0; i < count; i++) {
+            TBBUTTON tbb = {0};
+            SendMessageW(inst->hTaskSwitch, TB_GETBUTTON, i, (LPARAM)&tbb);
+            bool isActive = (tbb.dwData == (DWORD_PTR)hwndActive);
+            LRESULT state = SendMessageW(inst->hTaskSwitch, TB_GETSTATE, tbb.idCommand, 0);
+            if (isActive) state |= TBSTATE_CHECKED;
+            else state &= ~TBSTATE_CHECKED;
+            SendMessageW(inst->hTaskSwitch, TB_SETSTATE, tbb.idCommand, state);
+        }
+    }
+}
+
 UINT g_uShellHookMsg = 0;
 
 struct EliteTrayIcon {
@@ -302,6 +516,22 @@ LRESULT CALLBACK TrayClockProc(HWND hwnd, UINT uMsg, WPARAM wParam, LPARAM lPara
     case WM_TIMER:
         InvalidateRect(hwnd, NULL, FALSE);
         return 0;
+    case WM_RBUTTONUP: {
+        HMENU hMenu = CreatePopupMenu();
+        AppendMenuW(hMenu, MF_STRING, 1000, L"Adjust date/time");
+        AppendMenuW(hMenu, MF_STRING, 1001, L"Customize notification icons");
+        POINT pt;
+        GetCursorPos(&pt);
+        SetForegroundWindow(hwnd);
+        int cmd = TrackPopupMenu(hMenu, TPM_LEFTALIGN | TPM_BOTTOMALIGN | TPM_RIGHTBUTTON | TPM_RETURNCMD, pt.x, pt.y, 0, hwnd, NULL);
+        if (cmd == 1000) {
+            ShellExecuteW(NULL, L"open", L"control", L"timedate.cpl", NULL, SW_SHOWNORMAL);
+        } else if (cmd == 1001) {
+            ShellExecuteW(NULL, L"open", L"explorer.exe", L"shell:::{05d7b0f4-2121-4eff-bf6b-ed3f69b894d9}", NULL, SW_SHOWNORMAL);
+        }
+        DestroyMenu(hMenu);
+        return 0;
+    }
     case WM_PAINT: {
         PAINTSTRUCT ps;
         HDC hdc = BeginPaint(hwnd, &ps);
@@ -342,11 +572,14 @@ LRESULT CALLBACK TrayClockProc(HWND hwnd, UINT uMsg, WPARAM wParam, LPARAM lPara
                 dttOpts.iGlowSize = 0; // Neutralize glow but keep alpha channel intact
                 dttOpts.crText = RGB(255, 255, 255);
                 
-                // Manually offset for vertical centering to avoid DT_CALCRECT bugs
-                rcClient.top += 6; 
-                rcClient.right -= 25; // Massive 25px buffer from the right edge to avoid any show desktop button overlap
+                rcClient.right -= 15;
                 
-                DrawThemeTextEx(hTheme, hdcBuffer, 0, 0, clockText, -1, DT_RIGHT, &rcClient, &dttOpts);
+                HRESULT hr = DrawThemeTextEx(hTheme, hdcBuffer, 0, 0, clockText, -1, DT_RIGHT | DT_VCENTER, &rcClient, &dttOpts);
+                if (FAILED(hr)) {
+                    SetTextColor(hdcBuffer, RGB(255, 255, 255));
+                    SetBkMode(hdcBuffer, TRANSPARENT);
+                    DrawTextW(hdcBuffer, clockText, -1, &rcClient, DT_RIGHT | DT_VCENTER | DT_NOCLIP);
+                }
                 
                 SelectObject(hdcBuffer, hOldFont);
                 DeleteObject(hFont);
@@ -357,9 +590,8 @@ LRESULT CALLBACK TrayClockProc(HWND hwnd, UINT uMsg, WPARAM wParam, LPARAM lPara
                 HFONT hOldFont = (HFONT)SelectObject(hdcBuffer, hFont);
                 SetTextColor(hdcBuffer, RGB(255, 255, 255));
                 SetBkMode(hdcBuffer, TRANSPARENT);
-                rcClient.top += 6; 
-                rcClient.right -= 25;
-                DrawTextW(hdcBuffer, clockText, -1, &rcClient, DT_RIGHT | DT_NOCLIP);
+                rcClient.right -= 15;
+                DrawTextW(hdcBuffer, clockText, -1, &rcClient, DT_RIGHT | DT_VCENTER | DT_NOCLIP);
                 SelectObject(hdcBuffer, hOldFont);
                 DeleteObject(hFont);
             }
@@ -370,9 +602,8 @@ LRESULT CALLBACK TrayClockProc(HWND hwnd, UINT uMsg, WPARAM wParam, LPARAM lPara
             HFONT hOldFont = (HFONT)SelectObject(hdc, hFont);
             SetTextColor(hdc, RGB(255, 255, 255));
             SetBkMode(hdc, TRANSPARENT);
-            rcClient.top += 6; 
-            rcClient.right -= 25;
-            DrawTextW(hdc, clockText, -1, &rcClient, DT_RIGHT | DT_NOCLIP);
+            rcClient.right -= 15;
+            DrawTextW(hdc, clockText, -1, &rcClient, DT_RIGHT | DT_VCENTER | DT_NOCLIP);
             SelectObject(hdc, hOldFont);
             DeleteObject(hFont);
         }
@@ -455,13 +686,42 @@ static void InvokeNativeRunDialog(HWND hwndOwner) {
 
 LRESULT CALLBACK TrayShowDesktopButtonProc(HWND hwnd, UINT uMsg, WPARAM wParam, LPARAM lParam) {
     switch (uMsg) {
-    case WM_LBUTTONDOWN:
-        // Simulate Win+D
-        keybd_event(VK_LWIN, 0, 0, 0);
-        keybd_event('D', 0, 0, 0);
-        keybd_event('D', 0, KEYEVENTF_KEYUP, 0);
-        keybd_event(VK_LWIN, 0, KEYEVENTF_KEYUP, 0);
+    case WM_MOUSEMOVE: {
+        if (!GetPropW(hwnd, L"Hover")) {
+            TRACKMOUSEEVENT tme = { sizeof(TRACKMOUSEEVENT), TME_LEAVE, hwnd, 0 };
+            TrackMouseEvent(&tme);
+            SetPropW(hwnd, L"Hover", (HANDLE)1);
+            InvalidateRect(hwnd, NULL, FALSE);
+        }
         return 0;
+    }
+    case WM_MOUSELEAVE: {
+        RemovePropW(hwnd, L"Hover");
+        InvalidateRect(hwnd, NULL, FALSE);
+        return 0;
+    }
+    case WM_LBUTTONDOWN: {
+        SetPropW(hwnd, L"Pressed", (HANDLE)1);
+        InvalidateRect(hwnd, NULL, FALSE);
+        SetCapture(hwnd);
+        return 0;
+    }
+    case WM_LBUTTONUP: {
+        RemovePropW(hwnd, L"Pressed");
+        InvalidateRect(hwnd, NULL, FALSE);
+        ReleaseCapture();
+        
+        POINT pt = { GET_X_LPARAM(lParam), GET_Y_LPARAM(lParam) };
+        RECT rc; GetClientRect(hwnd, &rc);
+        if (PtInRect(&rc, pt)) {
+            // Simulate Win+D
+            keybd_event(VK_LWIN, 0, 0, 0);
+            keybd_event('D', 0, 0, 0);
+            keybd_event('D', 0, KEYEVENTF_KEYUP, 0);
+            keybd_event(VK_LWIN, 0, KEYEVENTF_KEYUP, 0);
+        }
+        return 0;
+    }
     case WM_PAINT: {
         PAINTSTRUCT ps;
         HDC hdc = BeginPaint(hwnd, &ps);
@@ -469,8 +729,28 @@ LRESULT CALLBACK TrayShowDesktopButtonProc(HWND hwnd, UINT uMsg, WPARAM wParam, 
         GetClientRect(hwnd, &rcClient);
         DrawThemeParentBackground(hwnd, hdc, &rcClient);
         
+        bool isHover = GetPropW(hwnd, L"Hover") != NULL;
+        bool isPressed = GetPropW(hwnd, L"Pressed") != NULL;
+        
+        HTHEME hTheme = OpenThemeData(hwnd, L"Taskbar");
+        if (hTheme) {
+            int state = 1; // normal
+            if (isPressed) state = 3; // pressed
+            else if (isHover) state = 2; // hover
+            
+            // Try to draw using standard Taskbar Button styles
+            DrawThemeBackground(hTheme, hdc, 3 /*TBP_BUTTON*/, state, &rcClient, NULL);
+            CloseThemeData(hTheme);
+        } else {
+            if (isPressed || isHover) {
+                HBRUSH hbr = CreateSolidBrush(isPressed ? RGB(100, 100, 100) : RGB(150, 150, 150));
+                FillRect(hdc, &rcClient, hbr);
+                DeleteObject(hbr);
+            }
+        }
+        
         // Draw a subtle vertical line to mimic the Windows 7 show desktop button
-        HPEN hPen = CreatePen(PS_SOLID, 1, RGB(128, 128, 128));
+        HPEN hPen = CreatePen(PS_SOLID, 1, RGB(180, 180, 180));
         HPEN hOldPen = (HPEN)SelectObject(hdc, hPen);
         MoveToEx(hdc, 0, 0, NULL);
         LineTo(hdc, 0, rcClient.bottom);
@@ -520,15 +800,16 @@ LRESULT CALLBACK WindowProc(HWND hwnd, UINT uMsg, WPARAM wParam, LPARAM lParam) 
                     info.hIcon = (HICON)GetClassLongPtrW(hwndShell, GCLP_HICONSM);
                 }
                 
+                info.cmdId = g_NextCmdId++;
                 g_TaskButtons.push_back(info);
-                InvalidateRect(hwnd, NULL, TRUE);
+                AddTaskButton(g_TaskButtons.back());
             }
         }
         else if (nCode == HSHELL_WINDOWDESTROYED) {
             for (auto it = g_TaskButtons.begin(); it != g_TaskButtons.end(); ++it) {
                 if (it->hwnd == hwndShell) {
                     g_TaskButtons.erase(it);
-                    InvalidateRect(hwnd, NULL, TRUE);
+                    RemoveTaskButton(hwndShell);
                     break;
                 }
             }
@@ -537,7 +818,7 @@ LRESULT CALLBACK WindowProc(HWND hwnd, UINT uMsg, WPARAM wParam, LPARAM lParam) 
             for (auto& btn : g_TaskButtons) {
                 btn.isActive = (btn.hwnd == hwndShell);
             }
-            InvalidateRect(hwnd, NULL, TRUE);
+            UpdateTaskButtonActive(hwndShell);
         }
         else if (nCode == HSHELL_REDRAW) {
             for (auto& btn : g_TaskButtons) {
@@ -546,11 +827,12 @@ LRESULT CALLBACK WindowProc(HWND hwnd, UINT uMsg, WPARAM wParam, LPARAM lParam) 
                     GetWindowTextW(hwndShell, szTitle, 256);
                     btn.title = szTitle;
                     
-                    DWORD_PTR dwRes;
+                    DWORD_PTR dwRes = 0;
                     if (SendMessageTimeoutW(hwndShell, WM_GETICON, ICON_SMALL, 0, SMTO_ABORTIFHUNG, 500, &dwRes)) {
                         if (dwRes) btn.hIcon = (HICON)dwRes;
                     }
-                    InvalidateRect(hwnd, NULL, TRUE);
+                    RemoveTaskButton(hwndShell);
+                    AddTaskButton(btn);
                     break;
                 }
             }
@@ -604,65 +886,132 @@ LRESULT CALLBACK WindowProc(HWND hwnd, UINT uMsg, WPARAM wParam, LPARAM lParam) 
         HTHEME hTheme = OpenThemeData(hwnd, L"Taskbar");
         if (hTheme) {
             DrawThemeBackground(hTheme, hdc, 1 /*TBP_BACKGROUNDBOTTOM*/, 0, &rcClient, NULL);
+            CloseThemeData(hTheme);
         } else {
             HBRUSH hbr = CreateSolidBrush(RGB(40, 40, 40));
             FillRect(hdc, &rcClient, hbr);
             DeleteObject(hbr);
         }
 
-        // Draw Task Buttons (Vista Style Wide Labels + Small Icons)
-        int btnWidth = 160;
-        int btnHeight = rcClient.bottom - rcClient.top;
-        int startX = 60; // Offset after Start button
-        
-        HFONT hFont = CreateFontW(14, 0, 0, 0, FW_NORMAL, FALSE, FALSE, FALSE, DEFAULT_CHARSET, 
-                                OUT_DEFAULT_PRECIS, CLIP_DEFAULT_PRECIS, CLEARTYPE_QUALITY, 
-                                DEFAULT_PITCH | FF_DONTCARE, L"Segoe UI");
-        HFONT hOldFont = (HFONT)SelectObject(hdc, hFont);
-        SetBkMode(hdc, TRANSPARENT);
-        SetTextColor(hdc, RGB(255, 255, 255));
-
-        for (const auto& btn : g_TaskButtons) {
-            RECT rcBtn = { startX, 0, startX + btnWidth, btnHeight };
-            
-            // Draw Button Background
-            if (hTheme) {
-                int state = btn.isActive ? 3 /*TS_PRESSED*/ : 1 /*TS_NORMAL*/;
-                DrawThemeBackground(hTheme, hdc, 3 /*TBP_BUTTON*/, state, &rcBtn, NULL);
-            } else {
-                if (btn.isActive) {
-                    HBRUSH hbrActive = CreateSolidBrush(RGB(80, 80, 80));
-                    FillRect(hdc, &rcBtn, hbrActive);
-                    DeleteObject(hbrActive);
-                    DrawEdge(hdc, &rcBtn, EDGE_SUNKEN, BF_RECT);
-                } else {
-                    DrawEdge(hdc, &rcBtn, EDGE_RAISED, BF_RECT);
-                }
-            }
-
-            // Draw Icon
-            if (btn.hIcon) {
-                DrawIconEx(hdc, startX + 4, (btnHeight - 16) / 2, btn.hIcon, 16, 16, 0, NULL, DI_NORMAL);
-            }
-
-            // Draw Text
-            RECT rcText = rcBtn;
-            rcText.left += 24; // padding for icon
-            rcText.right -= 4; // padding on right
-            DrawTextW(hdc, btn.title.c_str(), -1, &rcText, DT_LEFT | DT_VCENTER | DT_SINGLELINE | DT_END_ELLIPSIS);
-
-            startX += btnWidth + 2;
-        }
-
-        if (hTheme) CloseThemeData(hTheme);
-        SelectObject(hdc, hOldFont);
-        DeleteObject(hFont);
-
         EndPaint(hwnd, &ps);
         return 0;
     }
+    case WM_NOTIFY: {
+        LPNMHDR nmhdr = (LPNMHDR)lParam;
+        if (nmhdr->code == TBN_HOTITEMCHANGE) {
+            LPNMTBHOTITEM lpnmhi = (LPNMTBHOTITEM)lParam;
+            if (g_Config.ShowPreviews) {
+                if (lpnmhi->dwFlags & HICF_ENTERING) {
+                    TBBUTTON tbb = {0};
+                    if (SendMessageW(nmhdr->hwndFrom, TB_GETBUTTON, lpnmhi->idNew, (LPARAM)&tbb)) {
+                        g_PreviewTargetHwnd = (HWND)tbb.dwData;
+                        if (g_PreviewTimer) KillTimer(hwnd, g_PreviewTimer);
+                        g_PreviewTimer = SetTimer(hwnd, 2000, 400, NULL);
+                    }
+                } else if (lpnmhi->dwFlags & HICF_LEAVING) {
+                    if (g_PreviewTimer) {
+                        KillTimer(hwnd, g_PreviewTimer);
+                        g_PreviewTimer = 0;
+                    }
+                    if (g_hPreviewWindow) {
+                        ShowWindow(g_hPreviewWindow, SW_HIDE);
+                    }
+                }
+            }
+        }
+        else if (nmhdr->code == NM_RCLICK) {
+            POINT pt;
+            GetCursorPos(&pt);
+
+            HMENU hMenu = CreatePopupMenu();
+            POINT ptClient = pt;
+            ScreenToClient(nmhdr->hwndFrom, &ptClient);
+            int btnIndex = SendMessageW(nmhdr->hwndFrom, TB_HITTEST, 0, (LPARAM)&ptClient);
+            if (btnIndex >= 0) {
+                TBBUTTON tbb = {0};
+                if (SendMessageW(nmhdr->hwndFrom, TB_GETBUTTON, btnIndex, (LPARAM)&tbb)) {
+                    HWND targetHwnd = (HWND)tbb.dwData;
+                    if (IsWindow(targetHwnd)) {
+                        HMENU hSysMenu = GetSystemMenu(targetHwnd, FALSE);
+                        if (hSysMenu) {
+                            SetForegroundWindow(targetHwnd);
+                            int cmd = TrackPopupMenu(hSysMenu, TPM_LEFTALIGN | TPM_BOTTOMALIGN | TPM_RIGHTBUTTON | TPM_RETURNCMD, pt.x, pt.y, 0, hwnd, NULL);
+                            if (cmd) {
+                                PostMessageW(targetHwnd, WM_SYSCOMMAND, cmd, 0);
+                            }
+                        }
+                    }
+                }
+                return 1;
+            }
+
+            // Taskbar Context Menu
+            HMENU hToolbars = CreatePopupMenu();
+            AppendMenuW(hToolbars, MF_STRING | MF_UNCHECKED, 3020, L"Address");
+            AppendMenuW(hToolbars, MF_STRING | MF_UNCHECKED, 3021, L"Links");
+            AppendMenuW(hToolbars, MF_STRING | MF_UNCHECKED, 3022, L"Desktop");
+            AppendMenuW(hToolbars, MF_SEPARATOR, 0, NULL);
+            AppendMenuW(hToolbars, MF_STRING, 3023, L"New toolbar...");
+            AppendMenuW(hMenu, MF_POPUP, (UINT_PTR)hToolbars, L"Toolbars");
+            AppendMenuW(hMenu, MF_SEPARATOR, 0, NULL);
+            AppendMenuW(hMenu, MF_STRING, IDM_TASKBAR_CASCADE, L"Cascade windows");
+            AppendMenuW(hMenu, MF_STRING, IDM_TASKBAR_STACKED, L"Show windows stacked");
+            AppendMenuW(hMenu, MF_STRING, IDM_TASKBAR_SIDEBYSIDE, L"Show windows side by side");
+            AppendMenuW(hMenu, MF_SEPARATOR, 0, NULL);
+            AppendMenuW(hMenu, MF_STRING, IDM_TASKBAR_SHOWDESKTOP, L"Show the desktop");
+            AppendMenuW(hMenu, MF_SEPARATOR, 0, NULL);
+            AppendMenuW(hMenu, MF_STRING, IDM_TASKBAR_TASKMGR, L"Task Manager");
+            AppendMenuW(hMenu, MF_SEPARATOR, 0, NULL);
+            
+            bool isLocked = false;
+            HKEY hKey;
+            if (RegOpenKeyExW(HKEY_CURRENT_USER, L"Software\\Microsoft\\Windows\\CurrentVersion\\Explorer\\Advanced", 0, KEY_READ, &hKey) == ERROR_SUCCESS) {
+                DWORD dwValue = 0;
+                DWORD cbData = sizeof(DWORD);
+                if (RegQueryValueExW(hKey, L"TaskbarSizeMove", NULL, NULL, (LPBYTE)&dwValue, &cbData) == ERROR_SUCCESS) {
+                    isLocked = (dwValue == 0);
+                }
+                RegCloseKey(hKey);
+            }
+            
+            AppendMenuW(hMenu, MF_STRING | (isLocked ? MF_CHECKED : MF_UNCHECKED), IDM_TASKBAR_LOCK, L"Lock the taskbar");
+            AppendMenuW(hMenu, MF_STRING, IDM_TASKBAR_RUN, L"Run...");
+            AppendMenuW(hMenu, MF_STRING, IDM_TASKBAR_SETTINGS, L"Elite Taskbar Settings");
+            AppendMenuW(hMenu, MF_STRING, IDM_TASKBAR_PROPERTIES, L"Properties");
+            AppendMenuW(hMenu, MF_SEPARATOR, 0, NULL);
+            if (GetAsyncKeyState(VK_SHIFT) & 0x8000) {
+                AppendMenuW(hMenu, MF_STRING, IDM_RESTART_SHELL, L"Restart Explorer");
+            }
+            AppendMenuW(hMenu, MF_STRING, IDM_EXIT_ELITETASKBAR, L"Exit Elite Taskbar");
+
+            SetForegroundWindow(hwnd);
+            TrackPopupMenu(hMenu, TPM_LEFTALIGN | TPM_BOTTOMALIGN | TPM_RIGHTBUTTON, pt.x, pt.y, 0, hwnd, NULL);
+            DestroyMenu(hMenu);
+            return 1;
+        }
+        break;
+    }
     case WM_COMMAND: {
         int wmId = LOWORD(wParam);
+        
+        // Handle Toolbar buttons
+        if (wmId >= 4000) {
+            for (const auto& btn : g_TaskButtons) {
+                if (btn.cmdId == wmId) {
+                    if (IsIconic(btn.hwnd)) {
+                        PostMessageW(btn.hwnd, WM_SYSCOMMAND, SC_RESTORE, 0);
+                        SetForegroundWindow(btn.hwnd);
+                    } else if (GetForegroundWindow() == btn.hwnd) {
+                        PostMessageW(btn.hwnd, WM_SYSCOMMAND, SC_MINIMIZE, 0);
+                    } else {
+                        SetForegroundWindow(btn.hwnd);
+                    }
+                    break;
+                }
+            }
+            return 0;
+        }
+
         switch (wmId) {
             case IDM_TASKBAR_CASCADE:
                 if (g_hNativeTaskbar) PostMessageW(g_hNativeTaskbar, WM_COMMAND, 403, 0); // Cascade
@@ -739,7 +1088,7 @@ LRESULT CALLBACK WindowProc(HWND hwnd, UINT uMsg, WPARAM wParam, LPARAM lParam) 
                 break;
             case IDM_RESTART_SHELL:
                 // Restart Explorer Shell
-                ShellExecuteW(NULL, NULL, L"cmd.exe", L"/c taskkill /f /im explorer.exe & start explorer.exe", NULL, SW_HIDE);
+                ShellExecuteW(NULL, NULL, L"powershell.exe", L"-NoProfile -WindowStyle Hidden -Command \"Stop-Process -Name explorer -Force; Start-Process explorer.exe\"", NULL, SW_HIDE);
                 break;
         }
         return 0;
@@ -825,14 +1174,54 @@ LRESULT CALLBACK WindowProc(HWND hwnd, UINT uMsg, WPARAM wParam, LPARAM lParam) 
         DestroyMenu(hMenu);
         return 0;
     }
-    case WM_TIMER:
+    case WM_TIMER: {
         if (wParam == 9999 && g_Config.Mode == TaskbarMode::Replace && g_hNativeTaskbar) {
             if (IsWindowVisible(g_hNativeTaskbar)) {
                 ShowWindow(g_hNativeTaskbar, SW_HIDE);
                 SetWindowPos(g_hNativeTaskbar, NULL, -10000, -10000, 0, 0, SWP_NOZORDER | SWP_NOSIZE | SWP_NOACTIVATE);
             }
+            SyncTaskbarButtonsAcrossMonitors();
+        } else if (wParam == 9999) {
+            SyncTaskbarButtonsAcrossMonitors();
+        } else if (wParam == 2000) { // Preview timer
+            KillTimer(hwnd, 2000);
+            g_PreviewTimer = 0;
+            if (g_Config.ShowPreviews && IsWindow(g_PreviewTargetHwnd)) {
+                if (!g_hPreviewWindow) {
+                    g_hPreviewWindow = CreateWindowExW(WS_EX_TOPMOST | WS_EX_TOOLWINDOW, L"EliteTaskbarPreview", L"", WS_POPUP | WS_CLIPCHILDREN, 0, 0, 200, 150, hwnd, NULL, GetModuleHandle(NULL), NULL);
+                }
+                
+                POINT pt; GetCursorPos(&pt);
+                int previewWidth = 240;
+                int previewHeight = 160;
+                
+                RECT rcTaskbar;
+                GetWindowRect(hwnd, &rcTaskbar);
+                int yPos = rcTaskbar.top - previewHeight - 5;
+                int xPos = pt.x - (previewWidth / 2);
+                
+                SetWindowPos(g_hPreviewWindow, HWND_TOPMOST, xPos, yPos, previewWidth, previewHeight, SWP_SHOWWINDOW | SWP_NOACTIVATE);
+                
+                if (g_hPreviewThumb) {
+                    DwmUnregisterThumbnail(g_hPreviewThumb);
+                    g_hPreviewThumb = NULL;
+                }
+                
+                if (SUCCEEDED(DwmRegisterThumbnail(g_hPreviewWindow, g_PreviewTargetHwnd, &g_hPreviewThumb))) {
+                    DWM_THUMBNAIL_PROPERTIES props = {0};
+                    props.dwFlags = DWM_TNP_VISIBLE | DWM_TNP_RECTDESTINATION | DWM_TNP_SOURCECLIENTAREAONLY;
+                    props.fVisible = TRUE;
+                    props.rcDestination.left = 2;
+                    props.rcDestination.top = 2;
+                    props.rcDestination.right = previewWidth - 2;
+                    props.rcDestination.bottom = previewHeight - 2;
+                    props.fSourceClientAreaOnly = FALSE;
+                    DwmUpdateThumbnailProperties(g_hPreviewThumb, &props);
+                }
+            }
         }
         return 0;
+    }
     case WM_SETTINGCHANGE: {
         if (lParam && wcscmp((LPCWSTR)lParam, L"TraySettings") == 0) {
             HKEY hKey;
@@ -880,6 +1269,13 @@ BOOL CALLBACK MonitorEnumProc(HMONITOR hMonitor, HDC hdcMonitor, LPRECT lprcMoni
 bool TaskbarWindow::Initialize(HINSTANCE hInstance) {
     g_uTaskbarCreatedMsg = RegisterWindowMessageW(L"TaskbarCreated");
     g_uShellHookMsg = RegisterWindowMessageW(L"SHELLHOOK");
+
+    WNDCLASSW wcPrev = {0};
+    wcPrev.lpfnWndProc = PreviewWndProc;
+    wcPrev.hInstance = hInstance;
+    wcPrev.hbrBackground = (HBRUSH)(COLOR_WINDOW + 1);
+    wcPrev.lpszClassName = L"EliteTaskbarPreview";
+    RegisterClassW(&wcPrev);
 
     int taskbarHeight = 40; // Default fallback
     HKEY hKey;
@@ -980,6 +1376,24 @@ bool TaskbarWindow::Initialize(HINSTANCE hInstance) {
         inst->hReBar = CreateWindowExW(0, L"ReBarWindow32", L"", WS_CHILD | WS_VISIBLE | WS_CLIPSIBLINGS | WS_CLIPCHILDREN | RBS_VARHEIGHT | RBS_BANDBORDERS, 
             45, 0, screenWidth - 280, taskbarHeight, inst->hTaskbar, NULL, hInstance, NULL);
 
+        inst->hTaskSwitch = CreateWindowExW(0, TOOLBARCLASSNAMEW, L"", 
+            WS_CHILD | WS_VISIBLE | WS_CLIPSIBLINGS | WS_CLIPCHILDREN | TBSTYLE_LIST | TBSTYLE_FLAT | TBSTYLE_WRAPABLE | CCS_NODIVIDER | CCS_NORESIZE, 
+            60, 0, screenWidth - 280 - 60, taskbarHeight, inst->hTaskbar, (HMENU)2000, hInstance, NULL);
+        SetWindowSubclass(inst->hTaskSwitch, TaskSwitchSubclassProc, 1, 0);
+        SendMessageW(inst->hTaskSwitch, TB_BUTTONSTRUCTSIZE, sizeof(TBBUTTON), 0);
+        
+        // Add padding so icons aren't cramped to the left edge
+        SendMessageW(inst->hTaskSwitch, TB_SETPADDING, 0, MAKELPARAM(10, 4));
+        if (g_Config.ButtonWidth == ButtonWidthMode::Fixed) {
+            SendMessageW(inst->hTaskSwitch, TB_SETBUTTONWIDTH, 0, MAKELPARAM(32, 160));
+        } else if (g_Config.ButtonWidth == ButtonWidthMode::IconsOnly) {
+            SendMessageW(inst->hTaskSwitch, TB_SETBUTTONWIDTH, 0, MAKELPARAM(40, 40));
+        }
+        
+        SetWindowTheme(inst->hTaskSwitch, L"TaskBand", NULL);
+        inst->hImageList = ImageList_Create(16, 16, ILC_COLOR32 | ILC_MASK, 0, 10);
+        SendMessageW(inst->hTaskSwitch, TB_SETIMAGELIST, 0, (LPARAM)inst->hImageList);
+
         inst->hTrayNotify = CreateWindowExW(0, L"TrayNotifyWnd", L"", WS_CHILD | WS_VISIBLE | WS_CLIPSIBLINGS | WS_CLIPCHILDREN, screenWidth - 255, 0, 240, taskbarHeight, inst->hTaskbar, NULL, hInstance, NULL);
         inst->hSysPager = CreateWindowExW(0, L"SysPager", L"", WS_CHILD, 0, 0, 100, taskbarHeight, inst->hTrayNotify, NULL, hInstance, NULL);
         inst->hToolbar = CreateWindowExW(0, L"ToolbarWindow32", L"", WS_CHILD | WS_CLIPSIBLINGS | WS_CLIPCHILDREN, 0, 0, 100, taskbarHeight, inst->hSysPager, NULL, hInstance, NULL);
@@ -1025,6 +1439,35 @@ bool TaskbarWindow::Initialize(HINSTANCE hInstance) {
         Logger::Log(L"No taskbars were created. Exiting.");
         return false;
     }
+
+    EnumWindows([](HWND hwnd, LPARAM lParam) -> BOOL {
+        if (IsWindowVisible(hwnd) && GetWindowTextLengthW(hwnd) > 0) {
+            if (GetWindow(hwnd, GW_OWNER) == NULL) {
+                LONG exStyle = GetWindowLongW(hwnd, GWL_EXSTYLE);
+                if (!(exStyle & WS_EX_TOOLWINDOW)) {
+                    TaskButtonInfo info;
+                    info.hwnd = hwnd;
+                    info.isActive = (hwnd == GetForegroundWindow());
+                    
+                    WCHAR szTitle[256] = {0};
+                    GetWindowTextW(hwnd, szTitle, 256);
+                    info.title = szTitle;
+                    
+                    DWORD_PTR dwRes = 0;
+                    SendMessageTimeoutW(hwnd, WM_GETICON, ICON_SMALL, 0, SMTO_ABORTIFHUNG, 500, &dwRes);
+                    info.hIcon = (HICON)dwRes;
+                    if (!info.hIcon) {
+                        info.hIcon = (HICON)GetClassLongPtrW(hwnd, GCLP_HICONSM);
+                    }
+                    
+                    info.cmdId = g_NextCmdId++;
+                    g_TaskButtons.push_back(info);
+                    AddTaskButton(g_TaskButtons.back());
+                }
+            }
+        }
+        return TRUE;
+    }, 0);
 
     if (g_uTaskbarCreatedMsg != 0) {
         PostMessageW(HWND_BROADCAST, g_uTaskbarCreatedMsg, 0, 0);

@@ -52,12 +52,10 @@ if (-not $vsPath) {
 }
 
 $vsDevCmd = Join-Path $vsPath "Common7\Tools\VsDevCmd.bat"
-$compileCmd64 = "cl.exe /EHsc /Zi /MTd /D_DEBUG /Fe`"$BuildDir\EliteTaskbar.exe`" `"$SourceDir\main.cpp`" `"$SourceDir\Logger.cpp`" `"$SourceDir\TaskbarWindow.cpp`" `"$SourceDir\StartButton.cpp`" `"$SourceDir\ClockWidget.cpp`" `"$SourceDir\TaskbarProperties.cpp`" `"$BuildDir\resources.res`" user32.lib advapi32.lib shell32.lib gdi32.lib dwmapi.lib comctl32.lib gdiplus.lib ole32.lib uxtheme.lib comdlg32.lib /link /MANIFEST:EMBED /MANIFESTINPUT:`"$SourceDir\app.manifest`""
-$compileCmd86 = "cl.exe /EHsc /Zi /MTd /D_DEBUG /Fe`"$BuildDirx86\EliteTaskbar_x86.exe`" `"$SourceDir\main.cpp`" `"$SourceDir\Logger.cpp`" `"$SourceDir\TaskbarWindow.cpp`" `"$SourceDir\StartButton.cpp`" `"$SourceDir\ClockWidget.cpp`" `"$SourceDir\TaskbarProperties.cpp`" `"$BuildDirx86\resources.res`" user32.lib advapi32.lib shell32.lib gdi32.lib dwmapi.lib comctl32.lib gdiplus.lib ole32.lib uxtheme.lib comdlg32.lib /link /MANIFEST:EMBED /MANIFESTINPUT:`"$SourceDir\app.manifest`""
 
 # Ensure fresh copy of the .ico files
 $rootIconPath = Join-Path $ScriptDir "EliteTaskbar.ico"
-$targetIconPath = Join-Path $ResourcesDir "elite_icon.ico"
+$targetIconPath = Join-Path $ResourcesDir "MAIN_PROGRAM.ico"
 if (Test-Path $rootIconPath) {
     Write-Host "Found EliteTaskbar.ico in root. Copying to Resources..." -ForegroundColor Yellow
     Copy-Item $rootIconPath -Destination $targetIconPath -Force
@@ -74,10 +72,21 @@ if (Test-Path $rootSettingsIconPath) {
     Copy-Item $rootSettingsIconPath -Destination $targetSettingsIcon2 -Force
 } else {
     Write-Host "No EliteSettings.ico found in root. Using default fallback if missing..." -ForegroundColor DarkGray
-    # Fallback to PREFERENCES.ico if missing
     if (-not (Test-Path $targetSettingsIcon1)) {
         Copy-Item $targetSettingsIcon2 -Destination $targetSettingsIcon1 -Force
     }
+}
+
+$rootEverythingIconPath = Join-Path $ScriptDir "EliteEverything.ico"
+$targetEverythingIcon = Join-Path $ResourcesDir "EliteEverything.ico"
+if (Test-Path $rootEverythingIconPath) {
+    Copy-Item $rootEverythingIconPath -Destination $targetEverythingIcon -Force
+}
+
+$rootScannerIconPath = Join-Path $ScriptDir "EliteDLLScanner.ico"
+$targetScannerIcon = Join-Path $ResourcesDir "EliteDLLScanner.ico"
+if (Test-Path $rootScannerIconPath) {
+    Copy-Item $rootScannerIconPath -Destination $targetScannerIcon -Force
 }
 
 $job1 = Start-Job -ScriptBlock { param($s, $b, $v) & "$s\..\build_x64.ps1" -SourceDir $s -BuildDir $b -VsDevCmd $v } -ArgumentList $SourceDir, $BuildDir, $vsDevCmd
@@ -90,7 +99,7 @@ Wait-Job -Job $jobs | Out-Null
 
 $failed = $false
 foreach ($job in $jobs) {
-    Receive-Job -Job $job | Write-Host
+    try { Receive-Job -Job $job -ErrorAction Stop | Write-Host } catch { Write-Host $_.Exception.Message -ForegroundColor Yellow }
     if ($job.State -ne 'Completed') {
         Write-Error "Build job $($job.Id) failed!"
         $failed = $true
@@ -112,6 +121,34 @@ if ($failed) {
 Write-Host "Build finished. Copying binaries to root..." -ForegroundColor Green
 Copy-Item "$BuildDir\EliteTaskbar.exe" -Destination "$ScriptDir\EliteTaskbar.exe" -Force
 Copy-Item "$BuildDir\EliteSettings.exe" -Destination "$ScriptDir\EliteSettings.exe" -Force
+Copy-Item "$BuildDir\EliteEverything.exe" -Destination "$ScriptDir\EliteEverything.exe" -Force
+Copy-Item "$BuildDir\EliteDLLScanner.exe" -Destination "$ScriptDir\EliteDLLScanner.exe" -Force
+
+Write-Host "Signing executables using signtool..." -ForegroundColor Cyan
+$pfxPath = Join-Path $ScriptDir "Elite-EasySigner\EliteSoftware_Special.pfx"
+$password = "Minecraft145!!"
+$signtool = Get-ChildItem -Path "C:\Program Files (x86)\Windows Kits\10\bin" -Filter "signtool.exe" -Recurse | Where-Object { $_.FullName -match "\\x64\\" } | Select-Object -First 1 -ExpandProperty FullName
+
+if ((Test-Path $pfxPath) -and $signtool) {
+    $exeFiles = @(
+        (Join-Path $ScriptDir "EliteTaskbar.exe"),
+        (Join-Path $ScriptDir "EliteSettings.exe"),
+        (Join-Path $ScriptDir "EliteEverything.exe"),
+        (Join-Path $ScriptDir "EliteDLLScanner.exe"),
+        (Join-Path $BuildDirx86 "EliteTaskbar_x86.exe"),
+        (Join-Path $BuildDirx86 "EliteSettings_x86.exe"),
+        (Join-Path $BuildDirx86 "EliteEverything_x86.exe"),
+        (Join-Path $BuildDirx86 "EliteDLLScanner_x86.exe")
+    )
+    foreach ($file in $exeFiles) {
+        if (Test-Path $file) {
+            Write-Host "Signing $file..." -ForegroundColor Yellow
+            & $signtool sign /f $pfxPath /p $password /fd SHA256 /t http://timestamp.digicert.com /v $file
+        }
+    }
+} else {
+    Write-Warning "signtool.exe or EliteSoftware_Special.pfx not found. Skipping signature."
+}
 
 Write-Host "Auto-committing and pushing to repository..." -ForegroundColor Cyan
 Set-Location -Path $ScriptDir

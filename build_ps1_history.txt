@@ -1,0 +1,371 @@
+commit c39d40f2ba267aa168144bca643e729f47a76999
+Author: EliteSoftware - Zach <123858247+TheShadyRainbow4@users.noreply.github.com>
+Date:   Fri Jul 3 02:28:22 2026 -0700
+
+    Phase 4 implementation: Vista style task buttons and Start Button on all monitors
+
+diff --git a/build.ps1 b/build.ps1
+index 3800878..32bfd21 100644
+--- a/build.ps1
++++ b/build.ps1
+@@ -4,7 +4,7 @@ param(
+ 
+ # Elite-TaskBar Build Script
+ $ErrorActionPreference = 'Stop'
+-$ScriptDir = Split-Path -Parent $MyInvocation.MyCommand.Definition
++$ScriptDir = $PSScriptRoot
+ 
+ Write-Host "Triggering pre-build backup..." -ForegroundColor Cyan
+ $BackupScript = Join-Path $ScriptDir "backup.ps1"
+@@ -80,18 +80,25 @@ if (Test-Path $rootSettingsIconPath) {
+     }
+ }
+ 
+-$stubCompileCmd64 = "cl.exe /EHsc /Zi /MTd /D_DEBUG /Fe`"$BuildDir\EliteSettings.exe`" `"$SourceDir\EliteSettingsStub.cpp`" `"$BuildDir\stub_resources.res`" user32.lib shell32.lib shlwapi.lib /link"
+-$stubCompileCmd86 = "cl.exe /EHsc /Zi /MTd /D_DEBUG /Fe`"$BuildDirx86\EliteSettings_x86.exe`" `"$SourceDir\EliteSettingsStub.cpp`" `"$BuildDirx86\stub_resources.res`" user32.lib shell32.lib shlwapi.lib /link"
++$job1 = Start-Job -ScriptBlock { param($s, $b, $v) & "$s\..\build_x64.ps1" -SourceDir $s -BuildDir $b -VsDevCmd $v } -ArgumentList $SourceDir, $BuildDir, $vsDevCmd
++$job2 = Start-Job -ScriptBlock { param($s, $b, $v) & "$s\..\build_x86.ps1" -SourceDir $s -BuildDir $b -VsDevCmd $v } -ArgumentList $SourceDir, $BuildDirx86, $vsDevCmd
++$job3 = Start-Job -ScriptBlock { param($s, $b, $bx86, $v) & "$s\..\build_settings.ps1" -SourceDir $s -BuildDir $b -BuildDirx86 $bx86 -VsDevCmd $v } -ArgumentList $SourceDir, $BuildDir, $BuildDirx86, $vsDevCmd
+ 
+-Write-Host "Compiling x64 Resources and C++..." -ForegroundColor Cyan
+-cmd.exe /c "cd /d `"$BuildDir`" && call `"$vsDevCmd`" -arch=x64 && rc.exe /fo `"$BuildDir\resources.res`" `"$SourceDir\resources.rc`" && rc.exe /fo `"$BuildDir\stub_resources.res`" `"$SourceDir\EliteSettingsStub.rc`" && $compileCmd64 && $stubCompileCmd64"
+-$exit64 = $LASTEXITCODE
++Write-Host "Waiting for concurrent builds to finish..." -ForegroundColor Cyan
++$jobs = @($job1, $job2, $job3)
++Wait-Job -Job $jobs | Out-Null
+ 
+-Write-Host "Compiling x86 Resources and C++..." -ForegroundColor Cyan
+-cmd.exe /c "cd /d `"$BuildDirx86`" && call `"$vsDevCmd`" -arch=x86 && rc.exe /fo `"$BuildDirx86\resources.res`" `"$SourceDir\resources.rc`" && rc.exe /fo `"$BuildDirx86\stub_resources.res`" `"$SourceDir\EliteSettingsStub.rc`" && $compileCmd86 && $stubCompileCmd86"
+-$exit86 = $LASTEXITCODE
++$failed = $false
++foreach ($job in $jobs) {
++    Receive-Job -Job $job | Write-Host
++    if ($job.State -ne 'Completed') {
++        Write-Error "Build job $($job.Id) failed!"
++        $failed = $true
++    }
++}
++Remove-Job -Job $jobs
+ 
+-if ($exit64 -ne 0 -or $exit86 -ne 0) {
++if ($failed) {
+     Write-Host "Build failed! Cleaning up recent backup..." -ForegroundColor Red
+     $latestBackup = Get-ChildItem -Path (Join-Path $ScriptDir "Backups") -Filter *.cab | Sort-Object LastWriteTime -Descending | Select-Object -First 1
+     if ($latestBackup -and (New-TimeSpan -Start $latestBackup.LastWriteTime -End (Get-Date)).TotalMinutes -lt 5) {
+
+commit a14d160aee571c5af6454d1d04ac95dfe68f5748
+Author: EliteSoftware - Zach <123858247+TheShadyRainbow4@users.noreply.github.com>
+Date:   Fri Jul 3 01:14:24 2026 -0700
+
+    Auto-commit after successful build (build.ps1)
+
+diff --git a/build.ps1 b/build.ps1
+index f715371..3800878 100644
+--- a/build.ps1
++++ b/build.ps1
+@@ -55,22 +55,40 @@ $vsDevCmd = Join-Path $vsPath "Common7\Tools\VsDevCmd.bat"
+ $compileCmd64 = "cl.exe /EHsc /Zi /MTd /D_DEBUG /Fe`"$BuildDir\EliteTaskbar.exe`" `"$SourceDir\main.cpp`" `"$SourceDir\Logger.cpp`" `"$SourceDir\TaskbarWindow.cpp`" `"$SourceDir\StartButton.cpp`" `"$SourceDir\ClockWidget.cpp`" `"$SourceDir\TaskbarProperties.cpp`" `"$BuildDir\resources.res`" user32.lib advapi32.lib shell32.lib gdi32.lib dwmapi.lib comctl32.lib gdiplus.lib ole32.lib uxtheme.lib comdlg32.lib /link /MANIFEST:EMBED /MANIFESTINPUT:`"$SourceDir\app.manifest`""
+ $compileCmd86 = "cl.exe /EHsc /Zi /MTd /D_DEBUG /Fe`"$BuildDirx86\EliteTaskbar_x86.exe`" `"$SourceDir\main.cpp`" `"$SourceDir\Logger.cpp`" `"$SourceDir\TaskbarWindow.cpp`" `"$SourceDir\StartButton.cpp`" `"$SourceDir\ClockWidget.cpp`" `"$SourceDir\TaskbarProperties.cpp`" `"$BuildDirx86\resources.res`" user32.lib advapi32.lib shell32.lib gdi32.lib dwmapi.lib comctl32.lib gdiplus.lib ole32.lib uxtheme.lib comdlg32.lib /link /MANIFEST:EMBED /MANIFESTINPUT:`"$SourceDir\app.manifest`""
+ 
+-# Ensure fresh copy of the .ico file based on executable name (EliteTaskbar.ico)
++# Ensure fresh copy of the .ico files
+ $rootIconPath = Join-Path $ScriptDir "EliteTaskbar.ico"
+ $targetIconPath = Join-Path $ResourcesDir "elite_icon.ico"
+ if (Test-Path $rootIconPath) {
+-    Write-Host "Found EliteTaskbar.ico in root. Copying to Resources to bake into the executable..." -ForegroundColor Yellow
++    Write-Host "Found EliteTaskbar.ico in root. Copying to Resources..." -ForegroundColor Yellow
+     Copy-Item $rootIconPath -Destination $targetIconPath -Force
+ } else {
+-    Write-Host "No EliteTaskbar.ico found in root. Using existing icon in Resources." -ForegroundColor DarkGray
++    Write-Host "No EliteTaskbar.ico found in root." -ForegroundColor DarkGray
+ }
+ 
++$rootSettingsIconPath = Join-Path $ScriptDir "EliteSettings.ico"
++$targetSettingsIcon1 = Join-Path $ResourcesDir "EliteSettings.ico"
++$targetSettingsIcon2 = Join-Path $ResourcesDir "PREFERENCES.ico"
++if (Test-Path $rootSettingsIconPath) {
++    Write-Host "Found EliteSettings.ico in root. Copying to Resources..." -ForegroundColor Yellow
++    Copy-Item $rootSettingsIconPath -Destination $targetSettingsIcon1 -Force
++    Copy-Item $rootSettingsIconPath -Destination $targetSettingsIcon2 -Force
++} else {
++    Write-Host "No EliteSettings.ico found in root. Using default fallback if missing..." -ForegroundColor DarkGray
++    # Fallback to PREFERENCES.ico if missing
++    if (-not (Test-Path $targetSettingsIcon1)) {
++        Copy-Item $targetSettingsIcon2 -Destination $targetSettingsIcon1 -Force
++    }
++}
++
++$stubCompileCmd64 = "cl.exe /EHsc /Zi /MTd /D_DEBUG /Fe`"$BuildDir\EliteSettings.exe`" `"$SourceDir\EliteSettingsStub.cpp`" `"$BuildDir\stub_resources.res`" user32.lib shell32.lib shlwapi.lib /link"
++$stubCompileCmd86 = "cl.exe /EHsc /Zi /MTd /D_DEBUG /Fe`"$BuildDirx86\EliteSettings_x86.exe`" `"$SourceDir\EliteSettingsStub.cpp`" `"$BuildDirx86\stub_resources.res`" user32.lib shell32.lib shlwapi.lib /link"
++
+ Write-Host "Compiling x64 Resources and C++..." -ForegroundColor Cyan
+-cmd.exe /c "cd /d `"$BuildDir`" && call `"$vsDevCmd`" -arch=x64 && rc.exe /fo `"$BuildDir\resources.res`" `"$SourceDir\resources.rc`" && $compileCmd64"
++cmd.exe /c "cd /d `"$BuildDir`" && call `"$vsDevCmd`" -arch=x64 && rc.exe /fo `"$BuildDir\resources.res`" `"$SourceDir\resources.rc`" && rc.exe /fo `"$BuildDir\stub_resources.res`" `"$SourceDir\EliteSettingsStub.rc`" && $compileCmd64 && $stubCompileCmd64"
+ $exit64 = $LASTEXITCODE
+ 
+ Write-Host "Compiling x86 Resources and C++..." -ForegroundColor Cyan
+-cmd.exe /c "cd /d `"$BuildDirx86`" && call `"$vsDevCmd`" -arch=x86 && rc.exe /fo `"$BuildDirx86\resources.res`" `"$SourceDir\resources.rc`" && $compileCmd86"
++cmd.exe /c "cd /d `"$BuildDirx86`" && call `"$vsDevCmd`" -arch=x86 && rc.exe /fo `"$BuildDirx86\resources.res`" `"$SourceDir\resources.rc`" && rc.exe /fo `"$BuildDirx86\stub_resources.res`" `"$SourceDir\EliteSettingsStub.rc`" && $compileCmd86 && $stubCompileCmd86"
+ $exit86 = $LASTEXITCODE
+ 
+ if ($exit64 -ne 0 -or $exit86 -ne 0) {
+@@ -86,6 +104,7 @@ if ($exit64 -ne 0 -or $exit86 -ne 0) {
+ 
+ Write-Host "Build finished. Copying binaries to root..." -ForegroundColor Green
+ Copy-Item "$BuildDir\EliteTaskbar.exe" -Destination "$ScriptDir\EliteTaskbar.exe" -Force
++Copy-Item "$BuildDir\EliteSettings.exe" -Destination "$ScriptDir\EliteSettings.exe" -Force
+ 
+ Write-Host "Auto-committing and pushing to repository..." -ForegroundColor Cyan
+ Set-Location -Path $ScriptDir
+
+commit 87323bec445bf217d5db7ea6dcc0bed55f290b3f
+Author: EliteSoftware - Zach <123858247+TheShadyRainbow4@users.noreply.github.com>
+Date:   Fri Jul 3 00:33:52 2026 -0700
+
+    Auto-commit after successful build (build.ps1)
+
+diff --git a/build.ps1 b/build.ps1
+index 13300ef..f715371 100644
+--- a/build.ps1
++++ b/build.ps1
+@@ -52,8 +52,8 @@ if (-not $vsPath) {
+ }
+ 
+ $vsDevCmd = Join-Path $vsPath "Common7\Tools\VsDevCmd.bat"
+-$compileCmd64 = "cl.exe /EHsc /Zi /MTd /D_DEBUG /Fe`"$BuildDir\EliteTaskbar.exe`" `"$SourceDir\main.cpp`" `"$SourceDir\Logger.cpp`" `"$SourceDir\TaskbarWindow.cpp`" `"$SourceDir\StartButton.cpp`" `"$SourceDir\ClockWidget.cpp`" `"$BuildDir\resources.res`" user32.lib advapi32.lib shell32.lib gdi32.lib dwmapi.lib comctl32.lib gdiplus.lib ole32.lib uxtheme.lib /link /MANIFEST:EMBED /MANIFESTINPUT:`"$SourceDir\app.manifest`""
+-$compileCmd86 = "cl.exe /EHsc /Zi /MTd /D_DEBUG /Fe`"$BuildDirx86\EliteTaskbar_x86.exe`" `"$SourceDir\main.cpp`" `"$SourceDir\Logger.cpp`" `"$SourceDir\TaskbarWindow.cpp`" `"$SourceDir\StartButton.cpp`" `"$SourceDir\ClockWidget.cpp`" `"$BuildDirx86\resources.res`" user32.lib advapi32.lib shell32.lib gdi32.lib dwmapi.lib comctl32.lib gdiplus.lib ole32.lib uxtheme.lib /link /MANIFEST:EMBED /MANIFESTINPUT:`"$SourceDir\app.manifest`""
++$compileCmd64 = "cl.exe /EHsc /Zi /MTd /D_DEBUG /Fe`"$BuildDir\EliteTaskbar.exe`" `"$SourceDir\main.cpp`" `"$SourceDir\Logger.cpp`" `"$SourceDir\TaskbarWindow.cpp`" `"$SourceDir\StartButton.cpp`" `"$SourceDir\ClockWidget.cpp`" `"$SourceDir\TaskbarProperties.cpp`" `"$BuildDir\resources.res`" user32.lib advapi32.lib shell32.lib gdi32.lib dwmapi.lib comctl32.lib gdiplus.lib ole32.lib uxtheme.lib comdlg32.lib /link /MANIFEST:EMBED /MANIFESTINPUT:`"$SourceDir\app.manifest`""
++$compileCmd86 = "cl.exe /EHsc /Zi /MTd /D_DEBUG /Fe`"$BuildDirx86\EliteTaskbar_x86.exe`" `"$SourceDir\main.cpp`" `"$SourceDir\Logger.cpp`" `"$SourceDir\TaskbarWindow.cpp`" `"$SourceDir\StartButton.cpp`" `"$SourceDir\ClockWidget.cpp`" `"$SourceDir\TaskbarProperties.cpp`" `"$BuildDirx86\resources.res`" user32.lib advapi32.lib shell32.lib gdi32.lib dwmapi.lib comctl32.lib gdiplus.lib ole32.lib uxtheme.lib comdlg32.lib /link /MANIFEST:EMBED /MANIFESTINPUT:`"$SourceDir\app.manifest`""
+ 
+ # Ensure fresh copy of the .ico file based on executable name (EliteTaskbar.ico)
+ $rootIconPath = Join-Path $ScriptDir "EliteTaskbar.ico"
+
+commit a94788071ffbc72308a72f7b27899e89bd763188
+Author: EliteSoftware - Zach <123858247+TheShadyRainbow4@users.noreply.github.com>
+Date:   Fri Jul 3 00:28:32 2026 -0700
+
+    Auto-commit after successful build (build.ps1)
+
+diff --git a/build.ps1 b/build.ps1
+index bca8652..13300ef 100644
+--- a/build.ps1
++++ b/build.ps1
+@@ -55,6 +55,16 @@ $vsDevCmd = Join-Path $vsPath "Common7\Tools\VsDevCmd.bat"
+ $compileCmd64 = "cl.exe /EHsc /Zi /MTd /D_DEBUG /Fe`"$BuildDir\EliteTaskbar.exe`" `"$SourceDir\main.cpp`" `"$SourceDir\Logger.cpp`" `"$SourceDir\TaskbarWindow.cpp`" `"$SourceDir\StartButton.cpp`" `"$SourceDir\ClockWidget.cpp`" `"$BuildDir\resources.res`" user32.lib advapi32.lib shell32.lib gdi32.lib dwmapi.lib comctl32.lib gdiplus.lib ole32.lib uxtheme.lib /link /MANIFEST:EMBED /MANIFESTINPUT:`"$SourceDir\app.manifest`""
+ $compileCmd86 = "cl.exe /EHsc /Zi /MTd /D_DEBUG /Fe`"$BuildDirx86\EliteTaskbar_x86.exe`" `"$SourceDir\main.cpp`" `"$SourceDir\Logger.cpp`" `"$SourceDir\TaskbarWindow.cpp`" `"$SourceDir\StartButton.cpp`" `"$SourceDir\ClockWidget.cpp`" `"$BuildDirx86\resources.res`" user32.lib advapi32.lib shell32.lib gdi32.lib dwmapi.lib comctl32.lib gdiplus.lib ole32.lib uxtheme.lib /link /MANIFEST:EMBED /MANIFESTINPUT:`"$SourceDir\app.manifest`""
+ 
++# Ensure fresh copy of the .ico file based on executable name (EliteTaskbar.ico)
++$rootIconPath = Join-Path $ScriptDir "EliteTaskbar.ico"
++$targetIconPath = Join-Path $ResourcesDir "elite_icon.ico"
++if (Test-Path $rootIconPath) {
++    Write-Host "Found EliteTaskbar.ico in root. Copying to Resources to bake into the executable..." -ForegroundColor Yellow
++    Copy-Item $rootIconPath -Destination $targetIconPath -Force
++} else {
++    Write-Host "No EliteTaskbar.ico found in root. Using existing icon in Resources." -ForegroundColor DarkGray
++}
++
+ Write-Host "Compiling x64 Resources and C++..." -ForegroundColor Cyan
+ cmd.exe /c "cd /d `"$BuildDir`" && call `"$vsDevCmd`" -arch=x64 && rc.exe /fo `"$BuildDir\resources.res`" `"$SourceDir\resources.rc`" && $compileCmd64"
+ $exit64 = $LASTEXITCODE
+
+commit 28d35dce4edf4d662a32cb27802503afc61231d5
+Author: EliteSoftware - Zach <123858247+TheShadyRainbow4@users.noreply.github.com>
+Date:   Thu Jul 2 21:54:50 2026 -0700
+
+    Auto-commit after successful build (build.ps1)
+
+diff --git a/build.ps1 b/build.ps1
+index 5d427ad..bca8652 100644
+--- a/build.ps1
++++ b/build.ps1
+@@ -14,6 +14,13 @@ if (Test-Path $BackupScript) {
+     Write-Warning "Backup script not found. Skipping backup."
+ }
+ 
++Write-Host "========================================================" -ForegroundColor Magenta
++$metaFile = Join-Path $ScriptDir "Build_MetaData.txt"
++if (Test-Path $metaFile) {
++    Get-Content $metaFile | Write-Host -ForegroundColor Cyan
++}
++Write-Host "========================================================" -ForegroundColor Magenta
++
+ Write-Host "Starting build process for Elite-TaskBar..." -ForegroundColor Cyan
+ 
+ # Define directories
+@@ -21,10 +28,14 @@ $SourceDir = Join-Path $ScriptDir "SourceFiles"
+ $ResourcesDir = Join-Path $ScriptDir "Resources"
+ $OutputDir = $ScriptDir
+ $BuildDir = Join-Path $ScriptDir "BuildOutput"
++$BuildDirx86 = Join-Path $BuildDir "x86"
+ 
+ if (-not (Test-Path $BuildDir)) {
+     New-Item -ItemType Directory -Path $BuildDir | Out-Null
+ }
++if (-not (Test-Path $BuildDirx86)) {
++    New-Item -ItemType Directory -Path $BuildDirx86 | Out-Null
++}
+ 
+ # Validate SourceFiles exists
+ if (-not (Test-Path $SourceDir)) {
+@@ -41,14 +52,18 @@ if (-not $vsPath) {
+ }
+ 
+ $vsDevCmd = Join-Path $vsPath "Common7\Tools\VsDevCmd.bat"
+-$compileCmd = "cl.exe /EHsc /Zi /MTd /D_DEBUG /Fe`"$BuildDir\EliteTaskbar.exe`" `"$SourceDir\main.cpp`" `"$SourceDir\Logger.cpp`" `"$SourceDir\TaskbarWindow.cpp`" `"$SourceDir\StartButton.cpp`" `"$SourceDir\ClockWidget.cpp`" `"$BuildDir\resources.res`" user32.lib advapi32.lib shell32.lib gdi32.lib dwmapi.lib comctl32.lib gdiplus.lib ole32.lib uxtheme.lib /link /MANIFEST:EMBED /MANIFESTINPUT:`"$SourceDir\app.manifest`""
++$compileCmd64 = "cl.exe /EHsc /Zi /MTd /D_DEBUG /Fe`"$BuildDir\EliteTaskbar.exe`" `"$SourceDir\main.cpp`" `"$SourceDir\Logger.cpp`" `"$SourceDir\TaskbarWindow.cpp`" `"$SourceDir\StartButton.cpp`" `"$SourceDir\ClockWidget.cpp`" `"$BuildDir\resources.res`" user32.lib advapi32.lib shell32.lib gdi32.lib dwmapi.lib comctl32.lib gdiplus.lib ole32.lib uxtheme.lib /link /MANIFEST:EMBED /MANIFESTINPUT:`"$SourceDir\app.manifest`""
++$compileCmd86 = "cl.exe /EHsc /Zi /MTd /D_DEBUG /Fe`"$BuildDirx86\EliteTaskbar_x86.exe`" `"$SourceDir\main.cpp`" `"$SourceDir\Logger.cpp`" `"$SourceDir\TaskbarWindow.cpp`" `"$SourceDir\StartButton.cpp`" `"$SourceDir\ClockWidget.cpp`" `"$BuildDirx86\resources.res`" user32.lib advapi32.lib shell32.lib gdi32.lib dwmapi.lib comctl32.lib gdiplus.lib ole32.lib uxtheme.lib /link /MANIFEST:EMBED /MANIFESTINPUT:`"$SourceDir\app.manifest`""
+ 
+-Write-Host "Compiling Resources..." -ForegroundColor Cyan
+-cmd.exe /c "cd /d `"$BuildDir`" && call `"$vsDevCmd`" -arch=x64 && rc.exe /fo `"$BuildDir\resources.res`" `"$SourceDir\resources.rc`""
++Write-Host "Compiling x64 Resources and C++..." -ForegroundColor Cyan
++cmd.exe /c "cd /d `"$BuildDir`" && call `"$vsDevCmd`" -arch=x64 && rc.exe /fo `"$BuildDir\resources.res`" `"$SourceDir\resources.rc`" && $compileCmd64"
++$exit64 = $LASTEXITCODE
+ 
+-Write-Host "Compiling C++ sources..." -ForegroundColor Cyan
+-cmd.exe /c "cd /d `"$BuildDir`" && call `"$vsDevCmd`" -arch=x64 && $compileCmd"
+-if ($LASTEXITCODE -ne 0) {
++Write-Host "Compiling x86 Resources and C++..." -ForegroundColor Cyan
++cmd.exe /c "cd /d `"$BuildDirx86`" && call `"$vsDevCmd`" -arch=x86 && rc.exe /fo `"$BuildDirx86\resources.res`" `"$SourceDir\resources.rc`" && $compileCmd86"
++$exit86 = $LASTEXITCODE
++
++if ($exit64 -ne 0 -or $exit86 -ne 0) {
+     Write-Host "Build failed! Cleaning up recent backup..." -ForegroundColor Red
+     $latestBackup = Get-ChildItem -Path (Join-Path $ScriptDir "Backups") -Filter *.cab | Sort-Object LastWriteTime -Descending | Select-Object -First 1
+     if ($latestBackup -and (New-TimeSpan -Start $latestBackup.LastWriteTime -End (Get-Date)).TotalMinutes -lt 5) {
+@@ -56,7 +71,7 @@ if ($LASTEXITCODE -ne 0) {
+         Write-Host "Deleted backup ($($latestBackup.Name)) because the build failed." -ForegroundColor Yellow
+     }
+     Write-Error "Compilation failed!"
+-    exit $LASTEXITCODE
++    exit 1
+ }
+ 
+ Write-Host "Build finished. Copying binaries to root..." -ForegroundColor Green
+
+commit 2563a46f7c1eeccb0f7ea968f467edfdb3e001e0
+Author: EliteSoftware - Zach <123858247+TheShadyRainbow4@users.noreply.github.com>
+Date:   Thu Jul 2 14:27:16 2026 -0700
+
+    Auto-commit after successful build (build.ps1)
+
+diff --git a/build.ps1 b/build.ps1
+index 7dd6d1a..5d427ad 100644
+--- a/build.ps1
++++ b/build.ps1
+@@ -6,12 +6,25 @@ param(
+ $ErrorActionPreference = 'Stop'
+ $ScriptDir = Split-Path -Parent $MyInvocation.MyCommand.Definition
+ 
++Write-Host "Triggering pre-build backup..." -ForegroundColor Cyan
++$BackupScript = Join-Path $ScriptDir "backup.ps1"
++if (Test-Path $BackupScript) {
++    & $BackupScript
++} else {
++    Write-Warning "Backup script not found. Skipping backup."
++}
++
+ Write-Host "Starting build process for Elite-TaskBar..." -ForegroundColor Cyan
+ 
+ # Define directories
+ $SourceDir = Join-Path $ScriptDir "SourceFiles"
+ $ResourcesDir = Join-Path $ScriptDir "Resources"
+ $OutputDir = $ScriptDir
++$BuildDir = Join-Path $ScriptDir "BuildOutput"
++
++if (-not (Test-Path $BuildDir)) {
++    New-Item -ItemType Directory -Path $BuildDir | Out-Null
++}
+ 
+ # Validate SourceFiles exists
+ if (-not (Test-Path $SourceDir)) {
+@@ -19,12 +32,39 @@ if (-not (Test-Path $SourceDir)) {
+     exit 0
+ }
+ 
+-# Example MSBuild execution logic (adjust based on actual solution names)
+-# $MsBuildPath = "C:\Program Files (x86)\Microsoft Visual Studio\2019\Enterprise\MSBuild\Current\Bin\MSBuild.exe"
+-# if (Test-Path $MsBuildPath) {
+-#     & $MsBuildPath "$SourceDir\EliteTaskBar.sln" /p:Configuration=$Configuration /p:OutputPath=$OutputDir
+-# } else {
+-#     Write-Error "MSBuild not found."
+-# }
++# Setup MSVC Environment
++$vsPath = "C:\Program Files (x86)\Microsoft Visual Studio\2022\BuildTools"
++
++if (-not $vsPath) {
++    Write-Error "Visual Studio C++ build tools not found!"
++    exit 1
++}
++
++$vsDevCmd = Join-Path $vsPath "Common7\Tools\VsDevCmd.bat"
++$compileCmd = "cl.exe /EHsc /Zi /MTd /D_DEBUG /Fe`"$BuildDir\EliteTaskbar.exe`" `"$SourceDir\main.cpp`" `"$SourceDir\Logger.cpp`" `"$SourceDir\TaskbarWindow.cpp`" `"$SourceDir\StartButton.cpp`" `"$SourceDir\ClockWidget.cpp`" `"$BuildDir\resources.res`" user32.lib advapi32.lib shell32.lib gdi32.lib dwmapi.lib comctl32.lib gdiplus.lib ole32.lib uxtheme.lib /link /MANIFEST:EMBED /MANIFESTINPUT:`"$SourceDir\app.manifest`""
++
++Write-Host "Compiling Resources..." -ForegroundColor Cyan
++cmd.exe /c "cd /d `"$BuildDir`" && call `"$vsDevCmd`" -arch=x64 && rc.exe /fo `"$BuildDir\resources.res`" `"$SourceDir\resources.rc`""
++
++Write-Host "Compiling C++ sources..." -ForegroundColor Cyan
++cmd.exe /c "cd /d `"$BuildDir`" && call `"$vsDevCmd`" -arch=x64 && $compileCmd"
++if ($LASTEXITCODE -ne 0) {
++    Write-Host "Build failed! Cleaning up recent backup..." -ForegroundColor Red
++    $latestBackup = Get-ChildItem -Path (Join-Path $ScriptDir "Backups") -Filter *.cab | Sort-Object LastWriteTime -Descending | Select-Object -First 1
++    if ($latestBackup -and (New-TimeSpan -Start $latestBackup.LastWriteTime -End (Get-Date)).TotalMinutes -lt 5) {
++        Remove-Item $latestBackup.FullName -Force
++        Write-Host "Deleted backup ($($latestBackup.Name)) because the build failed." -ForegroundColor Yellow
++    }
++    Write-Error "Compilation failed!"
++    exit $LASTEXITCODE
++}
++
++Write-Host "Build finished. Copying binaries to root..." -ForegroundColor Green
++Copy-Item "$BuildDir\EliteTaskbar.exe" -Destination "$ScriptDir\EliteTaskbar.exe" -Force
+ 
+-Write-Host "Build finished. Output binaries should be placed in $OutputDir." -ForegroundColor Green
++Write-Host "Auto-committing and pushing to repository..." -ForegroundColor Cyan
++Set-Location -Path $ScriptDir
++git add .
++git commit -m "Auto-commit after successful build (build.ps1)"
++git push origin master
++Write-Host "Done!" -ForegroundColor Green
+
+commit 1b402ba278ea5ce0f2bfc67d822640792d198d83
+Author: EliteSoftware - Zach <123858247+TheShadyRainbow4@users.noreply.github.com>
+Date:   Thu Jul 2 13:18:10 2026 -0700
+
+    Initial commit: Set up repository, documentation, and build scripts
+
+diff --git a/build.ps1 b/build.ps1
+new file mode 100644
+index 0000000..7dd6d1a
+--- /dev/null
++++ b/build.ps1
+@@ -0,0 +1,30 @@
++param(
++    [string]$Configuration = "Release"
++)
++
++# Elite-TaskBar Build Script
++$ErrorActionPreference = 'Stop'
++$ScriptDir = Split-Path -Parent $MyInvocation.MyCommand.Definition
++
++Write-Host "Starting build process for Elite-TaskBar..." -ForegroundColor Cyan
++
++# Define directories
++$SourceDir = Join-Path $ScriptDir "SourceFiles"
++$ResourcesDir = Join-Path $ScriptDir "Resources"
++$OutputDir = $ScriptDir
++
++# Validate SourceFiles exists
++if (-not (Test-Path $SourceDir)) {
++    Write-Warning "SourceFiles directory not found. Please populate source files before building."
++    exit 0
++}
++
++# Example MSBuild execution logic (adjust based on actual solution names)
++# $MsBuildPath = "C:\Program Files (x86)\Microsoft Visual Studio\2019\Enterprise\MSBuild\Current\Bin\MSBuild.exe"
++# if (Test-Path $MsBuildPath) {
++#     & $MsBuildPath "$SourceDir\EliteTaskBar.sln" /p:Configuration=$Configuration /p:OutputPath=$OutputDir
++# } else {
++#     Write-Error "MSBuild not found."
++# }
++
++Write-Host "Build finished. Output binaries should be placed in $OutputDir." -ForegroundColor Green

@@ -209,11 +209,29 @@ LRESULT CALLBACK OrbWndProc(HWND hwnd, UINT uMsg, WPARAM wParam, LPARAM lParam) 
 
                 bool isShiftDown = (GetAsyncKeyState(VK_SHIFT) & 0x8000) != 0;
 
+                HWND hNativeTarget = NULL;
+                HMONITOR hMon = MonitorFromWindow(pThis->GetParentTaskbar(), MONITOR_DEFAULTTONULL);
+                if (hMon) {
+                    HWND hPrimary = FindWindowW(L"Shell_TrayWnd", NULL);
+                    if (MonitorFromWindow(hPrimary, MONITOR_DEFAULTTONULL) == hMon) {
+                        hNativeTarget = hPrimary;
+                    } else {
+                        HWND hSec = NULL;
+                        while ((hSec = FindWindowExW(NULL, hSec, L"Shell_SecondaryTrayWnd", NULL)) != NULL) {
+                            if (MonitorFromWindow(hSec, MONITOR_DEFAULTTONULL) == hMon) {
+                                hNativeTarget = hSec;
+                                break;
+                            }
+                        }
+                    }
+                }
+                if (!hNativeTarget) hNativeTarget = FindWindowW(L"Shell_TrayWnd", NULL);
+
                 if (mode == 1) { // Native
-                    SendMessageW(FindWindowW(L"Shell_TrayWnd", NULL), WM_SYSCOMMAND, SC_TASKLIST, 0);
+                    SendMessageW(hNativeTarget, WM_SYSCOMMAND, SC_TASKLIST, 0);
                 } else if (mode == 2) { // Combo
                     if (isShiftDown) {
-                        SendMessageW(FindWindowW(L"Shell_TrayWnd", NULL), WM_SYSCOMMAND, SC_TASKLIST, 0);
+                        SendMessageW(hNativeTarget, WM_SYSCOMMAND, SC_TASKLIST, 0);
                     } else {
                         keybd_event(VK_LWIN, 0, 0, 0);
                         keybd_event(VK_LWIN, 0, KEYEVENTF_KEYUP, 0);

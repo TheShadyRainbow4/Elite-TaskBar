@@ -19,6 +19,10 @@
 #define IDC_MODE_INDEPENDENT  210
 #define IDC_MODE_REPLACE      211
 #define IDC_MODE_SECONDARY_ONLY 223
+#define IDC_WIDTH_AUTO        224
+#define IDC_WIDTH_FIXED       225
+#define IDC_WIDTH_ICONS       226
+#define IDC_HOVER_PREVIEW     227
 
 // Taskbar UI
 #define IDC_TRAY_NATIVE       212

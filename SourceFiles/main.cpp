@@ -14,7 +14,7 @@
 #pragma comment(lib, "shell32.lib")
 #pragma comment(lib, "comctl32.lib")
 
-EliteTaskbarConfig g_Config;
+EliteTaskbarConfig g_Config = { L"", TaskbarMode::SecondaryOnly, ButtonWidthMode::Auto, false, {} };
 
 void QueryOperationalMode() {
     HKEY hKey;
@@ -30,6 +30,24 @@ void QueryOperationalMode() {
                 g_Config.Mode = TaskbarMode::SecondaryOnly;
             }
         }
+        
+        dwValue = 0;
+        bufferSize = sizeof(DWORD);
+        if (RegQueryValueExW(hKey, L"TaskbarButtonWidthMode", NULL, NULL, (LPBYTE)&dwValue, &bufferSize) == ERROR_SUCCESS) {
+            if (dwValue == 1) {
+                g_Config.ButtonWidth = ButtonWidthMode::Fixed;
+            } else if (dwValue == 2) {
+                g_Config.ButtonWidth = ButtonWidthMode::IconsOnly;
+            } else {
+                g_Config.ButtonWidth = ButtonWidthMode::Auto;
+            }
+        }
+        
+        bufferSize = sizeof(DWORD);
+        if (RegQueryValueExW(hKey, L"TaskbarHoverPreview", NULL, NULL, (LPBYTE)&dwValue, &bufferSize) == ERROR_SUCCESS) {
+            g_Config.ShowPreviews = (dwValue == 1);
+        }
+
         RegCloseKey(hKey);
     }
     const wchar_t* modeStr = L"Mode: Independent";
@@ -64,8 +82,18 @@ void RunApplication(HINSTANCE hInstance) {
     LPWSTR* argv = CommandLineToArgvW(GetCommandLineW(), &argc);
     if (argv) {
         for (int i = 1; i < argc; i++) {
-            if (_wcsicmp(argv[i], L"/settings") == 0) {
+            if (_wcsicmp(argv[i], L"/settings") == 0 || _wcsicmp(argv[i], L"-settings") == 0) {
                 ShowTaskbarProperties(NULL);
+                CoUninitialize();
+                LocalFree(argv);
+                return;
+            } else if (_wcsicmp(argv[i], L"/everything") == 0 || _wcsicmp(argv[i], L"-everything") == 0) {
+                ShowSecretEverything(NULL);
+                CoUninitialize();
+                LocalFree(argv);
+                return;
+            } else if (_wcsicmp(argv[i], L"/dllscanner") == 0 || _wcsicmp(argv[i], L"-dllscanner") == 0) {
+                ShowSecretDLLScanner(NULL);
                 CoUninitialize();
                 LocalFree(argv);
                 return;

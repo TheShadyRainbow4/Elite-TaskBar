@@ -1,0 +1,2 @@
+#include "resource_stub.h"
+IDI_STUB_ICON ICON "..\\Resources\\EliteEverything.ico"

@@ -9,9 +9,17 @@ enum class TaskbarMode {
     SecondaryOnly
 };
 
+enum class ButtonWidthMode {
+    Auto,
+    Fixed,
+    IconsOnly
+};
+
 struct EliteTaskbarConfig {
     std::wstring Theme;
     TaskbarMode Mode;
+    ButtonWidthMode ButtonWidth;
+    bool ShowPreviews;
     std::vector<HMONITOR> MonitorTargets;
 };
 
