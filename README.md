@@ -77,9 +77,15 @@ Expect the unexpected. Embrace the chaos. And have fun!
 
 <div align="center">
 
- <a href='https://i.postimg.cc/DZTjtNg1/Elite-Software-Company-Simulator-LOGO.png' target='_blank'><img src='https://i.postimg.cc/DZTjtNg1/Elite-Software-Company-Simulator-LOGO.png' border='0' alt='Elite-Software-Client' width="250"></a> &nbsp;&nbsp;&nbsp;&nbsp; <a href='https://i.postimg.cc/85mKDbX8/Elite-Software-Company-Logo.png' target='_blank'><img src='https://i.postimg.cc/85mKDbX8/Elite-Software-Company-Logo.png' border='0' alt='Elite-Software-LOGO' width="250"></a> 
+ <a href='https://i.postimg.cc/DZTjtNg1/Elite-Software-Company-Simulator-LOGO.png' target='_blank'><img src='https://i.postimg.cc/DZTjtNg1/Elite-Software-Company-Simulator-LOGO.png' border='0' alt='Elite-Software-Client' width="250"></a> &nbsp;&nbsp;&nbsp;&nbsp; <a href='https://i.postimg.cc/85mKDbX8/Elite-Software-Company-Logo.png' target='_blank'><img src='https://github.com/TheShadyRainbow4/Elite-TaskBar/raw/refs/heads/master/Screenshots/Friday-07-2026-040652-Clip.BMP' border='0' alt='Elite-Software-LOGO' width="250"> </a>
 
-</div>
+ <a href='https://github.com/TheShadyRainbow4/Elite-TaskBar/raw/refs/heads/master/Screenshots/Friday-07-2026-025700-Clip.BMP' target='_blank'><img src='https://i.postimg.cc/DZTjtNg1/Elite-Software-Company-Simulator-LOGO.png' border='0' alt='Elite-Software-Client' width="250"></a>
+
+  <a href='https://github.com/TheShadyRainbow4/Elite-TaskBar/raw/refs/heads/master/Screenshots/Friday-07-2026-035358-Clip.BMP' target='_blank'><img src='https://github.com/TheShadyRainbow4/Elite-TaskBar/raw/refs/heads/master/Screenshots/Friday-07-2026-035358-Clip.BMP' border='0' alt='Elite-Software-Client' width="250"></a>
+
+   <a href='https://github.com/TheShadyRainbow4/Elite-TaskBar/raw/refs/heads/master/Screenshots/Friday-07-2026-030438-Clip.BMP' target='_blank'><img src='https://github.com/TheShadyRainbow4/Elite-TaskBar/raw/refs/heads/master/Screenshots/Friday-07-2026-030438-Clip.BMP' border='0' alt='Elite-Software-Client' width="250"></a>
+
+   
 
 --- 
 
