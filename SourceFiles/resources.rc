@@ -7,16 +7,12 @@ IDB_START_ORB RCDATA "..\\Resources\\StartOrb\\orb.png"
 
 IDD_TASKBAR_PROPS DIALOGEX 0, 0, 252, 218
 STYLE DS_SETFONT | DS_FIXEDSYS | WS_CHILD | WS_DISABLED | WS_CAPTION
-CAPTION "Taskbar"
+CAPTION "Elite Taskbar"
 FONT 8, "MS Shell Dlg", 0, 0, 0x1
 BEGIN
-    GROUPBOX        "Taskbar appearance", IDC_STATIC, 7, 7, 238, 60
-    CONTROL         "Lock the &taskbar", IDC_LOCK_TASKBAR, "Button", BS_AUTOCHECKBOX | WS_TABSTOP, 14, 20, 220, 10
-    CONTROL         "A&uto-hide the taskbar", IDC_AUTOHIDE_TASKBAR, "Button", BS_AUTOCHECKBOX | WS_TABSTOP, 14, 34, 220, 10
-    CONTROL         "Use s&mall icons", IDC_SMALL_ICONS, "Button", BS_AUTOCHECKBOX | WS_TABSTOP, 14, 48, 220, 10
-    GROUPBOX        "Taskbar Mode", IDC_STATIC, 7, 75, 238, 45
-    CONTROL         "Independent (Run as secondary taskbar)", IDC_MODE_INDEPENDENT, "Button", BS_AUTORADIOBUTTON | WS_GROUP | WS_TABSTOP, 14, 88, 220, 10
-    CONTROL         "Replace (Replace native Windows taskbar)", IDC_MODE_REPLACE, "Button", BS_AUTORADIOBUTTON, 14, 102, 220, 10
+    GROUPBOX        "Elite Taskbar Shell Settings", IDC_STATIC, 7, 7, 238, 45
+    CONTROL         "Independent (Run as secondary taskbar)", IDC_MODE_INDEPENDENT, "Button", BS_AUTORADIOBUTTON | WS_GROUP | WS_TABSTOP, 14, 20, 220, 10
+    CONTROL         "Replace (Replace native Windows taskbar)", IDC_MODE_REPLACE, "Button", BS_AUTORADIOBUTTON, 14, 34, 220, 10
 END
 
 IDD_STARTMENU_PROPS DIALOGEX 0, 0, 252, 218

@@ -86,6 +86,7 @@ HWND g_hToolbar = NULL;
 #define IDM_EXIT_ELITETASKBAR       3010
 #define IDM_RESTART_SHELL           3011
 #define IDM_START_EXPLORER          3012
+#define IDM_TASKBAR_SETTINGS        3013
 
 UINT g_uTaskbarCreatedMsg = 0;
 OrbState g_orbState = OrbState::Normal;
@@ -403,6 +404,7 @@ LRESULT CALLBACK WindowProc(HWND hwnd, UINT uMsg, WPARAM wParam, LPARAM lParam) 
 
     switch (uMsg) {
     case WM_CREATE: {
+        SetTimer(hwnd, 9999, 100, NULL);
         DWM_BLURBEHIND bb = {0};
         bb.dwFlags = DWM_BB_ENABLE;
         bb.fEnable = TRUE;
@@ -459,15 +461,15 @@ LRESULT CALLBACK WindowProc(HWND hwnd, UINT uMsg, WPARAM wParam, LPARAM lParam) 
         int wmId = LOWORD(wParam);
         switch (wmId) {
             case IDM_TASKBAR_CASCADE:
-                if (g_hNativeTaskbar) PostMessageW(g_hNativeTaskbar, WM_COMMAND, 410, 0); // ID_SHELL_CMD_CASCADE_WND
+                if (g_hNativeTaskbar) PostMessageW(g_hNativeTaskbar, WM_COMMAND, 403, 0); // Cascade
                 else CascadeWindows(NULL, MDITILE_SKIPDISABLED | MDITILE_ZORDER, NULL, 0, NULL);
                 break;
             case IDM_TASKBAR_STACKED:
-                if (g_hNativeTaskbar) PostMessageW(g_hNativeTaskbar, WM_COMMAND, 409, 0); // ID_SHELL_CMD_TILE_WND_H
+                if (g_hNativeTaskbar) PostMessageW(g_hNativeTaskbar, WM_COMMAND, 404, 0); // Tile Horizontally
                 else TileWindows(NULL, MDITILE_HORIZONTAL, NULL, 0, NULL);
                 break;
             case IDM_TASKBAR_SIDEBYSIDE:
-                if (g_hNativeTaskbar) PostMessageW(g_hNativeTaskbar, WM_COMMAND, 408, 0); // ID_SHELL_CMD_TILE_WND_V
+                if (g_hNativeTaskbar) PostMessageW(g_hNativeTaskbar, WM_COMMAND, 405, 0); // Tile Vertically
                 else TileWindows(NULL, MDITILE_VERTICAL, NULL, 0, NULL);
                 break;
             case IDM_TASKBAR_SHOWDESKTOP:
@@ -495,11 +497,11 @@ LRESULT CALLBACK WindowProc(HWND hwnd, UINT uMsg, WPARAM wParam, LPARAM lParam) 
                 }
                 break;
             case IDM_TASKBAR_TASKMGR:
-                if (g_hNativeTaskbar) PostMessageW(g_hNativeTaskbar, WM_COMMAND, 405, 0); // ID_SHELL_CMD_OPEN_TASKMGR
+                if (g_hNativeTaskbar) PostMessageW(g_hNativeTaskbar, WM_COMMAND, 420, 0); // 420 is Win10 TaskMgr, 416 on Win7
                 else ShellExecuteW(hwnd, L"open", L"taskmgr.exe", NULL, NULL, SW_SHOWNORMAL);
                 break;
             case IDM_TASKBAR_LOCK:
-                if (g_hNativeTaskbar) PostMessageW(g_hNativeTaskbar, WM_COMMAND, 404 /* ID_LOCKTASKBAR */, 0);
+                if (g_hNativeTaskbar) PostMessageW(g_hNativeTaskbar, WM_COMMAND, 424, 0); // 424 is ID_LOCKTASKBAR
                 else {
                     HKEY hKey;
                     if (RegOpenKeyExW(HKEY_CURRENT_USER, L"Software\\Microsoft\\Windows\\CurrentVersion\\Explorer\\Advanced", 0, KEY_READ | KEY_WRITE, &hKey) == ERROR_SUCCESS) {
@@ -519,7 +521,10 @@ LRESULT CALLBACK WindowProc(HWND hwnd, UINT uMsg, WPARAM wParam, LPARAM lParam) 
                 else InvokeNativeRunDialog(hwnd); // Native Run Dialog undocumented ordinal 61
                 break;
             case IDM_TASKBAR_PROPERTIES:
-                // Always show our custom property sheet instead of native Run dialog
+                if (g_hNativeTaskbar) PostMessageW(g_hNativeTaskbar, WM_COMMAND, 413, 0); // 413 is ID_SHELL_CMD_PROPERTIES
+                else ShellExecuteW(hwnd, L"open", L"rundll32.exe", L"shell32.dll,Options_RunDLL 1", NULL, SW_SHOWNORMAL);
+                break;
+            case IDM_TASKBAR_SETTINGS:
                 ShowTaskbarProperties(hwnd);
                 break;
             case IDM_EXIT_ELITETASKBAR:
@@ -574,6 +579,7 @@ LRESULT CALLBACK WindowProc(HWND hwnd, UINT uMsg, WPARAM wParam, LPARAM lParam) 
             
             AppendMenuW(hMenu, MF_STRING | (isLocked ? MF_CHECKED : MF_UNCHECKED), IDM_TASKBAR_LOCK, L"Lock the taskbar");
             AppendMenuW(hMenu, MF_STRING, IDM_TASKBAR_RUN, L"Run...");
+            AppendMenuW(hMenu, MF_STRING, IDM_TASKBAR_SETTINGS, L"Elite Taskbar Settings");
             AppendMenuW(hMenu, MF_STRING, IDM_TASKBAR_PROPERTIES, L"Properties");
             AppendMenuW(hMenu, MF_SEPARATOR, 0, NULL);
             if (GetAsyncKeyState(VK_SHIFT) & 0x8000) {
@@ -591,6 +597,14 @@ LRESULT CALLBACK WindowProc(HWND hwnd, UINT uMsg, WPARAM wParam, LPARAM lParam) 
         DestroyMenu(hMenu);
         return 0;
     }
+    case WM_TIMER:
+        if (wParam == 9999 && g_Config.Mode == TaskbarMode::Replace && g_hNativeTaskbar) {
+            if (IsWindowVisible(g_hNativeTaskbar)) {
+                ShowWindow(g_hNativeTaskbar, SW_HIDE);
+                SetWindowPos(g_hNativeTaskbar, NULL, -10000, -10000, 0, 0, SWP_NOZORDER | SWP_NOSIZE | SWP_NOACTIVATE);
+            }
+        }
+        return 0;
     case WM_SETTINGCHANGE: {
         if (lParam && wcscmp((LPCWSTR)lParam, L"TraySettings") == 0) {
             HKEY hKey;
@@ -652,7 +666,10 @@ bool TaskbarWindow::Initialize(HINSTANCE hInstance) {
         if (nativeHeight > 0 && nativeHeight < 100) {
             taskbarHeight = nativeHeight;
         }
-        ShowWindow(g_hNativeTaskbar, SW_HIDE);
+        if (g_Config.Mode == TaskbarMode::Replace) {
+            ShowWindow(g_hNativeTaskbar, SW_HIDE);
+            SetWindowPos(g_hNativeTaskbar, NULL, -10000, -10000, 0, 0, SWP_NOZORDER | SWP_NOSIZE | SWP_NOACTIVATE);
+        }
     }
 
     WNDCLASSEXW wc = {0};
@@ -783,6 +800,7 @@ void TaskbarWindow::Cleanup() {
     
     if (g_hNativeTaskbar && IsWindow(g_hNativeTaskbar)) {
         ShowWindow(g_hNativeTaskbar, SW_SHOW);
+        PostMessageW(g_hNativeTaskbar, WM_DISPLAYCHANGE, 0, 0);
     } else {
         ShellExecuteW(NULL, L"open", L"explorer.exe", NULL, NULL, SW_SHOWNORMAL);
     }
