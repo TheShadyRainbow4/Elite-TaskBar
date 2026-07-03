@@ -26,3 +26,5 @@ All notable changes to this project will be documented in this file.
 - Enforced single-instance architecture using a Global Named Mutex, with an undocumented `-allowMultiple` bypass flag.
 - Integrated `git push` into the automated build and backup script.
 - Added `Backups/` to `.gitignore` to prevent recursive CAB bloat on the remote repository.
+- Fixed catastrophic infinite click loop in `ShowLegacyClockExperience` by targeting the correctly preserved `g_hNativeTaskbar` instead of globally matching `Shell_TrayWnd`.
+- Added missing `BufferedPaintInit()` and `BufferedPaintUnInit()` to `main.cpp` to ensure the DWM Glass Buffered Paint API (`BeginBufferedPaint`) operates correctly for standard users, fixing missing clock text.

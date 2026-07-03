@@ -6,6 +6,7 @@
 #include "StartButton.h"
 #include "resource.h"
 #include <commctrl.h>
+#include <uxtheme.h>
 
 #pragma comment(lib, "user32.lib")
 #pragma comment(lib, "advapi32.lib")
@@ -69,6 +70,8 @@ void RunApplication(HINSTANCE hInstance) {
     icex.dwSize = sizeof(INITCOMMONCONTROLSEX);
     icex.dwICC = ICC_PAGESCROLLER_CLASS | ICC_BAR_CLASSES;
     InitCommonControlsEx(&icex);
+    
+    BufferedPaintInit();
 
     if (TaskbarWindow::Initialize(hInstance)) {
         Logger::Log(L"EliteTaskbar window initialized successfully. Entering message loop.");
@@ -77,6 +80,7 @@ void RunApplication(HINSTANCE hInstance) {
     }
     
     StartButton::Cleanup();
+    BufferedPaintUnInit();
     
     if (SUCCEEDED(hrCoInit)) {
         CoUninitialize();
