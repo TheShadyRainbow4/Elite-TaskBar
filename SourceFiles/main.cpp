@@ -45,6 +45,9 @@ void RunApplication(HINSTANCE hInstance) {
     // 3 & 4. Initialize global logging function & Bootstrapper logic
     Logger::Initialize();
     
+    // Initialize COM for Legacy Clock UI
+    HRESULT hrCoInit = CoInitialize(NULL);
+    
     // 6 & 7. Query Windows Registry & Declare global struct
     QueryOperationalMode();
 
@@ -60,6 +63,11 @@ void RunApplication(HINSTANCE hInstance) {
     }
     
     StartButton::Cleanup();
+    
+    if (SUCCEEDED(hrCoInit)) {
+        CoUninitialize();
+    }
+    
     Logger::Log(L"EliteTaskbar shutting down.");
 }
 

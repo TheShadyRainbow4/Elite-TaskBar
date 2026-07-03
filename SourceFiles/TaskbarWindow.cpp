@@ -254,9 +254,8 @@ LRESULT CALLBACK TrayClockProc(HWND hwnd, UINT uMsg, WPARAM wParam, LPARAM lPara
                 HFONT hOldFont = (HFONT)SelectObject(hdcBuffer, hFont);
 
                 DTTOPTS dttOpts = { sizeof(DTTOPTS) };
-                dttOpts.dwFlags = DTT_COMPOSITED | DTT_TEXTCOLOR | DTT_GLOWSIZE;
+                dttOpts.dwFlags = DTT_COMPOSITED | DTT_TEXTCOLOR;
                 dttOpts.crText = RGB(255, 255, 255);
-                dttOpts.iGlowSize = 8;
                 
                 DrawThemeTextEx(hTheme, hdcBuffer, 0, 0, clockText, -1, DT_CENTER | DT_VCENTER, &rcClient, &dttOpts);
                 
@@ -576,17 +575,17 @@ bool TaskbarWindow::Initialize(HINSTANCE hInstance) {
     
     // Create children (Start Button removed, rendered directly on parent DC)
     g_hReBar = CreateWindowExW(0, L"ReBarWindow32", L"", WS_CHILD | WS_VISIBLE | WS_CLIPSIBLINGS | WS_CLIPCHILDREN | RBS_VARHEIGHT | RBS_BANDBORDERS, 
-        45, 0, screenWidth - 260, taskbarHeight, g_hTaskbar, NULL, hInstance, NULL);
+        45, 0, screenWidth - 280, taskbarHeight, g_hTaskbar, NULL, hInstance, NULL);
 
     // Tray area (Moved left by 15px to avoid overlapping with Show Desktop button)
-    g_hTrayNotify = CreateWindowExW(0, L"TrayNotifyWnd", L"", WS_CHILD | WS_VISIBLE, screenWidth - 215, 0, 200, taskbarHeight, g_hTaskbar, NULL, hInstance, NULL);
+    g_hTrayNotify = CreateWindowExW(0, L"TrayNotifyWnd", L"", WS_CHILD | WS_VISIBLE, screenWidth - 235, 0, 220, taskbarHeight, g_hTaskbar, NULL, hInstance, NULL);
     
     // Hide SysPager and ToolbarWindow32 until Phase 6 when we implement custom rendering
     g_hSysPager = CreateWindowExW(0, L"SysPager", L"", WS_CHILD, 0, 0, 110, taskbarHeight, g_hTrayNotify, NULL, hInstance, NULL);
     g_hToolbar = CreateWindowExW(0, L"ToolbarWindow32", L"", WS_CHILD | WS_CLIPSIBLINGS | WS_CLIPCHILDREN, 0, 0, 110, taskbarHeight, g_hSysPager, NULL, hInstance, NULL);
     
-    // Clock widget width increased to 90px to prevent text cut-off
-    g_hTrayClock = CreateWindowExW(0, L"TrayClockWClass", L"00:00", WS_CHILD | WS_VISIBLE, 110, 0, 90, taskbarHeight, g_hTrayNotify, NULL, hInstance, NULL);
+    // Clock widget width increased to 110px to prevent text cut-off
+    g_hTrayClock = CreateWindowExW(0, L"TrayClockWClass", L"00:00", WS_CHILD | WS_VISIBLE, 110, 0, 110, taskbarHeight, g_hTrayNotify, NULL, hInstance, NULL);
     
     // Show Desktop button at far right
     CreateWindowExW(0, L"TrayShowDesktopButtonWClass", L"", WS_CHILD | WS_VISIBLE, screenWidth - 15, 0, 15, taskbarHeight, g_hTaskbar, NULL, hInstance, NULL);
