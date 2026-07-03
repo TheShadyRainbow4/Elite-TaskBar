@@ -45,6 +45,20 @@ void RunApplication(HINSTANCE hInstance) {
     // 3 & 4. Initialize global logging function & Bootstrapper logic
     Logger::Initialize();
     
+    bool allowMultiple = false;
+    for (int i = 1; i < __argc; i++) {
+        if (_wcsicmp(__wargv[i], L"-allowMultiple") == 0) allowMultiple = true;
+    }
+    
+    HANDLE hMutex = NULL;
+    if (!allowMultiple) {
+        hMutex = CreateMutexW(NULL, TRUE, L"EliteTaskbar_Instance_Mutex");
+        if (GetLastError() == ERROR_ALREADY_EXISTS) {
+            Logger::Log(L"EliteTaskbar is already running. Exiting.");
+            return;
+        }
+    }
+    
     // Initialize COM for Legacy Clock UI
     HRESULT hrCoInit = CoInitialize(NULL);
     
