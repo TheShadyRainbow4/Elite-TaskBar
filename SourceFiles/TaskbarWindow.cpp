@@ -6,9 +6,61 @@
 #include <dwmapi.h>
 #include <windowsx.h>
 #include <uxtheme.h>
+#include <initguid.h>
+#include <Unknwn.h>
+#include <objbase.h>
+
 #pragma comment(lib, "dwmapi.lib")
 #pragma comment(lib, "shell32.lib")
 #pragma comment(lib, "uxtheme.lib")
+#pragma comment(lib, "ole32.lib")
+
+DEFINE_GUID(GUID_Win32Clock,
+    0x0A323554A,
+    0x0FE1, 0x4E49, 0xae, 0xe1,
+    0x67, 0x22, 0x46, 0x5d, 0x79, 0x9f
+);
+DEFINE_GUID(IID_Win32Clock,
+    0x7A5FCA8A,
+    0x76B1, 0x44C8, 0xa9, 0x7c,
+    0xe7, 0x17, 0x3c, 0xca, 0x5f, 0x4f
+);
+
+typedef interface Win32Clock Win32Clock;
+
+typedef struct Win32ClockVtbl {
+    BEGIN_INTERFACE
+    HRESULT(STDMETHODCALLTYPE* QueryInterface)(Win32Clock* This, REFIID riid, void** ppvObject);
+    ULONG(STDMETHODCALLTYPE* AddRef)(Win32Clock* This);
+    ULONG(STDMETHODCALLTYPE* Release)(Win32Clock* This);
+    HRESULT(STDMETHODCALLTYPE* ShowWin32Clock)(Win32Clock* This, HWND hWnd, LPRECT lpRect);
+    END_INTERFACE
+} Win32ClockVtbl;
+
+interface Win32Clock {
+    CONST_VTBL struct Win32ClockVtbl* lpVtbl;
+};
+
+BOOL ShowLegacyClockExperience(HWND hWnd) {
+    if (!hWnd) return FALSE;
+    HRESULT hr = S_OK;
+    Win32Clock* pWin32Clock = NULL;
+    hr = CoCreateInstance(
+        GUID_Win32Clock,
+        NULL,
+        CLSCTX_INPROC_SERVER | CLSCTX_INPROC_HANDLER,
+        IID_Win32Clock,
+        (void**)&pWin32Clock
+    );
+    if (SUCCEEDED(hr)) {
+        RECT rc;
+        GetWindowRect(hWnd, &rc);
+        pWin32Clock->lpVtbl->ShowWin32Clock(pWin32Clock, hWnd, &rc);
+        pWin32Clock->lpVtbl->Release(pWin32Clock);
+        return TRUE;
+    }
+    return FALSE;
+}
 
 HWND g_hTaskbar = NULL;
 HWND g_hNativeTaskbar = NULL;
@@ -217,12 +269,14 @@ LRESULT CALLBACK TrayClockProc(HWND hwnd, UINT uMsg, WPARAM wParam, LPARAM lPara
         EndPaint(hwnd, &ps);
         return 0;
     }
-    case WM_LBUTTONDBLCLK: {
-        ShellExecuteW(NULL, L"open", L"control", L"timedate.cpl", NULL, SW_SHOWNORMAL);
-        return 0;
-    }
+    case WM_LBUTTONDBLCLK:
     case WM_LBUTTONDOWN: {
-        ShellExecuteW(NULL, L"open", L"control", L"timedate.cpl", NULL, SW_SHOWNORMAL);
+        if (!FindWindowW(L"ClockFlyoutWindow", NULL)) {
+            if (!ShowLegacyClockExperience(hwnd)) {
+                // Fallback to control panel if COM interface fails (e.g., pre-Win10 or corrupted)
+                ShellExecuteW(NULL, L"open", L"control", L"timedate.cpl", NULL, SW_SHOWNORMAL);
+            }
+        }
         return 0;
     }
     case WM_DESTROY:
