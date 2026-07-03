@@ -92,12 +92,25 @@ void StartButton::SetOrbImageFromResource(HINSTANCE hInstance, int resourceId) {
     }
 }
 
-void StartButton::ReloadOrbImage(HINSTANCE hInstance) {
+void StartButton::ReloadOrbImage(HINSTANCE hInstance, int monitorIndex) {
     DWORD orbId = 103; // IDB_START_ORB
     HKEY hKey;
     if (RegOpenKeyExW(HKEY_CURRENT_USER, L"Software\\EliteSoftware\\Win32Explorer\\Advanced", 0, KEY_READ, &hKey) == ERROR_SUCCESS) {
         DWORD cbData = sizeof(DWORD);
-        RegQueryValueExW(hKey, L"StartOrbID", NULL, NULL, (LPBYTE)&orbId, &cbData);
+        
+        bool found = false;
+        if (monitorIndex >= 0) {
+            WCHAR valueName[64];
+            wsprintfW(valueName, L"StartOrbID_Mon%d", monitorIndex);
+            if (RegQueryValueExW(hKey, valueName, NULL, NULL, (LPBYTE)&orbId, &cbData) == ERROR_SUCCESS) {
+                found = true;
+            }
+        }
+        
+        if (!found) {
+            RegQueryValueExW(hKey, L"StartOrbID", NULL, NULL, (LPBYTE)&orbId, &cbData);
+        }
+        
         RegCloseKey(hKey);
     }
     SetOrbImageFromResource(hInstance, (int)orbId);

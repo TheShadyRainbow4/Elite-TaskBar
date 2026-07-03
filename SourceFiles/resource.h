@@ -35,6 +35,7 @@
 #define IDC_START_NATIVE      217
 #define IDC_START_COMBO       218
 #define IDC_START_TRIGGER     219
+#define IDC_START_MONITOR_LIST 229
 
 // Toolbars UI
 #define IDC_TOOLBAR_LIST      220

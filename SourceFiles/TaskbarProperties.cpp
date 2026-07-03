@@ -168,6 +168,16 @@ INT_PTR CALLBACK TaskbarSettingsDlgProc(HWND hwndDlg, UINT uMsg, WPARAM wParam, 
     return FALSE;
 }
 
+struct SettingsMonitorData {
+    int count;
+};
+
+BOOL CALLBACK SettingsMonitorEnumProc(HMONITOR hMonitor, HDC hdcMonitor, LPRECT lprcMonitor, LPARAM dwData) {
+    SettingsMonitorData* data = (SettingsMonitorData*)dwData;
+    data->count++;
+    return TRUE;
+}
+
 INT_PTR CALLBACK StartMenuSettingsDlgProc(HWND hwndDlg, UINT uMsg, WPARAM wParam, LPARAM lParam) {
     switch (uMsg) {
     case WM_INITDIALOG:
@@ -229,10 +239,57 @@ INT_PTR CALLBACK StartMenuSettingsDlgProc(HWND hwndDlg, UINT uMsg, WPARAM wParam
             SendDlgItemMessageW(hwndDlg, IDC_START_TRIGGER, CB_ADDSTRING, 0, (LPARAM)L"Left Click Opens Shell");
             SendDlgItemMessageW(hwndDlg, IDC_START_TRIGGER, CB_ADDSTRING, 0, (LPARAM)L"Shift+Click Opens Native");
             SendDlgItemMessageW(hwndDlg, IDC_START_TRIGGER, CB_SETCURSEL, 0, 0);
+            
+            SendDlgItemMessageW(hwndDlg, IDC_START_MONITOR_LIST, CB_ADDSTRING, 0, (LPARAM)L"Global Configuration");
+            SendDlgItemMessageW(hwndDlg, IDC_START_MONITOR_LIST, CB_SETITEMDATA, 0, -1);
+            SettingsMonitorData monData = {0};
+            EnumDisplayMonitors(NULL, NULL, SettingsMonitorEnumProc, (LPARAM)&monData);
+            for (int i = 0; i < monData.count; i++) {
+                WCHAR szMon[32];
+                wsprintfW(szMon, L"Monitor %d", i);
+                SendDlgItemMessageW(hwndDlg, IDC_START_MONITOR_LIST, CB_ADDSTRING, 0, (LPARAM)szMon);
+                SendDlgItemMessageW(hwndDlg, IDC_START_MONITOR_LIST, CB_SETITEMDATA, i + 1, i);
+            }
+            SendDlgItemMessageW(hwndDlg, IDC_START_MONITOR_LIST, CB_SETCURSEL, 0, 0);
         }
         return TRUE;
     case WM_COMMAND:
-        if (HIWORD(wParam) == BN_CLICKED || HIWORD(wParam) == EN_CHANGE || HIWORD(wParam) == CBN_SELCHANGE) {
+        if (HIWORD(wParam) == CBN_SELCHANGE && LOWORD(wParam) == IDC_START_MONITOR_LIST) {
+            int monSel = SendDlgItemMessageW(hwndDlg, IDC_START_MONITOR_LIST, CB_GETCURSEL, 0, 0);
+            if (monSel != CB_ERR) {
+                int monIndex = SendDlgItemMessageW(hwndDlg, IDC_START_MONITOR_LIST, CB_GETITEMDATA, monSel, 0);
+                HKEY hKey;
+                if (RegOpenKeyExW(HKEY_CURRENT_USER, L"Software\\EliteSoftware\\Win32Explorer\\Advanced", 0, KEY_READ, &hKey) == ERROR_SUCCESS) {
+                    DWORD dwValue = IDB_START_ORB;
+                    DWORD cbData = sizeof(DWORD);
+                    bool found = false;
+                    if (monIndex >= 0) {
+                        WCHAR valueName[64];
+                        wsprintfW(valueName, L"StartOrbID_Mon%d", monIndex);
+                        if (RegQueryValueExW(hKey, valueName, NULL, NULL, (LPBYTE)&dwValue, &cbData) == ERROR_SUCCESS) {
+                            found = true;
+                        }
+                    }
+                    if (!found) {
+                        if (RegQueryValueExW(hKey, L"StartOrbID", NULL, NULL, (LPBYTE)&dwValue, &cbData) != ERROR_SUCCESS) {
+                            dwValue = IDB_START_ORB;
+                        }
+                    }
+                    
+                    int count = SendDlgItemMessageW(hwndDlg, IDC_ORB_SELECTOR, CB_GETCOUNT, 0, 0);
+                    int selIndex = 0;
+                    for (int i = 0; i < count; i++) {
+                        if (SendDlgItemMessageW(hwndDlg, IDC_ORB_SELECTOR, CB_GETITEMDATA, i, 0) == dwValue) {
+                            selIndex = i;
+                            break;
+                        }
+                    }
+                    SendDlgItemMessageW(hwndDlg, IDC_ORB_SELECTOR, CB_SETCURSEL, selIndex, 0);
+                    RegCloseKey(hKey);
+                }
+            }
+        }
+        else if (HIWORD(wParam) == BN_CLICKED || HIWORD(wParam) == EN_CHANGE || HIWORD(wParam) == CBN_SELCHANGE) {
             SendMessageW(GetParent(hwndDlg), PSM_CHANGED, (WPARAM)hwndDlg, 0);
         }
         return TRUE;
@@ -249,7 +306,17 @@ INT_PTR CALLBACK StartMenuSettingsDlgProc(HWND hwndDlg, UINT uMsg, WPARAM wParam
                 int selIndex = SendDlgItemMessageW(hwndDlg, IDC_ORB_SELECTOR, CB_GETCURSEL, 0, 0);
                 if (selIndex != CB_ERR) {
                     DWORD orbId = (DWORD)SendDlgItemMessageW(hwndDlg, IDC_ORB_SELECTOR, CB_GETITEMDATA, selIndex, 0);
-                    RegSetValueExW(hKey, L"StartOrbID", 0, REG_DWORD, (const BYTE*)&orbId, sizeof(DWORD));
+                    
+                    int monSel = SendDlgItemMessageW(hwndDlg, IDC_START_MONITOR_LIST, CB_GETCURSEL, 0, 0);
+                    int monIndex = (monSel != CB_ERR) ? SendDlgItemMessageW(hwndDlg, IDC_START_MONITOR_LIST, CB_GETITEMDATA, monSel, 0) : -1;
+                    
+                    if (monIndex >= 0) {
+                        WCHAR valueName[64];
+                        wsprintfW(valueName, L"StartOrbID_Mon%d", monIndex);
+                        RegSetValueExW(hKey, valueName, 0, REG_DWORD, (const BYTE*)&orbId, sizeof(DWORD));
+                    } else {
+                        RegSetValueExW(hKey, L"StartOrbID", 0, REG_DWORD, (const BYTE*)&orbId, sizeof(DWORD));
+                    }
                 }
                 
                 RegCloseKey(hKey);

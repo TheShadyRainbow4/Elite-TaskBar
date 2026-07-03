@@ -1305,13 +1305,12 @@ LRESULT CALLBACK WindowProc(HWND hwnd, UINT uMsg, WPARAM wParam, LPARAM lParam) 
             InvalidateRect(hwnd, NULL, TRUE);
         } else if (lParam && wcscmp((LPCWSTR)lParam, L"EliteTaskbarSettings") == 0) {
             TaskbarInstance* pThis = (TaskbarInstance*)GetWindowLongPtr(hwnd, GWLP_USERDATA);
-            if (pThis && pThis->m_StartButton.GetHwnd()) {
-                pThis->m_StartButton.ReloadOrbImage(pThis->m_hInstance);
+            if (pThis && pThis->startButton && pThis->startButton->GetHwnd()) {
+                pThis->startButton->ReloadOrbImage(GetModuleHandleW(NULL), pThis->monitorIndex);
                 
-                // Need to reposition/redraw
                 RECT rcClient;
                 GetClientRect(hwnd, &rcClient);
-                pThis->m_StartButton.Show(0, 0, rcClient.bottom);
+                pThis->startButton->Show(0, 0, rcClient.bottom);
             }
         }
         return 0;
@@ -1423,6 +1422,7 @@ bool TaskbarWindow::Initialize(HINSTANCE hInstance) {
         
         TaskbarInstance* inst = new TaskbarInstance();
         inst->hMonitor = monData.monitors[i];
+        inst->monitorIndex = i;
         inst->monitorRect = monData.rects[i];
         inst->taskbarHeight = taskbarHeight;
         
@@ -1518,9 +1518,8 @@ bool TaskbarWindow::Initialize(HINSTANCE hInstance) {
         UpdateWindow(inst->hTaskbar);
 
         inst->startButton = new StartButton();
-        if (g_Config.EnabledComponents & TASKBAR_COMPONENT_START) {
-            inst->startButton->Initialize(hInstance, inst->hTaskbar);
-            inst->startButton->ReloadOrbImage(hInstance);
+        if (inst->startButton->Initialize(hInstance, inst->hTaskbar)) {
+            inst->startButton->ReloadOrbImage(hInstance, inst->monitorIndex);
             inst->startButton->Show(xPos, yPos, taskbarHeight);
         }
         

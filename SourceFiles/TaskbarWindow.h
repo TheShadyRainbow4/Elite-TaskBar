@@ -11,8 +11,11 @@ struct TaskbarInstance {
     HWND hToolbar;
     HWND hReBar;
     HWND hTaskSwitch;
+    HWND hTrayNotify;
+    HWND hTrayClock;
     HIMAGELIST hImageList;
     HMONITOR hMonitor;
+    int monitorIndex;
     RECT monitorRect;
     int taskbarHeight;
     class StartButton* startButton;
