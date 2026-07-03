@@ -39,6 +39,14 @@ bool g_bOrbTrackingMouse = false;
 
 LRESULT CALLBACK TrayNotifyProc(HWND hwnd, UINT uMsg, WPARAM wParam, LPARAM lParam) {
     switch (uMsg) {
+    case WM_PRINTCLIENT:
+    case WM_ERASEBKGND: {
+        HDC hdc = (HDC)wParam;
+        RECT rcClient;
+        GetClientRect(hwnd, &rcClient);
+        DrawThemeParentBackground(hwnd, hdc, &rcClient);
+        return 1;
+    }
     case WM_PAINT: {
         PAINTSTRUCT ps;
         HDC hdc = BeginPaint(hwnd, &ps);
@@ -48,10 +56,9 @@ LRESULT CALLBACK TrayNotifyProc(HWND hwnd, UINT uMsg, WPARAM wParam, LPARAM lPar
         EndPaint(hwnd, &ps);
         return 0;
     }
-    case WM_ERASEBKGND:
-        return 1;
+    default:
+        return DefWindowProc(hwnd, uMsg, wParam, lParam);
     }
-    return DefWindowProcW(hwnd, uMsg, wParam, lParam);
 }
 
 LRESULT CALLBACK TrayClockProc(HWND hwnd, UINT uMsg, WPARAM wParam, LPARAM lParam) {
@@ -82,22 +89,26 @@ LRESULT CALLBACK TrayClockProc(HWND hwnd, UINT uMsg, WPARAM wParam, LPARAM lPara
                 SYSTEMTIME st;
                 GetLocalTime(&st);
                 wchar_t timeBuf[32];
+                wchar_t dateBuf[32];
                 GetTimeFormatW(LOCALE_USER_DEFAULT, TIME_NOSECONDS, &st, NULL, timeBuf, 32);
+                GetDateFormatW(LOCALE_USER_DEFAULT, DATE_SHORTDATE, &st, NULL, dateBuf, 32);
                 
-                DTTOPTS dttOpts = { sizeof(DTTOPTS) };
-                dttOpts.dwFlags = DTT_COMPOSITED | DTT_TEXTCOLOR | DTT_GLOWSIZE;
-                dttOpts.crText = RGB(255, 255, 255);
-                dttOpts.iGlowSize = 10;
+                wchar_t clockText[128];
+                swprintf_s(clockText, L"%s\n%s", timeBuf, dateBuf);
                 
-                // Select a decent font
                 LOGFONTW lf = {0};
-                lf.lfHeight = -14;
+                lf.lfHeight = -11; // Smaller font to fit both
                 lf.lfWeight = FW_NORMAL;
                 wcscpy_s(lf.lfFaceName, L"Segoe UI");
                 HFONT hFont = CreateFontIndirectW(&lf);
                 HFONT hOldFont = (HFONT)SelectObject(hdcBuffer, hFont);
+
+                DTTOPTS dttOpts = { sizeof(DTTOPTS) };
+                dttOpts.dwFlags = DTT_COMPOSITED | DTT_TEXTCOLOR | DTT_GLOWSIZE;
+                dttOpts.crText = RGB(255, 255, 255);
+                dttOpts.iGlowSize = 8;
                 
-                DrawThemeTextEx(hTheme, hdcBuffer, 0, 0, timeBuf, -1, DT_CENTER | DT_VCENTER | DT_SINGLELINE, &rcClient, &dttOpts);
+                DrawThemeTextEx(hTheme, hdcBuffer, 0, 0, clockText, -1, DT_CENTER | DT_VCENTER, &rcClient, &dttOpts);
                 
                 SelectObject(hdcBuffer, hOldFont);
                 DeleteObject(hFont);
