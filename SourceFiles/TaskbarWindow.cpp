@@ -40,13 +40,13 @@ typedef struct Win32ClockVtbl {
 interface Win32Clock {
     CONST_VTBL struct Win32ClockVtbl* lpVtbl;
 };
+extern HWND g_hNativeTaskbar;
 
 BOOL ShowLegacyClockExperience(HWND hWnd) {
     // Because we are an overlay and not a full shell replacement, the native taskbar is still running underneath.
     // We can simply find the native clock window and send it a click to natively trigger the flyout!
-    HWND hwndTray = FindWindowW(L"Shell_TrayWnd", NULL);
-    if (hwndTray) {
-        HWND hwndNotify = FindWindowExW(hwndTray, NULL, L"TrayNotifyWnd", NULL);
+    if (g_hNativeTaskbar) {
+        HWND hwndNotify = FindWindowExW(g_hNativeTaskbar, NULL, L"TrayNotifyWnd", NULL);
         if (hwndNotify) {
             HWND hwndClock = FindWindowExW(hwndNotify, NULL, L"TrayClockWClass", NULL);
             if (hwndClock) {
