@@ -1,6 +1,7 @@
 #include "TaskbarWindow.h"
 #include "StartButton.h"
 #include "ClockWidget.h"
+#include "TaskbarProperties.h"
 #include "Logger.h"
 #include "resource.h"
 #include <dwmapi.h>
@@ -417,15 +418,39 @@ LRESULT CALLBACK WindowProc(HWND hwnd, UINT uMsg, WPARAM wParam, LPARAM lParam) 
         switch (wmId) {
             case IDM_TASKBAR_CASCADE:
                 if (g_hNativeTaskbar) PostMessageW(g_hNativeTaskbar, WM_COMMAND, 410, 0); // ID_SHELL_CMD_CASCADE_WND
+                else CascadeWindows(NULL, MDITILE_SKIPDISABLED | MDITILE_ZORDER, NULL, 0, NULL);
                 break;
             case IDM_TASKBAR_STACKED:
                 if (g_hNativeTaskbar) PostMessageW(g_hNativeTaskbar, WM_COMMAND, 409, 0); // ID_SHELL_CMD_TILE_WND_H
+                else TileWindows(NULL, MDITILE_HORIZONTAL, NULL, 0, NULL);
                 break;
             case IDM_TASKBAR_SIDEBYSIDE:
                 if (g_hNativeTaskbar) PostMessageW(g_hNativeTaskbar, WM_COMMAND, 408, 0); // ID_SHELL_CMD_TILE_WND_V
+                else TileWindows(NULL, MDITILE_VERTICAL, NULL, 0, NULL);
                 break;
             case IDM_TASKBAR_SHOWDESKTOP:
                 if (g_hNativeTaskbar) PostMessageW(g_hNativeTaskbar, WM_COMMAND, 407, 0); // ID_SHELL_CMD_SHOW_DESKTOP
+                else {
+                    // Win+D fails if Explorer isn't running (PE Environment). Use native ToggleDesktop fallback.
+                    static std::vector<HWND> s_minimizedWindows;
+                    if (s_minimizedWindows.empty()) {
+                        EnumWindows([](HWND hwnd, LPARAM lParam) -> BOOL {
+                            if (IsWindowVisible(hwnd) && !GetWindow(hwnd, GW_OWNER)) {
+                                LONG exStyle = GetWindowLongW(hwnd, GWL_EXSTYLE);
+                                if (!(exStyle & WS_EX_TOOLWINDOW)) {
+                                    ShowWindowAsync(hwnd, SW_MINIMIZE);
+                                    ((std::vector<HWND>*)lParam)->push_back(hwnd);
+                                }
+                            }
+                            return TRUE;
+                        }, (LPARAM)&s_minimizedWindows);
+                    } else {
+                        for (HWND h : s_minimizedWindows) {
+                            ShowWindowAsync(h, SW_RESTORE);
+                        }
+                        s_minimizedWindows.clear();
+                    }
+                }
                 break;
             case IDM_TASKBAR_TASKMGR:
                 if (g_hNativeTaskbar) PostMessageW(g_hNativeTaskbar, WM_COMMAND, 405, 0); // ID_SHELL_CMD_OPEN_TASKMGR
@@ -449,7 +474,7 @@ LRESULT CALLBACK WindowProc(HWND hwnd, UINT uMsg, WPARAM wParam, LPARAM lParam) 
                 break;
             case IDM_TASKBAR_PROPERTIES:
                 if (g_hNativeTaskbar) PostMessageW(g_hNativeTaskbar, WM_COMMAND, 401, 0); // ID_SHELL_CMD_PROPERTIES
-                else ShellExecuteW(hwnd, L"open", L"rundll32.exe", L"shell32.dll,Options_RunDLL 1", NULL, SW_SHOWNORMAL);
+                else ShowTaskbarProperties(hwnd);
                 break;
             case IDM_EXIT_ELITETASKBAR:
                 SendMessageW(hwnd, WM_CLOSE, 0, 0);
