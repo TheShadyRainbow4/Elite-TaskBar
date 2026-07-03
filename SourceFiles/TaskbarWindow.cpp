@@ -555,6 +555,11 @@ LRESULT CALLBACK WindowProc(HWND hwnd, UINT uMsg, WPARAM wParam, LPARAM lParam) 
         } else {
             // Taskbar Context Menu
             HMENU hToolbars = CreatePopupMenu();
+            AppendMenuW(hToolbars, MF_STRING | MF_UNCHECKED, 3020, L"Address");
+            AppendMenuW(hToolbars, MF_STRING | MF_UNCHECKED, 3021, L"Links");
+            AppendMenuW(hToolbars, MF_STRING | MF_UNCHECKED, 3022, L"Desktop");
+            AppendMenuW(hToolbars, MF_SEPARATOR, 0, NULL);
+            AppendMenuW(hToolbars, MF_STRING, 3023, L"New toolbar...");
             AppendMenuW(hMenu, MF_POPUP, (UINT_PTR)hToolbars, L"Toolbars");
             AppendMenuW(hMenu, MF_SEPARATOR, 0, NULL);
             AppendMenuW(hMenu, MF_STRING, IDM_TASKBAR_CASCADE, L"Cascade windows");
