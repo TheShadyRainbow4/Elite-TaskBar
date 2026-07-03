@@ -230,25 +230,26 @@ LRESULT CALLBACK TrayClockProc(HWND hwnd, UINT uMsg, WPARAM wParam, LPARAM lPara
         HDC hdcBuffer;
         HPAINTBUFFER hBufferedPaint = BeginBufferedPaint(hdc, &rcClient, BPBF_TOPDOWNDIB, &params, &hdcBuffer);
         
+        SYSTEMTIME st;
+        GetLocalTime(&st);
+        wchar_t timeBuf[32];
+        wchar_t dateBuf[32];
+        GetTimeFormatW(LOCALE_USER_DEFAULT, TIME_NOSECONDS, &st, NULL, timeBuf, 32);
+        GetDateFormatW(LOCALE_USER_DEFAULT, DATE_SHORTDATE, &st, NULL, dateBuf, 32);
+        
+        wchar_t clockText[128];
+        swprintf_s(clockText, L"%s\n%s", timeBuf, dateBuf);
+        
+        LOGFONTW lf = {0};
+        lf.lfHeight = -11; // Smaller font to fit both
+        lf.lfWeight = FW_NORMAL;
+        wcscpy_s(lf.lfFaceName, L"Segoe UI");
+
         if (hBufferedPaint) {
             DrawThemeParentBackground(hwnd, hdcBuffer, &rcClient);
             
             HTHEME hTheme = OpenThemeData(hwnd, L"Taskbar");
             if (hTheme) {
-                SYSTEMTIME st;
-                GetLocalTime(&st);
-                wchar_t timeBuf[32];
-                wchar_t dateBuf[32];
-                GetTimeFormatW(LOCALE_USER_DEFAULT, TIME_NOSECONDS, &st, NULL, timeBuf, 32);
-                GetDateFormatW(LOCALE_USER_DEFAULT, DATE_SHORTDATE, &st, NULL, dateBuf, 32);
-                
-                wchar_t clockText[128];
-                swprintf_s(clockText, L"%s\n%s", timeBuf, dateBuf);
-                
-                LOGFONTW lf = {0};
-                lf.lfHeight = -11; // Smaller font to fit both
-                lf.lfWeight = FW_NORMAL;
-                wcscpy_s(lf.lfFaceName, L"Segoe UI");
                 HFONT hFont = CreateFontIndirectW(&lf);
                 HFONT hOldFont = (HFONT)SelectObject(hdcBuffer, hFont);
 
@@ -266,8 +267,30 @@ LRESULT CALLBACK TrayClockProc(HWND hwnd, UINT uMsg, WPARAM wParam, LPARAM lPara
                 SelectObject(hdcBuffer, hOldFont);
                 DeleteObject(hFont);
                 CloseThemeData(hTheme);
+            } else {
+                // Fallback if Theme fails inside BufferedPaint
+                HFONT hFont = CreateFontIndirectW(&lf);
+                HFONT hOldFont = (HFONT)SelectObject(hdcBuffer, hFont);
+                SetTextColor(hdcBuffer, RGB(255, 255, 255));
+                SetBkMode(hdcBuffer, TRANSPARENT);
+                rcClient.top += 6; 
+                rcClient.right -= 25;
+                DrawTextW(hdcBuffer, clockText, -1, &rcClient, DT_RIGHT | DT_NOCLIP);
+                SelectObject(hdcBuffer, hOldFont);
+                DeleteObject(hFont);
             }
             EndBufferedPaint(hBufferedPaint, TRUE);
+        } else {
+            // Absolute Fallback if BufferedPaint fails completely for Standard User
+            HFONT hFont = CreateFontIndirectW(&lf);
+            HFONT hOldFont = (HFONT)SelectObject(hdc, hFont);
+            SetTextColor(hdc, RGB(255, 255, 255));
+            SetBkMode(hdc, TRANSPARENT);
+            rcClient.top += 6; 
+            rcClient.right -= 25;
+            DrawTextW(hdc, clockText, -1, &rcClient, DT_RIGHT | DT_NOCLIP);
+            SelectObject(hdc, hOldFont);
+            DeleteObject(hFont);
         }
         EndPaint(hwnd, &ps);
         return 0;
@@ -392,8 +415,23 @@ LRESULT CALLBACK WindowProc(HWND hwnd, UINT uMsg, WPARAM wParam, LPARAM lParam) 
     case WM_COMMAND: {
         int wmId = LOWORD(wParam);
         switch (wmId) {
+            case IDM_TASKBAR_CASCADE:
+                CascadeWindows(NULL, MDITILE_ZORDER, NULL, 0, NULL);
+                break;
+            case IDM_TASKBAR_STACKED:
+                TileWindows(NULL, MDITILE_HORIZONTAL, NULL, 0, NULL);
+                break;
+            case IDM_TASKBAR_SIDEBYSIDE:
+                TileWindows(NULL, MDITILE_VERTICAL, NULL, 0, NULL);
+                break;
+            case IDM_TASKBAR_SHOWDESKTOP:
+                keybd_event(VK_LWIN, 0, 0, 0);
+                keybd_event('D', 0, 0, 0);
+                keybd_event('D', 0, KEYEVENTF_KEYUP, 0);
+                keybd_event(VK_LWIN, 0, KEYEVENTF_KEYUP, 0);
+                break;
             case IDM_TASKBAR_TASKMGR:
-                ShellExecuteW(NULL, L"open", L"taskmgr.exe", NULL, NULL, SW_SHOWNORMAL);
+                ShellExecuteW(NULL, NULL, L"taskmgr.exe", NULL, NULL, SW_SHOWNORMAL);
                 break;
             case IDM_TASKBAR_LOCK: {
                 HKEY hKey;
@@ -410,17 +448,17 @@ LRESULT CALLBACK WindowProc(HWND hwnd, UINT uMsg, WPARAM wParam, LPARAM lParam) 
                 break;
             }
             case IDM_TASKBAR_PROPERTIES:
-                ShellExecuteW(NULL, L"open", L"rundll32.exe", L"shell32.dll,Options_RunDLL 1", NULL, SW_SHOWNORMAL);
+                ShellExecuteW(NULL, NULL, L"rundll32.exe", L"shell32.dll,Options_RunDLL 1", NULL, SW_SHOWNORMAL);
                 break;
             case IDM_EXIT_ELITETASKBAR:
                 SendMessageW(hwnd, WM_CLOSE, 0, 0);
                 break;
             case IDM_START_EXPLORER:
-                ShellExecuteW(NULL, L"open", L"explorer.exe", NULL, NULL, SW_SHOWNORMAL);
+                ShellExecuteW(NULL, NULL, L"explorer.exe", NULL, NULL, SW_SHOWNORMAL);
                 break;
             case IDM_RESTART_SHELL:
                 // Restart Explorer Shell
-                ShellExecuteW(NULL, L"open", L"cmd.exe", L"/c taskkill /f /im explorer.exe & start explorer.exe", NULL, SW_HIDE);
+                ShellExecuteW(NULL, NULL, L"cmd.exe", L"/c taskkill /f /im explorer.exe & start explorer.exe", NULL, SW_HIDE);
                 break;
         }
         return 0;

@@ -29,3 +29,6 @@ All notable changes to this project will be documented in this file.
 - Fixed catastrophic infinite click loop in `ShowLegacyClockExperience` by targeting the correctly preserved `g_hNativeTaskbar` instead of globally matching `Shell_TrayWnd`.
 - Added missing `BufferedPaintInit()` and `BufferedPaintUnInit()` to `main.cpp` to ensure the DWM Glass Buffered Paint API (`BeginBufferedPaint`) operates correctly for standard users, fixing missing clock text.
 - Expanded the system tray width (`g_hTrayNotify`) and clock widget width (`g_hTrayClock`) while significantly increasing right-padding to mathematically prevent the clock from ever physically clipping underneath the native or custom `TrayShowDesktopButtonWClass`.
+- Built an absolute GDI rendering fallback into `TrayClockProc` so the clock remains fully visible if `BeginBufferedPaint` fails entirely when running in restricted environments or via Windhawk injection.
+- Fully implemented missing Context Menu commands (`IDM_TASKBAR_CASCADE`, `IDM_TASKBAR_STACKED`, `IDM_TASKBAR_SIDEBYSIDE`, `IDM_TASKBAR_SHOWDESKTOP`) utilizing standard Windows APIs.
+- Updated Context Menu `ShellExecuteW` calls to default verbs to ensure UAC elevations function correctly for standard users attempting to launch `taskmgr.exe` or `rundll32.exe`.
