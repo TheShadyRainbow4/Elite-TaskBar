@@ -343,9 +343,23 @@ LRESULT CALLBACK TrayClockProc(HWND hwnd, UINT uMsg, WPARAM wParam, LPARAM lPara
         ShellExecuteW(NULL, L"open", L"control", L"timedate.cpl", NULL, SW_SHOWNORMAL);
         return 0;
     case WM_LBUTTONDOWN: {
-        if (!FindWindowW(L"ClockFlyoutWindow", NULL)) {
-            if (!ShowLegacyClockExperience(hwnd)) {
-                Logger::Log(L"Native clock flyout COM failed. Need custom C++ flyout implementation.");
+        DWORD trayMode = 0;
+        HKEY hKey;
+        if (RegOpenKeyExW(HKEY_CURRENT_USER, L"Software\\EliteSoftware\\Win32Explorer\\Advanced", 0, KEY_READ, &hKey) == ERROR_SUCCESS) {
+            DWORD cbData = sizeof(DWORD);
+            RegQueryValueExW(hKey, L"TrayMode", NULL, NULL, (LPBYTE)&trayMode, &cbData);
+            RegCloseKey(hKey);
+        }
+
+        if (trayMode == 1) {
+            // Legacy Logic (ReactOS/WinXP style - just open date and time applet)
+            ShellExecuteW(NULL, L"open", L"control", L"timedate.cpl", NULL, SW_SHOWNORMAL);
+        } else {
+            // Native Windows 7 Flyout
+            if (!FindWindowW(L"ClockFlyoutWindow", NULL)) {
+                if (!ShowLegacyClockExperience(hwnd)) {
+                    Logger::Log(L"Native clock flyout COM failed. Need custom C++ flyout implementation.");
+                }
             }
         }
         return 0;
@@ -571,7 +585,7 @@ LRESULT CALLBACK WindowProc(HWND hwnd, UINT uMsg, WPARAM wParam, LPARAM lParam) 
                 SendMessageW(hwnd, WM_CLOSE, 0, 0);
                 break;
             case IDM_START_EXPLORER:
-                ShellExecuteW(NULL, NULL, L"explorer.exe", NULL, NULL, SW_SHOWNORMAL);
+                ShellExecuteW(NULL, L"open", L"explorer.exe", L"shell:::{20D04FE0-3AEA-1069-A2D8-08002B30309D}", NULL, SW_SHOWNORMAL); // Opens "This PC"
                 break;
             case IDM_RESTART_SHELL:
                 // Restart Explorer Shell

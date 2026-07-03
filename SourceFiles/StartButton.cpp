@@ -197,9 +197,29 @@ LRESULT CALLBACK OrbWndProc(HWND hwnd, UINT uMsg, WPARAM wParam, LPARAM lParam) 
                 
                 SetWindowPos(hwnd, HWND_TOPMOST, 0, 0, 0, 0, SWP_NOMOVE | SWP_NOSIZE | SWP_NOACTIVATE);
                 
-                // Simulate Windows Key to toggle Start Menu (OpenShell hooks this perfectly)
-                keybd_event(VK_LWIN, 0, 0, 0);
-                keybd_event(VK_LWIN, 0, KEYEVENTF_KEYUP, 0);
+                DWORD mode = 0;
+                HKEY hKey;
+                if (RegOpenKeyExW(HKEY_CURRENT_USER, L"Software\\EliteSoftware\\Win32Explorer\\Advanced", 0, KEY_READ, &hKey) == ERROR_SUCCESS) {
+                    DWORD cbData = sizeof(DWORD);
+                    RegQueryValueExW(hKey, L"StartMenuMode", NULL, NULL, (LPBYTE)&mode, &cbData);
+                    RegCloseKey(hKey);
+                }
+
+                bool isShiftDown = (GetAsyncKeyState(VK_SHIFT) & 0x8000) != 0;
+
+                if (mode == 1) { // Native
+                    SendMessageW(FindWindowW(L"Shell_TrayWnd", NULL), WM_SYSCOMMAND, SC_TASKLIST, 0);
+                } else if (mode == 2) { // Combo
+                    if (isShiftDown) {
+                        SendMessageW(FindWindowW(L"Shell_TrayWnd", NULL), WM_SYSCOMMAND, SC_TASKLIST, 0);
+                    } else {
+                        keybd_event(VK_LWIN, 0, 0, 0);
+                        keybd_event(VK_LWIN, 0, KEYEVENTF_KEYUP, 0);
+                    }
+                } else { // OpenShell (Default 0)
+                    keybd_event(VK_LWIN, 0, 0, 0);
+                    keybd_event(VK_LWIN, 0, KEYEVENTF_KEYUP, 0);
+                }
             }
             return 0;
         }

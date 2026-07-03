@@ -18,3 +18,19 @@
 
 #define IDC_MODE_INDEPENDENT  210
 #define IDC_MODE_REPLACE      211
+
+// Taskbar UI
+#define IDC_TRAY_NATIVE       212
+#define IDC_TRAY_LEGACY       213
+#define IDC_MONITOR_LIST      214
+#define IDC_COMPONENTS_LIST   215
+
+// Start Menu UI
+#define IDC_START_OPENSHELL   216
+#define IDC_START_NATIVE      217
+#define IDC_START_COMBO       218
+#define IDC_START_TRIGGER     219
+
+// Toolbars UI
+#define IDC_TOOLBAR_LIST      220
+#define IDC_TOOLBAR_NEW       221

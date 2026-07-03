@@ -17,13 +17,30 @@ INT_PTR CALLBACK TaskbarSettingsDlgProc(HWND hwndDlg, UINT uMsg, WPARAM wParam, 
                 } else {
                     SendDlgItemMessageW(hwndDlg, IDC_MODE_INDEPENDENT, BM_SETCHECK, BST_CHECKED, 0);
                 }
+                
+                dwValue = 0;
+                if (RegQueryValueExW(hKey, L"TrayMode", NULL, NULL, (LPBYTE)&dwValue, &cbData) == ERROR_SUCCESS) {
+                    if (dwValue == 1) SendDlgItemMessageW(hwndDlg, IDC_TRAY_LEGACY, BM_SETCHECK, BST_CHECKED, 0);
+                    else SendDlgItemMessageW(hwndDlg, IDC_TRAY_NATIVE, BM_SETCHECK, BST_CHECKED, 0);
+                } else {
+                    SendDlgItemMessageW(hwndDlg, IDC_TRAY_NATIVE, BM_SETCHECK, BST_CHECKED, 0);
+                }
                 RegCloseKey(hKey);
             }
+            SendDlgItemMessageW(hwndDlg, IDC_MONITOR_LIST, CB_ADDSTRING, 0, (LPARAM)L"All Monitors");
+            SendDlgItemMessageW(hwndDlg, IDC_MONITOR_LIST, CB_ADDSTRING, 0, (LPARAM)L"Primary Monitor");
+            SendDlgItemMessageW(hwndDlg, IDC_MONITOR_LIST, CB_SETCURSEL, 0, 0);
+            
+            SendDlgItemMessageW(hwndDlg, IDC_COMPONENTS_LIST, LB_ADDSTRING, 0, (LPARAM)L"Start Button");
+            SendDlgItemMessageW(hwndDlg, IDC_COMPONENTS_LIST, LB_ADDSTRING, 0, (LPARAM)L"Taskband (Icons)");
+            SendDlgItemMessageW(hwndDlg, IDC_COMPONENTS_LIST, LB_ADDSTRING, 0, (LPARAM)L"Notification Area");
+            SendDlgItemMessageW(hwndDlg, IDC_COMPONENTS_LIST, LB_ADDSTRING, 0, (LPARAM)L"Clock");
+            SendDlgItemMessageW(hwndDlg, IDC_COMPONENTS_LIST, LB_ADDSTRING, 0, (LPARAM)L"Show Desktop Button");
         }
         return TRUE;
 
     case WM_COMMAND:
-        if (HIWORD(wParam) == BN_CLICKED || HIWORD(wParam) == EN_CHANGE || HIWORD(wParam) == CBN_SELCHANGE) {
+        if (HIWORD(wParam) == BN_CLICKED || HIWORD(wParam) == EN_CHANGE || HIWORD(wParam) == CBN_SELCHANGE || HIWORD(wParam) == LBN_SELCHANGE) {
             SendMessageW(GetParent(hwndDlg), PSM_CHANGED, (WPARAM)hwndDlg, 0);
         }
         return TRUE;
@@ -36,11 +53,92 @@ INT_PTR CALLBACK TaskbarSettingsDlgProc(HWND hwndDlg, UINT uMsg, WPARAM wParam, 
             if (RegCreateKeyExW(HKEY_CURRENT_USER, L"Software\\EliteSoftware\\Win32Explorer\\Advanced", 0, NULL, REG_OPTION_NON_VOLATILE, KEY_READ | KEY_WRITE, NULL, &hKey, NULL) == ERROR_SUCCESS) {
                 DWORD mode = (SendDlgItemMessageW(hwndDlg, IDC_MODE_REPLACE, BM_GETCHECK, 0, 0) == BST_CHECKED) ? 1 : 0;
                 RegSetValueExW(hKey, L"TaskbarMode", 0, REG_DWORD, (const BYTE*)&mode, sizeof(DWORD));
+                
+                DWORD trayMode = (SendDlgItemMessageW(hwndDlg, IDC_TRAY_LEGACY, BM_GETCHECK, 0, 0) == BST_CHECKED) ? 1 : 0;
+                RegSetValueExW(hKey, L"TrayMode", 0, REG_DWORD, (const BYTE*)&trayMode, sizeof(DWORD));
+                
                 RegCloseKey(hKey);
             }
             // Notify shell of setting changes
             SendMessageTimeoutW(HWND_BROADCAST, WM_SETTINGCHANGE, 0, (LPARAM)L"TraySettings", SMTO_ABORTIFHUNG, 5000, NULL);
             
+            SetWindowLongPtr(hwndDlg, DWLP_MSGRESULT, PSNRET_NOERROR);
+            return TRUE;
+        }
+        break;
+    }
+    }
+    return FALSE;
+}
+
+INT_PTR CALLBACK StartMenuSettingsDlgProc(HWND hwndDlg, UINT uMsg, WPARAM wParam, LPARAM lParam) {
+    switch (uMsg) {
+    case WM_INITDIALOG:
+        {
+            HKEY hKey;
+            if (RegCreateKeyExW(HKEY_CURRENT_USER, L"Software\\EliteSoftware\\Win32Explorer\\Advanced", 0, NULL, REG_OPTION_NON_VOLATILE, KEY_READ | KEY_WRITE, NULL, &hKey, NULL) == ERROR_SUCCESS) {
+                DWORD dwValue = 0;
+                DWORD cbData = sizeof(DWORD);
+                if (RegQueryValueExW(hKey, L"StartMenuMode", NULL, NULL, (LPBYTE)&dwValue, &cbData) == ERROR_SUCCESS) {
+                    if (dwValue == 1) SendDlgItemMessageW(hwndDlg, IDC_START_NATIVE, BM_SETCHECK, BST_CHECKED, 0);
+                    else if (dwValue == 2) SendDlgItemMessageW(hwndDlg, IDC_START_COMBO, BM_SETCHECK, BST_CHECKED, 0);
+                    else SendDlgItemMessageW(hwndDlg, IDC_START_OPENSHELL, BM_SETCHECK, BST_CHECKED, 0);
+                } else {
+                    SendDlgItemMessageW(hwndDlg, IDC_START_OPENSHELL, BM_SETCHECK, BST_CHECKED, 0);
+                }
+                RegCloseKey(hKey);
+            }
+            SendDlgItemMessageW(hwndDlg, IDC_START_TRIGGER, CB_ADDSTRING, 0, (LPARAM)L"Left Click Opens Shell");
+            SendDlgItemMessageW(hwndDlg, IDC_START_TRIGGER, CB_ADDSTRING, 0, (LPARAM)L"Shift+Click Opens Native");
+            SendDlgItemMessageW(hwndDlg, IDC_START_TRIGGER, CB_SETCURSEL, 0, 0);
+        }
+        return TRUE;
+    case WM_COMMAND:
+        if (HIWORD(wParam) == BN_CLICKED || HIWORD(wParam) == EN_CHANGE || HIWORD(wParam) == CBN_SELCHANGE) {
+            SendMessageW(GetParent(hwndDlg), PSM_CHANGED, (WPARAM)hwndDlg, 0);
+        }
+        return TRUE;
+    case WM_NOTIFY: {
+        LPNMHDR lpnm = (LPNMHDR)lParam;
+        if (lpnm->code == PSN_APPLY) {
+            HKEY hKey;
+            if (RegCreateKeyExW(HKEY_CURRENT_USER, L"Software\\EliteSoftware\\Win32Explorer\\Advanced", 0, NULL, REG_OPTION_NON_VOLATILE, KEY_READ | KEY_WRITE, NULL, &hKey, NULL) == ERROR_SUCCESS) {
+                DWORD mode = 0;
+                if (SendDlgItemMessageW(hwndDlg, IDC_START_NATIVE, BM_GETCHECK, 0, 0) == BST_CHECKED) mode = 1;
+                else if (SendDlgItemMessageW(hwndDlg, IDC_START_COMBO, BM_GETCHECK, 0, 0) == BST_CHECKED) mode = 2;
+                RegSetValueExW(hKey, L"StartMenuMode", 0, REG_DWORD, (const BYTE*)&mode, sizeof(DWORD));
+                RegCloseKey(hKey);
+            }
+            SetWindowLongPtr(hwndDlg, DWLP_MSGRESULT, PSNRET_NOERROR);
+            return TRUE;
+        }
+        break;
+    }
+    }
+    return FALSE;
+}
+
+INT_PTR CALLBACK ToolbarsSettingsDlgProc(HWND hwndDlg, UINT uMsg, WPARAM wParam, LPARAM lParam) {
+    switch (uMsg) {
+    case WM_INITDIALOG:
+        {
+            SendDlgItemMessageW(hwndDlg, IDC_TOOLBAR_LIST, LB_ADDSTRING, 0, (LPARAM)L"Address");
+            SendDlgItemMessageW(hwndDlg, IDC_TOOLBAR_LIST, LB_ADDSTRING, 0, (LPARAM)L"Links");
+            SendDlgItemMessageW(hwndDlg, IDC_TOOLBAR_LIST, LB_ADDSTRING, 0, (LPARAM)L"Desktop");
+        }
+        return TRUE;
+    case WM_COMMAND:
+        if (HIWORD(wParam) == BN_CLICKED && LOWORD(wParam) == IDC_TOOLBAR_NEW) {
+            MessageBoxW(hwndDlg, L"Folder browser dialog will appear here.", L"New Toolbar", MB_OK);
+            return TRUE;
+        }
+        if (HIWORD(wParam) == BN_CLICKED || HIWORD(wParam) == LBN_SELCHANGE) {
+            SendMessageW(GetParent(hwndDlg), PSM_CHANGED, (WPARAM)hwndDlg, 0);
+        }
+        return TRUE;
+    case WM_NOTIFY: {
+        LPNMHDR lpnm = (LPNMHDR)lParam;
+        if (lpnm->code == PSN_APPLY) {
             SetWindowLongPtr(hwndDlg, DWLP_MSGRESULT, PSNRET_NOERROR);
             return TRUE;
         }
@@ -72,7 +170,7 @@ void ShowTaskbarProperties(HWND hwndOwner) {
     psp[1].dwFlags = PSP_USETITLE;
     psp[1].hInstance = GetModuleHandle(NULL);
     psp[1].pszTemplate = MAKEINTRESOURCEW(IDD_STARTMENU_PROPS);
-    psp[1].pfnDlgProc = GenericPageDlgProc;
+    psp[1].pfnDlgProc = StartMenuSettingsDlgProc;
     psp[1].pszTitle = L"Start Menu";
     pages.push_back(CreatePropertySheetPageW(&psp[1]));
 
@@ -90,7 +188,7 @@ void ShowTaskbarProperties(HWND hwndOwner) {
     psp[3].dwFlags = PSP_USETITLE;
     psp[3].hInstance = GetModuleHandle(NULL);
     psp[3].pszTemplate = MAKEINTRESOURCEW(IDD_TOOLBARS_PROPS);
-    psp[3].pfnDlgProc = GenericPageDlgProc;
+    psp[3].pfnDlgProc = ToolbarsSettingsDlgProc;
     psp[3].pszTitle = L"Toolbars";
     pages.push_back(CreatePropertySheetPageW(&psp[3]));
 
