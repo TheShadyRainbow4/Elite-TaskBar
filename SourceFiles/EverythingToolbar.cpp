@@ -4,11 +4,28 @@
 
 #pragma comment(lib, "comctl32.lib")
 
-EverythingToolbar::EverythingToolbar() : hToolbar(NULL), hEdit(NULL) {
+EverythingToolbar::EverythingToolbar() : hToolbar(NULL), hEdit(NULL), hFlyout(NULL), hListbox(NULL) {
 }
 
 EverythingToolbar::~EverythingToolbar() {
     Destroy();
+}
+
+LRESULT CALLBACK EverythingToolbar::FlyoutWndProc(HWND hWnd, UINT uMsg, WPARAM wParam, LPARAM lParam) {
+    switch (uMsg) {
+    case WM_PAINT: {
+        PAINTSTRUCT ps;
+        HDC hdc = BeginPaint(hWnd, &ps);
+        RECT rc;
+        GetClientRect(hWnd, &rc);
+        HBRUSH hbr = CreateSolidBrush(RGB(255, 255, 255));
+        FillRect(hdc, &rc, hbr);
+        DeleteObject(hbr);
+        EndPaint(hWnd, &ps);
+        return 0;
+    }
+    }
+    return DefWindowProc(hWnd, uMsg, wParam, lParam);
 }
 
 HWND EverythingToolbar::Create(HWND hParent, HINSTANCE hInstance) {
@@ -35,6 +52,22 @@ HWND EverythingToolbar::Create(HWND hParent, HINSTANCE hInstance) {
     tb.fsStyle = BTNS_SEP;
     SendMessageW(hToolbar, TB_ADDBUTTONS, 1, (LPARAM)&tb);
 
+    WNDCLASSW wc = {0};
+    wc.lpfnWndProc = FlyoutWndProc;
+    wc.hInstance = hInstance;
+    wc.lpszClassName = L"Elite_EverythingFlyout";
+    wc.hCursor = LoadCursor(NULL, IDC_ARROW);
+    wc.hbrBackground = (HBRUSH)(COLOR_WINDOW + 1);
+    RegisterClassW(&wc);
+
+    hFlyout = CreateWindowExW(WS_EX_TOOLWINDOW | WS_EX_TOPMOST, L"Elite_EverythingFlyout", L"",
+        WS_POPUP | WS_BORDER | WS_CLIPCHILDREN,
+        0, 0, 400, 300, NULL, NULL, hInstance, NULL);
+
+    hListbox = CreateWindowExW(0, L"LISTBOX", L"",
+        WS_CHILD | WS_VISIBLE | LBS_STANDARD | LBS_HASSTRINGS | LBS_NOTIFY,
+        0, 0, 400, 300, hFlyout, (HMENU)1002, hInstance, NULL);
+
     return hToolbar;
 }
 
@@ -48,6 +81,10 @@ void EverythingToolbar::Destroy() {
         RemoveWindowSubclass(hEdit, EditSubclassProc, 1);
         DestroyWindow(hEdit);
         hEdit = NULL;
+    }
+    if (hFlyout) {
+        DestroyWindow(hFlyout);
+        hFlyout = NULL;
     }
 }
 
@@ -80,8 +117,51 @@ LRESULT CALLBACK EverythingToolbar::EditSubclassProc(HWND hWnd, UINT uMsg, WPARA
     switch (uMsg) {
     case WM_COMMAND: {
         if (HIWORD(wParam) == EN_CHANGE) {
-            // Text changed! Query Everything...
-            // (Flyout logic goes here in the future)
+            WCHAR text[256];
+            GetWindowTextW(hWnd, text, 256);
+            if (wcslen(text) > 0) {
+                // Show flyout
+                RECT rcEdit;
+                GetWindowRect(hWnd, &rcEdit);
+                SetWindowPos(pThis->hFlyout, HWND_TOPMOST, rcEdit.left, rcEdit.top - 300, 400, 300, SWP_SHOWWINDOW);
+                SetWindowPos(pThis->hListbox, NULL, 0, 0, 400, 300, SWP_NOZORDER);
+                
+                SendMessageW(pThis->hListbox, LB_RESETCONTENT, 0, 0);
+
+                // Query Everything SDK v3
+                EVERYTHING3_CLIENT *client = Everything3_ConnectW(NULL);
+                if (client) {
+                    EVERYTHING3_SEARCH_STATE *search_state = Everything3_CreateSearchState();
+                    if (search_state) {
+                        Everything3_SetSearchTextW(search_state, text);
+                        EVERYTHING3_RESULT_LIST *result_list = Everything3_Search(client, search_state);
+                        
+                        if (result_list) {
+                            SIZE_T numResults = Everything3_GetResultListViewportCount(result_list);
+                            if (numResults > 50) numResults = 50; // Cap to 50 results
+                            
+                            for (SIZE_T i = 0; i < numResults; i++) {
+                                WCHAR filename[MAX_PATH];
+                                Everything3_GetResultFullPathNameW(result_list, i, filename, MAX_PATH);
+                                SendMessageW(pThis->hListbox, LB_ADDSTRING, 0, (LPARAM)filename);
+                            }
+                            Everything3_DestroyResultList(result_list);
+                        }
+                        Everything3_DestroySearchState(search_state);
+                    }
+                    Everything3_DestroyClient(client);
+                }
+            } else {
+                ShowWindow(pThis->hFlyout, SW_HIDE);
+            }
+        }
+        break;
+    }
+    case WM_KILLFOCUS: {
+        // Hide flyout if losing focus, unless to the flyout itself
+        HWND hTarget = (HWND)wParam;
+        if (hTarget != pThis->hFlyout && hTarget != pThis->hListbox) {
+            ShowWindow(pThis->hFlyout, SW_HIDE);
         }
         break;
     }
