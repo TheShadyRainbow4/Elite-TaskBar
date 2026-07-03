@@ -466,7 +466,10 @@ LRESULT CALLBACK WindowProc(HWND hwnd, UINT uMsg, WPARAM wParam, LPARAM lParam) 
         }
 
         SetForegroundWindow(hwnd);
-        TrackPopupMenuEx(hMenu, TPM_LEFTALIGN | TPM_BOTTOMALIGN | TPM_RIGHTBUTTON, pt.x, pt.y, hwnd, NULL);
+        int cmd = TrackPopupMenuEx(hMenu, TPM_LEFTALIGN | TPM_BOTTOMALIGN | TPM_RIGHTBUTTON | TPM_RETURNCMD, pt.x, pt.y, hwnd, NULL);
+        if (cmd != 0) {
+            SendMessageW(hwnd, WM_COMMAND, MAKEWPARAM(cmd, 0), 0);
+        }
         DestroyMenu(hMenu);
         return 0;
     }
