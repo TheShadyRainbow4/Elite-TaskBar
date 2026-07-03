@@ -1048,6 +1048,7 @@ LRESULT CALLBACK WindowProc(HWND hwnd, UINT uMsg, WPARAM wParam, LPARAM lParam) 
             AppendMenuW(hToolbars, MF_STRING | MF_UNCHECKED, 3021, L"Links");
             AppendMenuW(hToolbars, MF_STRING | MF_UNCHECKED, 3022, L"Desktop");
             AppendMenuW(hToolbars, MF_SEPARATOR, 0, NULL);
+            AppendMenuW(hToolbars, MF_STRING | (g_Config.ShowEverythingToolbar ? MF_CHECKED : MF_UNCHECKED), 3024, L"Elite Everything Search");
             AppendMenuW(hToolbars, MF_STRING, 3023, L"New toolbar...");
             AppendMenuW(hMenu, MF_POPUP, (UINT_PTR)hToolbars, L"Toolbars");
             AppendMenuW(hMenu, MF_SEPARATOR, 0, NULL);
@@ -1228,6 +1229,7 @@ LRESULT CALLBACK WindowProc(HWND hwnd, UINT uMsg, WPARAM wParam, LPARAM lParam) 
             AppendMenuW(hToolbars, MF_STRING | MF_UNCHECKED, 3021, L"Links");
             AppendMenuW(hToolbars, MF_STRING | MF_UNCHECKED, 3022, L"Desktop");
             AppendMenuW(hToolbars, MF_SEPARATOR, 0, NULL);
+            AppendMenuW(hToolbars, MF_STRING | (g_Config.ShowEverythingToolbar ? MF_CHECKED : MF_UNCHECKED), 3024, L"Elite Everything Search");
             AppendMenuW(hToolbars, MF_STRING, 3023, L"New toolbar...");
             AppendMenuW(hMenu, MF_POPUP, (UINT_PTR)hToolbars, L"Toolbars");
             AppendMenuW(hMenu, MF_SEPARATOR, 0, NULL);
