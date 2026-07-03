@@ -6,7 +6,14 @@ All notable changes to this project will be documented in this file.
 ### [1.2.0.0] - 2026-07-02
 ### Changed
 - **Build System**: Updated `build.ps1` to detect and dynamically copy `EliteTaskbar.ico` from the project root into the `Resources` folder before compilation. This ensures the executable always bakes in the most recent custom icon without manual intervention, while still producing the final binary in both the root and `BuildOutput` folders.
-- **Context Menus**: Rewrote taskbar context menu routing (Cascade, Stacked, Side-by-Side, Show Desktop, Task Manager, Properties, Lock Taskbar). Instead of attempting to emulate these behaviors with raw Win32 API calls (`CascadeWindows`, `TileWindows`, etc.) which fail under restricted standard user contexts, the UI now flawlessly routes the raw undocumented Shell Command IDs (e.g., `410`, `401`, `405`) directly to the hidden native taskbar (`Shell_TrayWnd`) via `PostMessageW`. This delegates the heavy lifting entirely to the native shell, ensuring perfect OS-level functionality.
+- **Context Menus**: Rewrote taskbar context menu routing to elegantly handle both overlay mode and standalone PE mode. If the native `Shell_TrayWnd` exists, it delegates native commands via `PostMessageW`. If it doesn't exist, it falls back to a standalone implementation.
+- **Standalone Mode (PE Environment)**: Added robust fallbacks for when `explorer.exe` is dead/missing:
+  - Added native `EnumWindows` based `ToggleDesktop` function to support "Show Desktop" natively.
+  - Re-implemented `CascadeWindows` and `TileWindows` directly using the user32 API for manual cascading and tiling.
+  - Implemented a custom Native Windows Property Sheet using `PropertySheetW` and `PROPSHEETHEADER` to provide our own "Taskbar Properties" dialog when requested, setting the groundwork for managing custom features while remaining faithful to the tabbed applet look.
+  - Linked `comctl32.lib` into the build process for standard common controls.
+- **Context Menu 'Run...' Option**: Added a dedicated "Run..." button to the taskbar context menu using ID `3009`. It delegates to the native `ID_SHELL_CMD_RUN` (401) or falls back to invoking the Run dialog CLSID `Shell:::{2559a1f3-21d7-11d4-bdaf-00c04f60b9f0}` in standalone mode.
+- **Properties Override**: Fixed the context menu so that the "Properties" button unconditionally opens our newly implemented custom Property Sheet tabbed applet instead of incorrectly triggering the modern Windows "Run" dialog.
 
 ## [1.1.0.0] - 2026-07-02
 ### Added

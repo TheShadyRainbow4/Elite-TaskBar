@@ -81,9 +81,10 @@ HWND g_hToolbar = NULL;
 #define IDM_TASKBAR_TASKMGR         3006
 #define IDM_TASKBAR_LOCK            3007
 #define IDM_TASKBAR_PROPERTIES      3008
-#define IDM_START_EXPLORER          3009
+#define IDM_TASKBAR_RUN             3009
 #define IDM_EXIT_ELITETASKBAR       3010
 #define IDM_RESTART_SHELL           3011
+#define IDM_START_EXPLORER          3012
 
 UINT g_uTaskbarCreatedMsg = 0;
 OrbState g_orbState = OrbState::Normal;
@@ -472,9 +473,13 @@ LRESULT CALLBACK WindowProc(HWND hwnd, UINT uMsg, WPARAM wParam, LPARAM lParam) 
                     }
                 }
                 break;
+            case IDM_TASKBAR_RUN:
+                if (g_hNativeTaskbar) PostMessageW(g_hNativeTaskbar, WM_COMMAND, 401, 0); // Native 'Run...' (401 on modern Windows)
+                else ShellExecuteW(hwnd, L"open", L"explorer.exe", L"Shell:::{2559a1f3-21d7-11d4-bdaf-00c04f60b9f0}", NULL, SW_SHOWNORMAL); // Native Run Dialog CLSID
+                break;
             case IDM_TASKBAR_PROPERTIES:
-                if (g_hNativeTaskbar) PostMessageW(g_hNativeTaskbar, WM_COMMAND, 401, 0); // ID_SHELL_CMD_PROPERTIES
-                else ShowTaskbarProperties(hwnd);
+                // Always show our custom property sheet instead of native Run dialog
+                ShowTaskbarProperties(hwnd);
                 break;
             case IDM_EXIT_ELITETASKBAR:
                 SendMessageW(hwnd, WM_CLOSE, 0, 0);
@@ -515,7 +520,7 @@ LRESULT CALLBACK WindowProc(HWND hwnd, UINT uMsg, WPARAM wParam, LPARAM lParam) 
             AppendMenuW(hMenu, MF_STRING, IDM_TASKBAR_TASKMGR, L"Task Manager");
             AppendMenuW(hMenu, MF_SEPARATOR, 0, NULL);
             
-            bool isLocked = true; // Default
+            bool isLocked = false;
             HKEY hKey;
             if (RegOpenKeyExW(HKEY_CURRENT_USER, L"Software\\Microsoft\\Windows\\CurrentVersion\\Explorer\\Advanced", 0, KEY_READ, &hKey) == ERROR_SUCCESS) {
                 DWORD dwValue = 0;
@@ -527,6 +532,7 @@ LRESULT CALLBACK WindowProc(HWND hwnd, UINT uMsg, WPARAM wParam, LPARAM lParam) 
             }
             
             AppendMenuW(hMenu, MF_STRING | (isLocked ? MF_CHECKED : MF_UNCHECKED), IDM_TASKBAR_LOCK, L"Lock the taskbar");
+            AppendMenuW(hMenu, MF_STRING, IDM_TASKBAR_RUN, L"Run...");
             AppendMenuW(hMenu, MF_STRING, IDM_TASKBAR_PROPERTIES, L"Properties");
             AppendMenuW(hMenu, MF_SEPARATOR, 0, NULL);
             if (GetAsyncKeyState(VK_SHIFT) & 0x8000) {
