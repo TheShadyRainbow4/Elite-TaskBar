@@ -1,11 +1,12 @@
 #pragma once
 #include <windows.h>
 #include <commctrl.h>
+#include "StartButton.h"
+#include "ClockWidget.h"
+#include "EverythingToolbar.h"
 
 struct TaskbarInstance {
     HWND hTaskbar;
-    HWND hTrayNotify;
-    HWND hTrayClock;
     HWND hSysPager;
     HWND hToolbar;
     HWND hReBar;
@@ -15,6 +16,7 @@ struct TaskbarInstance {
     RECT monitorRect;
     int taskbarHeight;
     class StartButton* startButton;
+    class EverythingToolbar* pEverythingToolbar;
 };
 
 namespace TaskbarWindow {

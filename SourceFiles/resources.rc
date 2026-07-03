@@ -4,7 +4,13 @@
 IDI_MAIN_PROGRAM ICON "..\\Resources\\MAIN_PROGRAM.ico"
 IDI_PREFERENCES ICON "..\\Resources\\PREFERENCES.ico"
 IDB_START_ORB RCDATA "..\\Resources\\StartOrb\\orb.png"
-
+IDB_START_ORB_1ORB RCDATA "..\\Resources\\StartOrb\\1orb.png"
+IDB_START_ORB_AQUABOTTOM RCDATA "..\\Resources\\StartOrb\\aqua bottom.png"
+IDB_START_ORB_DUNES RCDATA "..\\Resources\\StartOrb\\dunes.png"
+IDB_START_ORB_INDIGO RCDATA "..\\Resources\\StartOrb\\indigo.png"
+IDB_START_ORB_SAPPHIRE RCDATA "..\\Resources\\StartOrb\\sapphire.png"
+IDB_START_ORB_URANUS RCDATA "..\\Resources\\StartOrb\\uranus.png"
+IDB_START_ORB_VIENNABOTTOM RCDATA "..\\Resources\\StartOrb\\vienna bottom.png"
 IDD_TASKBAR_PROPS DIALOGEX 0, 0, 252, 218
 STYLE DS_SETFONT | DS_FIXEDSYS | WS_CHILD | WS_DISABLED | WS_CAPTION
 CAPTION "Taskbar"
@@ -47,6 +53,9 @@ BEGIN
     
     LTEXT           "Trigger Behavior:", IDC_STATIC, 14, 75, 70, 8
     COMBOBOX        IDC_START_TRIGGER, 85, 73, 150, 50, CBS_DROPDOWNLIST | WS_VSCROLL | WS_TABSTOP
+    
+    LTEXT           "Start Button Orb:", IDC_STATIC, 14, 92, 70, 8
+    COMBOBOX        IDC_ORB_SELECTOR, 85, 90, 150, 60, CBS_DROPDOWNLIST | WS_VSCROLL | WS_TABSTOP
 END
 
 IDD_DESKTOP_PROPS DIALOGEX 0, 0, 252, 218

@@ -1459,6 +1459,22 @@ bool TaskbarWindow::Initialize(HINSTANCE hInstance) {
         inst->hImageList = ImageList_Create(16, 16, ILC_COLOR32 | ILC_MASK, 0, 10);
         SendMessageW(inst->hTaskSwitch, TB_SETIMAGELIST, 0, (LPARAM)inst->hImageList);
 
+        // Instantiate Independent EverythingToolbar
+        inst->pEverythingToolbar = new EverythingToolbar();
+        HWND hSearchTb = inst->pEverythingToolbar->Create(inst->hReBar, hInstance);
+        
+        REBARBANDINFOW rbBand = {0};
+        rbBand.cbSize = sizeof(REBARBANDINFOW);
+        rbBand.fMask = RBBIM_STYLE | RBBIM_CHILD | RBBIM_CHILDSIZE | RBBIM_SIZE | RBBIM_TEXT;
+        rbBand.fStyle = RBBS_CHILDEDGE | RBBS_GRIPPERALWAYS;
+        rbBand.hwndChild = hSearchTb;
+        rbBand.lpText = (LPWSTR)L"Search";
+        rbBand.cxMinChild = 150;
+        rbBand.cyMinChild = taskbarHeight - 4;
+        rbBand.cx = 250;
+        SendMessageW(inst->hReBar, RB_INSERTBAND, (WPARAM)-1, (LPARAM)&rbBand);
+
+
         inst->hTrayNotify = CreateWindowExW(0, L"TrayNotifyWnd", L"", WS_CHILD | WS_VISIBLE | WS_CLIPSIBLINGS | WS_CLIPCHILDREN, screenWidth - 255, 0, 240, taskbarHeight, inst->hTaskbar, NULL, hInstance, NULL);
         inst->hSysPager = CreateWindowExW(0, L"SysPager", L"", WS_CHILD, 0, 0, 100, taskbarHeight, inst->hTrayNotify, NULL, hInstance, NULL);
         inst->hToolbar = CreateWindowExW(0, L"ToolbarWindow32", L"", WS_CHILD | WS_CLIPSIBLINGS | WS_CLIPCHILDREN, 0, 0, 100, taskbarHeight, inst->hSysPager, NULL, hInstance, NULL);

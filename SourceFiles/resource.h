@@ -41,3 +41,15 @@
 #define IDC_TOOLBAR_NEW       221
 
 #define IDC_NATIVE_REGISTRY_MODE 222
+
+// Orbs
+#define IDB_START_ORB_1ORB          301
+#define IDB_START_ORB_AQUABOTTOM    302
+#define IDB_START_ORB_DUNES         303
+#define IDB_START_ORB_INDIGO        304
+#define IDB_START_ORB_SAPPHIRE      305
+#define IDB_START_ORB_URANUS        306
+#define IDB_START_ORB_VIENNABOTTOM  307
+
+// Orb UI combo box
+#define IDC_ORB_SELECTOR      228

@@ -4,7 +4,7 @@ param(
     [string]$VsDevCmd
 )
 $ErrorActionPreference = 'Stop'
-$compileCmd86 = "cl.exe /EHsc /Zi /MTd /D_DEBUG /Fd`"$BuildDir\taskbar86.pdb`" /Fe`"$BuildDir\EliteTaskbar_x86.exe`" `"$SourceDir\main.cpp`" `"$SourceDir\Logger.cpp`" `"$SourceDir\TaskbarWindow.cpp`" `"$SourceDir\StartButton.cpp`" `"$SourceDir\ClockWidget.cpp`" `"$SourceDir\TaskbarProperties.cpp`" `"$BuildDir\resources.res`" user32.lib advapi32.lib shell32.lib gdi32.lib dwmapi.lib comctl32.lib gdiplus.lib ole32.lib uxtheme.lib comdlg32.lib /link /MANIFEST:EMBED /MANIFESTINPUT:`"$SourceDir\app.manifest`""
+$compileCmd86 = "cl.exe /EHsc /Zi /MTd /D_DEBUG /I`"$SourceDir\..\EverythingSDK-Source\include`" /Fd`"$BuildDir\taskbar86.pdb`" /Fe`"$BuildDir\EliteTaskbar_x86.exe`" `"$SourceDir\main.cpp`" `"$SourceDir\Logger.cpp`" `"$SourceDir\TaskbarWindow.cpp`" `"$SourceDir\StartButton.cpp`" `"$SourceDir\ClockWidget.cpp`" `"$SourceDir\TaskbarProperties.cpp`" `"$SourceDir\EverythingToolbar.cpp`" `"$BuildDir\resources.res`" user32.lib advapi32.lib shell32.lib gdi32.lib dwmapi.lib comctl32.lib gdiplus.lib ole32.lib uxtheme.lib comdlg32.lib `"$SourceDir\..\EverythingSDK-Source\lib\Everything3_x86.lib`" /link /MANIFEST:EMBED /MANIFESTINPUT:`"$SourceDir\app.manifest`""
 
 $ErrorActionPreference = 'Continue'
 Write-Host "Compiling x86 Resources and C++..."
