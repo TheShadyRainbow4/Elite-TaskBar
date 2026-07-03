@@ -295,8 +295,20 @@
   * `Resources\StartOrb\uranus.png`
   * `Resources\StartOrb\vienna bottom.png`
 * **Icons:**
-  * Main Program Icon: `Resources\MAIN_PROGRAM.ico`
-  * Preferences Dialog Window Icon: `Resources\POREFERENCES.ico`
+    * Main Program Icon: `Resources\MAIN_PROGRAM.ico`
+    * Preferences Dialog Window Icon: `Resources\POREFERENCES.ico`
+
+---
+# LIII. NATIVE FLYOUT INVOCATION & SYSPAGER ROUTING
+---
+
+1. Volume Slider Invocation: Intercept the click event on the custom SysPager audio icon. Execute CreateProcessW targeting "sndvol.exe -f [X] [Y]", dynamically passing the bounding RECT coordinates of the custom taskbar icon to anchor the legacy mixer.
+
+2. Network Pane Routing: Intercept the network icon click event. Utilize ShellExecute or CreateProcessW to invoke "rundll32.exe van.dll,RunVAN" to spawn the native unmanaged network selection UI.
+
+3. Clock Click Action: Map the primary clock click event to execute "control.exe timedate.cpl" as a robust Win32 fallback, bypassing the missing legacy TrayClockWClass rendering code in modern LTSC builds.
+
+4. ITrayTask COM Integration (Coexistence Mode): Define the undocumented ITrayTask interface (IID: FB2DC9CE-A8FA-44D9-8219-C4A18A222DDF). If ELITE_STATE_COEXISTENCE is active, use CoCreateInstance to bind to the native shell and command flyout visibility via the ShowClock() and ShowVolume() vtable methods.
 
 ---
 # CHANGELOG & EXECUTION HISTORY

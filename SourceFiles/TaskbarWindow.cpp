@@ -124,17 +124,7 @@ LRESULT CALLBACK TrayClockProc(HWND hwnd, UINT uMsg, WPARAM wParam, LPARAM lPara
         return 0;
     }
     case WM_LBUTTONDOWN: {
-        HWND hTray = FindWindowW(L"Shell_TrayWnd", NULL);
-        if (hTray) {
-            HWND hNotify = FindWindowExW(hTray, NULL, L"TrayNotifyWnd", NULL);
-            if (hNotify) {
-                HWND hClock = FindWindowExW(hNotify, NULL, L"TrayClockWClass", NULL);
-                if (hClock) {
-                    PostMessageW(hClock, WM_LBUTTONDOWN, MK_LBUTTON, MAKELPARAM(0, 0));
-                    PostMessageW(hClock, WM_LBUTTONUP, 0, MAKELPARAM(0, 0));
-                }
-            }
-        }
+        ShellExecuteW(NULL, L"open", L"control", L"timedate.cpl", NULL, SW_SHOWNORMAL);
         return 0;
     }
     case WM_DESTROY:
