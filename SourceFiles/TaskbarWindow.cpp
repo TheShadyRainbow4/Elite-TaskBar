@@ -722,40 +722,47 @@ LRESULT CALLBACK TrayShowDesktopButtonProc(HWND hwnd, UINT uMsg, WPARAM wParam, 
         }
         return 0;
     }
+    case WM_NCHITTEST:
+        return HTCLIENT;
+        
     case WM_PAINT: {
         PAINTSTRUCT ps;
         HDC hdc = BeginPaint(hwnd, &ps);
         RECT rcClient;
         GetClientRect(hwnd, &rcClient);
+        
+        // Completely clear background
         DrawThemeParentBackground(hwnd, hdc, &rcClient);
         
         bool isHover = GetPropW(hwnd, L"Hover") != NULL;
         bool isPressed = GetPropW(hwnd, L"Pressed") != NULL;
         
-        HTHEME hTheme = OpenThemeData(hwnd, L"Taskbar");
-        if (hTheme) {
-            int state = 1; // normal
-            if (isPressed) state = 3; // pressed
-            else if (isHover) state = 2; // hover
+        BOOL isCompositionEnabled = FALSE;
+        DwmIsCompositionEnabled(&isCompositionEnabled);
+        
+        if (isCompositionEnabled) {
+            // Draw etched glass separator using Gdiplus
+            Gdiplus::Graphics graphics(hdc);
+            Gdiplus::Pen pen(Gdiplus::Color(100, 255, 255, 255), 1); // Faint semi-transparent white
+            graphics.DrawLine(&pen, 0, 2, 0, rcClient.bottom - 2);
             
-            // Try to draw using standard Taskbar Button styles
-            DrawThemeBackground(hTheme, hdc, 3 /*TBP_BUTTON*/, state, &rcClient, NULL);
-            CloseThemeData(hTheme);
+            if (isHover || isPressed) {
+                Gdiplus::SolidBrush hoverBrush(isPressed ? Gdiplus::Color(80, 255, 255, 255) : Gdiplus::Color(40, 255, 255, 255));
+                graphics.FillRectangle(&hoverBrush, 1, 0, rcClient.right - 1, rcClient.bottom);
+            }
         } else {
             if (isPressed || isHover) {
                 HBRUSH hbr = CreateSolidBrush(isPressed ? RGB(100, 100, 100) : RGB(150, 150, 150));
                 FillRect(hdc, &rcClient, hbr);
                 DeleteObject(hbr);
             }
+            HPEN hPen = CreatePen(PS_SOLID, 1, RGB(180, 180, 180));
+            HPEN hOldPen = (HPEN)SelectObject(hdc, hPen);
+            MoveToEx(hdc, 0, 0, NULL);
+            LineTo(hdc, 0, rcClient.bottom);
+            SelectObject(hdc, hOldPen);
+            DeleteObject(hPen);
         }
-        
-        // Draw a subtle vertical line to mimic the Windows 7 show desktop button
-        HPEN hPen = CreatePen(PS_SOLID, 1, RGB(180, 180, 180));
-        HPEN hOldPen = (HPEN)SelectObject(hdc, hPen);
-        MoveToEx(hdc, 0, 0, NULL);
-        LineTo(hdc, 0, rcClient.bottom);
-        SelectObject(hdc, hOldPen);
-        DeleteObject(hPen);
         
         EndPaint(hwnd, &ps);
         return 0;
