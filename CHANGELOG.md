@@ -28,3 +28,4 @@ All notable changes to this project will be documented in this file.
 - Added `Backups/` to `.gitignore` to prevent recursive CAB bloat on the remote repository.
 - Fixed catastrophic infinite click loop in `ShowLegacyClockExperience` by targeting the correctly preserved `g_hNativeTaskbar` instead of globally matching `Shell_TrayWnd`.
 - Added missing `BufferedPaintInit()` and `BufferedPaintUnInit()` to `main.cpp` to ensure the DWM Glass Buffered Paint API (`BeginBufferedPaint`) operates correctly for standard users, fixing missing clock text.
+- Expanded the system tray width (`g_hTrayNotify`) and clock widget width (`g_hTrayClock`) while significantly increasing right-padding to mathematically prevent the clock from ever physically clipping underneath the native or custom `TrayShowDesktopButtonWClass`.

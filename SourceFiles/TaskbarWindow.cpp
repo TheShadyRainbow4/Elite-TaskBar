@@ -259,7 +259,7 @@ LRESULT CALLBACK TrayClockProc(HWND hwnd, UINT uMsg, WPARAM wParam, LPARAM lPara
                 
                 // Manually offset for vertical centering to avoid DT_CALCRECT bugs
                 rcClient.top += 6; 
-                rcClient.right -= 15; // Exact 15px buffer from the right edge
+                rcClient.right -= 25; // Massive 25px buffer from the right edge to avoid any show desktop button overlap
                 
                 DrawThemeTextEx(hTheme, hdcBuffer, 0, 0, clockText, -1, DT_RIGHT, &rcClient, &dttOpts);
                 
@@ -587,15 +587,15 @@ bool TaskbarWindow::Initialize(HINSTANCE hInstance) {
     g_hReBar = CreateWindowExW(0, L"ReBarWindow32", L"", WS_CHILD | WS_VISIBLE | WS_CLIPSIBLINGS | WS_CLIPCHILDREN | RBS_VARHEIGHT | RBS_BANDBORDERS, 
         45, 0, screenWidth - 280, taskbarHeight, g_hTaskbar, NULL, hInstance, NULL);
 
-    // Tray area
-    g_hTrayNotify = CreateWindowExW(0, L"TrayNotifyWnd", L"", WS_CHILD | WS_VISIBLE | WS_CLIPSIBLINGS | WS_CLIPCHILDREN, screenWidth - 235, 0, 220, taskbarHeight, g_hTaskbar, NULL, hInstance, NULL);
+    // Tray area (expanded width to 240 to give clock more room)
+    g_hTrayNotify = CreateWindowExW(0, L"TrayNotifyWnd", L"", WS_CHILD | WS_VISIBLE | WS_CLIPSIBLINGS | WS_CLIPCHILDREN, screenWidth - 255, 0, 240, taskbarHeight, g_hTaskbar, NULL, hInstance, NULL);
     
     // Hide SysPager and ToolbarWindow32 until Phase 6 when we implement custom rendering
     g_hSysPager = CreateWindowExW(0, L"SysPager", L"", WS_CHILD, 0, 0, 100, taskbarHeight, g_hTrayNotify, NULL, hInstance, NULL);
     g_hToolbar = CreateWindowExW(0, L"ToolbarWindow32", L"", WS_CHILD | WS_CLIPSIBLINGS | WS_CLIPCHILDREN, 0, 0, 100, taskbarHeight, g_hSysPager, NULL, hInstance, NULL);
     
-    // Clock widget
-    g_hTrayClock = CreateWindowExW(0, L"TrayClockWClass", L"", WS_CHILD | WS_VISIBLE | WS_CLIPSIBLINGS, 100, 0, 120, taskbarHeight, g_hTrayNotify, NULL, hInstance, NULL);
+    // Clock widget (expanded width to 140)
+    g_hTrayClock = CreateWindowExW(0, L"TrayClockWClass", L"", WS_CHILD | WS_VISIBLE | WS_CLIPSIBLINGS, 100, 0, 140, taskbarHeight, g_hTrayNotify, NULL, hInstance, NULL);
     
     // Show Desktop button at far right (Width 15, positioned at screenWidth - 15)
     CreateWindowExW(0, L"TrayShowDesktopButtonWClass", L"", WS_CHILD | WS_VISIBLE | WS_CLIPSIBLINGS, screenWidth - 15, 0, 15, taskbarHeight, g_hTaskbar, NULL, hInstance, NULL);
