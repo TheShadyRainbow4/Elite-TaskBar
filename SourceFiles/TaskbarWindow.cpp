@@ -188,7 +188,8 @@ LRESULT CALLBACK PreviewWndProc(HWND hwnd, UINT uMsg, WPARAM wParam, LPARAM lPar
     return DefWindowProcW(hwnd, uMsg, wParam, lParam);
 }
 
-std::vector<TaskButtonInfo> g_TaskButtons;
+#include <list>
+std::list<TaskButtonInfo> g_TaskButtons;
 int g_NextCmdId = 4000;
 
 extern std::vector<TaskbarInstance*> g_Taskbars;
@@ -356,7 +357,21 @@ void SyncTaskbarButtonsAcrossMonitors() {
                     info.hIcon = (HICON)dwRes;
                     if (!info.hIcon) info.hIcon = (HICON)GetClassLongPtrW(hwnd, GCLP_HICONSM);
                     
-                    AddTaskButton(info);
+                    bool found = false;
+                    for (auto& tb : g_TaskButtons) {
+                        if (tb.hwnd == hwnd) {
+                            tb.title = szTitle;
+                            tb.hIcon = info.hIcon;
+                            tb.isActive = info.isActive;
+                            AddTaskButton(tb);
+                            found = true;
+                            break;
+                        }
+                    }
+                    if (!found) {
+                        g_TaskButtons.push_back(info);
+                        AddTaskButton(g_TaskButtons.back());
+                    }
                 }
             }
         }
@@ -1178,6 +1193,22 @@ LRESULT CALLBACK WindowProc(HWND hwnd, UINT uMsg, WPARAM wParam, LPARAM lParam) 
             case IDM_TASKBAR_SETTINGS:
                 ShowTaskbarProperties(hwnd);
                 break;
+            case 3024: { // Toggle Elite Everything Search
+                g_Config.ShowEverythingToolbar = !g_Config.ShowEverythingToolbar;
+                HKEY hKey;
+                if (RegCreateKeyExW(HKEY_CURRENT_USER, L"Software\\EliteSoftware\\Win32Explorer\\Advanced", 0, NULL, REG_OPTION_NON_VOLATILE, KEY_WRITE, NULL, &hKey, NULL) == ERROR_SUCCESS) {
+                    DWORD val = g_Config.ShowEverythingToolbar ? 1 : 0;
+                    RegSetValueExW(hKey, L"ShowEverythingToolbar", 0, REG_DWORD, (const BYTE*)&val, sizeof(DWORD));
+                    RegCloseKey(hKey);
+                }
+                
+                for (auto* inst : g_Taskbars) {
+                    if (inst->hReBar) {
+                        SendMessageW(inst->hReBar, RB_SHOWBAND, 0, g_Config.ShowEverythingToolbar ? TRUE : FALSE);
+                    }
+                }
+                break;
+            }
             case IDM_EXIT_ELITETASKBAR:
                 SendMessageW(hwnd, WM_CLOSE, 0, 0);
                 break;
@@ -1192,22 +1223,6 @@ LRESULT CALLBACK WindowProc(HWND hwnd, UINT uMsg, WPARAM wParam, LPARAM lParam) 
         return 0;
     }
     case WM_LBUTTONDOWN: {
-        int xPos = GET_X_LPARAM(lParam);
-        if (xPos > 60) {
-            int btnWidth = 160;
-            int startX = 60;
-            int btnIndex = (xPos - startX) / (btnWidth + 2);
-            if (btnIndex >= 0 && btnIndex < g_TaskButtons.size()) {
-                HWND targetHwnd = g_TaskButtons[btnIndex].hwnd;
-                if (IsIconic(targetHwnd)) {
-                    ShowWindowAsync(targetHwnd, SW_RESTORE);
-                } else if (g_TaskButtons[btnIndex].isActive) {
-                    ShowWindowAsync(targetHwnd, SW_MINIMIZE);
-                } else {
-                    SetForegroundWindow(targetHwnd);
-                }
-            }
-        }
         return 0;
     }
     case WM_RBUTTONUP: {
@@ -1521,6 +1536,10 @@ bool TaskbarWindow::Initialize(HINSTANCE hInstance) {
         rbBand.cyMinChild = taskbarHeight - 4;
         rbBand.cx = 250;
         SendMessageW(inst->hReBar, RB_INSERTBAND, (WPARAM)-1, (LPARAM)&rbBand);
+        
+        if (!g_Config.ShowEverythingToolbar) {
+            SendMessageW(inst->hReBar, RB_SHOWBAND, 0, FALSE);
+        }
 
 
         inst->hTrayNotify = CreateWindowExW(0, L"TrayNotifyWnd", L"", WS_CHILD | WS_VISIBLE | WS_CLIPSIBLINGS | WS_CLIPCHILDREN, screenWidth - 255, 0, 240, taskbarHeight, inst->hTaskbar, NULL, hInstance, NULL);

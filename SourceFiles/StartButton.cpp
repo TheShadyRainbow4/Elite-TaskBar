@@ -122,8 +122,7 @@ void StartButton::Draw() {
     }
 
     UINT imgWidth = m_pOrbImage->GetWidth();
-    int numStages = (m_pOrbImage->GetHeight() >= imgWidth * 4) ? 4 : 3;
-    UINT sliceHeight = m_pOrbImage->GetHeight() / numStages;
+    UINT sliceHeight = imgWidth;
 
     int srcY = 0;
     switch (m_internalOrbState) {
@@ -175,8 +174,7 @@ void StartButton::Draw() {
 void StartButton::Show(int taskbarX, int taskbarY, int taskbarHeight) {
     if (!m_pOrbImage || !m_hOrbWnd) return;
     UINT imgWidth = m_pOrbImage->GetWidth();
-    int numStages = (m_pOrbImage->GetHeight() >= imgWidth * 4) ? 4 : 3;
-    UINT sliceHeight = m_pOrbImage->GetHeight() / numStages;
+    UINT sliceHeight = imgWidth;
     
     int yPos = taskbarY + (taskbarHeight - (int)sliceHeight) / 2;
     SetWindowPos(m_hOrbWnd, HWND_TOPMOST, taskbarX, yPos, imgWidth, sliceHeight, SWP_SHOWWINDOW);
@@ -253,21 +251,23 @@ LRESULT CALLBACK OrbWndProc(HWND hwnd, UINT uMsg, WPARAM wParam, LPARAM lParam) 
                 }
                 if (!hNativeTarget) hNativeTarget = FindWindowW(L"Shell_TrayWnd", NULL);
 
-                POINT pt;
-                GetCursorPos(&pt);
-                LPARAM lCursorParam = MAKELPARAM(pt.x, pt.y);
-
+                // Focus the specific taskbar window so Windows knows which monitor to target
+                SetForegroundWindow(pThis->GetParentTaskbar());
+                
                 if (mode == 1) { // Native
-                    SendMessageW(hNativeTarget, WM_SYSCOMMAND, SC_TASKLIST, lCursorParam);
+                    keybd_event(VK_LWIN, 0, 0, 0);
+                    keybd_event(VK_LWIN, 0, KEYEVENTF_KEYUP, 0);
                 } else if (mode == 2) { // Combo
                     if (isShiftDown) {
-                        SendMessageW(hNativeTarget, WM_SYSCOMMAND, SC_TASKLIST, lCursorParam);
+                        keybd_event(VK_LWIN, 0, 0, 0);
+                        keybd_event(VK_LWIN, 0, KEYEVENTF_KEYUP, 0);
                     } else {
                         keybd_event(VK_LWIN, 0, 0, 0);
                         keybd_event(VK_LWIN, 0, KEYEVENTF_KEYUP, 0);
                     }
                 } else { // OpenShell (Default 0)
-                    SendMessageW(hNativeTarget, WM_SYSCOMMAND, SC_TASKLIST, lCursorParam);
+                    keybd_event(VK_LWIN, 0, 0, 0);
+                    keybd_event(VK_LWIN, 0, KEYEVENTF_KEYUP, 0);
                 }
             }
             return 0;

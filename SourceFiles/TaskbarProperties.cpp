@@ -291,6 +291,27 @@ INT_PTR CALLBACK StartMenuSettingsDlgProc(HWND hwndDlg, UINT uMsg, WPARAM wParam
         }
         else if (HIWORD(wParam) == BN_CLICKED || HIWORD(wParam) == EN_CHANGE || HIWORD(wParam) == CBN_SELCHANGE) {
             SendMessageW(GetParent(hwndDlg), PSM_CHANGED, (WPARAM)hwndDlg, 0);
+            
+            if (LOWORD(wParam) == IDC_ORB_SELECTOR && HIWORD(wParam) == CBN_SELCHANGE) {
+                HKEY hKey;
+                if (RegCreateKeyExW(HKEY_CURRENT_USER, L"Software\\EliteSoftware\\Win32Explorer\\Advanced", 0, NULL, REG_OPTION_NON_VOLATILE, KEY_READ | KEY_WRITE, NULL, &hKey, NULL) == ERROR_SUCCESS) {
+                    int selIndex = SendDlgItemMessageW(hwndDlg, IDC_ORB_SELECTOR, CB_GETCURSEL, 0, 0);
+                    if (selIndex != CB_ERR) {
+                        DWORD orbId = (DWORD)SendDlgItemMessageW(hwndDlg, IDC_ORB_SELECTOR, CB_GETITEMDATA, selIndex, 0);
+                        int monSel = SendDlgItemMessageW(hwndDlg, IDC_START_MONITOR_LIST, CB_GETCURSEL, 0, 0);
+                        int monIndex = (monSel != CB_ERR) ? SendDlgItemMessageW(hwndDlg, IDC_START_MONITOR_LIST, CB_GETITEMDATA, monSel, 0) : -1;
+                        if (monIndex >= 0) {
+                            WCHAR valueName[64];
+                            wsprintfW(valueName, L"StartOrbID_Mon%d", monIndex);
+                            RegSetValueExW(hKey, valueName, 0, REG_DWORD, (const BYTE*)&orbId, sizeof(DWORD));
+                        } else {
+                            RegSetValueExW(hKey, L"StartOrbID", 0, REG_DWORD, (const BYTE*)&orbId, sizeof(DWORD));
+                        }
+                    }
+                    RegCloseKey(hKey);
+                }
+                SendMessageTimeoutW(HWND_BROADCAST, WM_SETTINGCHANGE, 0, (LPARAM)L"EliteTaskbarSettings", SMTO_ABORTIFHUNG, 500, NULL);
+            }
         }
         return TRUE;
     case WM_NOTIFY: {
