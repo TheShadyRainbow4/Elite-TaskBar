@@ -25,6 +25,13 @@ extern EliteTaskbarConfig g_Config;
 #pragma comment(lib, "shell32.lib")
 #pragma comment(lib, "uxtheme.lib")
 #pragma comment(lib, "ole32.lib")
+#pragma comment(lib, "propsys.lib")
+#pragma comment(lib, "shlwapi.lib")
+
+#include <shobjidl.h>
+#include <propkey.h>
+#include <propvarutil.h>
+#include <shlwapi.h>
 
 DEFINE_GUID(GUID_Win32Clock,
     0x0A323554A,
@@ -229,6 +236,11 @@ LRESULT CALLBACK TaskSwitchSubclassProc(HWND hWnd, UINT uMsg, WPARAM wParam, LPA
                 s_dragIndex = -1;
                 return 0; // Consume the click so it doesn't activate the window!
             }
+            if (s_dragIndex >= 0) {
+                TBBUTTON tbb = {0};
+                SendMessageW(hWnd, TB_GETBUTTON, s_dragIndex, (LPARAM)&tbb);
+                PostMessageW(GetParent(hWnd), WM_COMMAND, MAKEWPARAM(tbb.idCommand, 0), (LPARAM)hWnd);
+            }
             s_dragIndex = -1;
             break;
         }
@@ -242,8 +254,54 @@ LRESULT CALLBACK TaskSwitchSubclassProc(HWND hWnd, UINT uMsg, WPARAM wParam, LPA
                 
                 if (targetHwnd && IsWindow(targetHwnd)) {
                     if (GetAsyncKeyState(VK_SHIFT) & 0x8000) {
-                        // TODO: Implement jump list via COM
-                        MessageBoxW(hWnd, L"Jump List COM Parsing coming soon!", L"Elite Taskbar", MB_OK | MB_ICONINFORMATION);
+                        HMENU hJumpMenu = CreatePopupMenu();
+                        AppendMenuW(hJumpMenu, MF_STRING | MF_GRAYED, 0, L"Jump List (Recent/Frequent)");
+                        AppendMenuW(hJumpMenu, MF_SEPARATOR, 0, NULL);
+                        
+                        IPropertyStore* pps = NULL;
+                        PWSTR appID = NULL;
+                        if (SUCCEEDED(SHGetPropertyStoreForWindow(targetHwnd, IID_PPV_ARGS(&pps)))) {
+                            PROPVARIANT pv;
+                            PropVariantInit(&pv);
+                            if (SUCCEEDED(pps->GetValue(PKEY_AppUserModel_ID, &pv)) && pv.vt == VT_LPWSTR) {
+                                SHStrDupW(pv.pwszVal, &appID);
+                            }
+                            PropVariantClear(&pv);
+                            pps->Release();
+                        }
+                        
+                        if (appID) {
+                            IApplicationDocumentLists* padl = NULL;
+                            if (SUCCEEDED(CoCreateInstance(CLSID_ApplicationDocumentLists, NULL, CLSCTX_INPROC_SERVER, IID_PPV_ARGS(&padl)))) {
+                                padl->SetAppID(appID);
+                                IObjectArray* poaRecent = NULL;
+                                if (SUCCEEDED(padl->GetList(ADLT_RECENT, 0, IID_PPV_ARGS(&poaRecent)))) {
+                                    UINT count = 0;
+                                    poaRecent->GetCount(&count);
+                                    for (UINT i = 0; i < count && i < 10; ++i) {
+                                        IShellItem* psi = NULL;
+                                        if (SUCCEEDED(poaRecent->GetAt(i, IID_PPV_ARGS(&psi)))) {
+                                            PWSTR name = NULL;
+                                            if (SUCCEEDED(psi->GetDisplayName(SIGDN_NORMALDISPLAY, &name))) {
+                                                AppendMenuW(hJumpMenu, MF_STRING, 2000 + i, name);
+                                                CoTaskMemFree(name);
+                                            }
+                                            psi->Release();
+                                        }
+                                    }
+                                    poaRecent->Release();
+                                }
+                                padl->Release();
+                            }
+                            CoTaskMemFree(appID);
+                        } else {
+                            AppendMenuW(hJumpMenu, MF_STRING | MF_GRAYED, 0, L"(No AppUserModelID found)");
+                        }
+                        
+                        ClientToScreen(hWnd, &pt);
+                        SetForegroundWindow(hWnd);
+                        TrackPopupMenuEx(hJumpMenu, TPM_RIGHTBUTTON, pt.x, pt.y, hWnd, NULL);
+                        DestroyMenu(hJumpMenu);
                     } else {
                         HMENU hSysMenu = GetSystemMenu(targetHwnd, FALSE);
                         if (hSysMenu) {
