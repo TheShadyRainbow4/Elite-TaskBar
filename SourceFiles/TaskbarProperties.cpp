@@ -1,11 +1,13 @@
 #include "TaskbarProperties.h"
 #include "resource.h"
+#include "Logger.h"
 #include <commctrl.h>
 #include <vector>
 
 INT_PTR CALLBACK TaskbarSettingsDlgProc(HWND hwndDlg, UINT uMsg, WPARAM wParam, LPARAM lParam) {
     switch (uMsg) {
     case WM_INITDIALOG:
+        Logger::Log(L"TaskbarSettingsDlgProc WM_INITDIALOG entered");
         {
             HKEY hKey;
             if (RegCreateKeyExW(HKEY_CURRENT_USER, L"Software\\EliteSoftware\\Win32Explorer\\Advanced", 0, NULL, REG_OPTION_NON_VOLATILE, KEY_READ | KEY_WRITE, NULL, &hKey, NULL) == ERROR_SUCCESS) {
@@ -254,5 +256,7 @@ void ShowTaskbarProperties(HWND hwndOwner) {
     psh.nStartPage = startPage;
     psh.phpage = pages.data();
 
-    PropertySheetW(&psh);
+    Logger::Log(L"Calling PropertySheetW...");
+    INT_PTR result = PropertySheetW(&psh);
+    Logger::Log(L"PropertySheetW returned");
 }
