@@ -68,18 +68,13 @@ All notable changes to this project will be documented in this file.
 - Added binary signing to all executables in the build scripts.
 - Removed all third-party SDK sources from git tracking (git rm -r --cached).
 - Fixed multi-monitor window label assignment by passing valid title pointers via 	bb.iString.
-- Implemented GetWindowMonitor that properly detects the cNormalPosition of minimized windows to prevent them jumping taskbars.
+- Implemented GetWindowMonitor that properly detects the cNormalPosition of minimized windows to prevent them jumping taskbars.
 - Rewrote StartButton logic to support 3-frame and 4-frame dynamic height ORB images.
 - Improved TaskbarProperties UI to preview Orbs via GDI+ and properly isolate Per-Monitor configurations in the Registry.
 - Modified StartButton native menu triggers to use SendMessageW and lCursorParam alongside simulated VK_SHIFT injections to handle interactions with Open-Shell accurately.
--
-Added
-fixes
-for
-taskbar
-buttons
-disappearing
-when
-moving
-across
-monitors.
+- Added fixes for taskbar buttons disappearing when moving across monitors.
+- **Build System File Locks**: Added aggressive `Stop-Process` check at the absolute beginning of `build.ps1` to automatically terminate running instances of `EliteTaskbar` before compilation. This permanently resolves the `fatal error LNK1104` caused by attempting to link over locked executable files.
+- **Native Taskbar Transparency Fix**: Rewrote the taskbar hiding logic in `TaskbarWindow::Initialize`. Instead of using `WS_EX_LAYERED` (which causes Windows to silently un-reserve the AppBar space and lets windows maximize behind it), the native taskbar is now completely clipped out of existence using an empty `SetWindowRgn()`. The taskbar remains fully active, fully positioned, and fully opaque to the OS, guaranteeing correct workspace reservation and preventing windows from going under the custom taskbar!
+- **Start Menu Trigger Positioning**: Modified `StartButton::OrbWndProc` to directly utilize `SendMessageW` targeting the transparent native taskbar handle underneath it. Since the native taskbar is now perfectly positioned on every monitor, Open-Shell dynamically hooks it and perfectly aligns the Start Menu where you click.
+- **Taskbar Properties UI**: Re-routed the Trigger Combobox inside `StartMenuSettingsDlgProc` to actively query `StartMenuMode` from the registry and dynamically set its default selection index on load (`CB_SETCURSEL`), rather than misaligning against non-existent UI radio buttons.
+- **Live Orb Updates**: Fixed a bug where applying Orb changes in Taskbar Properties wouldn't reflect immediately. `WM_SETTINGCHANGE` now correctly iterates over `g_Taskbars` to find matching window instances and explicitly reloads the `StartButton` Orb image on the fly!

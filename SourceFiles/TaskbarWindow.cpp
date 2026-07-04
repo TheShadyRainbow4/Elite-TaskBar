@@ -1357,13 +1357,15 @@ LRESULT CALLBACK WindowProc(HWND hwnd, UINT uMsg, WPARAM wParam, LPARAM lParam) 
             }
             InvalidateRect(hwnd, NULL, TRUE);
         } else if (lParam && wcscmp((LPCWSTR)lParam, L"EliteTaskbarSettings") == 0) {
-            TaskbarInstance* pThis = (TaskbarInstance*)GetWindowLongPtr(hwnd, GWLP_USERDATA);
-            if (pThis && pThis->startButton && pThis->startButton->GetHwnd()) {
-                pThis->startButton->ReloadOrbImage(GetModuleHandleW(NULL), pThis->monitorIndex);
-                
-                RECT rcClient;
-                GetClientRect(hwnd, &rcClient);
-                pThis->startButton->Show(0, 0, rcClient.bottom);
+            for (auto* inst : g_Taskbars) {
+                if (inst->hTaskbar == hwnd && inst->startButton && inst->startButton->GetHwnd()) {
+                    inst->startButton->ReloadOrbImage(GetModuleHandleW(NULL), inst->monitorIndex);
+                    
+                    RECT rcClient;
+                    GetClientRect(hwnd, &rcClient);
+                    inst->startButton->Show(0, 0, rcClient.bottom);
+                    break;
+                }
             }
         }
         return 0;
@@ -1418,14 +1420,11 @@ bool TaskbarWindow::Initialize(HINSTANCE hInstance) {
     auto setVis = [](HWND hwnd, bool vis) {
         if (!hwnd) return;
         if (vis) {
-            LONG exStyle = GetWindowLongW(hwnd, GWL_EXSTYLE);
-            SetWindowLongW(hwnd, GWL_EXSTYLE, exStyle & ~WS_EX_LAYERED & ~WS_EX_TRANSPARENT);
-            SetLayeredWindowAttributes(hwnd, 0, 255, LWA_ALPHA);
+            SetWindowRgn(hwnd, NULL, TRUE);
             ShowWindow(hwnd, SW_SHOW);
         } else {
-            LONG exStyle = GetWindowLongW(hwnd, GWL_EXSTYLE);
-            SetWindowLongW(hwnd, GWL_EXSTYLE, exStyle | WS_EX_LAYERED | WS_EX_TRANSPARENT);
-            SetLayeredWindowAttributes(hwnd, 0, 0, LWA_ALPHA);
+            HRGN hRgn = CreateRectRgn(0, 0, 0, 0);
+            SetWindowRgn(hwnd, hRgn, TRUE);
         }
     };
 
@@ -1556,6 +1555,7 @@ bool TaskbarWindow::Initialize(HINSTANCE hInstance) {
             APPBARDATA abd = {0};
             abd.cbSize = sizeof(APPBARDATA);
             abd.hWnd = inst->hTaskbar;
+            abd.uCallbackMessage = WM_USER + 100;
             abd.uEdge = ABE_BOTTOM;
             abd.rc.left = xPos;
             abd.rc.right = xPos + screenWidth;
@@ -1642,17 +1642,13 @@ void TaskbarWindow::Cleanup() {
     g_Taskbars.clear();
     
     if (g_hNativeTaskbar && IsWindow(g_hNativeTaskbar)) {
-        LONG exStyle = GetWindowLongW(g_hNativeTaskbar, GWL_EXSTYLE);
-        SetWindowLongW(g_hNativeTaskbar, GWL_EXSTYLE, exStyle & ~WS_EX_LAYERED & ~WS_EX_TRANSPARENT);
-        SetLayeredWindowAttributes(g_hNativeTaskbar, 0, 255, LWA_ALPHA);
+        SetWindowRgn(g_hNativeTaskbar, NULL, TRUE);
         ShowWindow(g_hNativeTaskbar, SW_SHOW);
         PostMessageW(g_hNativeTaskbar, WM_DISPLAYCHANGE, 0, 0);
 
         HWND hSec = NULL;
         while ((hSec = FindWindowExW(NULL, hSec, L"Shell_SecondaryTrayWnd", NULL)) != NULL) {
-            LONG secStyle = GetWindowLongW(hSec, GWL_EXSTYLE);
-            SetWindowLongW(hSec, GWL_EXSTYLE, secStyle & ~WS_EX_LAYERED & ~WS_EX_TRANSPARENT);
-            SetLayeredWindowAttributes(hSec, 0, 255, LWA_ALPHA);
+            SetWindowRgn(hSec, NULL, TRUE);
             ShowWindow(hSec, SW_SHOW);
         }
     } else {

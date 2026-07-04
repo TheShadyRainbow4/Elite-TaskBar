@@ -6,6 +6,10 @@ param(
 $ErrorActionPreference = 'Stop'
 $ScriptDir = $PSScriptRoot
 
+Write-Host "Checking for running EliteTaskbar processes..." -ForegroundColor Cyan
+Get-Process -Name EliteTaskbar -ErrorAction SilentlyContinue | Stop-Process -Force
+Start-Sleep -Seconds 1
+
 Write-Host "Triggering pre-build backup..." -ForegroundColor Cyan
 $BackupScript = Join-Path $ScriptDir "backup.ps1"
 if (Test-Path $BackupScript) {
