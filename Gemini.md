@@ -8,10 +8,11 @@ Instead, you must:
 3. Add a registry key switch to dynamically flip between the legacy behavior and the new behavior at runtime.
 4. Explain the limitation and options to the user.
 
-## 2. Documentation and Changelog Auditing
-- After *every single* major file edit or code structural change, `CHANGELOG.md` **MUST** be updated to reflect exactly what was changed and why.
-- You must frequently review `CHANGELOG.md` to ensure it is in sync with the current build state.
-- Do not let documentation rot. If you add a new configuration variable or registry key, you must document it.
+## 2. Mandatory Pre-Flight & Changelog Rules
+**CRITICAL ENFORCEMENT:** You are absolutely FORBIDDEN from starting a task or making ANY code edits before you have completely read and reviewed every `.md` and `.txt` file in the project directory (including this one). 
+- **Pre-Flight:** Read all documentation files first.
+- **Action:** Only after reading documentation, follow the user's explicit task directives.
+- **Post-Flight:** After *every single* file edit, you MUST immediately update `CHANGELOG.md` to reflect exactly what was changed and why. Never skip this step.
 
 ## 3. UI/UX Rules
 - Flat design is absolutely forbidden.
