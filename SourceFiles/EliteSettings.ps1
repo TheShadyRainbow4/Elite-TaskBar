@@ -45,8 +45,8 @@ $global:regPathNative = "HKCU:\Software\Microsoft\Windows\CurrentVersion\Explore
 if (!(Test-Path $global:regPathElite)) { New-Item -Path $global:regPathElite -Force | Out-Null }
 
 $baseFont = New-Object System.Drawing.Font("Segoe UI", 9, [System.Drawing.FontStyle]::Regular)
-$boldFont = New-Object System.Drawing.Font("Segoe UI", 9, [System.Drawing.FontStyle]::Semibold)
-$titleFont = New-Object System.Drawing.Font("Segoe UI", 12, [System.Drawing.FontStyle]::Semibold)
+$boldFont = New-Object System.Drawing.Font("Segoe UI Semibold", 9, [System.Drawing.FontStyle]::Regular)
+$titleFont = New-Object System.Drawing.Font("Segoe UI Semibold", 12, [System.Drawing.FontStyle]::Regular)
 
 $colorChin = [System.Drawing.Color]::FromArgb(255, 240, 240, 240)
 #endregion
