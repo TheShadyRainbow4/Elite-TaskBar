@@ -266,15 +266,13 @@ LRESULT CALLBACK OrbWndProc(HWND hwnd, UINT uMsg, WPARAM wParam, LPARAM lParam) 
                     // Open Native Menu (Requires Shift for Open-Shell users)
                     bool injectShift = !isShiftDown;
                     if (injectShift) keybd_event(VK_SHIFT, 0, 0, 0);
-                    keybd_event(VK_LWIN, 0, 0, 0);
-                    keybd_event(VK_LWIN, 0, KEYEVENTF_KEYUP, 0);
+                    if (hNativeTarget) SendMessageW(hNativeTarget, WM_SYSCOMMAND, SC_TASKLIST, lCursorParam);
                     if (injectShift) keybd_event(VK_SHIFT, 0, KEYEVENTF_KEYUP, 0);
                 } else {
                     // Open Open-Shell Menu (Default Win key behavior)
                     bool injectShift = isShiftDown;
                     if (injectShift) keybd_event(VK_SHIFT, 0, KEYEVENTF_KEYUP, 0);
-                    keybd_event(VK_LWIN, 0, 0, 0);
-                    keybd_event(VK_LWIN, 0, KEYEVENTF_KEYUP, 0);
+                    if (hNativeTarget) SendMessageW(hNativeTarget, WM_SYSCOMMAND, SC_TASKLIST, lCursorParam);
                     if (injectShift) keybd_event(VK_SHIFT, 0, 0, 0);
                 }
             }

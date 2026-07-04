@@ -1415,6 +1415,20 @@ bool TaskbarWindow::Initialize(HINSTANCE hInstance) {
         RegCloseKey(hKey);
     }
 
+    auto setVis = [](HWND hwnd, bool vis) {
+        if (!hwnd) return;
+        if (vis) {
+            LONG exStyle = GetWindowLongW(hwnd, GWL_EXSTYLE);
+            SetWindowLongW(hwnd, GWL_EXSTYLE, exStyle & ~WS_EX_LAYERED & ~WS_EX_TRANSPARENT);
+            SetLayeredWindowAttributes(hwnd, 0, 255, LWA_ALPHA);
+            ShowWindow(hwnd, SW_SHOW);
+        } else {
+            LONG exStyle = GetWindowLongW(hwnd, GWL_EXSTYLE);
+            SetWindowLongW(hwnd, GWL_EXSTYLE, exStyle | WS_EX_LAYERED | WS_EX_TRANSPARENT);
+            SetLayeredWindowAttributes(hwnd, 0, 0, LWA_ALPHA);
+        }
+    };
+
     g_hNativeTaskbar = FindWindowW(L"Shell_TrayWnd", NULL);
     if (g_hNativeTaskbar) {
         RECT nativeRect = {0};
@@ -1424,8 +1438,11 @@ bool TaskbarWindow::Initialize(HINSTANCE hInstance) {
             taskbarHeight = nativeHeight;
         }
         if (g_Config.Mode == TaskbarMode::Replace) {
-            ShowWindow(g_hNativeTaskbar, SW_HIDE);
-            SetWindowPos(g_hNativeTaskbar, NULL, -10000, -10000, 0, 0, SWP_NOZORDER | SWP_NOSIZE | SWP_NOACTIVATE);
+            setVis(g_hNativeTaskbar, false);
+            HWND hSec = NULL;
+            while ((hSec = FindWindowExW(NULL, hSec, L"Shell_SecondaryTrayWnd", NULL)) != NULL) {
+                setVis(hSec, false);
+            }
         }
     }
 
@@ -1625,8 +1642,19 @@ void TaskbarWindow::Cleanup() {
     g_Taskbars.clear();
     
     if (g_hNativeTaskbar && IsWindow(g_hNativeTaskbar)) {
+        LONG exStyle = GetWindowLongW(g_hNativeTaskbar, GWL_EXSTYLE);
+        SetWindowLongW(g_hNativeTaskbar, GWL_EXSTYLE, exStyle & ~WS_EX_LAYERED & ~WS_EX_TRANSPARENT);
+        SetLayeredWindowAttributes(g_hNativeTaskbar, 0, 255, LWA_ALPHA);
         ShowWindow(g_hNativeTaskbar, SW_SHOW);
         PostMessageW(g_hNativeTaskbar, WM_DISPLAYCHANGE, 0, 0);
+
+        HWND hSec = NULL;
+        while ((hSec = FindWindowExW(NULL, hSec, L"Shell_SecondaryTrayWnd", NULL)) != NULL) {
+            LONG secStyle = GetWindowLongW(hSec, GWL_EXSTYLE);
+            SetWindowLongW(hSec, GWL_EXSTYLE, secStyle & ~WS_EX_LAYERED & ~WS_EX_TRANSPARENT);
+            SetLayeredWindowAttributes(hSec, 0, 255, LWA_ALPHA);
+            ShowWindow(hSec, SW_SHOW);
+        }
     } else {
         ShellExecuteW(NULL, L"open", L"explorer.exe", NULL, NULL, SW_SHOWNORMAL);
     }

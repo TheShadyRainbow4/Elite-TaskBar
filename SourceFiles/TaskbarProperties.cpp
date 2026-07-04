@@ -228,12 +228,8 @@ INT_PTR CALLBACK StartMenuSettingsDlgProc(HWND hwndDlg, UINT uMsg, WPARAM wParam
             if (RegCreateKeyExW(HKEY_CURRENT_USER, L"Software\\EliteSoftware\\Win32Explorer\\Advanced", 0, NULL, REG_OPTION_NON_VOLATILE, KEY_READ | KEY_WRITE, NULL, &hKey, NULL) == ERROR_SUCCESS) {
                 DWORD dwValue = 0;
                 DWORD cbData = sizeof(DWORD);
-                if (RegQueryValueExW(hKey, L"StartMenuMode", NULL, NULL, (LPBYTE)&dwValue, &cbData) == ERROR_SUCCESS) {
-                    if (dwValue == 1) SendDlgItemMessageW(hwndDlg, IDC_START_NATIVE, BM_SETCHECK, BST_CHECKED, 0);
-                    else if (dwValue == 2) SendDlgItemMessageW(hwndDlg, IDC_START_COMBO, BM_SETCHECK, BST_CHECKED, 0);
-                    else SendDlgItemMessageW(hwndDlg, IDC_START_OPENSHELL, BM_SETCHECK, BST_CHECKED, 0);
-                } else {
-                    SendDlgItemMessageW(hwndDlg, IDC_START_OPENSHELL, BM_SETCHECK, BST_CHECKED, 0);
+                if (RegQueryValueExW(hKey, L"StartMenuMode", NULL, NULL, (LPBYTE)&dwValue, &cbData) != ERROR_SUCCESS) {
+                    dwValue = 0;
                 }
                 
                 dwValue = IDB_START_ORB;
@@ -283,6 +279,16 @@ INT_PTR CALLBACK StartMenuSettingsDlgProc(HWND hwndDlg, UINT uMsg, WPARAM wParam
             SendDlgItemMessageW(hwndDlg, IDC_START_TRIGGER, CB_ADDSTRING, 0, (LPARAM)L"Native Windows Start Menu");
             SendDlgItemMessageW(hwndDlg, IDC_START_TRIGGER, CB_ADDSTRING, 0, (LPARAM)L"Open-Shell Menu (Shift for Native)");
             SendDlgItemMessageW(hwndDlg, IDC_START_TRIGGER, CB_ADDSTRING, 0, (LPARAM)L"Native Menu (Shift for Open-Shell)");
+            
+            // dwValue might have been read from the registry above; if not, we must read it here
+            DWORD modeValue = 0;
+            HKEY hKeyTrigger;
+            if (RegOpenKeyExW(HKEY_CURRENT_USER, L"Software\\EliteSoftware\\Win32Explorer\\Advanced", 0, KEY_READ, &hKeyTrigger) == ERROR_SUCCESS) {
+                DWORD cbData = sizeof(DWORD);
+                RegQueryValueExW(hKeyTrigger, L"StartMenuMode", NULL, NULL, (LPBYTE)&modeValue, &cbData);
+                RegCloseKey(hKeyTrigger);
+            }
+            SendDlgItemMessageW(hwndDlg, IDC_START_TRIGGER, CB_SETCURSEL, modeValue, 0);
             
             DWORD currentMode = 0;
             if (RegOpenKeyExW(HKEY_CURRENT_USER, L"Software\\EliteSoftware\\Win32Explorer\\Advanced", 0, KEY_READ, &hKey) == ERROR_SUCCESS) {
