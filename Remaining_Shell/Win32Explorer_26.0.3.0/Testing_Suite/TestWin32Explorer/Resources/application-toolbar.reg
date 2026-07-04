@@ -1,0 +1,25 @@
+﻿Windows Registry Editor Version 5.00
+
+[HKEY_CURRENT_USER\SOFTWARE\Win32ExplorerTest\ApplicationToolbar]
+
+[HKEY_CURRENT_USER\SOFTWARE\Win32ExplorerTest\ApplicationToolbar\0]
+"Name"="notepad"
+"Command"="C:\\Windows\\System32\\notepad.exe"
+"ShowNameOnToolbar"=dword:00000001
+
+[HKEY_CURRENT_USER\SOFTWARE\Win32ExplorerTest\ApplicationToolbar\1]
+"Name"="cmd"
+"Command"="C:\\Windows\\System32\\cmd.exe"
+"ShowNameOnToolbar"=dword:00000000
+
+[HKEY_CURRENT_USER\SOFTWARE\Win32ExplorerTest\ApplicationToolbar\2]
+"Name"="regedit"
+"Command"="C:\\Windows\\regedit.exe"
+"ShowNameOnToolbar"=dword:00000001
+
+[HKEY_CURRENT_USER\SOFTWARE\Win32ExplorerTest\ApplicationToolbar\3]
+"Name"="word"
+"Command"="\"C:\\Program Files\\Microsoft Office\\root\\Office16\\WINWORD.EXE\""
+"ShowNameOnToolbar"=dword:00000001
+
+

@@ -1,0 +1,8 @@
+﻿<?xml version="1.0"?>
+<!-- Preference file for Win32Explorer -->
+<ExplorerPlusPlus>
+	<Settings>
+		<Setting name="HandleZipFiles">yes</Setting>
+	</Settings>
+</ExplorerPlusPlus>
+

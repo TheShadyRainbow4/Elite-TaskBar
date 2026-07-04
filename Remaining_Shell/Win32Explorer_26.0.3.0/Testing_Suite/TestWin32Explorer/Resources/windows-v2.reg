@@ -1,0 +1,115 @@
+﻿Windows Registry Editor Version 5.00
+
+[HKEY_CURRENT_USER\Software\Win32ExplorerTest\Windows]
+
+[HKEY_CURRENT_USER\Software\Win32ExplorerTest\Windows\0]
+"X"=dword:0000026a
+"Y"=dword:00000256
+"Width"=dword:000004b7
+"Height"=dword:0000028b
+"ShowState"=dword:00000000
+"SelectedTab"=dword:00000000
+"TreeViewWidth"=dword:000001ae
+"DisplayWindowWidth"=dword:00000262
+"DisplayWindowHeight"=dword:000001ad
+"MainToolbarButtons"=hex:ca,af,00,00,cb,af,00,00,d4,af,00,00
+
+[HKEY_CURRENT_USER\Software\Win32ExplorerTest\Windows\0\Tabs\0]
+"Directory"=hex:14,00,1f,50,e0,4f,d0,20,ea,3a,69,10,a2,d8,08,00,2b,30,30,9d,19,\
+  00,2f,43,3a,5c,00,00,00,00,00,00,00,00,00,00,00,00,00,00,00,00,00,00,00,50,\
+  00,31,00,00,00,00,00,00,00,00,00,10,00,66,61,6b,65,31,00,3c,00,09,00,04,00,\
+  ef,be,00,00,00,00,00,00,00,00,2e,00,00,00,00,00,00,00,00,00,00,00,00,00,00,\
+  00,00,00,00,00,00,00,00,00,00,00,00,00,00,00,66,00,61,00,6b,00,65,00,31,00,\
+  00,00,14,00,00,00
+
+[HKEY_CURRENT_USER\Software\Win32ExplorerTest\Windows\0\Toolbars]
+
+[HKEY_CURRENT_USER\Software\Win32ExplorerTest\Windows\0\Toolbars\0]
+"id"=dword:00000001
+"Style"=dword:00000301
+"Length"=dword:000000d4
+
+[HKEY_CURRENT_USER\Software\Win32ExplorerTest\Windows\0\Toolbars\1]
+"id"=dword:00000000
+"Style"=dword:00000300
+"Length"=dword:00000187
+
+[HKEY_CURRENT_USER\Software\Win32ExplorerTest\Windows\1]
+"X"=dword:000000d4
+"Y"=dword:00000028
+"Width"=dword:000000bc
+"Height"=dword:00000409
+"ShowState"=dword:00000001
+"SelectedTab"=dword:00000002
+"TreeViewWidth"=dword:00000039
+"DisplayWindowWidth"=dword:000000b0
+"DisplayWindowHeight"=dword:0000033b
+"MainToolbarButtons"=hex:d9,af,00,00,ff,ff,ff,ff,db,af,00,00
+
+[HKEY_CURRENT_USER\Software\Win32ExplorerTest\Windows\1\Tabs\0]
+"Directory"=hex:14,00,1f,50,e0,4f,d0,20,ea,3a,69,10,a2,d8,08,00,2b,30,30,9d,19,\
+  00,2f,43,3a,5c,00,00,00,00,00,00,00,00,00,00,00,00,00,00,00,00,00,00,00,50,\
+  00,31,00,00,00,00,00,00,00,00,00,10,00,66,61,6b,65,31,00,3c,00,09,00,04,00,\
+  ef,be,00,00,00,00,00,00,00,00,2e,00,00,00,00,00,00,00,00,00,00,00,00,00,00,\
+  00,00,00,00,00,00,00,00,00,00,00,00,00,00,00,66,00,61,00,6b,00,65,00,31,00,\
+  00,00,14,00,00,00
+
+[HKEY_CURRENT_USER\Software\Win32ExplorerTest\Windows\1\Tabs\1]
+"Directory"=hex:14,00,1f,50,e0,4f,d0,20,ea,3a,69,10,a2,d8,08,00,2b,30,30,9d,19,\
+  00,2f,43,3a,5c,00,00,00,00,00,00,00,00,00,00,00,00,00,00,00,00,00,00,00,50,\
+  00,31,00,00,00,00,00,00,00,00,00,10,00,66,61,6b,65,32,00,3c,00,09,00,04,00,\
+  ef,be,00,00,00,00,00,00,00,00,2e,00,00,00,00,00,00,00,00,00,00,00,00,00,00,\
+  00,00,00,00,00,00,00,00,00,00,00,00,00,00,00,66,00,61,00,6b,00,65,00,32,00,\
+  00,00,14,00,00,00
+
+[HKEY_CURRENT_USER\Software\Win32ExplorerTest\Windows\1\Tabs\2]
+"Directory"=hex:14,00,1f,50,e0,4f,d0,20,ea,3a,69,10,a2,d8,08,00,2b,30,30,9d,19,\
+  00,2f,43,3a,5c,00,00,00,00,00,00,00,00,00,00,00,00,00,00,00,00,00,00,00,50,\
+  00,31,00,00,00,00,00,00,00,00,00,10,00,66,61,6b,65,33,00,3c,00,09,00,04,00,\
+  ef,be,00,00,00,00,00,00,00,00,2e,00,00,00,00,00,00,00,00,00,00,00,00,00,00,\
+  00,00,00,00,00,00,00,00,00,00,00,00,00,00,00,66,00,61,00,6b,00,65,00,33,00,\
+  00,00,14,00,00,00
+
+[HKEY_CURRENT_USER\Software\Win32ExplorerTest\Windows\1\Toolbars]
+
+[HKEY_CURRENT_USER\Software\Win32ExplorerTest\Windows\1\Toolbars\0]
+"id"=dword:00000000
+"Style"=dword:00000301
+"Length"=dword:0000006e
+
+[HKEY_CURRENT_USER\Software\Win32ExplorerTest\Windows\2]
+"X"=dword:0000048d
+"Y"=dword:00000002
+"Width"=dword:0000038a
+"Height"=dword:00000281
+"ShowState"=dword:00000002
+"SelectedTab"=dword:00000001
+"TreeViewWidth"=dword:0000034c
+"DisplayWindowWidth"=dword:0000008c
+"DisplayWindowHeight"=dword:000000d3
+"MainToolbarButtons"=hex:d6,af,00,00,e1,af,00,00
+
+[HKEY_CURRENT_USER\Software\Win32ExplorerTest\Windows\2\Tabs\0]
+"Directory"=hex:14,00,1f,50,e0,4f,d0,20,ea,3a,69,10,a2,d8,08,00,2b,30,30,9d,19,\
+  00,2f,43,3a,5c,00,00,00,00,00,00,00,00,00,00,00,00,00,00,00,00,00,00,00,50,\
+  00,31,00,00,00,00,00,00,00,00,00,10,00,66,61,6b,65,31,00,3c,00,09,00,04,00,\
+  ef,be,00,00,00,00,00,00,00,00,2e,00,00,00,00,00,00,00,00,00,00,00,00,00,00,\
+  00,00,00,00,00,00,00,00,00,00,00,00,00,00,00,66,00,61,00,6b,00,65,00,31,00,\
+  00,00,14,00,00,00
+
+[HKEY_CURRENT_USER\Software\Win32ExplorerTest\Windows\2\Tabs\1]
+"Directory"=hex:14,00,1f,50,e0,4f,d0,20,ea,3a,69,10,a2,d8,08,00,2b,30,30,9d,19,\
+  00,2f,43,3a,5c,00,00,00,00,00,00,00,00,00,00,00,00,00,00,00,00,00,00,00,50,\
+  00,31,00,00,00,00,00,00,00,00,00,10,00,66,61,6b,65,32,00,3c,00,09,00,04,00,\
+  ef,be,00,00,00,00,00,00,00,00,2e,00,00,00,00,00,00,00,00,00,00,00,00,00,00,\
+  00,00,00,00,00,00,00,00,00,00,00,00,00,00,00,66,00,61,00,6b,00,65,00,32,00,\
+  00,00,14,00,00,00
+
+[HKEY_CURRENT_USER\Software\Win32ExplorerTest\Windows\2\Toolbars]
+
+[HKEY_CURRENT_USER\Software\Win32ExplorerTest\Windows\2\Toolbars\0]
+"id"=dword:00000000
+"Style"=dword:00000301
+"Length"=dword:00000736
+
+

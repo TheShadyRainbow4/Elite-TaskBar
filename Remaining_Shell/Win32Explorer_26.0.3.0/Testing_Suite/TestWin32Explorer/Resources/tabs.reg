@@ -1,0 +1,95 @@
+﻿Windows Registry Editor Version 5.00
+
+[HKEY_CURRENT_USER\Software\Win32ExplorerTest\Tabs]
+
+[HKEY_CURRENT_USER\Software\Win32ExplorerTest\Tabs\0]
+"Directory"=hex:14,00,1f,50,e0,4f,d0,20,ea,3a,69,10,a2,d8,08,00,2b,30,30,9d,19,\
+  00,2f,43,3a,5c,00,00,00,00,00,00,00,00,00,00,00,00,00,00,00,00,00,00,00,00,\
+  00
+"ViewMode"=dword:00000001
+"SortMode"=dword:00000003
+"SortAscending"=dword:00000000
+"GroupMode"=dword:00000001
+"GroupSortDirection"=dword:00000000
+"ShowInGroups"=dword:00000000
+"ApplyFilter"=dword:00000000
+"FilterCaseSensitive"=dword:00000000
+"ShowHidden"=dword:00000001
+"AutoArrange"=dword:00000001
+"Filter"=""
+"Locked"=dword:00000000
+"AddressLocked"=dword:00000000
+"UseCustomName"=dword:00000001
+"CustomName"="C drive"
+
+[HKEY_CURRENT_USER\Software\Win32ExplorerTest\Tabs\0\Columns]
+"RealFolderColumns"=hex:01,00,00,00,01,00,00,00,02,00,00,00,00,00,00,00
+"RealFolderColumnWidths"=hex:01,00,00,00,96,00,00,00,02,00,00,00,c8,00,00,00
+"MyComputerColumns"=hex:01,00,00,00,01,00,00,00,1d,00,00,00,01,00,00,00
+"MyComputerColumnWidths"=hex:01,00,00,00,96,00,00,00,1d,00,00,00,20,03,00,00
+"ControlPanelColumns"=hex:1c,00,00,00,01,00,00,00,01,00,00,00,01,00,00,00
+"ControlPanelColumnWidths"=hex:1c,00,00,00,ad,02,00,00,01,00,00,00,96,00,00,00
+"RecycleBinColumns"=hex:03,00,00,00,00,00,00,00,04,00,00,00,01,00,00,00
+"RecycleBinColumnWidths"=hex:03,00,00,00,6b,01,00,00,04,00,00,00,d4,00,00,00
+"PrinterColumns"=hex:25,00,00,00,01,00,00,00,26,00,00,00,00,00,00,00
+"PrinterColumnWidths"=hex:25,00,00,00,96,00,00,00,26,00,00,00,96,00,00,00
+"NetworkColumns"=hex:27,00,00,00,01,00,00,00,02,00,00,00,01,00,00,00
+"NetworkColumnWidths"=hex:27,00,00,00,58,00,00,00,02,00,00,00,96,00,00,00
+"NetworkPlacesColumns"=hex:01,00,00,00,01,00,00,00,1c,00,00,00,00,00,00,00
+"NetworkPlacesColumnWidths"=hex:01,00,00,00,96,00,00,00,1c,00,00,00,96,00,00,\
+  00
+
+[HKEY_CURRENT_USER\Software\Win32ExplorerTest\Tabs\1]
+"Directory"=hex:14,00,1f,50,e0,4f,d0,20,ea,3a,69,10,a2,d8,08,00,2b,30,30,9d,19,\
+  00,2f,43,3a,5c,00,00,00,00,00,00,00,00,00,00,00,00,00,00,00,00,00,00,00,50,\
+  00,32,00,00,00,00,00,00,00,00,00,00,00,55,73,65,72,73,00,3c,00,09,00,04,00,\
+  ef,be,00,00,00,00,00,00,00,00,2e,00,00,00,00,00,00,00,00,00,00,00,00,00,00,\
+  00,00,00,00,00,00,00,00,00,00,00,00,00,00,00,55,00,73,00,65,00,72,00,73,00,\
+  00,00,14,00,00,00
+"ViewMode"=dword:00000002
+"SortMode"=dword:00000002
+"SortAscending"=dword:00000001
+"GroupMode"=dword:00000003
+"GroupSortDirection"=dword:00000001
+"ShowInGroups"=dword:00000001
+"ApplyFilter"=dword:00000001
+"FilterCaseSensitive"=dword:00000000
+"ShowHidden"=dword:00000000
+"AutoArrange"=dword:00000000
+"Filter"="*.exe"
+"Locked"=dword:00000001
+"AddressLocked"=dword:00000000
+"UseCustomName"=dword:00000000
+"CustomName"=""
+
+[HKEY_CURRENT_USER\Software\Win32ExplorerTest\Tabs\1\Columns]
+
+[HKEY_CURRENT_USER\Software\Win32ExplorerTest\Tabs\2]
+"Directory"=hex:14,00,1f,50,e0,4f,d0,20,ea,3a,69,10,a2,d8,08,00,2b,30,30,9d,19,\
+  00,2f,43,3a,5c,00,00,00,00,00,00,00,00,00,00,00,00,00,00,00,00,00,00,00,50,\
+  00,31,00,00,00,00,00,00,00,00,00,10,00,55,73,65,72,73,00,3c,00,09,00,04,00,\
+  ef,be,00,00,00,00,00,00,00,00,2e,00,00,00,00,00,00,00,00,00,00,00,00,00,00,\
+  00,00,00,00,00,00,00,00,00,00,00,00,00,00,00,55,00,73,00,65,00,72,00,73,00,\
+  00,00,14,00,56,00,32,00,00,00,00,00,00,00,00,00,00,00,44,65,66,61,75,6c,74,\
+  00,40,00,09,00,04,00,ef,be,00,00,00,00,00,00,00,00,2e,00,00,00,00,00,00,00,\
+  00,00,00,00,00,00,00,00,00,00,00,00,00,00,00,00,00,00,00,00,00,00,44,00,65,\
+  00,66,00,61,00,75,00,6c,00,74,00,00,00,16,00,00,00
+"ViewMode"=dword:00000004
+"SortMode"=dword:00000016
+"SortAscending"=dword:00000000
+"GroupMode"=dword:00000001
+"GroupSortDirection"=dword:00000000
+"ShowInGroups"=dword:00000000
+"ApplyFilter"=dword:00000001
+"FilterCaseSensitive"=dword:00000001
+"ShowHidden"=dword:00000001
+"AutoArrange"=dword:00000001
+"Filter"="*.txt"
+"Locked"=dword:00000000
+"AddressLocked"=dword:00000001
+"UseCustomName"=dword:00000000
+"CustomName"=""
+
+[HKEY_CURRENT_USER\Software\Win32ExplorerTest\Tabs\2\Columns]
+
+

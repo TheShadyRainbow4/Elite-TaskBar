@@ -1,0 +1,4 @@
+﻿#include "Win32Explorer.rc"
+#include "Win32ExplorerVersionInfo.rc"
+#include "Win32Explorer_NoTranslation.rc"
+#include "EliteTaskbar\resources.rc"

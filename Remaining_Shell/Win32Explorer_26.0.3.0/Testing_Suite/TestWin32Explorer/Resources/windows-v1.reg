@@ -1,0 +1,42 @@
+﻿Windows Registry Editor Version 5.00
+
+[HKEY_CURRENT_USER\Software\Win32ExplorerTest\Tabs]
+
+[HKEY_CURRENT_USER\Software\Win32ExplorerTest\Tabs\0]
+"Directory"=hex:14,00,1f,50,e0,4f,d0,20,ea,3a,69,10,a2,d8,08,00,2b,30,30,9d,19,\
+  00,2f,43,3a,5c,00,00,00,00,00,00,00,00,00,00,00,00,00,00,00,00,00,00,00,50,\
+  00,31,00,00,00,00,00,00,00,00,00,10,00,66,61,6b,65,31,00,3c,00,09,00,04,00,\
+  ef,be,00,00,00,00,00,00,00,00,2e,00,00,00,00,00,00,00,00,00,00,00,00,00,00,\
+  00,00,00,00,00,00,00,00,00,00,00,00,00,00,00,66,00,61,00,6b,00,65,00,31,00,\
+  00,00,14,00,00,00
+
+[HKEY_CURRENT_USER\Software\Win32ExplorerTest\Tabs\1]
+"Directory"=hex:14,00,1f,50,e0,4f,d0,20,ea,3a,69,10,a2,d8,08,00,2b,30,30,9d,19,\
+  00,2f,43,3a,5c,00,00,00,00,00,00,00,00,00,00,00,00,00,00,00,00,00,00,00,50,\
+  00,31,00,00,00,00,00,00,00,00,00,10,00,66,61,6b,65,32,00,3c,00,09,00,04,00,\
+  ef,be,00,00,00,00,00,00,00,00,2e,00,00,00,00,00,00,00,00,00,00,00,00,00,00,\
+  00,00,00,00,00,00,00,00,00,00,00,00,00,00,00,66,00,61,00,6b,00,65,00,32,00,\
+  00,00,14,00,00,00
+
+[HKEY_CURRENT_USER\Software\Win32ExplorerTest\Settings]
+"Position"=hex:2c,00,00,00,00,00,00,00,01,00,00,00,ff,ff,ff,ff,ff,ff,ff,ff,ff,\
+  ff,ff,ff,ff,ff,ff,ff,62,00,00,00,57,00,00,00,46,06,00,00,1e,03,00,00
+"LastSelectedTab"=dword:00000001
+"ToolbarState"=hex:ce,af,00,00,cf,af,00,00,cc,af,00,00
+"TreeViewWidth"=dword:000003f6
+"DisplayWindowWidth"=dword:000000d4
+"DisplayWindowHeight"=dword:00000154
+
+[HKEY_CURRENT_USER\Software\Win32ExplorerTest\Toolbars]
+
+[HKEY_CURRENT_USER\Software\Win32ExplorerTest\Toolbars\0]
+"id"=dword:00000000
+"Style"=dword:00000300
+"Length"=dword:0000028c
+
+[HKEY_CURRENT_USER\Software\Win32ExplorerTest\Toolbars\1]
+"id"=dword:00000001
+"Style"=dword:00000301
+"Length"=dword:00000347
+
+

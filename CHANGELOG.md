@@ -130,3 +130,25 @@ All notable changes to this project will be documented in this file.
 
 - Fixed settings controls not painting when launched via taskbar context menu by launching Settings executable independently.
 - Added native system tray icons by reparenting the native SysPager to the custom taskbar.
+- Added `Remaining_Shell/` to `.gitignore` to temporarily prevent tracking large shell replacement directories.
+- Modified `build_Win32Explorer.ps1` to explicitly copy the compiled `Win32Explorer.exe` directly into the `Elite-TaskBar` project root directory upon successful compilation.
+
+## [Unreleased]
+### Added
+- Added \Remaining_Shell/\ to \.gitignore\ to prevent massive build objects and artifacts from bloating the repo.
+- Injected EliteTaskbar source files directly into Win32Explorer codebase via \Win32Explorer.vcxproj\.
+- Added \EliteTaskbar/TaskbarMain.h\ include in \WinMain.cpp\ and established entry point hook for combined execution.
+
+### Changed
+- Relocated and redirected the \uild_Win32Explorer.ps1\ script to compile only \Win32Explorer\ and output the final binary to the project root (\C:\Users\Administrator\Desktop\Elite-TaskBar\Win32Explorer.exe\).
+- Excluded \Installer.wixproj\ and \TestWin32Explorer\ builds from the automated script since they were failing and unnecessary for current combined EXE goal.
+- Merged the RC resources by #including \EliteTaskbar\resources.rc\ directly into \Win32ExplorerMain.rc\.
+
+### Fixed
+- Fixed fatal linker error \CVT1100: duplicate resource\ during RC linking. Resolved by commenting out identically mapped IDs (694, 695, 696, 697) in \Win32Explorer_NoTranslation.rc\ (Windows 10 and Fluent UI variants).
+- Stripped 4.5GB of redundant and duplicate pre-compiled .res, .obj, and .tlog files which were cluttering the repo disk space.
+
+- Configured "Use large toolbar icons" to be the default and permanently enabled option by overriding `useLargeToolbarIcons` in `Config.h`, `ConfigXmlStorage.cpp`, `ConfigRegistryStorage.cpp`, and disabling the checkbox in `WindowOptionsPage.cpp`.
+- Added new "Elite Shell Environment" group box and checkboxes for Native View Mode, ShellBags Support, Elite Taskbar Integration, and Elite Start Menu Integration to the General Options dialog (`IDD_OPTIONS_GENERAL`).
+- Registered new UI control IDs (`IDC_OPTION_NATIVEVIEWMODE`, `IDC_OPTION_SHELLBAGS`, `IDC_OPTION_ELITETASKBAR`, `IDC_OPTION_ELITESTARTMENU`, `IDC_GROUP_ELITESHELL`) in `resource.h`.
+- Updated `GeneralOptionsPage.cpp` to correctly serialize, bind, and interact with the newly added Elite Shell settings properties inside `Config`.

@@ -1,0 +1,20 @@
+﻿Windows Registry Editor Version 5.00
+
+[HKEY_CURRENT_USER\Software\Win32ExplorerTest\StartupFolders]
+
+[HKEY_CURRENT_USER\Software\Win32ExplorerTest\StartupFolders\0]
+"Path"="h:\\projects"
+
+[HKEY_CURRENT_USER\Software\Win32ExplorerTest\StartupFolders\1]
+"Path"="d:\\documents\\2020"
+
+[HKEY_CURRENT_USER\Software\Win32ExplorerTest\StartupFolders\2]
+"Path"="c:\\users\\public"
+
+[HKEY_CURRENT_USER\Software\Win32ExplorerTest\StartupFolders\3]
+"Path"="c:\\program files\\common files"
+
+[HKEY_CURRENT_USER\Software\Win32ExplorerTest\StartupFolders\4]
+"Path"="e:\\"
+
+

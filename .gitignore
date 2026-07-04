@@ -13,3 +13,18 @@ ReactOS-Source-Shell/
 Documentation/WindowsOfficialDocs/*.pdf
 
 Gemini.md
+
+# Build Artifacts
+x64/
+x86/
+.vs/
+*.obj
+*.tlog
+*.res
+*.pdb
+*.iobj
+*.ipdb
+*.pch
+*.ipch
+*.lib
+*.exp

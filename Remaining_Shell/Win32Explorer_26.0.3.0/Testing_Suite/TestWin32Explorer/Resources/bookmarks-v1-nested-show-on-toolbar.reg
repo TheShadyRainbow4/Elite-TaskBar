@@ -1,0 +1,31 @@
+﻿Windows Registry Editor Version 5.00
+
+[HKEY_CURRENT_USER\Software\Win32ExplorerTest\Bookmarks]
+
+[HKEY_CURRENT_USER\Software\Win32ExplorerTest\Bookmarks\0]
+"Name"="Root"
+"Description"=""
+"Type"=dword:00000001
+"ShowOnBookmarksToolbar"=dword:00000001
+"Location"="C:\\"
+
+[HKEY_CURRENT_USER\Software\Win32ExplorerTest\Bookmarks\1]
+"Name"="Folder 1"
+"Description"=""
+"Type"=dword:00000000
+"ShowOnBookmarksToolbar"=dword:00000000
+
+[HKEY_CURRENT_USER\Software\Win32ExplorerTest\Bookmarks\1\0]
+"Name"="Windows"
+"Description"=""
+"Type"=dword:00000001
+"ShowOnBookmarksToolbar"=dword:00000001
+"Location"="C:\\Windows"
+
+[HKEY_CURRENT_USER\Software\Win32ExplorerTest\Bookmarks\2]
+"Description"=""
+"Name"="Folder 2"
+"ShowOnBookmarksToolbar"=dword:00000000
+"Type"=dword:00000000
+
+

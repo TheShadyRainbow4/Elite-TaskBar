@@ -1,0 +1,33 @@
+﻿Windows Registry Editor Version 5.00
+
+[HKEY_CURRENT_USER\Software\Win32ExplorerTest\ColorRules]
+
+[HKEY_CURRENT_USER\Software\Win32ExplorerTest\ColorRules\0]
+"Description"="Compressed files"
+"FilenamePattern"=""
+"CaseInsensitive"=dword:00000000
+"Attributes"=dword:00000800
+"Color"=hex:00,00,ff,00
+
+[HKEY_CURRENT_USER\Software\Win32ExplorerTest\ColorRules\1]
+"Description"="Encrypted files"
+"FilenamePattern"=""
+"CaseInsensitive"=dword:00000000
+"Attributes"=dword:00004000
+"Color"=hex:00,80,00,00
+
+[HKEY_CURRENT_USER\Software\Win32ExplorerTest\ColorRules\2]
+"Description"="Text files"
+"FilenamePattern"="*.txt"
+"CaseInsensitive"=dword:00000001
+"Attributes"=dword:00000000
+"Color"=hex:c0,c0,c0,00
+
+[HKEY_CURRENT_USER\Software\Win32ExplorerTest\ColorRules\3]
+"Description"="Log files"
+"FilenamePattern"="*.log"
+"CaseInsensitive"=dword:00000000
+"Attributes"=dword:00000000
+"Color"=hex:80,80,ff,00
+
+

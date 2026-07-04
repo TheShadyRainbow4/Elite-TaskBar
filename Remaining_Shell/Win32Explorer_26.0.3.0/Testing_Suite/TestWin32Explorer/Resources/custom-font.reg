@@ -1,0 +1,7 @@
+﻿Windows Registry Editor Version 5.00
+
+[HKEY_CURRENT_USER\Software\Win32ExplorerTest\MainFont]
+"Name"="Agency FB"
+"Size"=dword:00000014
+
+

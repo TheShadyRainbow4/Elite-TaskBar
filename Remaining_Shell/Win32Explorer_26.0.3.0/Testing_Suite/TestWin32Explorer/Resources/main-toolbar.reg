@@ -1,0 +1,10 @@
+﻿Windows Registry Editor Version 5.00
+
+[HKEY_CURRENT_USER\Software\Win32ExplorerTest]
+"ToolbarState"=hex:cd,af,00,00,ff,ff,ff,ff,cc,af,00,00,ca,af,00,00,cb,af,00,00,\
+  ff,ff,ff,ff,d6,af,00,00,ff,ff,ff,ff,d3,af,00,00,d4,af,00,00,d1,af,00,00,d2,\
+  af,00,00,de,af,00,00,ff,ff,ff,ff,d0,af,00,00,ce,af,00,00,cf,af,00,00,ff,ff,\
+  ff,ff,dc,af,00,00,d9,af,00,00,ff,ff,ff,ff,da,af,00,00,ff,ff,ff,ff,db,af,00,\
+  00,e0,af,00,00,ff,ff,ff,ff,e1,af,00,00
+
+

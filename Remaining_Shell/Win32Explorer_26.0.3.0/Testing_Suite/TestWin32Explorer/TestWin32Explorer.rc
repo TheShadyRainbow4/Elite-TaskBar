@@ -1,0 +1,3 @@
+﻿#include "../App_Source/Win32Explorer.rc"
+#include "../App_Source/Win32Explorer_NoTranslation.rc"
+
