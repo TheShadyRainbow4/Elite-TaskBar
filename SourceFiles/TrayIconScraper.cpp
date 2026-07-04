@@ -1,17 +1,31 @@
 #include <windows.h>
 #include <commctrl.h>
 #include <vector>
+#include "TrayIconScraper.h"
 
-struct EliteTrayIcon {
+#ifdef _WIN64
+struct TRAYDATA {
     HWND hwnd;
-    UINT uCallbackMessage;
     UINT uID;
+    UINT uCallbackMessage;
+    DWORD reserved1;
+    DWORD reserved2;
     HICON hIcon;
-    WCHAR szTip[128];
 };
+#else
+struct TRAYDATA {
+    HWND hwnd;
+    UINT uID;
+    UINT uCallbackMessage;
+    DWORD reserved[2];
+    HICON hIcon;
+};
+#endif
 
-std::vector<EliteTrayIcon> ScrapeTrayIcons() {
-    std::vector<EliteTrayIcon> icons;
+std::vector<ScrapedTrayIcon> g_CurrentTrayIcons;
+
+std::vector<ScrapedTrayIcon> ScrapeTrayIcons() {
+    std::vector<ScrapedTrayIcon> icons;
     HWND hTray = FindWindowW(L"Shell_TrayWnd", NULL);
     if (!hTray) return icons;
     HWND hNotify = FindWindowExW(hTray, NULL, L"TrayNotifyWnd", NULL);
@@ -39,10 +53,18 @@ std::vector<EliteTrayIcon> ScrapeTrayIcons() {
             SIZE_T bytesRead = 0;
             ReadProcessMemory(hProcess, pRemoteTbb, &tbb, sizeof(TBBUTTON), &bytesRead);
             if (bytesRead == sizeof(TBBUTTON)) {
-                // In a real implementation, we would extract the extra data (TRAYDATA) attached to tbb.dwData
-                // For Windows 7+, TRAYDATA structure needs to be parsed carefully depending on bitness (32 vs 64).
-                EliteTrayIcon icon = {0};
-                icons.push_back(icon);
+                TRAYDATA td = {0};
+                if (tbb.dwData) {
+                    ReadProcessMemory(hProcess, (LPCVOID)tbb.dwData, &td, sizeof(TRAYDATA), &bytesRead);
+                    ScrapedTrayIcon icon = {0};
+                    icon.hwnd = td.hwnd;
+                    icon.uCallbackMessage = td.uCallbackMessage;
+                    icon.uID = td.uID;
+                    icon.hIcon = td.hIcon;
+                    if (icon.hwnd && icon.hIcon) {
+                        icons.push_back(icon);
+                    }
+                }
             }
         }
     }
@@ -50,4 +72,41 @@ std::vector<EliteTrayIcon> ScrapeTrayIcons() {
     VirtualFreeEx(hProcess, pRemoteTbb, 0, MEM_RELEASE);
     CloseHandle(hProcess);
     return icons;
+}
+
+void UpdateTrayToolbar(HWND hToolbar, HIMAGELIST hImageList, const std::vector<ScrapedTrayIcon>& icons) {
+    bool changed = false;
+    if (icons.size() != g_CurrentTrayIcons.size()) {
+        changed = true;
+    } else {
+        for (size_t i = 0; i < icons.size(); ++i) {
+            if (icons[i].hwnd != g_CurrentTrayIcons[i].hwnd || icons[i].uID != g_CurrentTrayIcons[i].uID) {
+                changed = true;
+                break;
+            }
+        }
+    }
+    
+    if (changed) {
+        g_CurrentTrayIcons = icons;
+    }
+    
+    // Always update the toolbar if it's empty but we have icons, in case this is a new taskbar
+    int btnCount = SendMessageW(hToolbar, TB_BUTTONCOUNT, 0, 0);
+    if (!changed && (btnCount > 0 || icons.empty())) return;
+
+    while (SendMessageW(hToolbar, TB_BUTTONCOUNT, 0, 0) > 0) {
+        SendMessageW(hToolbar, TB_DELETEBUTTON, 0, 0);
+    }
+    ImageList_RemoveAll(hImageList);
+
+    for (size_t i = 0; i < g_CurrentTrayIcons.size(); ++i) {
+        int imgIndex = ImageList_AddIcon(hImageList, g_CurrentTrayIcons[i].hIcon);
+        TBBUTTON btn = {0};
+        btn.iBitmap = imgIndex;
+        btn.idCommand = (int)i; // index
+        btn.fsState = TBSTATE_ENABLED;
+        btn.fsStyle = BTNS_BUTTON;
+        SendMessageW(hToolbar, TB_ADDBUTTONS, 1, (LPARAM)&btn);
+    }
 }

@@ -1,3 +1,4 @@
+#include <windows.h>
 #include "TaskbarWindow.h"
 #include "StartButton.h"
 #include "ClockWidget.h"
@@ -8,9 +9,11 @@
 #include <dwmapi.h>
 #include <windowsx.h>
 #include <uxtheme.h>
-#include <windowsx.h>
-#include <uxtheme.h>
 #include <vector>
+#include <shellapi.h>
+#include <shobjidl.h>
+#include <propkey.h>
+#include "TrayIconScraper.h"
 #include <commctrl.h>
 
 static void InvokeNativeRunDialog(HWND hwndOwner);
@@ -1515,6 +1518,14 @@ LRESULT CALLBACK WindowProc(HWND hwnd, UINT uMsg, WPARAM wParam, LPARAM lParam) 
         return 0;
     }
     case WM_TIMER: {
+        if (wParam == 1001) {
+            TaskbarInstance* inst = GetTaskbarInstance(hwnd);
+            if (inst && inst->hToolbar) {
+                std::vector<ScrapedTrayIcon> icons = ScrapeTrayIcons();
+                UpdateTrayToolbar(inst->hToolbar, inst->hTrayImageList, icons);
+            }
+            return 0;
+        }
         if (wParam == 9998) {
             SyncWindowsAcrossMonitors();
             return 0;
@@ -1795,59 +1806,76 @@ bool TaskbarWindow::Initialize(HINSTANCE hInstance) {
             bHookRegistered = true;
         }
 
-        inst->hTaskSwitch = CreateWindowExW(0, TOOLBARCLASSNAMEW, L"", 
-            WS_CHILD | WS_VISIBLE | WS_CLIPSIBLINGS | WS_CLIPCHILDREN | TBSTYLE_LIST | TBSTYLE_FLAT | TBSTYLE_WRAPABLE | CCS_NODIVIDER | CCS_NORESIZE | TBSTYLE_TRANSPARENT, 
-            60, 0, screenWidth - 315, taskbarHeight, inst->hTaskbar, (HMENU)2000, hInstance, NULL);
-        SetWindowSubclass(inst->hTaskSwitch, TaskSwitchSubclassProc, 1, 0);
-        SendMessageW(inst->hTaskSwitch, TB_BUTTONSTRUCTSIZE, sizeof(TBBUTTON), 0);
-        
-        // Add padding so icons aren't cramped to the left edge
-        SendMessageW(inst->hTaskSwitch, TB_SETPADDING, 0, MAKELPARAM(10, 4));
-        if (g_Config.ButtonWidth == ButtonWidthMode::Fixed) {
-            SendMessageW(inst->hTaskSwitch, TB_SETBUTTONWIDTH, 0, MAKELPARAM(32, 160));
-        } else if (g_Config.ButtonWidth == ButtonWidthMode::IconsOnly) {
-            SendMessageW(inst->hTaskSwitch, TB_SETBUTTONWIDTH, 0, MAKELPARAM(40, 40));
+        // Read multi-monitor settings for this monitor
+        DWORD enableTray = 1;
+        DWORD enableClock = 1;
+        DWORD enableTaskBtns = 1;
+        HKEY hKeyAdv;
+        if (RegOpenKeyExW(HKEY_CURRENT_USER, L"Software\\EliteSoftware\\Win32Explorer\\Advanced", 0, KEY_READ, &hKeyAdv) == ERROR_SUCCESS) {
+            DWORD cbData = sizeof(DWORD);
+            WCHAR valName[64];
+            wsprintfW(valName, L"EnableTray_Mon%d", (int)i);
+            RegQueryValueExW(hKeyAdv, valName, NULL, NULL, (LPBYTE)&enableTray, &cbData);
+            cbData = sizeof(DWORD);
+            wsprintfW(valName, L"EnableClock_Mon%d", (int)i);
+            RegQueryValueExW(hKeyAdv, valName, NULL, NULL, (LPBYTE)&enableClock, &cbData);
+            cbData = sizeof(DWORD);
+            wsprintfW(valName, L"EnableTaskBtns_Mon%d", (int)i);
+            RegQueryValueExW(hKeyAdv, valName, NULL, NULL, (LPBYTE)&enableTaskBtns, &cbData);
+            RegCloseKey(hKeyAdv);
         }
-        
-        SetWindowTheme(inst->hTaskSwitch, L"TaskBand", NULL);
-        inst->hImageList = ImageList_Create(16, 16, ILC_COLOR32 | ILC_MASK, 0, 10);
-        SendMessageW(inst->hTaskSwitch, TB_SETIMAGELIST, 0, (LPARAM)inst->hImageList);
 
+        inst->hTaskSwitch = NULL;
+        if (enableTaskBtns) {
+            inst->hTaskSwitch = CreateWindowExW(0, TOOLBARCLASSNAMEW, L"", 
+                WS_CHILD | WS_VISIBLE | WS_CLIPSIBLINGS | WS_CLIPCHILDREN | TBSTYLE_LIST | TBSTYLE_FLAT | TBSTYLE_WRAPABLE | CCS_NODIVIDER | CCS_NORESIZE | TBSTYLE_TRANSPARENT, 
+                60, 0, screenWidth - 315, taskbarHeight, inst->hTaskbar, (HMENU)2000, hInstance, NULL);
+            SetWindowSubclass(inst->hTaskSwitch, TaskSwitchSubclassProc, 1, 0);
+            SendMessageW(inst->hTaskSwitch, TB_BUTTONSTRUCTSIZE, sizeof(TBBUTTON), 0);
+            
+            // Add padding so icons aren't cramped to the left edge
+            SendMessageW(inst->hTaskSwitch, TB_SETPADDING, 0, MAKELPARAM(10, 4));
+            if (g_Config.ButtonWidth == ButtonWidthMode::Fixed) {
+                SendMessageW(inst->hTaskSwitch, TB_SETBUTTONWIDTH, 0, MAKELPARAM(32, 160));
+            } else if (g_Config.ButtonWidth == ButtonWidthMode::IconsOnly) {
+                SendMessageW(inst->hTaskSwitch, TB_SETBUTTONWIDTH, 0, MAKELPARAM(40, 40));
+            }
+            
+            SetWindowTheme(inst->hTaskSwitch, L"TaskBand", NULL);
+            inst->hImageList = ImageList_Create(16, 16, ILC_COLOR32 | ILC_MASK, 0, 10);
+            SendMessageW(inst->hTaskSwitch, TB_SETIMAGELIST, 0, (LPARAM)inst->hImageList);
+        }
 
-        inst->hTrayNotify = CreateWindowExW(0, L"TrayNotifyWnd", L"", WS_CHILD | WS_VISIBLE | WS_CLIPSIBLINGS | WS_CLIPCHILDREN, screenWidth - 255, 0, 240, taskbarHeight, inst->hTaskbar, NULL, hInstance, NULL);
-        
+        inst->hTrayNotify = NULL;
         inst->hSysPager = NULL;
         inst->hToolbar = NULL;
-        
-        if (g_Config.Mode == TaskbarMode::Replace && monData.isPrimary[i] && g_hNativeTaskbar) {
-            inst->hNativeTrayNotify = FindWindowExW(g_hNativeTaskbar, NULL, L"TrayNotifyWnd", NULL);
-            if (inst->hNativeTrayNotify) {
-                HWND hNativeSysPager = FindWindowExW(inst->hNativeTrayNotify, NULL, L"SysPager", NULL);
-                if (hNativeSysPager) {
-                    inst->hSysPager = hNativeSysPager;
-                    SetParent(inst->hSysPager, inst->hTrayNotify);
-                    SetWindowLongW(inst->hSysPager, GWL_STYLE, WS_CHILD | WS_VISIBLE | WS_CLIPSIBLINGS | WS_CLIPCHILDREN);
-                    SetWindowPos(inst->hSysPager, NULL, 0, 0, 100, taskbarHeight, SWP_NOZORDER | SWP_SHOWWINDOW);
-                    inst->bStolenSysPager = true;
-                    
-                    HWND hNativeToolbar = FindWindowExW(inst->hSysPager, NULL, L"ToolbarWindow32", NULL);
-                    if (hNativeToolbar) {
-                        inst->hToolbar = hNativeToolbar;
-                    }
-                }
+        inst->hTrayClock = NULL;
+
+        if (enableTray || enableClock) {
+            inst->hTrayNotify = CreateWindowExW(0, L"TrayNotifyWnd", L"", WS_CHILD | WS_VISIBLE | WS_CLIPSIBLINGS | WS_CLIPCHILDREN, screenWidth - 255, 0, 240, taskbarHeight, inst->hTaskbar, NULL, hInstance, NULL);
+            
+            if (enableTray) {
+                inst->hSysPager = CreateWindowExW(0, L"SysPager", L"", WS_CHILD | WS_VISIBLE | WS_CLIPSIBLINGS | WS_CLIPCHILDREN, 0, 0, 100, taskbarHeight, inst->hTrayNotify, NULL, hInstance, NULL);
+                inst->hToolbar = CreateWindowExW(0, L"ToolbarWindow32", L"", WS_CHILD | WS_VISIBLE | WS_CLIPSIBLINGS | WS_CLIPCHILDREN | TBSTYLE_FLAT | TBSTYLE_TRANSPARENT | CCS_NODIVIDER | CCS_NORESIZE, 0, 0, 100, taskbarHeight, inst->hSysPager, NULL, hInstance, NULL);
+                SendMessageW(inst->hToolbar, TB_BUTTONSTRUCTSIZE, sizeof(TBBUTTON), 0);
+                inst->hTrayImageList = ImageList_Create(16, 16, ILC_COLOR32 | ILC_MASK, 0, 20);
+                SendMessageW(inst->hToolbar, TB_SETIMAGELIST, 0, (LPARAM)inst->hTrayImageList);
             }
+            
+            if (enableClock) {
+                inst->hTrayClock = CreateWindowExW(0, L"TrayClockWClass", L"", WS_CHILD | WS_VISIBLE | WS_CLIPSIBLINGS, 100, 0, 140, taskbarHeight, inst->hTrayNotify, NULL, hInstance, NULL);
+            }
+            
+            CreateWindowExW(0, L"TrayShowDesktopButtonWClass", L"", WS_CHILD | WS_VISIBLE | WS_CLIPSIBLINGS, screenWidth - 15, 0, 15, taskbarHeight, inst->hTaskbar, NULL, hInstance, NULL);
         }
-        
-        if (!inst->hSysPager) {
-            inst->hSysPager = CreateWindowExW(0, L"SysPager", L"", WS_CHILD, 0, 0, 100, taskbarHeight, inst->hTrayNotify, NULL, hInstance, NULL);
-            inst->hToolbar = CreateWindowExW(0, L"ToolbarWindow32", L"", WS_CHILD | WS_CLIPSIBLINGS | WS_CLIPCHILDREN, 0, 0, 100, taskbarHeight, inst->hSysPager, NULL, hInstance, NULL);
-        }
-        
-        inst->hTrayClock = CreateWindowExW(0, L"TrayClockWClass", L"", WS_CHILD | WS_VISIBLE | WS_CLIPSIBLINGS, 100, 0, 140, taskbarHeight, inst->hTrayNotify, NULL, hInstance, NULL);
-        
-        CreateWindowExW(0, L"TrayShowDesktopButtonWClass", L"", WS_CHILD | WS_VISIBLE | WS_CLIPSIBLINGS, screenWidth - 15, 0, 15, taskbarHeight, inst->hTaskbar, NULL, hInstance, NULL);
 
         SetWindowPos(inst->hTaskbar, HWND_TOPMOST, xPos, yPos, screenWidth, taskbarHeight, SWP_SHOWWINDOW);
+        
+        // Timer for scraper
+        if (inst->hToolbar) {
+            SetTimer(inst->hTaskbar, 1001, 2000, NULL);
+        }
+
 
         if (g_Config.Mode == TaskbarMode::Replace && monData.isPrimary[i]) {
             RegisterHotKey(inst->hTaskbar, 1, MOD_WIN | MOD_NOREPEAT, 'E');

@@ -14,6 +14,7 @@ struct TaskbarInstance {
     HWND hTrayNotify;
     HWND hTrayClock;
     HIMAGELIST hImageList;
+    HIMAGELIST hTrayImageList;
     HMONITOR hMonitor;
     int monitorIndex;
     RECT monitorRect;
