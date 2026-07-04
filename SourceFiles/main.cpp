@@ -44,6 +44,14 @@ void QueryOperationalMode() {
             }
         }
         
+        dwValue = 1;
+        bufferSize = sizeof(DWORD);
+        if (RegQueryValueExW(hKey, L"TaskbarButtonFixedWidthSize", NULL, NULL, (LPBYTE)&dwValue, &bufferSize) == ERROR_SUCCESS) {
+            g_Config.FixedWidthSize = dwValue;
+        } else {
+            g_Config.FixedWidthSize = 1;
+        }
+        
         dwValue = 0;
         bufferSize = sizeof(DWORD);
         g_Config.OverflowMode = TrayOverflowMode::Win7Flyout;

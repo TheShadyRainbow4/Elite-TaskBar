@@ -93,6 +93,7 @@ INT_PTR CALLBACK TaskbarSettingsDlgProc(HWND hwndDlg, UINT uMsg, WPARAM wParam, 
         return (INT_PTR)GetSysColorBrush(COLOR_BTNFACE);
     }
     case WM_INITDIALOG: {
+        EnableThemeDialogTexture(hwndDlg, ETDT_ENABLETAB);
         HKEY hKey;
         if (RegOpenKeyExW(HKEY_CURRENT_USER, L"Software\\EliteSoftware\\Win32Explorer\\Advanced", 0, KEY_READ, &hKey) == ERROR_SUCCESS) {
             DWORD dwValue = 0;
@@ -188,6 +189,7 @@ INT_PTR CALLBACK NativeSettingsDlgProc(HWND hwndDlg, UINT uMsg, WPARAM wParam, L
         return (INT_PTR)GetSysColorBrush(COLOR_BTNFACE);
     }
     case WM_INITDIALOG: {
+        EnableThemeDialogTexture(hwndDlg, ETDT_ENABLETAB);
         HKEY hKey;
         if (RegOpenKeyExW(HKEY_CURRENT_USER, L"Software\\EliteSoftware\\Win32Explorer\\Advanced", 0, KEY_READ, &hKey) == ERROR_SUCCESS) {
             DWORD dwValue = 0, cbData = sizeof(DWORD);
@@ -359,11 +361,10 @@ LRESULT CALLBACK NoMouseWheelSubclassProc(HWND hwnd, UINT uMsg, WPARAM wParam, L
 HWND CreateDynScrollArea(HWND hwndDlg, int idc_placeholder) {
     InitDynScrollClass();
     HWND hPlaceholder = GetDlgItem(hwndDlg, idc_placeholder);
-    RECT rc; GetWindowRect(hPlaceholder, &rc);
-    POINT pt = { rc.left, rc.top };
-    ScreenToClient(hwndDlg, &pt);
-    HWND hScroll = CreateWindowExW(WS_EX_CONTROLPARENT, L"EliteDynScrollArea", L"", WS_CHILD | WS_VISIBLE | WS_VSCROLL, pt.x, pt.y, rc.right - rc.left, rc.bottom - rc.top, hwndDlg, NULL, g_hInstance, NULL);
-    DestroyWindow(hPlaceholder);
+    RECT rc;
+    GetClientRect(hwndDlg, &rc);
+    HWND hScroll = CreateWindowExW(WS_EX_CONTROLPARENT, L"EliteDynScrollArea", L"", WS_CHILD | WS_VISIBLE | WS_VSCROLL, 0, 0, rc.right, rc.bottom, hwndDlg, NULL, g_hInstance, NULL);
+    if (hPlaceholder) DestroyWindow(hPlaceholder);
     return hScroll;
 }
 
@@ -402,6 +403,7 @@ INT_PTR CALLBACK MultiMonSettingsDlgProc(HWND hwndDlg, UINT uMsg, WPARAM wParam,
         return (INT_PTR)GetSysColorBrush(COLOR_BTNFACE);
     }
     case WM_INITDIALOG: {
+        EnableThemeDialogTexture(hwndDlg, ETDT_ENABLETAB);
         if (!gdiplusToken) {
             GdiplusStartupInput gdiplusStartupInput;
             GdiplusStartup(&gdiplusToken, &gdiplusStartupInput, NULL);
@@ -621,6 +623,7 @@ INT_PTR CALLBACK ToolbarsSettingsDlgProc(HWND hwndDlg, UINT uMsg, WPARAM wParam,
         return (INT_PTR)GetSysColorBrush(COLOR_BTNFACE);
     }
     case WM_INITDIALOG:
+        EnableThemeDialogTexture(hwndDlg, ETDT_ENABLETAB);
         SendDlgItemMessageW(hwndDlg, IDC_TOOLBAR_LIST, LB_ADDSTRING, 0, (LPARAM)L"Address");
         SendDlgItemMessageW(hwndDlg, IDC_TOOLBAR_LIST, LB_ADDSTRING, 0, (LPARAM)L"Links");
         SendDlgItemMessageW(hwndDlg, IDC_TOOLBAR_LIST, LB_ADDSTRING, 0, (LPARAM)L"Desktop");

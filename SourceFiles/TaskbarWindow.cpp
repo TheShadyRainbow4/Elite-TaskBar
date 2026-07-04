@@ -1836,7 +1836,10 @@ bool TaskbarWindow::Initialize(HINSTANCE hInstance) {
             // Add padding so icons aren't cramped to the left edge
             SendMessageW(inst->hTaskSwitch, TB_SETPADDING, 0, MAKELPARAM(10, 4));
             if (g_Config.ButtonWidth == ButtonWidthMode::Fixed) {
-                SendMessageW(inst->hTaskSwitch, TB_SETBUTTONWIDTH, 0, MAKELPARAM(32, 160));
+                int width = 160;
+                if (g_Config.FixedWidthSize == 0) width = 100; // Small
+                else if (g_Config.FixedWidthSize == 2) width = 220; // Large
+                SendMessageW(inst->hTaskSwitch, TB_SETBUTTONWIDTH, 0, MAKELPARAM(width, width));
             } else if (g_Config.ButtonWidth == ButtonWidthMode::IconsOnly) {
                 SendMessageW(inst->hTaskSwitch, TB_SETBUTTONWIDTH, 0, MAKELPARAM(40, 40));
             }
