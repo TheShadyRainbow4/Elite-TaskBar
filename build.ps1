@@ -6,8 +6,9 @@ param(
 $ErrorActionPreference = 'Stop'
 $ScriptDir = $PSScriptRoot
 
-Write-Host "Checking for running EliteTaskbar processes..." -ForegroundColor Cyan
-Get-Process -Name EliteTaskbar -ErrorAction SilentlyContinue | Stop-Process -Force
+Write-Host "Checking for running Elite processes..." -ForegroundColor Cyan
+Get-Process -Name EliteTaskbar, EliteSettings, EliteEverything, EliteDLLScanner -ErrorAction SilentlyContinue | Stop-Process -Force
+Get-CimInstance Win32_Process -Filter "Name = 'rundll32.exe'" | Where-Object CommandLine -match "EliteSettings\.cpl" | Invoke-CimMethod -MethodName Terminate | Out-Null
 Start-Sleep -Seconds 1
 
 Write-Host "Triggering pre-build backup..." -ForegroundColor Cyan
