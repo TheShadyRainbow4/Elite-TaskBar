@@ -25,3 +25,4 @@ struct EliteTaskbarConfig {
 };
 
 extern EliteTaskbarConfig g_Config;
+void QueryOperationalMode();

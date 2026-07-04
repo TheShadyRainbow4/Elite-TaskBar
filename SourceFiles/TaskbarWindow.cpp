@@ -1434,6 +1434,7 @@ LRESULT CALLBACK WindowProc(HWND hwnd, UINT uMsg, WPARAM wParam, LPARAM lParam) 
     }
     case WM_SETTINGCHANGE: {
         if (lParam && wcscmp((LPCWSTR)lParam, L"TraySettings") == 0) {
+            bool requiresRestart = false;
             HKEY hKey;
             if (RegOpenKeyExW(HKEY_CURRENT_USER, L"Software\\EliteSoftware\\Win32Explorer\\Advanced", 0, KEY_READ, &hKey) == ERROR_SUCCESS) {
                 DWORD dwValue = 0;
@@ -1442,12 +1443,39 @@ LRESULT CALLBACK WindowProc(HWND hwnd, UINT uMsg, WPARAM wParam, LPARAM lParam) 
                     bool newIsReplace = (dwValue == 1);
                     bool oldIsReplace = (g_Config.Mode == TaskbarMode::Replace);
                     if (newIsReplace != oldIsReplace) {
-                        PostMessageW(hwnd, WM_COMMAND, IDM_RESTART_SHELL, 0);
+                        requiresRestart = true;
+                    }
+                }
+                cbData = sizeof(DWORD);
+                if (RegQueryValueExW(hKey, L"UseNativeTaskBand", NULL, NULL, (LPBYTE)&dwValue, &cbData) == ERROR_SUCCESS) {
+                    bool newIsNative = (dwValue == 1);
+                    if (newIsNative != g_Config.UseNativeTaskBand) {
+                        requiresRestart = true;
                     }
                 }
                 RegCloseKey(hKey);
             }
-            InvalidateRect(hwnd, NULL, TRUE);
+            
+            if (requiresRestart) {
+                PostMessageW(hwnd, WM_COMMAND, IDM_RESTART_SHELL, 0);
+            } else {
+                QueryOperationalMode();
+                
+                for (auto* inst : g_Taskbars) {
+                    if (inst->hTaskSwitch) {
+                        int count = SendMessageW(inst->hTaskSwitch, TB_BUTTONCOUNT, 0, 0);
+                        for (int i = count - 1; i >= 0; i--) {
+                            SendMessageW(inst->hTaskSwitch, TB_DELETEBUTTON, i, 0);
+                        }
+                    }
+                }
+                
+                for (auto& btn : g_TaskButtons) {
+                    AddTaskButton(btn);
+                }
+                
+                InvalidateRect(hwnd, NULL, TRUE);
+            }
         } else if (lParam && wcscmp((LPCWSTR)lParam, L"EliteTaskbarSettings") == 0) {
             for (auto* inst : g_Taskbars) {
                 if (inst->hTaskbar == hwnd && inst->startButton && inst->startButton->GetHwnd()) {

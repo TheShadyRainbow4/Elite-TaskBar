@@ -5,6 +5,7 @@ All notable changes to this project will be documented in this file.
 ## [Unreleased]
 ### [1.2.0.0] - 2026-07-03
 ### Changed
+- **Development Rules**: Updated `GEMINI.md` to enforce rule #5 regarding "Native Replication & Co-existence", mandating that the taskbar replacement behaves exactly as the native Windows taskbar does unless impossible, while still preserving custom settings and additional features.
 - **Taskbar Label Monitor Sync (Ghosting Fix)**: Replaced `MonitorFromWindow(hwnd, MONITOR_DEFAULTTONULL)` with a custom `GetActualWindowMonitor(HWND)` helper. This resolves an issue where taskbar labels for minimized windows, or windows moving between monitors, would ghost and stay on the original monitor's taskbar. The helper explicitly checks the window's restored `WINDOWPLACEMENT` to ensure precise monitor tracking regardless of minimized state.
 - **Taskbar Button Stability**: Refactored `g_TaskButtons` from `std::vector` to `std::list`. This guarantees memory stability for window titles, completely eliminating a bug where taskbar labels would suddenly disappear or corrupt due to pointer invalidation during vector reallocation.
 - **Live Orb Settings Refresh**: The Elite Taskbar Settings UI now instantly applies changes made to the "Start Orb" combobox. It triggers a `WM_SETTINGCHANGE` broadcast with `EliteTaskbarSettings` instantly forcing all taskbar instances to hot-reload `ReloadOrbImage()` without requiring an explicitly clicked "Apply" button.
