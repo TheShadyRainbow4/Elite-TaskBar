@@ -107,3 +107,8 @@ All notable changes to this project will be documented in this file.
 - **Start Menu Button Flashing Fix**: Removed HWND_TOPMOST flag from StartButton orb state transition to prevent flashing above taskbar on click.
 - **Start Menu Independence Fix**: Modified Start Menu Mode logic to open on the specific monitor natively when Open-Shell is configured. It forwards a simulated WM_LBUTTONDOWN event natively to trigger Open-Shell directly on the secondary taskbar.
 - **UI Layout Optimization**: Implemented dynamic per-monitor property layouts within EliteDynScrollArea to categorize Multi-Monitor components effectively.
+
+- Fixed a linker LNK2005 error and restored missing utility methods for comboboxes in TaskbarProperties.cpp.
+- Completed the compilation and signing scripts for .cpl support, exporting CPlApplet natively.
+- EliteTaskbar now successfully generates EliteSettings.cpl alongside EliteSettings.exe, properly hosting the settings in a native Control Panel applet wrapper without relying on a proxy stub.
+- **Icon Rendering Pipeline**: Modified `build_settings.ps1` to dynamically swap `IDI_MAIN_PROGRAM` (101) and `IDI_PREFERENCES` (102) in a custom `settings_resources.rc` file during compilation. This guarantees `EliteSettings.exe` and `EliteSettings.cpl` inherently utilize `PREFERENCES.ico` as their primary executable icon in Windows Explorer while perfectly retaining access to all native Taskbar dialog structures.

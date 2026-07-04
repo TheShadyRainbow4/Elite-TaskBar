@@ -15,6 +15,7 @@
 #pragma comment(lib, "comctl32.lib")
 
 EliteTaskbarConfig g_Config = { L"", TaskbarMode::Independent, ButtonWidthMode::Auto, TrayOverflowMode::Win7Flyout, false, false, {} };
+HINSTANCE g_hInstance = NULL;
 
 void QueryOperationalMode() {
     HKEY hKey;
@@ -160,6 +161,7 @@ void RunApplication(HINSTANCE hInstance) {
 }
 
 int WINAPI WinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, LPSTR lpCmdLine, int nCmdShow) {
+    g_hInstance = hInstance;
     // 5. Initialize memory leak detection tracking (_CrtSetDbgFlag) for debug builds.
 #if defined(_DEBUG)
     _CrtSetDbgFlag(_CRTDBG_ALLOC_MEM_DF | _CRTDBG_LEAK_CHECK_DF);

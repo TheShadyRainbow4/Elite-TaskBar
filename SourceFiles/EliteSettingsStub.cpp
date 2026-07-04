@@ -1,17 +1,23 @@
 #include <windows.h>
 #include <shlwapi.h>
 #include <cpl.h>
-#include "resource_stub.h"
+#include <commctrl.h>
+
 #pragma comment(lib, "shlwapi.lib")
 #pragma comment(lib, "shell32.lib")
 
+extern void ShowTaskbarProperties(HWND hwndOwner);
+HINSTANCE g_hInstance = NULL;
+
 void LaunchSettings(HINSTANCE hInst) {
-    wchar_t path[MAX_PATH];
-    GetModuleFileNameW(hInst, path, MAX_PATH);
-    PathRemoveFileSpecW(path);
-    PathAppendW(path, L"EliteTaskbar.exe");
+    g_hInstance = hInst;
     
-    ShellExecuteW(NULL, L"open", path, L"/settings", NULL, SW_SHOWNORMAL);
+    INITCOMMONCONTROLSEX icex;
+    icex.dwSize = sizeof(INITCOMMONCONTROLSEX);
+    icex.dwICC = ICC_WIN95_CLASSES | ICC_STANDARD_CLASSES | ICC_USEREX_CLASSES;
+    InitCommonControlsEx(&icex);
+    
+    ShowTaskbarProperties(NULL);
 }
 
 int APIENTRY wWinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, LPWSTR lpCmdLine, int nCmdShow) {
@@ -20,16 +26,17 @@ int APIENTRY wWinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, LPWSTR lpCmd
 }
 
 extern "C" __declspec(dllexport) LONG APIENTRY CPlApplet(HWND hwndCPl, UINT uMsg, LPARAM lParam1, LPARAM lParam2) {
-    static HINSTANCE hInstance = NULL;
     switch (uMsg) {
         case CPL_INIT:
-            hInstance = GetModuleHandleW(NULL);
+            g_hInstance = GetModuleHandleW(L"EliteSettings.cpl"); 
+            if (!g_hInstance) g_hInstance = GetModuleHandleW(L"EliteSettings_x86.cpl");
+            if (!g_hInstance) g_hInstance = GetModuleHandleW(NULL);
             return TRUE;
         case CPL_GETCOUNT:
             return 1;
         case CPL_INQUIRE: {
             LPCPLINFO info = (LPCPLINFO)lParam2;
-            info->idIcon = IDI_STUB_ICON;
+            info->idIcon = 101; 
             info->idName = 0;
             info->idInfo = 0;
             info->lData = 0;
@@ -41,14 +48,14 @@ extern "C" __declspec(dllexport) LONG APIENTRY CPlApplet(HWND hwndCPl, UINT uMsg
             info->dwFlags = 0;
             info->dwHelpContext = 0;
             info->lData = 0;
-            info->hIcon = LoadIconW(hInstance, MAKEINTRESOURCEW(IDI_STUB_ICON));
+            info->hIcon = LoadIconW(g_hInstance, MAKEINTRESOURCEW(101));
             wcscpy_s(info->szName, L"Elite Taskbar");
             wcscpy_s(info->szInfo, L"Configure Elite Taskbar Multi-Monitor features and Start Menu integrations.");
             wcscpy_s(info->szHelpFile, L"");
-            return 1; // Return 1 to indicate we handled CPL_NEWINQUIRE
+            return 1; 
         }
         case CPL_DBLCLK:
-            LaunchSettings(hInstance);
+            LaunchSettings(g_hInstance);
             return 0;
         case CPL_STOP:
         case CPL_EXIT:

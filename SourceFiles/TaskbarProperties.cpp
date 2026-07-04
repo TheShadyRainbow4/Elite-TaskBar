@@ -1,5 +1,6 @@
 #include "TaskbarWindow.h"
 #include "resource.h"
+extern HINSTANCE g_hInstance;
 #include "Config.h"
 #include "Logger.h"
 #include "StartButton.h"
@@ -7,7 +8,7 @@
 #include <vector>
 
 void UpdateOrbPreview(HWND hwndDlg, DWORD orbId) {
-    HBITMAP hBitmap = (HBITMAP)LoadImageW(GetModuleHandleW(NULL), MAKEINTRESOURCEW(orbId), IMAGE_BITMAP, 54, 54, LR_DEFAULTCOLOR);
+    HBITMAP hBitmap = (HBITMAP)LoadImageW(g_hInstance, MAKEINTRESOURCEW(orbId), IMAGE_BITMAP, 54, 54, LR_DEFAULTCOLOR);
     if (hBitmap) {
         HBITMAP hOld = (HBITMAP)SendDlgItemMessageW(hwndDlg, IDC_ORB_PREVIEW, STM_SETIMAGE, IMAGE_BITMAP, (LPARAM)hBitmap);
         if (hOld) DeleteObject(hOld);
@@ -227,7 +228,7 @@ void InitDynScrollClass() {
     if (init) return;
     WNDCLASSW wc = {0};
     wc.lpfnWndProc = DynScrollAreaProc;
-    wc.hInstance = GetModuleHandle(NULL);
+    wc.hInstance = g_hInstance;
     wc.lpszClassName = L"EliteDynScrollArea";
     wc.hCursor = LoadCursor(NULL, IDC_ARROW);
     wc.hbrBackground = (HBRUSH)(COLOR_WINDOW);
@@ -250,7 +251,7 @@ HWND CreateDynScrollArea(HWND hwndDlg, int idc_placeholder) {
     RECT rc; GetWindowRect(hPlaceholder, &rc);
     POINT pt = { rc.left, rc.top };
     ScreenToClient(hwndDlg, &pt);
-    HWND hScroll = CreateWindowExW(0, L"EliteDynScrollArea", L"", WS_CHILD | WS_VISIBLE | WS_VSCROLL, pt.x, pt.y, rc.right - rc.left, rc.bottom - rc.top, hwndDlg, NULL, GetModuleHandle(NULL), NULL);
+    HWND hScroll = CreateWindowExW(0, L"EliteDynScrollArea", L"", WS_CHILD | WS_VISIBLE | WS_VSCROLL, pt.x, pt.y, rc.right - rc.left, rc.bottom - rc.top, hwndDlg, NULL, g_hInstance, NULL);
     DestroyWindow(hPlaceholder);
     return hScroll;
 }
@@ -290,29 +291,29 @@ INT_PTR CALLBACK MultiMonSettingsDlgProc(HWND hwndDlg, UINT uMsg, WPARAM wParam,
         for (const auto& mon : g_Monitors) {
             WCHAR title[64];
             wsprintfW(title, L"Monitor %d (%dx%d)", mon.index, mon.rect.right - mon.rect.left, mon.rect.bottom - mon.rect.top);
-            HWND hGroup = CreateWindowExW(0, L"Button", title, WS_CHILD | WS_VISIBLE | BS_GROUPBOX, 5, y, 320, 60, hScroll, NULL, GetModuleHandle(NULL), NULL);
+            HWND hGroup = CreateWindowExW(0, L"Button", title, WS_CHILD | WS_VISIBLE | BS_GROUPBOX, 5, y, 320, 60, hScroll, NULL, g_hInstance, NULL);
             SendMessageW(hGroup, WM_SETFONT, (WPARAM)hFont, 0);
             
-            HWND hChk1 = CreateWindowExW(0, L"Button", L"System Tray", WS_CHILD | WS_VISIBLE | BS_AUTOCHECKBOX, 15, y + 20, 100, 15, hScroll, (HMENU)(ID_BASE_MM_TRAY + mon.index), GetModuleHandle(NULL), NULL);
-            HWND hChk2 = CreateWindowExW(0, L"Button", L"Clock", WS_CHILD | WS_VISIBLE | BS_AUTOCHECKBOX, 120, y + 20, 100, 15, hScroll, (HMENU)(ID_BASE_MM_CLOCK + mon.index), GetModuleHandle(NULL), NULL);
-            HWND hChk3 = CreateWindowExW(0, L"Button", L"Task Buttons", WS_CHILD | WS_VISIBLE | BS_AUTOCHECKBOX, 15, y + 40, 100, 15, hScroll, (HMENU)(ID_BASE_MM_TBTN + mon.index), GetModuleHandle(NULL), NULL);
+            HWND hChk1 = CreateWindowExW(0, L"Button", L"System Tray", WS_CHILD | WS_VISIBLE | BS_AUTOCHECKBOX, 15, y + 20, 100, 15, hScroll, (HMENU)(ID_BASE_MM_TRAY + mon.index), g_hInstance, NULL);
+            HWND hChk2 = CreateWindowExW(0, L"Button", L"Clock", WS_CHILD | WS_VISIBLE | BS_AUTOCHECKBOX, 120, y + 20, 100, 15, hScroll, (HMENU)(ID_BASE_MM_CLOCK + mon.index), g_hInstance, NULL);
+            HWND hChk3 = CreateWindowExW(0, L"Button", L"Task Buttons", WS_CHILD | WS_VISIBLE | BS_AUTOCHECKBOX, 15, y + 40, 100, 15, hScroll, (HMENU)(ID_BASE_MM_TBTN + mon.index), g_hInstance, NULL);
             
             SendMessageW(hChk1, WM_SETFONT, (WPARAM)hFont, 0);
             SendMessageW(hChk2, WM_SETFONT, (WPARAM)hFont, 0);
             SendMessageW(hChk3, WM_SETFONT, (WPARAM)hFont, 0);
             
-            HWND hLblMode = CreateWindowExW(0, L"Static", L"Start Menu Mode:", WS_CHILD | WS_VISIBLE, 15, y + 65, 120, 15, hScroll, NULL, GetModuleHandle(NULL), NULL);
-            HWND hLblTrig = CreateWindowExW(0, L"Static", L"Start Menu Trigger:", WS_CHILD | WS_VISIBLE, 15, y + 90, 120, 15, hScroll, NULL, GetModuleHandle(NULL), NULL);
-            HWND hLblOrb = CreateWindowExW(0, L"Static", L"Start Orb Theme:", WS_CHILD | WS_VISIBLE, 15, y + 115, 120, 15, hScroll, NULL, GetModuleHandle(NULL), NULL);
+            HWND hLblMode = CreateWindowExW(0, L"Static", L"Start Menu Mode:", WS_CHILD | WS_VISIBLE, 15, y + 65, 120, 15, hScroll, NULL, g_hInstance, NULL);
+            HWND hLblTrig = CreateWindowExW(0, L"Static", L"Start Menu Trigger:", WS_CHILD | WS_VISIBLE, 15, y + 90, 120, 15, hScroll, NULL, g_hInstance, NULL);
+            HWND hLblOrb = CreateWindowExW(0, L"Static", L"Start Orb Theme:", WS_CHILD | WS_VISIBLE, 15, y + 115, 120, 15, hScroll, NULL, g_hInstance, NULL);
 
             SendMessageW(hLblMode, WM_SETFONT, (WPARAM)hFont, 0);
             SendMessageW(hLblTrig, WM_SETFONT, (WPARAM)hFont, 0);
             SendMessageW(hLblOrb, WM_SETFONT, (WPARAM)hFont, 0);
 
-            HWND hCmbMode = CreateWindowExW(0, L"ComboBox", L"", WS_CHILD | WS_VISIBLE | CBS_DROPDOWNLIST | WS_VSCROLL, 140, y + 60, 160, 100, hScroll, (HMENU)(ID_BASE_SM_MODE + mon.index), GetModuleHandle(NULL), NULL);
-            HWND hCmbTrig = CreateWindowExW(0, L"ComboBox", L"", WS_CHILD | WS_VISIBLE | CBS_DROPDOWNLIST | WS_VSCROLL, 140, y + 85, 160, 100, hScroll, (HMENU)(ID_BASE_SM_TRIG + mon.index), GetModuleHandle(NULL), NULL);
-            HWND hCmbOrb = CreateWindowExW(0, L"ComboBox", L"", WS_CHILD | WS_VISIBLE | CBS_DROPDOWNLIST | WS_VSCROLL, 140, y + 110, 100, 100, hScroll, (HMENU)(ID_BASE_SM_ORB + mon.index), GetModuleHandle(NULL), NULL);
-            HWND hPreview = CreateWindowExW(0, L"Static", L"", WS_CHILD | WS_VISIBLE | SS_BITMAP | SS_CENTERIMAGE | WS_BORDER, 250, y + 100, 54, 54, hScroll, (HMENU)(ID_BASE_SM_PREV + mon.index), GetModuleHandle(NULL), NULL);
+            HWND hCmbMode = CreateWindowExW(0, L"ComboBox", L"", WS_CHILD | WS_VISIBLE | CBS_DROPDOWNLIST | WS_VSCROLL, 140, y + 60, 160, 100, hScroll, (HMENU)(ID_BASE_SM_MODE + mon.index), g_hInstance, NULL);
+            HWND hCmbTrig = CreateWindowExW(0, L"ComboBox", L"", WS_CHILD | WS_VISIBLE | CBS_DROPDOWNLIST | WS_VSCROLL, 140, y + 85, 160, 100, hScroll, (HMENU)(ID_BASE_SM_TRIG + mon.index), g_hInstance, NULL);
+            HWND hCmbOrb = CreateWindowExW(0, L"ComboBox", L"", WS_CHILD | WS_VISIBLE | CBS_DROPDOWNLIST | WS_VSCROLL, 140, y + 110, 100, 100, hScroll, (HMENU)(ID_BASE_SM_ORB + mon.index), g_hInstance, NULL);
+            HWND hPreview = CreateWindowExW(0, L"Static", L"", WS_CHILD | WS_VISIBLE | SS_BITMAP | SS_CENTERIMAGE | WS_BORDER, 250, y + 100, 54, 54, hScroll, (HMENU)(ID_BASE_SM_PREV + mon.index), g_hInstance, NULL);
 
             SendMessageW(hCmbMode, WM_SETFONT, (WPARAM)hFont, 0);
             SendMessageW(hCmbTrig, WM_SETFONT, (WPARAM)hFont, 0);
@@ -368,7 +369,7 @@ INT_PTR CALLBACK MultiMonSettingsDlgProc(HWND hwndDlg, UINT uMsg, WPARAM wParam,
                 }
                 SelectOrbComboBox(hCmbOrb, orb);
                 
-                HBITMAP hBitmap = (HBITMAP)LoadImageW(GetModuleHandle(NULL), MAKEINTRESOURCEW(orb), IMAGE_BITMAP, 54, 54, LR_DEFAULTCOLOR);
+                HBITMAP hBitmap = (HBITMAP)LoadImageW(g_hInstance, MAKEINTRESOURCEW(orb), IMAGE_BITMAP, 54, 54, LR_DEFAULTCOLOR);
                 SendMessageW(hPreview, STM_SETIMAGE, IMAGE_BITMAP, (LPARAM)hBitmap);
             } else {
                 if (mon.index == 0) SendMessageW(hChk1, BM_SETCHECK, BST_CHECKED, 0);
@@ -378,7 +379,7 @@ INT_PTR CALLBACK MultiMonSettingsDlgProc(HWND hwndDlg, UINT uMsg, WPARAM wParam,
                 SendMessageW(hCmbTrig, CB_SETCURSEL, 0, 0);
                 SelectOrbComboBox(hCmbOrb, 103);
                 
-                HBITMAP hBitmap = (HBITMAP)LoadImageW(GetModuleHandle(NULL), MAKEINTRESOURCEW(103), IMAGE_BITMAP, 54, 54, LR_DEFAULTCOLOR);
+                HBITMAP hBitmap = (HBITMAP)LoadImageW(g_hInstance, MAKEINTRESOURCEW(103), IMAGE_BITMAP, 54, 54, LR_DEFAULTCOLOR);
                 SendMessageW(hPreview, STM_SETIMAGE, IMAGE_BITMAP, (LPARAM)hBitmap);
             }
             
@@ -405,7 +406,7 @@ INT_PTR CALLBACK MultiMonSettingsDlgProc(HWND hwndDlg, UINT uMsg, WPARAM wParam,
                 if (sel != CB_ERR) {
                     DWORD orbId = SendMessageW(hCombo, CB_GETITEMDATA, sel, 0);
                     HWND hPreview = GetDlgItem(hScroll, ID_BASE_SM_PREV + monIndex);
-                    HBITMAP hBitmap = (HBITMAP)LoadImageW(GetModuleHandle(NULL), MAKEINTRESOURCEW(orbId), IMAGE_BITMAP, 54, 54, LR_DEFAULTCOLOR);
+                    HBITMAP hBitmap = (HBITMAP)LoadImageW(g_hInstance, MAKEINTRESOURCEW(orbId), IMAGE_BITMAP, 54, 54, LR_DEFAULTCOLOR);
                     HBITMAP hOld = (HBITMAP)SendMessageW(hPreview, STM_SETIMAGE, IMAGE_BITMAP, (LPARAM)hBitmap);
                     if (hOld) DeleteObject(hOld);
                 }
@@ -509,7 +510,7 @@ void ShowTaskbarProperties(HWND hwndOwner) {
     
     psp[0].dwSize = sizeof(PROPSHEETPAGEW);
     psp[0].dwFlags = PSP_USETITLE;
-    psp[0].hInstance = GetModuleHandle(NULL);
+    psp[0].hInstance = g_hInstance;
     psp[0].pszTemplate = MAKEINTRESOURCEW(IDD_TASKBAR_PROPS);
     psp[0].pfnDlgProc = TaskbarSettingsDlgProc;
     psp[0].pszTitle = L"Taskbar";
@@ -520,7 +521,7 @@ void ShowTaskbarProperties(HWND hwndOwner) {
 
     psp[2].dwSize = sizeof(PROPSHEETPAGEW);
     psp[2].dwFlags = PSP_USETITLE;
-    psp[2].hInstance = GetModuleHandle(NULL);
+    psp[2].hInstance = g_hInstance;
     psp[2].pszTemplate = MAKEINTRESOURCEW(IDD_MULTIMON_PROPS);
     psp[2].pfnDlgProc = MultiMonSettingsDlgProc;
     psp[2].pszTitle = L"Multi-Monitor Components";
@@ -529,7 +530,7 @@ void ShowTaskbarProperties(HWND hwndOwner) {
 
     psp[3].dwSize = sizeof(PROPSHEETPAGEW);
     psp[3].dwFlags = PSP_USETITLE;
-    psp[3].hInstance = GetModuleHandle(NULL);
+    psp[3].hInstance = g_hInstance;
     psp[3].pszTemplate = MAKEINTRESOURCEW(IDD_NATIVE_PROPS);
     psp[3].pfnDlgProc = NativeSettingsDlgProc;
     psp[3].pszTitle = L"Native Settings";
@@ -538,7 +539,7 @@ void ShowTaskbarProperties(HWND hwndOwner) {
 
     psp[4].dwSize = sizeof(PROPSHEETPAGEW);
     psp[4].dwFlags = PSP_USETITLE;
-    psp[4].hInstance = GetModuleHandle(NULL);
+    psp[4].hInstance = g_hInstance;
     psp[4].pszTemplate = MAKEINTRESOURCEW(IDD_TOOLBARS_PROPS);
     psp[4].pfnDlgProc = ToolbarsSettingsDlgProc;
     psp[4].pszTitle = L"Toolbars";
@@ -558,7 +559,7 @@ void ShowTaskbarProperties(HWND hwndOwner) {
     if (showDebugTabs) {
         psp[5].dwSize = sizeof(PROPSHEETPAGEW);
         psp[5].dwFlags = PSP_USETITLE;
-        psp[5].hInstance = GetModuleHandle(NULL);
+        psp[5].hInstance = g_hInstance;
         psp[5].pszTemplate = MAKEINTRESOURCEW(IDD_SECRET_EVERYTHING);
         psp[5].pfnDlgProc = GenericPageDlgProc;
         psp[5].pszTitle = L"Everything Indexer";
@@ -571,7 +572,7 @@ void ShowTaskbarProperties(HWND hwndOwner) {
     PROPSHEETHEADERW psh = { sizeof(PROPSHEETHEADERW) };
     psh.dwFlags = PSH_PROPTITLE | PSH_USEICONID;
     psh.hwndParent = hwndOwner;
-    psh.hInstance = GetModuleHandle(NULL);
+    psh.hInstance = g_hInstance;
     psh.pszIcon = MAKEINTRESOURCEW(IDI_PREFERENCES);
     psh.pszCaption = L"Taskbar and Start Menu Properties";
     psh.nPages = (UINT)pages.size();
@@ -603,9 +604,9 @@ DWORD GetSelectedOrbID(HWND hCombo) {
 }
 
 void ShowSecretEverything(HWND hwndOwner) {
-    DialogBoxW(GetModuleHandle(NULL), MAKEINTRESOURCEW(IDD_SECRET_EVERYTHING), hwndOwner, SecretDlgProc);
+    DialogBoxW(g_hInstance, MAKEINTRESOURCEW(IDD_SECRET_EVERYTHING), hwndOwner, SecretDlgProc);
 }
 
 void ShowSecretDLLScanner(HWND hwndOwner) {
-    DialogBoxW(GetModuleHandle(NULL), MAKEINTRESOURCEW(IDD_SECRET_DLLSCANNER), hwndOwner, SecretDlgProc);
+    DialogBoxW(g_hInstance, MAKEINTRESOURCEW(IDD_SECRET_DLLSCANNER), hwndOwner, SecretDlgProc);
 }
