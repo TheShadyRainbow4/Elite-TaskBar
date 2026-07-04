@@ -19,7 +19,8 @@ struct TaskbarInstance {
     RECT monitorRect;
     int taskbarHeight;
     class StartButton* startButton;
-
+    HWND hNativeTrayNotify;
+    bool bStolenSysPager;
 };
 
 namespace TaskbarWindow {
@@ -27,3 +28,4 @@ namespace TaskbarWindow {
     void RunMessageLoop();
     void Cleanup();
 }
+

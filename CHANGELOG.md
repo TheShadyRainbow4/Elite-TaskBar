@@ -120,3 +120,6 @@ All notable changes to this project will be documented in this file.
 - **EliteStartMenu.ps1**: Created an independent Start Menu implementation using WinForms to guarantee opening on the correct invoked monitor (bypassing native shell interference).
 - **build.ps1**: Added compilation step to convert EliteStartMenu.ps1 into an executable using PS2EXE.
 - **TrayIconScraper.cpp**: Added skeleton code for the upcoming native tray icon interception and display logic (Win7 Overflow / Legacy).
+
+- Fixed settings controls not painting when launched via taskbar context menu by launching Settings executable independently.
+- Added native system tray icons by reparenting the native SysPager to the custom taskbar.

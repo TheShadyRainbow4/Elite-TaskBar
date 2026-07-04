@@ -1765,6 +1765,8 @@ bool TaskbarWindow::Initialize(HINSTANCE hInstance) {
         inst->monitorIndex = i;
         inst->monitorRect = monData.rects[i];
         inst->taskbarHeight = taskbarHeight;
+        inst->hNativeTrayNotify = NULL;
+        inst->bStolenSysPager = false;
         
         int screenWidth = inst->monitorRect.right - inst->monitorRect.left;
         int screenHeight = inst->monitorRect.bottom - inst->monitorRect.top;
@@ -1813,8 +1815,34 @@ bool TaskbarWindow::Initialize(HINSTANCE hInstance) {
 
 
         inst->hTrayNotify = CreateWindowExW(0, L"TrayNotifyWnd", L"", WS_CHILD | WS_VISIBLE | WS_CLIPSIBLINGS | WS_CLIPCHILDREN, screenWidth - 255, 0, 240, taskbarHeight, inst->hTaskbar, NULL, hInstance, NULL);
-        inst->hSysPager = CreateWindowExW(0, L"SysPager", L"", WS_CHILD, 0, 0, 100, taskbarHeight, inst->hTrayNotify, NULL, hInstance, NULL);
-        inst->hToolbar = CreateWindowExW(0, L"ToolbarWindow32", L"", WS_CHILD | WS_CLIPSIBLINGS | WS_CLIPCHILDREN, 0, 0, 100, taskbarHeight, inst->hSysPager, NULL, hInstance, NULL);
+        
+        inst->hSysPager = NULL;
+        inst->hToolbar = NULL;
+        
+        if (g_Config.Mode == TaskbarMode::Replace && monData.isPrimary[i] && g_hNativeTaskbar) {
+            inst->hNativeTrayNotify = FindWindowExW(g_hNativeTaskbar, NULL, L"TrayNotifyWnd", NULL);
+            if (inst->hNativeTrayNotify) {
+                HWND hNativeSysPager = FindWindowExW(inst->hNativeTrayNotify, NULL, L"SysPager", NULL);
+                if (hNativeSysPager) {
+                    inst->hSysPager = hNativeSysPager;
+                    SetParent(inst->hSysPager, inst->hTrayNotify);
+                    SetWindowLongW(inst->hSysPager, GWL_STYLE, WS_CHILD | WS_VISIBLE | WS_CLIPSIBLINGS | WS_CLIPCHILDREN);
+                    SetWindowPos(inst->hSysPager, NULL, 0, 0, 100, taskbarHeight, SWP_NOZORDER | SWP_SHOWWINDOW);
+                    inst->bStolenSysPager = true;
+                    
+                    HWND hNativeToolbar = FindWindowExW(inst->hSysPager, NULL, L"ToolbarWindow32", NULL);
+                    if (hNativeToolbar) {
+                        inst->hToolbar = hNativeToolbar;
+                    }
+                }
+            }
+        }
+        
+        if (!inst->hSysPager) {
+            inst->hSysPager = CreateWindowExW(0, L"SysPager", L"", WS_CHILD, 0, 0, 100, taskbarHeight, inst->hTrayNotify, NULL, hInstance, NULL);
+            inst->hToolbar = CreateWindowExW(0, L"ToolbarWindow32", L"", WS_CHILD | WS_CLIPSIBLINGS | WS_CLIPCHILDREN, 0, 0, 100, taskbarHeight, inst->hSysPager, NULL, hInstance, NULL);
+        }
+        
         inst->hTrayClock = CreateWindowExW(0, L"TrayClockWClass", L"", WS_CHILD | WS_VISIBLE | WS_CLIPSIBLINGS, 100, 0, 140, taskbarHeight, inst->hTrayNotify, NULL, hInstance, NULL);
         
         CreateWindowExW(0, L"TrayShowDesktopButtonWClass", L"", WS_CHILD | WS_VISIBLE | WS_CLIPSIBLINGS, screenWidth - 15, 0, 15, taskbarHeight, inst->hTaskbar, NULL, hInstance, NULL);
@@ -1912,6 +1940,12 @@ void TaskbarWindow::Cleanup() {
         if (inst->startButton) {
             delete inst->startButton;
         }
+        
+        if (inst->bStolenSysPager && inst->hSysPager && inst->hNativeTrayNotify) {
+            SetParent(inst->hSysPager, inst->hNativeTrayNotify);
+            SetWindowPos(inst->hSysPager, NULL, 0, 0, 0, 0, SWP_NOZORDER | SWP_NOSIZE | SWP_NOMOVE);
+        }
+        
         DestroyWindow(inst->hTaskbar);
         delete inst;
     }
@@ -1931,3 +1965,4 @@ void TaskbarWindow::Cleanup() {
         ShellExecuteW(NULL, L"open", L"explorer.exe", NULL, NULL, SW_SHOWNORMAL);
     }
 }
+
