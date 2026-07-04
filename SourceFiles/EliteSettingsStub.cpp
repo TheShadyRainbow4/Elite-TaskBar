@@ -50,7 +50,7 @@ extern "C" __declspec(dllexport) LONG APIENTRY CPlApplet(HWND hwndCPl, UINT uMsg
             info->lData = 0;
             info->hIcon = LoadIconW(g_hInstance, MAKEINTRESOURCEW(101));
             wcscpy_s(info->szName, L"Elite Taskbar");
-            wcscpy_s(info->szInfo, L"Configure Elite Taskbar Multi-Monitor features and Start Menu integrations.");
+            wcscpy_s(info->szInfo, L"Configure Elite Taskbar Multi-Monitor features and settings.");
             wcscpy_s(info->szHelpFile, L"");
             return 1; 
         }
