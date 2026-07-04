@@ -28,7 +28,7 @@ $SourceDir = Join-Path $ScriptDir "SourceFiles"
 $ResourcesDir = Join-Path $ScriptDir "Resources"
 $OutputDir = $ScriptDir
 $BuildDir = Join-Path $ScriptDir "BuildOutput"
-$BuildDirx86 = Join-Path $BuildDir "x86"
+$BuildDirx86 = Join-Path $ScriptDir "BuildOutputx86"
 
 if (-not (Test-Path $BuildDir)) {
     New-Item -ItemType Directory -Path $BuildDir | Out-Null
