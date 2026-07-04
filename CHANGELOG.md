@@ -152,3 +152,5 @@ All notable changes to this project will be documented in this file.
 - Added new "Elite Shell Environment" group box and checkboxes for Native View Mode, ShellBags Support, Elite Taskbar Integration, and Elite Start Menu Integration to the General Options dialog (`IDD_OPTIONS_GENERAL`).
 - Registered new UI control IDs (`IDC_OPTION_NATIVEVIEWMODE`, `IDC_OPTION_SHELLBAGS`, `IDC_OPTION_ELITETASKBAR`, `IDC_OPTION_ELITESTARTMENU`, `IDC_GROUP_ELITESHELL`) in `resource.h`.
 - Updated `GeneralOptionsPage.cpp` to correctly serialize, bind, and interact with the newly added Elite Shell settings properties inside `Config`.
+- Fixed application exiting bug: Win32Explorer will no longer terminate the entire process when the last file browser window is closed if the Elite Taskbar is enabled (via \nableEliteTaskbar\).
+- Fixed Taskbar Properties UI bug: Removed conflicting \WM_CTLCOLORSTATIC\ blocks in \TaskbarProperties.cpp\ which previously caused controls (like checkboxes/radio buttons) to remain invisible/black on property sheets until hovered. Now appropriately relying on \EnableThemeDialogTexture\.
