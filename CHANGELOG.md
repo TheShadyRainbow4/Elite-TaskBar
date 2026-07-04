@@ -154,3 +154,6 @@ All notable changes to this project will be documented in this file.
 - Updated `GeneralOptionsPage.cpp` to correctly serialize, bind, and interact with the newly added Elite Shell settings properties inside `Config`.
 - Fixed application exiting bug: Win32Explorer will no longer terminate the entire process when the last file browser window is closed if the Elite Taskbar is enabled (via \nableEliteTaskbar\).
 - Fixed Taskbar Properties UI bug: Removed conflicting \WM_CTLCOLORSTATIC\ blocks in \TaskbarProperties.cpp\ which previously caused controls (like checkboxes/radio buttons) to remain invisible/black on property sheets until hovered. Now appropriately relying on \EnableThemeDialogTexture\.
+- Disabled unimplemented settings checkboxes ('Native View Mode', 'ShellBags', and 'Elite Start Menu') and labeled them '(Coming Soon)'.
+- Fixed tab close button size to 16x16 to prevent clipping off the edge of the tab area.
+

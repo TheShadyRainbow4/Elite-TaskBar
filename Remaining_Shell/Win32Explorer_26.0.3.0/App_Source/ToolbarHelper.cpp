@@ -1,4 +1,4 @@
-﻿// Copyright (C) Win32Explorer Project
+// Copyright (C) Win32Explorer Project
 // SPDX-License-Identifier: GPL-3.0-only
 // See LICENSE in the top level directory
 
@@ -23,11 +23,11 @@ std::tuple<HWND, std::vector<wil::unique_himagelist>> CreateCloseButtonToolbar(H
 
 	UINT dpi = DpiCompatibility::GetInstance().GetDpiForWindow(toolbar);
 
-	// Use 24x24 as the golden standard.
+	// Use 16x16 as the golden standard for tabs.
 	wil::unique_hbitmap normalBitmap =
-		resourceLoader->LoadBitmapFromPNGForDpi(Icon::CloseButton, 24, 24, dpi);
+		resourceLoader->LoadBitmapFromPNGForDpi(Icon::CloseButton, 16, 16, dpi);
 	wil::unique_hbitmap pressedBitmap =
-		resourceLoader->LoadBitmapFromPNGForDpi(Icon::PressedCloseButton, 24, 24, dpi);
+		resourceLoader->LoadBitmapFromPNGForDpi(Icon::PressedCloseButton, 16, 16, dpi);
 
 	BITMAP bitmapInfo;
 	[[maybe_unused]] int res = GetObject(normalBitmap.get(), sizeof(bitmapInfo), &bitmapInfo);

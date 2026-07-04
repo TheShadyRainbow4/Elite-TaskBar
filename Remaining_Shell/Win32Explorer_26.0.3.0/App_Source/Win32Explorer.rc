@@ -115,14 +115,14 @@ BEGIN
     LTEXT           "*",IDC_STATIC_RESTART_FOOTNOTE,165,135,8,8
     LTEXT           "* Requires Win32Explorer to be restarted",IDC_STATIC_RESTART_NOTICE,13,151,205,8
     GROUPBOX        "Elite Shell Environment",IDC_GROUP_ELITESHELL,6,172,217,90
-    CONTROL         "Enable Native View Mode (Overlays Native Shell DLLs)",IDC_OPTION_NATIVEVIEWMODE,
-                    "Button",BS_AUTOCHECKBOX | WS_TABSTOP,13,186,205,10
-    CONTROL         "Enable ShellBags Support (Remembers Folder Views)",IDC_OPTION_SHELLBAGS,
-                    "Button",BS_AUTOCHECKBOX | WS_TABSTOP,13,200,205,10
+    CONTROL         "Enable Native View Mode (Coming Soon)",IDC_OPTION_NATIVEVIEWMODE,
+                    "Button",BS_AUTOCHECKBOX | WS_TABSTOP | WS_DISABLED,13,186,205,10
+    CONTROL         "Enable ShellBags Support (Coming Soon)",IDC_OPTION_SHELLBAGS,
+                    "Button",BS_AUTOCHECKBOX | WS_TABSTOP | WS_DISABLED,13,200,205,10
     CONTROL         "Enable Elite Taskbar Integration",IDC_OPTION_ELITETASKBAR,
                     "Button",BS_AUTOCHECKBOX | WS_TABSTOP,13,214,205,10
-    CONTROL         "Enable Elite Start Menu Integration",IDC_OPTION_ELITESTARTMENU,
-                    "Button",BS_AUTOCHECKBOX | WS_TABSTOP,13,228,205,10
+    CONTROL         "Enable Elite Start Menu Integration (Coming Soon)",IDC_OPTION_ELITESTARTMENU,
+                    "Button",BS_AUTOCHECKBOX | WS_TABSTOP | WS_DISABLED,13,228,205,10
 END
 
 IDD_SETFILEATTRIBUTES DIALOGEX 0, 0, 265, 127
