@@ -177,13 +177,92 @@ HTHUMBNAIL g_hPreviewThumb = NULL;
 UINT_PTR g_PreviewTimer = 0;
 HWND g_PreviewTargetHwnd = NULL;
 
+#include <dwmapi.h>
+#pragma comment(lib, "dwmapi.lib")
+
 LRESULT CALLBACK PreviewWndProc(HWND hwnd, UINT uMsg, WPARAM wParam, LPARAM lParam) {
-    if (uMsg == WM_PAINT) {
-        PAINTSTRUCT ps;
-        HDC hdc = BeginPaint(hwnd, &ps);
-        FillRect(hdc, &ps.rcPaint, (HBRUSH)GetStockObject(BLACK_BRUSH)); 
-        EndPaint(hwnd, &ps);
-        return 0;
+    switch (uMsg) {
+        case WM_CREATE: {
+            MARGINS margins = { -1, -1, -1, -1 };
+            DwmExtendFrameIntoClientArea(hwnd, &margins);
+            return 0;
+        }
+        case WM_PAINT: {
+            PAINTSTRUCT ps;
+            HDC hdc = BeginPaint(hwnd, &ps);
+            
+            RECT rcClient;
+            GetClientRect(hwnd, &rcClient);
+            
+            // Draw glass background (transparent black so DWM picks it up)
+            HBRUSH hbrBlack = CreateSolidBrush(RGB(0, 0, 0));
+            FillRect(hdc, &rcClient, hbrBlack);
+            DeleteObject(hbrBlack);
+            
+            // Get window title
+            WCHAR szTitle[256] = {0};
+            HWND targetHwnd = (HWND)GetWindowLongPtrW(hwnd, GWLP_USERDATA);
+            if (IsWindow(targetHwnd)) {
+                GetWindowTextW(targetHwnd, szTitle, 256);
+            }
+            
+            // Draw text using DrawThemeTextEx for Aero Glow
+            HTHEME hTheme = OpenThemeData(hwnd, L"WINDOW");
+            if (hTheme) {
+                RECT rcText = rcClient;
+                rcText.top += 5;
+                rcText.left += 5;
+                rcText.right -= 20; // Space for close button
+                rcText.bottom = rcText.top + 20;
+                
+                DTTOPTS dttOpts = {sizeof(DTTOPTS)};
+                dttOpts.dwFlags = DTT_GLOWSIZE | DTT_COMPOSITED | DTT_TEXTCOLOR;
+                dttOpts.iGlowSize = 8;
+                dttOpts.crText = RGB(255, 255, 255);
+                
+                LOGFONTW lf = {0};
+                lf.lfHeight = -12;
+                lf.lfWeight = FW_NORMAL;
+                wcscpy_s(lf.lfFaceName, L"Segoe UI");
+                HFONT hFont = CreateFontIndirectW(&lf);
+                HFONT hOldFont = (HFONT)SelectObject(hdc, hFont);
+                
+                DrawThemeTextEx(hTheme, hdc, 0, 0, szTitle, -1, DT_SINGLELINE | DT_VCENTER | DT_END_ELLIPSIS, &rcText, &dttOpts);
+                
+                SelectObject(hdc, hOldFont);
+                DeleteObject(hFont);
+                CloseThemeData(hTheme);
+            }
+            
+            // Draw close button border
+            RECT rcClose = { rcClient.right - 20, 5, rcClient.right - 5, 20 };
+            DrawFrameControl(hdc, &rcClose, DFC_CAPTION, DFCS_CAPTIONCLOSE | DFCS_FLAT);
+
+            EndPaint(hwnd, &ps);
+            return 0;
+        }
+        case WM_LBUTTONUP: {
+            POINT pt = { GET_X_LPARAM(lParam), GET_Y_LPARAM(lParam) };
+            RECT rcClient;
+            GetClientRect(hwnd, &rcClient);
+            RECT rcClose = { rcClient.right - 20, 5, rcClient.right - 5, 20 };
+            
+            HWND targetHwnd = (HWND)GetWindowLongPtrW(hwnd, GWLP_USERDATA);
+            if (PtInRect(&rcClose, pt)) {
+                if (IsWindow(targetHwnd)) {
+                    PostMessageW(targetHwnd, WM_CLOSE, 0, 0);
+                }
+            } else {
+                if (IsWindow(targetHwnd)) {
+                    SetForegroundWindow(targetHwnd);
+                    if (IsIconic(targetHwnd)) {
+                        ShowWindowAsync(targetHwnd, SW_RESTORE);
+                    }
+                }
+            }
+            ShowWindow(hwnd, SW_HIDE);
+            return 0;
+        }
     }
     return DefWindowProcW(hwnd, uMsg, wParam, lParam);
 }
@@ -1059,16 +1138,25 @@ LRESULT CALLBACK WindowProc(HWND hwnd, UINT uMsg, WPARAM wParam, LPARAM lParam) 
                 if (SendMessageW(nmhdr->hwndFrom, TB_GETBUTTON, btnIndex, (LPARAM)&tbb)) {
                     HWND targetHwnd = (HWND)tbb.dwData;
                     if (IsWindow(targetHwnd)) {
-                        HMENU hSysMenu = GetSystemMenu(targetHwnd, FALSE);
-                        if (hSysMenu) {
-                            SetForegroundWindow(targetHwnd);
-                            int cmd = TrackPopupMenu(hSysMenu, TPM_LEFTALIGN | TPM_BOTTOMALIGN | TPM_RIGHTBUTTON | TPM_RETURNCMD, pt.x, pt.y, 0, hwnd, NULL);
-                            if (cmd) {
-                                PostMessageW(targetHwnd, WM_SYSCOMMAND, cmd, 0);
-                            }
+                        HMENU hJumpList = CreatePopupMenu();
+                        
+                        WCHAR szTitle[256] = {0};
+                        GetWindowTextW(targetHwnd, szTitle, 256);
+                        
+                        // Basic JumpList look: Title at top, Close at bottom.
+                        AppendMenuW(hJumpList, MF_STRING | MF_DISABLED, 0, szTitle);
+                        AppendMenuW(hJumpList, MF_SEPARATOR, 0, NULL);
+                        AppendMenuW(hJumpList, MF_STRING, 1, L"Close window");
+                        
+                        SetForegroundWindow(hwnd);
+                        int cmd = TrackPopupMenu(hJumpList, TPM_LEFTALIGN | TPM_BOTTOMALIGN | TPM_RIGHTBUTTON | TPM_RETURNCMD, pt.x, pt.y, 0, hwnd, NULL);
+                        if (cmd == 1) {
+                            PostMessageW(targetHwnd, WM_CLOSE, 0, 0);
                         }
+                        DestroyMenu(hJumpList);
                     }
                 }
+                DestroyMenu(hMenu);
                 return 1;
             }
 
@@ -1306,8 +1394,10 @@ LRESULT CALLBACK WindowProc(HWND hwnd, UINT uMsg, WPARAM wParam, LPARAM lParam) 
             g_PreviewTimer = 0;
             if (g_Config.ShowPreviews && IsWindow(g_PreviewTargetHwnd)) {
                 if (!g_hPreviewWindow) {
-                    g_hPreviewWindow = CreateWindowExW(WS_EX_TOPMOST | WS_EX_TOOLWINDOW, L"EliteTaskbarPreview", L"", WS_POPUP | WS_CLIPCHILDREN, 0, 0, 200, 150, hwnd, NULL, GetModuleHandle(NULL), NULL);
+                    g_hPreviewWindow = CreateWindowExW(WS_EX_TOPMOST | WS_EX_TOOLWINDOW | WS_EX_LAYERED, L"EliteTaskbarPreview", L"", WS_POPUP | WS_CLIPCHILDREN, 0, 0, 200, 150, hwnd, NULL, GetModuleHandle(NULL), NULL);
                 }
+                
+                SetWindowLongPtrW(g_hPreviewWindow, GWLP_USERDATA, (LONG_PTR)g_PreviewTargetHwnd);
                 
                 POINT pt; GetCursorPos(&pt);
                 int previewWidth = 240;
@@ -1319,6 +1409,8 @@ LRESULT CALLBACK WindowProc(HWND hwnd, UINT uMsg, WPARAM wParam, LPARAM lParam) 
                 int xPos = pt.x - (previewWidth / 2);
                 
                 SetWindowPos(g_hPreviewWindow, HWND_TOPMOST, xPos, yPos, previewWidth, previewHeight, SWP_SHOWWINDOW | SWP_NOACTIVATE);
+                SetLayeredWindowAttributes(g_hPreviewWindow, 0, 255, LWA_ALPHA);
+                InvalidateRect(g_hPreviewWindow, NULL, TRUE);
                 
                 if (g_hPreviewThumb) {
                     DwmUnregisterThumbnail(g_hPreviewThumb);
@@ -1329,10 +1421,10 @@ LRESULT CALLBACK WindowProc(HWND hwnd, UINT uMsg, WPARAM wParam, LPARAM lParam) 
                     DWM_THUMBNAIL_PROPERTIES props = {0};
                     props.dwFlags = DWM_TNP_VISIBLE | DWM_TNP_RECTDESTINATION | DWM_TNP_SOURCECLIENTAREAONLY;
                     props.fVisible = TRUE;
-                    props.rcDestination.left = 2;
-                    props.rcDestination.top = 2;
-                    props.rcDestination.right = previewWidth - 2;
-                    props.rcDestination.bottom = previewHeight - 2;
+                    props.rcDestination.left = 10;
+                    props.rcDestination.top = 30; // Leave 30px for title and close button
+                    props.rcDestination.right = previewWidth - 10;
+                    props.rcDestination.bottom = previewHeight - 10;
                     props.fSourceClientAreaOnly = FALSE;
                     DwmUpdateThumbnailProperties(g_hPreviewThumb, &props);
                 }

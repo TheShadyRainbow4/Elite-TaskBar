@@ -21,18 +21,19 @@ BEGIN
     CONTROL         "Auto-hide the taskbar", IDC_AUTOHIDE_TASKBAR, "Button", BS_AUTOCHECKBOX | WS_TABSTOP, 14, 34, 220, 10
     CONTROL         "Use small icons", IDC_SMALL_ICONS, "Button", BS_AUTOCHECKBOX | WS_TABSTOP, 14, 48, 100, 10
     CONTROL         "Show window previews", IDC_HOVER_PREVIEW, "Button", BS_AUTOCHECKBOX | WS_TABSTOP, 120, 48, 114, 10
-    LTEXT           "Button Width:", IDC_STATIC, 14, 62, 50, 8
-    CONTROL         "Auto (Length of label)", IDC_WIDTH_AUTO, "Button", BS_AUTORADIOBUTTON | WS_GROUP | WS_TABSTOP, 65, 61, 80, 10
-    CONTROL         "Fixed", IDC_WIDTH_FIXED, "Button", BS_AUTORADIOBUTTON, 150, 61, 40, 10
-    CONTROL         "Icons Only", IDC_WIDTH_ICONS, "Button", BS_AUTORADIOBUTTON, 195, 61, 45, 10
+    CONTROL         "Use fully native TaskBand (Requires theme support)", IDC_USE_NATIVE_TASKBAND, "Button", BS_AUTOCHECKBOX | WS_TABSTOP, 15, 60, 200, 10
+    LTEXT           "Button Width:", IDC_STATIC, 14, 74, 50, 8
+    CONTROL         "Auto (Length of label)", IDC_WIDTH_AUTO, "Button", BS_AUTORADIOBUTTON | WS_GROUP | WS_TABSTOP, 65, 73, 80, 10
+    CONTROL         "Fixed", IDC_WIDTH_FIXED, "Button", BS_AUTORADIOBUTTON, 150, 73, 40, 10
+    CONTROL         "Icons Only", IDC_WIDTH_ICONS, "Button", BS_AUTORADIOBUTTON, 195, 73, 45, 10
     
-    GROUPBOX        "Taskbar Mode & Native Sync", IDC_STATIC, 7, 82, 238, 55
-    CONTROL         "Independent", IDC_MODE_INDEPENDENT, "Button", BS_AUTORADIOBUTTON | WS_GROUP | WS_TABSTOP, 14, 95, 50, 10
-    CONTROL         "Replace Native", IDC_MODE_REPLACE, "Button", BS_AUTORADIOBUTTON, 70, 95, 65, 10
-    CONTROL         "Secondary Monitors Only", IDC_MODE_SECONDARY_ONLY, "Button", BS_AUTORADIOBUTTON, 140, 95, 95, 10
-    CONTROL         "Use Native Windows Registry (1:1 Mirror)", IDC_NATIVE_REGISTRY_MODE, "Button", BS_AUTOCHECKBOX | WS_TABSTOP, 14, 109, 220, 10
-    CONTROL         "Native Win7 Tray", IDC_TRAY_NATIVE, "Button", BS_AUTORADIOBUTTON | WS_GROUP | WS_TABSTOP, 14, 123, 100, 10
-    CONTROL         "Legacy Tray", IDC_TRAY_LEGACY, "Button", BS_AUTORADIOBUTTON, 120, 123, 100, 10
+    GROUPBOX        "Taskbar Mode & Native Sync", IDC_STATIC, 7, 94, 238, 55
+    CONTROL         "Independent", IDC_MODE_INDEPENDENT, "Button", BS_AUTORADIOBUTTON | WS_GROUP | WS_TABSTOP, 14, 107, 50, 10
+    CONTROL         "Replace", IDC_MODE_REPLACE, "Button", BS_AUTORADIOBUTTON, 66, 107, 40, 10
+    CONTROL         "Secondary Only", IDC_MODE_SECONDARY_ONLY, "Button", BS_AUTORADIOBUTTON, 110, 107, 70, 10
+    CONTROL         "Write settings to native registry (Sync with explorer)", IDC_NATIVE_REGISTRY_MODE, "Button", BS_AUTOCHECKBOX | WS_TABSTOP, 14, 120, 200, 10
+    CONTROL         "Native Win7 Tray", IDC_TRAY_NATIVE, "Button", BS_AUTORADIOBUTTON | WS_GROUP | WS_TABSTOP, 14, 135, 100, 10
+    CONTROL         "Legacy Tray", IDC_TRAY_LEGACY, "Button", BS_AUTORADIOBUTTON, 120, 135, 100, 10
 
     GROUPBOX        "Multi-Monitor & Components", IDC_STATIC, 7, 142, 238, 65
     LTEXT           "Select Monitor:", IDC_STATIC, 14, 155, 50, 8

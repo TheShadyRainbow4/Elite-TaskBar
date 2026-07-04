@@ -20,6 +20,7 @@ struct EliteTaskbarConfig {
     TaskbarMode Mode;
     ButtonWidthMode ButtonWidth;
     bool ShowPreviews;
+    bool UseNativeTaskBand;
     std::vector<HMONITOR> MonitorTargets;
 };
 
