@@ -15,10 +15,16 @@ enum class ButtonWidthMode {
     IconsOnly
 };
 
+enum class TrayOverflowMode {
+    VistaInline,
+    Win7Flyout
+};
+
 struct EliteTaskbarConfig {
     std::wstring Theme;
     TaskbarMode Mode;
     ButtonWidthMode ButtonWidth;
+    TrayOverflowMode OverflowMode;
     bool ShowPreviews;
     bool UseNativeTaskBand;
     std::vector<HMONITOR> MonitorTargets;

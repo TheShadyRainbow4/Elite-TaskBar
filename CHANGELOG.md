@@ -2,9 +2,25 @@
 
 All notable changes to this project will be documented in this file.
 
+
 ## [Unreleased]
+### Added
+- **Native System Tray Integration**: Fully routed `WM_COPYDATA` messages to `TrayNotifyWnd` inside `WindowProc`, enabling true native ingestion of `NOTIFYICONDATA` structures when running in `Replace` mode.
+- **Two Overflow Methods**: Implemented the two planned overflow modes for the Notification Area:
+  1. **Vista Inline**: Triggers an expandable chevron (`<`/`>`) to slide icons leftwards natively.
+  2. **Win7 Flyout**: Triggers an upward chevron (`^`) which summons a decoupled floating window (`TrayFlyoutWnd`) holding hidden icons.
+- **Settings Broadcast Update**: Added immediate runtime invalidation of `TrayNotifyWnd` and task buttons when "Apply" is clicked in properties, removing the need for application restarts to see setting changes.
+
+### Changed
+- Refactored `TaskbarWindow::WindowProc` to intercept system-wide tray messages and forward them down the window chain.
+- Wired `IDC_TRAY_NATIVE` and `IDC_TRAY_LEGACY` dialog components to the newly created `TrayOverflowMode` Enum.
+
+### Fixed
+- Addressed multiple Z-Order / Flashing issues where the orb and taskbar would render behind/above incorrectly.
 ### [1.2.0.0] - 2026-07-03
 ### Changed
+- **Multi-Monitor Start Menu Resolution**: Corrected class name registration in `TaskbarMode::Replace` (PE mode) to explicitly use `Shell_SecondaryTrayWnd` for all secondary taskbars instead of registering them all as `Shell_TrayWnd`. This ensures third-party start menus like Open-Shell can correctly hook and distinguish between primary and secondary taskbars natively across all monitors without fallback injection.
+- **Start Orb Glitch Fix**: Completely eradicated the visual glitch/flashing of the taskbar over the Start Orb. The glitch was caused by an aggressive `SetForegroundWindow` invocation pushing the taskbar to the very front of the `HWND_TOPMOST` stack. This call was removed, as Open-Shell determines the active monitor directly from the targeted `HWND` and does not require the taskbar to steal focus.
 - **Development Rules**: Updated `GEMINI.md` to add Rule 6, which mandates that build scripts/tools must be launched in an external, visible window while simultaneously capturing their output to a log file for parsing.
 - **Dynamic Settings Application**: Taskbar property changes (such as "Taskbar Button Width" and "Hover Previews") now instantly apply to the live shell upon clicking "Apply" without requiring a full shell restart. The shell rebuilds the `ToolbarWindow32` task buttons in-place and re-queries the configuration, falling back to a full `IDM_RESTART_SHELL` only if the user toggles major framework components like "Taskbar Mode" or "Use Native TaskBand".
 - **Development Rules**: Updated `GEMINI.md` to enforce rule #5 regarding "Native Replication & Co-existence", mandating that the taskbar replacement behaves exactly as the native Windows taskbar does unless impossible, while still preserving custom settings and additional features.

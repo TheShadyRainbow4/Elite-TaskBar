@@ -142,6 +142,7 @@ BOOL ShowLegacyClockExperience(HWND hWnd) {
 
 #define CLASS_NAME L"Shell_TrayWnd"
 #define TRAY_CLASS_NAME L"Elite_SecondaryTrayWnd"
+#define SEC_CLASS_NAME L"Shell_SecondaryTrayWnd"
 
 #define IDM_TASKBAR_TOOLBARS        3001
 #define IDM_TASKBAR_CASCADE         3002
@@ -593,6 +594,71 @@ struct TRAYDATA {
     NOTIFYICONDATAW nid;
 };
 
+HWND g_hTrayFlyout = NULL;
+
+LRESULT CALLBACK TrayFlyoutProc(HWND hwnd, UINT uMsg, WPARAM wParam, LPARAM lParam) {
+    if (uMsg == WM_PAINT) {
+        PAINTSTRUCT ps;
+        HDC hdc = BeginPaint(hwnd, &ps);
+        RECT rcClient;
+        GetClientRect(hwnd, &rcClient);
+        FillRect(hdc, &rcClient, (HBRUSH)GetStockObject(BLACK_BRUSH));
+        
+        int x = 4, y = 4;
+        int totalVisible = 0;
+        for (const auto& icon : g_TrayIcons) {
+            if (icon.hIcon && !(icon.dwState & NIS_HIDDEN)) totalVisible++;
+        }
+        
+        int drawn = 0;
+        for (const auto& icon : g_TrayIcons) {
+            if (icon.hIcon && !(icon.dwState & NIS_HIDDEN)) {
+                if (drawn < totalVisible - 4) {
+                    DrawIconEx(hdc, x, y, icon.hIcon, 16, 16, 0, NULL, DI_NORMAL);
+                    x += 24;
+                    if (x > rcClient.right - 20) { x = 4; y += 24; }
+                }
+                drawn++;
+            }
+        }
+        EndPaint(hwnd, &ps);
+        return 0;
+    }
+    if (uMsg >= WM_MOUSEFIRST && uMsg <= WM_MOUSELAST) {
+        int xPos = GET_X_LPARAM(lParam);
+        int yPos = GET_Y_LPARAM(lParam);
+        int col = (xPos - 4) / 24;
+        int row = (yPos - 4) / 24;
+        int cols = (160 - 8) / 24;
+        int clickIndex = row * cols + col;
+        
+        int totalVisible = 0;
+        for (const auto& icon : g_TrayIcons) {
+            if (icon.hIcon && !(icon.dwState & NIS_HIDDEN)) totalVisible++;
+        }
+        
+        int drawn = 0;
+        for (const auto& icon : g_TrayIcons) {
+            if (icon.hIcon && !(icon.dwState & NIS_HIDDEN)) {
+                if (drawn < totalVisible - 4) {
+                    if (drawn == clickIndex) {
+                        PostMessageW(icon.hWnd, icon.uCallbackMessage, icon.uID, uMsg);
+                        if (uMsg == WM_LBUTTONUP) ShowWindow(hwnd, SW_HIDE);
+                        break;
+                    }
+                }
+                drawn++;
+            }
+        }
+        return 0;
+    }
+    if (uMsg == WM_KILLFOCUS) {
+        ShowWindow(hwnd, SW_HIDE);
+        return 0;
+    }
+    return DefWindowProc(hwnd, uMsg, wParam, lParam);
+}
+
 LRESULT CALLBACK TrayNotifyProc(HWND hwnd, UINT uMsg, WPARAM wParam, LPARAM lParam) {
     switch (uMsg) {
     case WM_PRINTCLIENT:
@@ -612,10 +678,36 @@ LRESULT CALLBACK TrayNotifyProc(HWND hwnd, UINT uMsg, WPARAM wParam, LPARAM lPar
 
         int x = 2;
         int y = (rcClient.bottom - rcClient.top - 16) / 2;
+        
+        bool bIsWin7Mode = (g_Config.OverflowMode == TrayOverflowMode::Win7Flyout);
+        bool bIsExpanded = (GetPropW(hwnd, L"TrayExpanded") != NULL);
+        
+        int totalVisible = 0;
+        for (const auto& icon : g_TrayIcons) {
+            if (icon.hIcon && !(icon.dwState & NIS_HIDDEN)) totalVisible++;
+        }
+        
+        if (totalVisible > 4) {
+            RECT rcChevron = { x, y, x + 16, y + 16 };
+            SetBkMode(hdc, TRANSPARENT);
+            SetTextColor(hdc, RGB(255, 255, 255));
+            DrawTextW(hdc, bIsWin7Mode ? L"^" : (bIsExpanded ? L">" : L"<"), -1, &rcChevron, DT_SINGLELINE | DT_CENTER | DT_VCENTER);
+            x += 16;
+        }
+
+        int drawn = 0;
         for (const auto& icon : g_TrayIcons) {
             if (icon.hIcon && !(icon.dwState & NIS_HIDDEN)) {
+                if (totalVisible > 4) {
+                    if (bIsWin7Mode) {
+                        if (drawn < totalVisible - 4) { drawn++; continue; }
+                    } else {
+                        if (!bIsExpanded && drawn < totalVisible - 4) { drawn++; continue; }
+                    }
+                }
                 DrawIconEx(hdc, x, y, icon.hIcon, 16, 16, 0, NULL, DI_NORMAL);
                 x += 24;
+                drawn++;
             }
         }
 
@@ -676,16 +768,54 @@ LRESULT CALLBACK TrayNotifyProc(HWND hwnd, UINT uMsg, WPARAM wParam, LPARAM lPar
     case WM_LBUTTONDBLCLK:
     case WM_RBUTTONDBLCLK: {
         int xPos = GET_X_LPARAM(lParam);
-        int iconIndex = (xPos - 2) / 24;
+        
+        bool bIsWin7Mode = (g_Config.OverflowMode == TrayOverflowMode::Win7Flyout);
+        bool bIsExpanded = (GetPropW(hwnd, L"TrayExpanded") != NULL);
+        
+        int totalVisible = 0;
+        for (const auto& icon : g_TrayIcons) {
+            if (icon.hIcon && !(icon.dwState & NIS_HIDDEN)) totalVisible++;
+        }
+        
+        if (totalVisible > 4 && xPos < 18) {
+            if (uMsg == WM_LBUTTONDOWN) {
+                if (bIsWin7Mode) {
+                    if (!g_hTrayFlyout) {
+                        g_hTrayFlyout = CreateWindowExW(WS_EX_TOPMOST | WS_EX_TOOLWINDOW | WS_EX_NOACTIVATE, L"TrayFlyoutWnd", L"", WS_POPUP | WS_BORDER, 0, 0, 160, 200, hwnd, NULL, GetModuleHandle(NULL), NULL);
+                    }
+                    RECT rcTaskbar;
+                    GetWindowRect(GetParent(hwnd), &rcTaskbar);
+                    SetWindowPos(g_hTrayFlyout, HWND_TOPMOST, rcTaskbar.right - 200, rcTaskbar.top - 200, 160, 200, SWP_SHOWWINDOW);
+                } else {
+                    if (bIsExpanded) RemovePropW(hwnd, L"TrayExpanded");
+                    else SetPropW(hwnd, L"TrayExpanded", (HANDLE)1);
+                    InvalidateRect(hwnd, NULL, TRUE);
+                }
+            }
+            return 0;
+        }
+        
+        int iconOffset = (totalVisible > 4) ? 18 : 2;
+        int iconIndex = (xPos - iconOffset) / 24;
         if (iconIndex < 0) return 0;
         
         int current = 0;
+        int drawn = 0;
         for (const auto& icon : g_TrayIcons) {
             if (icon.hIcon && !(icon.dwState & NIS_HIDDEN)) {
-                if (current == iconIndex) {
+                if (totalVisible > 4) {
+                    if (bIsWin7Mode) {
+                        if (current < totalVisible - 4) { current++; continue; }
+                    } else {
+                        if (!bIsExpanded && current < totalVisible - 4) { current++; continue; }
+                    }
+                }
+                
+                if (drawn == iconIndex) {
                     PostMessageW(icon.hWnd, icon.uCallbackMessage, icon.uID, uMsg);
                     break;
                 }
+                drawn++;
                 current++;
             }
         }
@@ -1043,6 +1173,14 @@ LRESULT CALLBACK WindowProc(HWND hwnd, UINT uMsg, WPARAM wParam, LPARAM lParam) 
             }
         }
         return 0;
+    }
+
+    if (uMsg == WM_COPYDATA) {
+        for (auto* inst : g_Taskbars) {
+            if (inst->hTaskbar == hwnd && inst->hTrayNotify) {
+                return SendMessageW(inst->hTrayNotify, uMsg, wParam, lParam);
+            }
+        }
     }
 
     switch (uMsg) {
@@ -1468,6 +1606,9 @@ LRESULT CALLBACK WindowProc(HWND hwnd, UINT uMsg, WPARAM wParam, LPARAM lParam) 
                             SendMessageW(inst->hTaskSwitch, TB_DELETEBUTTON, i, 0);
                         }
                     }
+                    if (inst->hTrayNotify) {
+                        InvalidateRect(inst->hTrayNotify, NULL, TRUE);
+                    }
                 }
                 
                 for (auto& btn : g_TaskButtons) {
@@ -1580,6 +1721,12 @@ bool TaskbarWindow::Initialize(HINSTANCE hInstance) {
         return false;
     }
 
+    if (g_Config.Mode == TaskbarMode::Replace) {
+        wc.lpszClassName = SEC_CLASS_NAME;
+        RegisterClassExW(&wc);
+        wc.lpszClassName = CLASS_NAME; // Restore original
+    }
+
     WNDCLASSEXW wcChild = {0};
     wcChild.cbSize = sizeof(WNDCLASSEXW);
     wcChild.hInstance = hInstance;
@@ -1598,6 +1745,10 @@ bool TaskbarWindow::Initialize(HINSTANCE hInstance) {
     wcChild.style = 0;
     wcChild.lpfnWndProc = TrayShowDesktopButtonProc;
     wcChild.lpszClassName = L"TrayShowDesktopButtonWClass";
+    RegisterClassExW(&wcChild);
+
+    wcChild.lpfnWndProc = TrayFlyoutProc;
+    wcChild.lpszClassName = L"TrayFlyoutWnd";
     RegisterClassExW(&wcChild);
 
     MonitorEnumData monData;
@@ -1620,9 +1771,14 @@ bool TaskbarWindow::Initialize(HINSTANCE hInstance) {
         int xPos = inst->monitorRect.left;
         int yPos = inst->monitorRect.bottom - taskbarHeight;
 
+        LPCWSTR szClassName = TRAY_CLASS_NAME;
+        if (g_Config.Mode == TaskbarMode::Replace) {
+            szClassName = monData.isPrimary[i] ? CLASS_NAME : SEC_CLASS_NAME;
+        }
+
         inst->hTaskbar = CreateWindowExW(
             WS_EX_TOOLWINDOW,
-            (g_Config.Mode == TaskbarMode::Replace) ? CLASS_NAME : TRAY_CLASS_NAME, L"", WS_POPUP | WS_VISIBLE | WS_CLIPSIBLINGS | WS_CLIPCHILDREN,
+            szClassName, L"", WS_POPUP | WS_VISIBLE | WS_CLIPSIBLINGS | WS_CLIPCHILDREN,
             xPos, yPos, screenWidth, taskbarHeight,
             NULL, NULL, hInstance, NULL
         );

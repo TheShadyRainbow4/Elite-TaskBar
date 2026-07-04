@@ -14,7 +14,7 @@
 #pragma comment(lib, "shell32.lib")
 #pragma comment(lib, "comctl32.lib")
 
-EliteTaskbarConfig g_Config = { L"", TaskbarMode::Independent, ButtonWidthMode::Auto, false, false, {} };
+EliteTaskbarConfig g_Config = { L"", TaskbarMode::Independent, ButtonWidthMode::Auto, TrayOverflowMode::Win7Flyout, false, false, {} };
 
 void QueryOperationalMode() {
     HKEY hKey;
@@ -40,6 +40,15 @@ void QueryOperationalMode() {
                 g_Config.ButtonWidth = ButtonWidthMode::IconsOnly;
             } else {
                 g_Config.ButtonWidth = ButtonWidthMode::Auto;
+            }
+        }
+        
+        dwValue = 0;
+        bufferSize = sizeof(DWORD);
+        g_Config.OverflowMode = TrayOverflowMode::Win7Flyout;
+        if (RegQueryValueExW(hKey, L"TrayMode", NULL, NULL, (LPBYTE)&dwValue, &bufferSize) == ERROR_SUCCESS) {
+            if (dwValue == 1) {
+                g_Config.OverflowMode = TrayOverflowMode::VistaInline;
             }
         }
         
