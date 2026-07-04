@@ -36,10 +36,16 @@ HBITMAP LoadPngResourceAsHBITMAP(DWORD resId) {
                 if (pBitmap && pBitmap->GetLastStatus() == Gdiplus::Ok) {
                     Gdiplus::Color bg(0, 0, 0, 0);
                     UINT width = pBitmap->GetWidth();
-                    Gdiplus::Bitmap* pCropped = pBitmap->Clone(0, 0, width, width, PixelFormat32bppARGB);
-                    if (pCropped && pCropped->GetLastStatus() == Gdiplus::Ok) {
-                        pCropped->GetHBITMAP(bg, &hBitmap);
-                        delete pCropped;
+                    UINT height = pBitmap->GetHeight();
+                    UINT frameHeight = height / 3;
+                    Gdiplus::Bitmap* pResized = new Gdiplus::Bitmap(54, 54, PixelFormat32bppARGB);
+                    if (pResized) {
+                        Gdiplus::Graphics g(pResized);
+                        g.SetInterpolationMode(Gdiplus::InterpolationModeHighQualityBicubic);
+                        Gdiplus::Rect destRect(0, 0, 54, 54);
+                        g.DrawImage(pBitmap, destRect, 0, 0, width, frameHeight, Gdiplus::UnitPixel);
+                        pResized->GetHBITMAP(bg, &hBitmap);
+                        delete pResized;
                     } else {
                         pBitmap->GetHBITMAP(bg, &hBitmap);
                     }
@@ -78,8 +84,13 @@ INT_PTR CALLBACK TaskbarSettingsDlgProc(HWND hwndDlg, UINT uMsg, WPARAM wParam, 
     case WM_CTLCOLORSTATIC:
     case WM_CTLCOLORBTN: {
         HDC hdcStatic = (HDC)wParam;
+        HWND hwndControl = (HWND)lParam;
         SetBkMode(hdcStatic, TRANSPARENT);
-        return (INT_PTR)GetStockObject(NULL_BRUSH);
+        if (IsThemeActive()) {
+            DrawThemeParentBackground(hwndControl, hdcStatic, NULL);
+            return (INT_PTR)GetStockObject(NULL_BRUSH);
+        }
+        return (INT_PTR)GetSysColorBrush(COLOR_BTNFACE);
     }
     case WM_INITDIALOG: {
         HKEY hKey;
@@ -168,8 +179,13 @@ INT_PTR CALLBACK NativeSettingsDlgProc(HWND hwndDlg, UINT uMsg, WPARAM wParam, L
     case WM_CTLCOLORSTATIC:
     case WM_CTLCOLORBTN: {
         HDC hdcStatic = (HDC)wParam;
+        HWND hwndControl = (HWND)lParam;
         SetBkMode(hdcStatic, TRANSPARENT);
-        return (INT_PTR)GetStockObject(NULL_BRUSH);
+        if (IsThemeActive()) {
+            DrawThemeParentBackground(hwndControl, hdcStatic, NULL);
+            return (INT_PTR)GetStockObject(NULL_BRUSH);
+        }
+        return (INT_PTR)GetSysColorBrush(COLOR_BTNFACE);
     }
     case WM_INITDIALOG: {
         HKEY hKey;
@@ -294,8 +310,13 @@ LRESULT CALLBACK DynScrollAreaProc(HWND hwnd, UINT uMsg, WPARAM wParam, LPARAM l
         case WM_CTLCOLORSTATIC:
         case WM_CTLCOLORBTN: {
             HDC hdcStatic = (HDC)wParam;
+            HWND hwndControl = (HWND)lParam;
             SetBkMode(hdcStatic, TRANSPARENT);
-            return (LRESULT)GetStockObject(NULL_BRUSH);
+            if (IsThemeActive()) {
+                DrawThemeParentBackground(hwndControl, hdcStatic, NULL);
+                return (LRESULT)GetStockObject(NULL_BRUSH);
+            }
+            return (LRESULT)GetSysColorBrush(COLOR_BTNFACE);
         }
         case WM_COMMAND:
             SendMessageW(GetParent(hwnd), WM_COMMAND, wParam, lParam);
@@ -372,8 +393,13 @@ INT_PTR CALLBACK MultiMonSettingsDlgProc(HWND hwndDlg, UINT uMsg, WPARAM wParam,
     case WM_CTLCOLORSTATIC:
     case WM_CTLCOLORBTN: {
         HDC hdcStatic = (HDC)wParam;
+        HWND hwndControl = (HWND)lParam;
         SetBkMode(hdcStatic, TRANSPARENT);
-        return (INT_PTR)GetStockObject(NULL_BRUSH);
+        if (IsThemeActive()) {
+            DrawThemeParentBackground(hwndControl, hdcStatic, NULL);
+            return (INT_PTR)GetStockObject(NULL_BRUSH);
+        }
+        return (INT_PTR)GetSysColorBrush(COLOR_BTNFACE);
     }
     case WM_INITDIALOG: {
         if (!gdiplusToken) {
@@ -586,8 +612,13 @@ INT_PTR CALLBACK ToolbarsSettingsDlgProc(HWND hwndDlg, UINT uMsg, WPARAM wParam,
     case WM_CTLCOLORSTATIC:
     case WM_CTLCOLORBTN: {
         HDC hdcStatic = (HDC)wParam;
+        HWND hwndControl = (HWND)lParam;
         SetBkMode(hdcStatic, TRANSPARENT);
-        return (INT_PTR)GetStockObject(NULL_BRUSH);
+        if (IsThemeActive()) {
+            DrawThemeParentBackground(hwndControl, hdcStatic, NULL);
+            return (INT_PTR)GetStockObject(NULL_BRUSH);
+        }
+        return (INT_PTR)GetSysColorBrush(COLOR_BTNFACE);
     }
     case WM_INITDIALOG:
         SendDlgItemMessageW(hwndDlg, IDC_TOOLBAR_LIST, LB_ADDSTRING, 0, (LPARAM)L"Address");
@@ -611,8 +642,13 @@ INT_PTR CALLBACK GenericPageDlgProc(HWND hwndDlg, UINT uMsg, WPARAM wParam, LPAR
     case WM_CTLCOLORSTATIC:
     case WM_CTLCOLORBTN: {
         HDC hdcStatic = (HDC)wParam;
+        HWND hwndControl = (HWND)lParam;
         SetBkMode(hdcStatic, TRANSPARENT);
-        return (INT_PTR)GetStockObject(NULL_BRUSH);
+        if (IsThemeActive()) {
+            DrawThemeParentBackground(hwndControl, hdcStatic, NULL);
+            return (INT_PTR)GetStockObject(NULL_BRUSH);
+        }
+        return (INT_PTR)GetSysColorBrush(COLOR_BTNFACE);
     }
     }
     return FALSE;
