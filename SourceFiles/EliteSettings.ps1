@@ -2,6 +2,11 @@
 .SYNOPSIS
 Elite Taskbar Settings (WinForms)
 #>
+param(
+    [string]$AppDir = $PSScriptRoot
+)
+
+#region Initialization & Boilerplate
 $ErrorActionPreference = 'Stop'
 
 $mutexName = "Global\EliteSettingsMutex_19a796c0"
@@ -166,7 +171,14 @@ $tp_MultiMon.Controls.Add($pnl_MonScroll)
 $monitors = [System.Windows.Forms.Screen]::AllScreens
 $y = 10
 $global:monControls = @()
-$global:orbFiles = Get-ChildItem -Path "$PSScriptRoot\..\Resources\StartOrb" -Filter "*.png" | Select-Object -ExpandProperty FullName
+$global:orbFiles = @()
+$path1 = Join-Path $AppDir "..\Resources\StartOrb"
+$path2 = Join-Path $AppDir "Resources\StartOrb"
+if (Test-Path $path1) {
+    $global:orbFiles = Get-ChildItem -Path $path1 -Filter "*.png" -ErrorAction SilentlyContinue | Select-Object -ExpandProperty FullName
+} elseif (Test-Path $path2) {
+    $global:orbFiles = Get-ChildItem -Path $path2 -Filter "*.png" -ErrorAction SilentlyContinue | Select-Object -ExpandProperty FullName
+}
 
 for ($i=0; $i -lt $monitors.Count; $i++) {
     $grp = New-Object System.Windows.Forms.GroupBox

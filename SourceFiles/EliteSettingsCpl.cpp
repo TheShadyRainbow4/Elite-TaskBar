@@ -23,9 +23,20 @@ void RunEmbeddedExe(HINSTANCE hInstance) {
         WriteFile(hFile, pData, size, &written, NULL);
         CloseHandle(hFile);
         
+        WCHAR cplPath[MAX_PATH];
+        GetModuleFileNameW(hInstance, cplPath, MAX_PATH);
+        WCHAR* lastSlash = wcsrchr(cplPath, L'\\');
+        if (lastSlash) *lastSlash = L'\0';
+        
+        WCHAR params[MAX_PATH + 10];
+        wsprintfW(params, L"\"%s\"", cplPath);
+
         SHELLEXECUTEINFOW sei = { sizeof(sei) };
         sei.fMask = SEE_MASK_NOCLOSEPROCESS;
         sei.lpVerb = L"open";
+        sei.lpFile = exePath;
+        sei.lpParameters = params;
+        sei.nShow = SW_SHOWNORMAL;
         sei.lpFile = exePath;
         sei.nShow = SW_SHOWNORMAL;
         if (ShellExecuteExW(&sei)) {
