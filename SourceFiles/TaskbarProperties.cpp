@@ -45,24 +45,6 @@ HBITMAP LoadPngResourceAsHBITMAP(DWORD resId) {
     return hBitmap;
 }
 
-std::vector<std::wstring> g_OrbPaths;
-
-HBITMAP LoadDynamicOrb(DWORD id) {
-    if (id == 0) return LoadPngResourceAsHBITMAP(IDB_START_ORB);
-    int vecIdx = id - 1;
-    if (vecIdx >= 0 && vecIdx < g_OrbPaths.size()) {
-        Gdiplus::Bitmap* pBitmap = Gdiplus::Bitmap::FromFile(g_OrbPaths[vecIdx].c_str());
-        HBITMAP hBitmap = NULL;
-        if (pBitmap && pBitmap->GetLastStatus() == Gdiplus::Ok) {
-            Gdiplus::Color bg(0, 0, 0, 0);
-            pBitmap->GetHBITMAP(bg, &hBitmap);
-        }
-        if (pBitmap) delete pBitmap;
-        return hBitmap;
-    }
-    return LoadPngResourceAsHBITMAP(IDB_START_ORB);
-}
-
 void UpdateOrbPreview(HWND hwndDlg, DWORD orbId) {
     HBITMAP hBitmap = (HBITMAP)LoadImageW(g_hInstance, MAKEINTRESOURCEW(orbId), IMAGE_BITMAP, 54, 54, LR_DEFAULTCOLOR);
     if (hBitmap) {
@@ -447,18 +429,18 @@ INT_PTR CALLBACK MultiMonSettingsDlgProc(HWND hwndDlg, UINT uMsg, WPARAM wParam,
                 SendMessageW(hCmbTrig, CB_SETCURSEL, trig, 0);
 
                 DWORD orb = 0; cbData = sizeof(DWORD);
-                wsprintfW(val, L"StartOrb_Mon%d", mon.index);
+                wsprintfW(val, L"StartOrbID_Mon%d", mon.index);
                 if (RegQueryValueExW(hKey, val, NULL, NULL, (LPBYTE)&orb, &cbData) == ERROR_SUCCESS) {
                     SelectOrbComboBox(hCmbOrb, orb);
                 } else {
                     SendMessageW(hCmbOrb, CB_SETCURSEL, 0, 0);
-                    orb = 0;
+                    orb = IDB_START_ORB;
                 }
-                HBITMAP hBitmap = LoadDynamicOrb(orb);
+                HBITMAP hBitmap = LoadPngResourceAsHBITMAP(orb);
                 SendMessageW(hPreview, STM_SETIMAGE, IMAGE_BITMAP, (LPARAM)hBitmap);
             } else {
                 SendMessageW(hCmbOrb, CB_SETCURSEL, 0, 0);
-                HBITMAP hBitmap = LoadDynamicOrb(0);
+                HBITMAP hBitmap = LoadPngResourceAsHBITMAP(IDB_START_ORB);
                 SendMessageW(hPreview, STM_SETIMAGE, IMAGE_BITMAP, (LPARAM)hBitmap);
                 if (mon.index == 0) SendMessageW(hChk1, BM_SETCHECK, BST_CHECKED, 0);
                 SendMessageW(hChk2, BM_SETCHECK, BST_CHECKED, 0);
@@ -487,7 +469,7 @@ INT_PTR CALLBACK MultiMonSettingsDlgProc(HWND hwndDlg, UINT uMsg, WPARAM wParam,
                 if (sel != CB_ERR) {
                     DWORD orbId = SendMessageW(hCombo, CB_GETITEMDATA, sel, 0);
                     HWND hPreview = GetDlgItem(hScroll, ID_BASE_SM_PREV + monIndex);
-                    HBITMAP hBitmap = LoadDynamicOrb(orbId);
+                    HBITMAP hBitmap = LoadPngResourceAsHBITMAP(orbId);
                     HBITMAP hOld = (HBITMAP)SendMessageW(hPreview, STM_SETIMAGE, IMAGE_BITMAP, (LPARAM)hBitmap);
                     if (hOld) DeleteObject(hOld);
                 }
@@ -520,7 +502,7 @@ INT_PTR CALLBACK MultiMonSettingsDlgProc(HWND hwndDlg, UINT uMsg, WPARAM wParam,
                     RegSetValueExW(hKey, val, 0, REG_DWORD, (const BYTE*)&mode, sizeof(DWORD));
                     wsprintfW(val, L"StartMenuTrigger_Mon%d", mon.index);
                     RegSetValueExW(hKey, val, 0, REG_DWORD, (const BYTE*)&trig, sizeof(DWORD));
-                    wsprintfW(val, L"StartOrb_Mon%d", mon.index);
+                    wsprintfW(val, L"StartOrbID_Mon%d", mon.index);
                     RegSetValueExW(hKey, val, 0, REG_DWORD, (const BYTE*)&orb, sizeof(DWORD));
                 }
                 RegCloseKey(hKey);
@@ -537,39 +519,20 @@ INT_PTR CALLBACK MultiMonSettingsDlgProc(HWND hwndDlg, UINT uMsg, WPARAM wParam,
 }
 
 void PopulateOrbComboBox(HWND hCombo) {
-    SendMessageW(hCombo, CB_RESETCONTENT, 0, 0);
-    int idx = SendMessageW(hCombo, CB_ADDSTRING, 0, (LPARAM)L"Classic Orb (Built-in)");
-    SendMessageW(hCombo, CB_SETITEMDATA, idx, 0);
-    
-    WCHAR path[MAX_PATH];
-    GetModuleFileNameW(g_hInstance, path, MAX_PATH);
-    PathRemoveFileSpecW(path);
-    PathAppendW(path, L"..\\Resources\\StartOrb\\*.png");
-    
-    WIN32_FIND_DATAW fd;
-    HANDLE hFind = FindFirstFileW(path, &fd);
-    if (hFind != INVALID_HANDLE_VALUE) {
-        do {
-            if (!(fd.dwFileAttributes & FILE_ATTRIBUTE_DIRECTORY)) {
-                WCHAR name[MAX_PATH];
-                wcscpy_s(name, fd.cFileName);
-                PathRemoveExtensionW(name);
-                
-                int i = SendMessageW(hCombo, CB_ADDSTRING, 0, (LPARAM)name);
-                
-                WCHAR fullPath[MAX_PATH];
-                GetModuleFileNameW(g_hInstance, fullPath, MAX_PATH);
-                PathRemoveFileSpecW(fullPath);
-                PathAppendW(fullPath, L"..\\Resources\\StartOrb\\");
-                PathAppendW(fullPath, fd.cFileName);
-                
-                int vecIdx = g_OrbPaths.size();
-                g_OrbPaths.push_back(fullPath);
-                
-                SendMessageW(hCombo, CB_SETITEMDATA, i, vecIdx + 1);
-            }
-        } while (FindNextFileW(hFind, &fd));
-        FindClose(hFind);
+    struct OrbItem { LPCWSTR name; DWORD id; };
+    OrbItem items[] = {
+        { L"Classic Orb", IDB_START_ORB },
+        { L"1Orb", IDB_START_ORB_1ORB },
+        { L"Aqua Bottom", IDB_START_ORB_AQUABOTTOM },
+        { L"Dunes", IDB_START_ORB_DUNES },
+        { L"Indigo", IDB_START_ORB_INDIGO },
+        { L"Sapphire", IDB_START_ORB_SAPPHIRE },
+        { L"Uranus", IDB_START_ORB_URANUS },
+        { L"Vienna Bottom", IDB_START_ORB_VIENNABOTTOM }
+    };
+    for (int i = 0; i < sizeof(items)/sizeof(items[0]); i++) {
+        int idx = SendMessageW(hCombo, CB_ADDSTRING, 0, (LPARAM)items[i].name);
+        SendMessageW(hCombo, CB_SETITEMDATA, idx, items[i].id);
     }
 }
 
