@@ -66,7 +66,7 @@ TaskbarInstance* GetTaskbarInstance(HWND hwnd) {
     if (!hwnd) return nullptr;
     // Check if hwnd is a taskbar
     for (auto* tb : g_Taskbars) {
-        if (tb->hTaskbar == hwnd || tb->hTrayNotify == hwnd || tb->hTrayClock == hwnd || tb->hSysPager == hwnd || tb->hToolbar == hwnd || tb->hReBar == hwnd) {
+        if (tb->hTaskbar == hwnd || tb->hTrayNotify == hwnd || tb->hTrayClock == hwnd || tb->hSysPager == hwnd || tb->hToolbar == hwnd) {
             return tb;
         }
     }
@@ -1497,12 +1497,9 @@ bool TaskbarWindow::Initialize(HINSTANCE hInstance) {
             bHookRegistered = true;
         }
 
-        inst->hReBar = CreateWindowExW(0, L"ReBarWindow32", L"", WS_CHILD | WS_VISIBLE | WS_CLIPSIBLINGS | WS_CLIPCHILDREN | RBS_VARHEIGHT | RBS_BANDBORDERS | CCS_NODIVIDER | CCS_NORESIZE, 
-            screenWidth - 555, 0, 300, taskbarHeight, inst->hTaskbar, NULL, hInstance, NULL);
-
         inst->hTaskSwitch = CreateWindowExW(0, TOOLBARCLASSNAMEW, L"", 
             WS_CHILD | WS_VISIBLE | WS_CLIPSIBLINGS | WS_CLIPCHILDREN | TBSTYLE_LIST | TBSTYLE_FLAT | TBSTYLE_WRAPABLE | CCS_NODIVIDER | CCS_NORESIZE | TBSTYLE_TRANSPARENT, 
-            60, 0, screenWidth - 615, taskbarHeight, inst->hTaskbar, (HMENU)2000, hInstance, NULL);
+            60, 0, screenWidth - 315, taskbarHeight, inst->hTaskbar, (HMENU)2000, hInstance, NULL);
         SetWindowSubclass(inst->hTaskSwitch, TaskSwitchSubclassProc, 1, 0);
         SendMessageW(inst->hTaskSwitch, TB_BUTTONSTRUCTSIZE, sizeof(TBBUTTON), 0);
         

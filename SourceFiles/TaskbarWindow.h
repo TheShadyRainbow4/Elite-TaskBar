@@ -9,7 +9,7 @@ struct TaskbarInstance {
     HWND hTaskbar;
     HWND hSysPager;
     HWND hToolbar;
-    HWND hReBar;
+
     HWND hTaskSwitch;
     HWND hTrayNotify;
     HWND hTrayClock;
