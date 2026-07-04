@@ -120,3 +120,7 @@ All notable changes to this project will be documented in this file.
 - **EliteStartMenu.ps1**: Created an independent Start Menu implementation using WinForms to guarantee opening on the correct invoked monitor (bypassing native shell interference).
 - **build.ps1**: Added compilation step to convert EliteStartMenu.ps1 into an executable using PS2EXE.
 - **TrayIconScraper.cpp**: Added skeleton code for the upcoming native tray icon interception and display logic (Win7 Overflow / Legacy).
+
+* **Fixed CPL and Settings UI:** Rewrote the entire EliteSettings app natively in PowerShell using WinForms to completely adhere to all custom rules and legacy Win32/Vista aesthetics. The CPL is no longer a simple stub and instead acts as a payload wrapper that dynamically extracts and executes the Settings EXE from its own resource segment. Both CPL and EXE execute cleanly without demanding forced administrator elevation, resolving the wonky window layout issues completely.
+
+* **UI Polish for Settings:** Restored native Transparent/Control colors for TabPages and ScrollPanels to ensure visually consistent backgrounds. Adjusted dynamic layout coordinates to remove GroupBox overlaps. Implemented live PictureBox preview for the 'Start Orb Theme' selection.

@@ -5,6 +5,7 @@ Elite Taskbar Settings (WinForms)
 $ErrorActionPreference = 'Stop'
 
 $mutexName = "Global\EliteSettingsMutex_19a796c0"
+$createdNew = $false
 $mutex = New-Object System.Threading.Mutex($true, $mutexName, [ref]$createdNew)
 if (-not $createdNew) {
     [System.Windows.Forms.MessageBox]::Show("Elite Taskbar Settings is already open.", "Elite Taskbar", [System.Windows.Forms.MessageBoxButtons]::OK, [System.Windows.Forms.MessageBoxIcon]::Information)
@@ -48,7 +49,6 @@ $boldFont = New-Object System.Drawing.Font("Segoe UI", 9, [System.Drawing.FontSt
 $titleFont = New-Object System.Drawing.Font("Segoe UI", 12, [System.Drawing.FontStyle]::Semibold)
 
 $colorChin = [System.Drawing.Color]::FromArgb(255, 240, 240, 240)
-$colorBg = [System.Drawing.Color]::FromArgb(255, 255, 255, 255)
 #endregion
 
 #region Form Construction
@@ -87,7 +87,7 @@ $pnl_Inset.Controls.Add($tab_Main)
 # Tab: Taskbar
 $tp_Taskbar = New-Object System.Windows.Forms.TabPage
 $tp_Taskbar.Text = "Taskbar"
-$tp_Taskbar.BackColor = $colorBg
+$tp_Taskbar.UseVisualStyleBackColor = $true
 $tab_Main.Controls.Add($tp_Taskbar)
 
 $grp_Mode = New-Object System.Windows.Forms.GroupBox
@@ -153,24 +153,26 @@ $grp_App.Controls.Add($chk_Previews)
 # Tab: Multi-Monitor
 $tp_MultiMon = New-Object System.Windows.Forms.TabPage
 $tp_MultiMon.Text = "Multi-Monitor Components"
-$tp_MultiMon.BackColor = $colorBg
+$tp_MultiMon.UseVisualStyleBackColor = $true
 $tab_Main.Controls.Add($tp_MultiMon)
 
 $pnl_MonScroll = New-Object System.Windows.Forms.Panel
 $pnl_MonScroll.AutoScroll = $true
 $pnl_MonScroll.Dock = 'Fill'
+$pnl_MonScroll.BackColor = [System.Drawing.Color]::Transparent
 $tp_MultiMon.Controls.Add($pnl_MonScroll)
 
 # Load Monitors dynamically
 $monitors = [System.Windows.Forms.Screen]::AllScreens
 $y = 10
 $global:monControls = @()
+$global:orbFiles = Get-ChildItem -Path "$PSScriptRoot\..\Resources\StartOrb" -Filter "*.png" | Select-Object -ExpandProperty FullName
 
 for ($i=0; $i -lt $monitors.Count; $i++) {
     $grp = New-Object System.Windows.Forms.GroupBox
     $grp.Text = "Monitor $i ($($monitors[$i].Bounds.Width)x$($monitors[$i].Bounds.Height))"
     $grp.Location = New-Object System.Drawing.Point(15, $y)
-    $grp.Size = New-Object System.Drawing.Size(460, 180)
+    $grp.Size = New-Object System.Drawing.Size(480, 180)
     $pnl_MonScroll.Controls.Add($grp)
 
     $chk_Tray = New-Object System.Windows.Forms.CheckBox
@@ -187,48 +189,65 @@ for ($i=0; $i -lt $monitors.Count; $i++) {
 
     $chk_TaskBtns = New-Object System.Windows.Forms.CheckBox
     $chk_TaskBtns.Text = "Task Buttons"
-    $chk_TaskBtns.Location = New-Object System.Drawing.Point(15, 50)
+    $chk_TaskBtns.Location = New-Object System.Drawing.Point(200, 25)
     $chk_TaskBtns.AutoSize = $true
     $grp.Controls.Add($chk_TaskBtns)
 
     $lbl_SmMode = New-Object System.Windows.Forms.Label
     $lbl_SmMode.Text = "Start Menu Mode:"
-    $lbl_SmMode.Location = New-Object System.Drawing.Point(15, 80)
+    $lbl_SmMode.Location = New-Object System.Drawing.Point(15, 60)
     $lbl_SmMode.AutoSize = $true
     $grp.Controls.Add($lbl_SmMode)
 
     $cmb_SmMode = New-Object System.Windows.Forms.ComboBox
     $cmb_SmMode.DropDownStyle = 'DropDownList'
     $cmb_SmMode.Items.AddRange(@("0 - Native / OpenShell Mirror", "1 - Custom Elite Menu", "2 - Exe Launcher"))
-    $cmb_SmMode.Location = New-Object System.Drawing.Point(140, 77)
+    $cmb_SmMode.Location = New-Object System.Drawing.Point(140, 57)
     $cmb_SmMode.Size = New-Object System.Drawing.Size(200, 25)
     $grp.Controls.Add($cmb_SmMode)
 
     $lbl_SmTrig = New-Object System.Windows.Forms.Label
     $lbl_SmTrig.Text = "Start Menu Trigger:"
-    $lbl_SmTrig.Location = New-Object System.Drawing.Point(15, 110)
+    $lbl_SmTrig.Location = New-Object System.Drawing.Point(15, 95)
     $lbl_SmTrig.AutoSize = $true
     $grp.Controls.Add($lbl_SmTrig)
 
     $cmb_SmTrig = New-Object System.Windows.Forms.ComboBox
     $cmb_SmTrig.DropDownStyle = 'DropDownList'
     $cmb_SmTrig.Items.AddRange(@("0 - Default", "1 - Alternate"))
-    $cmb_SmTrig.Location = New-Object System.Drawing.Point(140, 107)
+    $cmb_SmTrig.Location = New-Object System.Drawing.Point(140, 92)
     $cmb_SmTrig.Size = New-Object System.Drawing.Size(200, 25)
     $grp.Controls.Add($cmb_SmTrig)
 
     $lbl_SmOrb = New-Object System.Windows.Forms.Label
     $lbl_SmOrb.Text = "Start Orb Theme:"
-    $lbl_SmOrb.Location = New-Object System.Drawing.Point(15, 140)
+    $lbl_SmOrb.Location = New-Object System.Drawing.Point(15, 130)
     $lbl_SmOrb.AutoSize = $true
     $grp.Controls.Add($lbl_SmOrb)
 
     $cmb_SmOrb = New-Object System.Windows.Forms.ComboBox
     $cmb_SmOrb.DropDownStyle = 'DropDownList'
-    $cmb_SmOrb.Items.AddRange(@("0 - Default", "1 - Custom 1", "2 - Custom 2"))
-    $cmb_SmOrb.Location = New-Object System.Drawing.Point(140, 137)
+    foreach ($orb in $global:orbFiles) {
+        $cmb_SmOrb.Items.Add([System.IO.Path]::GetFileNameWithoutExtension($orb)) | Out-Null
+    }
+    if ($cmb_SmOrb.Items.Count -eq 0) { $cmb_SmOrb.Items.Add("Default") | Out-Null }
+    $cmb_SmOrb.Location = New-Object System.Drawing.Point(140, 127)
     $cmb_SmOrb.Size = New-Object System.Drawing.Size(200, 25)
     $grp.Controls.Add($cmb_SmOrb)
+
+    $pic_Orb = New-Object System.Windows.Forms.PictureBox
+    $pic_Orb.Location = New-Object System.Drawing.Point(360, 50)
+    $pic_Orb.Size = New-Object System.Drawing.Size(54, 100)
+    $pic_Orb.SizeMode = 'Zoom'
+    $grp.Controls.Add($pic_Orb)
+
+    $cmb_SmOrb.Add_SelectedIndexChanged({
+        param($sender, $e)
+        if ($sender.SelectedIndex -ge 0 -and $sender.SelectedIndex -lt $global:orbFiles.Count) {
+            $sender.Tag.Image = [System.Drawing.Image]::FromFile($global:orbFiles[$sender.SelectedIndex])
+        }
+    })
+    $cmb_SmOrb.Tag = $pic_Orb
 
     $global:monControls += @{
         Index = $i;
@@ -240,7 +259,7 @@ for ($i=0; $i -lt $monitors.Count; $i++) {
         CmbOrb = $cmb_SmOrb;
     }
 
-    $y += 190
+    $y += 195
 }
 
 # Chin
