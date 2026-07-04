@@ -237,28 +237,6 @@ LRESULT CALLBACK OrbWndProc(HWND hwnd, UINT uMsg, WPARAM wParam, LPARAM lParam) 
 
                 bool isShiftDown = (GetAsyncKeyState(VK_SHIFT) & 0x8000) != 0;
 
-                HWND hNativeTarget = NULL;
-                HMONITOR hMon = MonitorFromWindow(pThis->GetParentTaskbar(), MONITOR_DEFAULTTONULL);
-                if (hMon) {
-                    HWND hPrimary = FindWindowW(L"Shell_TrayWnd", NULL);
-                    if (MonitorFromWindow(hPrimary, MONITOR_DEFAULTTONULL) == hMon) {
-                        hNativeTarget = hPrimary;
-                    } else {
-                        HWND hSec = NULL;
-                        while ((hSec = FindWindowExW(NULL, hSec, L"Shell_SecondaryTrayWnd", NULL)) != NULL) {
-                            if (MonitorFromWindow(hSec, MONITOR_DEFAULTTONULL) == hMon) {
-                                hNativeTarget = hSec;
-                                break;
-                            }
-                        }
-                    }
-                }
-                if (!hNativeTarget) hNativeTarget = FindWindowW(L"Shell_TrayWnd", NULL);
-
-                POINT pt;
-                GetCursorPos(&pt);
-                LPARAM lCursorParam = MAKELPARAM(pt.x, pt.y);
-
                 // Focus the specific taskbar window so Windows knows which monitor to target
                 SetForegroundWindow(pThis->GetParentTaskbar());
                 
@@ -266,13 +244,15 @@ LRESULT CALLBACK OrbWndProc(HWND hwnd, UINT uMsg, WPARAM wParam, LPARAM lParam) 
                     // Open Native Menu (Requires Shift for Open-Shell users)
                     bool injectShift = !isShiftDown;
                     if (injectShift) keybd_event(VK_SHIFT, 0, 0, 0);
-                    if (hNativeTarget) SendMessageW(hNativeTarget, WM_SYSCOMMAND, SC_TASKLIST, lCursorParam);
+                    keybd_event(VK_LWIN, 0, 0, 0);
+                    keybd_event(VK_LWIN, 0, KEYEVENTF_KEYUP, 0);
                     if (injectShift) keybd_event(VK_SHIFT, 0, KEYEVENTF_KEYUP, 0);
                 } else {
                     // Open Open-Shell Menu (Default Win key behavior)
                     bool injectShift = isShiftDown;
                     if (injectShift) keybd_event(VK_SHIFT, 0, KEYEVENTF_KEYUP, 0);
-                    if (hNativeTarget) SendMessageW(hNativeTarget, WM_SYSCOMMAND, SC_TASKLIST, lCursorParam);
+                    keybd_event(VK_LWIN, 0, 0, 0);
+                    keybd_event(VK_LWIN, 0, KEYEVENTF_KEYUP, 0);
                     if (injectShift) keybd_event(VK_SHIFT, 0, 0, 0);
                 }
             }
