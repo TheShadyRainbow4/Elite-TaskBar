@@ -465,28 +465,32 @@ void UpdateTaskButtonActive(HWND hwndActive) {
 }
 
 void SyncWindowsAcrossMonitors() {
-    for (auto* inst : g_Taskbars) {
-        if (!inst->hTaskSwitch) continue;
-        int count = SendMessageW(inst->hTaskSwitch, TB_BUTTONCOUNT, 0, 0);
-        for (int i = 0; i < count; i++) {
-            TBBUTTON tbb = {0};
-            SendMessageW(inst->hTaskSwitch, TB_GETBUTTON, i, (LPARAM)&tbb);
-            HWND hTarget = (HWND)tbb.dwData;
-            if (hTarget && IsWindow(hTarget)) {
-                HMONITOR hWinMon = GetWindowMonitor(hTarget);
-                HMONITOR hTaskbarMon = MonitorFromWindow(inst->hTaskbar, MONITOR_DEFAULTTONEAREST);
-                if (hWinMon != hTaskbarMon && hWinMon != NULL) {
-                    SendMessageW(inst->hTaskSwitch, TB_DELETEBUTTON, i, 0);
-                    i--;
-                    count--;
-                    for (auto& btn : g_TaskButtons) {
-                        if (btn.hwnd == hTarget) {
-                            AddTaskButton(btn);
-                            break;
-                        }
+    for (auto& btn : g_TaskButtons) {
+        if (!IsWindow(btn.hwnd)) continue;
+        HMONITOR hWinMon = GetWindowMonitor(btn.hwnd);
+        bool needsAdd = true;
+
+        for (auto* inst : g_Taskbars) {
+            if (!inst->hTaskSwitch) continue;
+            HMONITOR hTaskbarMon = MonitorFromWindow(inst->hTaskbar, MONITOR_DEFAULTTONEAREST);
+            
+            int count = SendMessageW(inst->hTaskSwitch, TB_BUTTONCOUNT, 0, 0);
+            for (int i = 0; i < count; i++) {
+                TBBUTTON tbb = {0};
+                SendMessageW(inst->hTaskSwitch, TB_GETBUTTON, i, (LPARAM)&tbb);
+                if ((HWND)tbb.dwData == btn.hwnd) {
+                    if (hWinMon != hTaskbarMon) {
+                        SendMessageW(inst->hTaskSwitch, TB_DELETEBUTTON, i, 0);
+                    } else {
+                        needsAdd = false;
                     }
+                    break;
                 }
             }
+        }
+        
+        if (needsAdd) {
+            AddTaskButton(btn);
         }
     }
 }

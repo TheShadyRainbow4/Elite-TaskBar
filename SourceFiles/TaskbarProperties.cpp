@@ -26,8 +26,7 @@ void UpdateOrbPreview(HWND hwndDlg, DWORD orbId) {
         if (bmp && bmp->GetLastStatus() == Ok) {
             UINT width = bmp->GetWidth();
             UINT height = bmp->GetHeight();
-            int numFrames = (height + (width / 2)) / width;
-            if (numFrames < 1) numFrames = 1;
+            int numFrames = ((height * 100) / width > 300) ? 4 : 3;
             UINT sliceHeight = height / numFrames;
 
             Bitmap* frame = bmp->Clone(0, 0, width, sliceHeight, PixelFormat32bppARGB);

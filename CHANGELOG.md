@@ -72,3 +72,14 @@ All notable changes to this project will be documented in this file.
 - Rewrote StartButton logic to support 3-frame and 4-frame dynamic height ORB images.
 - Improved TaskbarProperties UI to preview Orbs via GDI+ and properly isolate Per-Monitor configurations in the Registry.
 - Modified StartButton native menu triggers to use SendMessageW and lCursorParam alongside simulated VK_SHIFT injections to handle interactions with Open-Shell accurately.
+-
+Added
+fixes
+for
+taskbar
+buttons
+disappearing
+when
+moving
+across
+monitors.
