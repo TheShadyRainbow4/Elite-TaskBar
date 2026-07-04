@@ -5,6 +5,13 @@ All notable changes to this project will be documented in this file.
 
 ## [Unreleased]
 ### Added
+- **Fixed Button Widths Hookup**: Added `FixedWidthSize` integer into `EliteTaskbarConfig`, populated via registry loading in `main.cpp`, and mapped directly to `TB_SETBUTTONWIDTH` in `TaskbarWindow.cpp` to correctly apply Small (100px), Medium (160px), and Large (220px) settings for Fixed Button modes.
+
+### Fixed
+- **Settings Label Backfills**: Injected `EnableThemeDialogTexture(hwndDlg, ETDT_ENABLETAB)` into `WM_INITDIALOG` for all Property Sheet dialogues in `TaskbarProperties.cpp`. Labels and checkboxes now correctly paint over the native Windows property tab texture rather than rendering a grey block.
+- **Scroll Bar Padding**: Modified `CreateDynScrollArea` to stretch the `EliteDynScrollArea` window bounds to match `GetClientRect` of the parent dialog exactly. This fixes the right-side gap, properly pinning the scroll bar to the edge.
+
+### Added
 - **Native System Tray Integration**: Fully routed `WM_COPYDATA` messages to `TrayNotifyWnd` inside `WindowProc`, enabling true native ingestion of `NOTIFYICONDATA` structures when running in `Replace` mode.
 - **Two Overflow Methods**: Implemented the two planned overflow modes for the Notification Area:
   1. **Vista Inline**: Triggers an expandable chevron (`<`/`>`) to slide icons leftwards natively.
