@@ -298,6 +298,15 @@ void InitDynScrollClass() {
     init = true;
 }
 
+LRESULT CALLBACK NoMouseWheelSubclassProc(HWND hwnd, UINT uMsg, WPARAM wParam, LPARAM lParam, UINT_PTR uIdSubclass, DWORD_PTR dwRefData) {
+    if (uMsg == WM_MOUSEWHEEL) {
+        HWND hParent = GetParent(hwnd);
+        if (hParent) SendMessageW(hParent, uMsg, wParam, lParam);
+        return 0;
+    }
+    return DefSubclassProc(hwnd, uMsg, wParam, lParam);
+}
+
 // Global dynamically populated IDs base
 #define ID_BASE_MM_TRAY 10000
 #define ID_BASE_MM_CLOCK 11000
@@ -381,6 +390,10 @@ INT_PTR CALLBACK MultiMonSettingsDlgProc(HWND hwndDlg, UINT uMsg, WPARAM wParam,
             HWND hCmbTrig = CreateWindowExW(0, L"ComboBox", L"", WS_CHILD | WS_VISIBLE | CBS_DROPDOWNLIST | WS_VSCROLL | WS_TABSTOP, 140, y + 85, 100, 100, hScroll, (HMENU)(ID_BASE_SM_TRIG + mon.index), g_hInstance, NULL);
             HWND hCmbOrb = CreateWindowExW(0, L"ComboBox", L"", WS_CHILD | WS_VISIBLE | CBS_DROPDOWNLIST | WS_VSCROLL | WS_TABSTOP, 140, y + 110, 100, 100, hScroll, (HMENU)(ID_BASE_SM_ORB + mon.index), g_hInstance, NULL);
             HWND hPreview = CreateWindowExW(0, L"Static", L"", WS_CHILD | WS_VISIBLE | SS_BITMAP | SS_CENTERIMAGE | WS_BORDER, 250, y + 100, 54, 54, hScroll, (HMENU)(ID_BASE_SM_PREV + mon.index), g_hInstance, NULL);
+
+            SetWindowSubclass(hCmbMode, NoMouseWheelSubclassProc, 1, 0);
+            SetWindowSubclass(hCmbTrig, NoMouseWheelSubclassProc, 1, 0);
+            SetWindowSubclass(hCmbOrb, NoMouseWheelSubclassProc, 1, 0);
 
             SendMessageW(hCmbMode, WM_SETFONT, (WPARAM)hFont, 0);
             SendMessageW(hCmbTrig, WM_SETFONT, (WPARAM)hFont, 0);
