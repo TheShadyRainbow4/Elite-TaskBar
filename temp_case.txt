@@ -1,0 +1,6 @@
+    case WM_CTLCOLORSTATIC:
+    case WM_CTLCOLORBTN: {
+        HDC hdcStatic = (HDC)wParam;
+        SetBkMode(hdcStatic, TRANSPARENT);
+        return (INT_PTR)GetStockObject(NULL_BRUSH);
+    }

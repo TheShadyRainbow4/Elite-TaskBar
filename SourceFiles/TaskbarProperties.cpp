@@ -35,7 +35,14 @@ HBITMAP LoadPngResourceAsHBITMAP(DWORD resId) {
                 Gdiplus::Bitmap* pBitmap = Gdiplus::Bitmap::FromStream(pStream);
                 if (pBitmap && pBitmap->GetLastStatus() == Gdiplus::Ok) {
                     Gdiplus::Color bg(0, 0, 0, 0);
-                    pBitmap->GetHBITMAP(bg, &hBitmap);
+                    UINT width = pBitmap->GetWidth();
+                    Gdiplus::Bitmap* pCropped = pBitmap->Clone(0, 0, width, width, PixelFormat32bppARGB);
+                    if (pCropped && pCropped->GetLastStatus() == Gdiplus::Ok) {
+                        pCropped->GetHBITMAP(bg, &hBitmap);
+                        delete pCropped;
+                    } else {
+                        pBitmap->GetHBITMAP(bg, &hBitmap);
+                    }
                 }
                 if (pBitmap) delete pBitmap;
                 pStream->Release();
@@ -68,6 +75,12 @@ void NotifySettingsChange() {
 
 INT_PTR CALLBACK TaskbarSettingsDlgProc(HWND hwndDlg, UINT uMsg, WPARAM wParam, LPARAM lParam) {
     switch (uMsg) {
+    case WM_CTLCOLORSTATIC:
+    case WM_CTLCOLORBTN: {
+        HDC hdcStatic = (HDC)wParam;
+        SetBkMode(hdcStatic, TRANSPARENT);
+        return (INT_PTR)GetStockObject(NULL_BRUSH);
+    }
     case WM_INITDIALOG: {
         HKEY hKey;
         if (RegOpenKeyExW(HKEY_CURRENT_USER, L"Software\\EliteSoftware\\Win32Explorer\\Advanced", 0, KEY_READ, &hKey) == ERROR_SUCCESS) {
@@ -152,6 +165,12 @@ INT_PTR CALLBACK TaskbarSettingsDlgProc(HWND hwndDlg, UINT uMsg, WPARAM wParam, 
 
 INT_PTR CALLBACK NativeSettingsDlgProc(HWND hwndDlg, UINT uMsg, WPARAM wParam, LPARAM lParam) {
     switch (uMsg) {
+    case WM_CTLCOLORSTATIC:
+    case WM_CTLCOLORBTN: {
+        HDC hdcStatic = (HDC)wParam;
+        SetBkMode(hdcStatic, TRANSPARENT);
+        return (INT_PTR)GetStockObject(NULL_BRUSH);
+    }
     case WM_INITDIALOG: {
         HKEY hKey;
         if (RegOpenKeyExW(HKEY_CURRENT_USER, L"Software\\EliteSoftware\\Win32Explorer\\Advanced", 0, KEY_READ, &hKey) == ERROR_SUCCESS) {
@@ -350,6 +369,12 @@ INT_PTR CALLBACK MultiMonSettingsDlgProc(HWND hwndDlg, UINT uMsg, WPARAM wParam,
     static HWND hScroll = NULL;
     static ULONG_PTR gdiplusToken = 0;
     switch (uMsg) {
+    case WM_CTLCOLORSTATIC:
+    case WM_CTLCOLORBTN: {
+        HDC hdcStatic = (HDC)wParam;
+        SetBkMode(hdcStatic, TRANSPARENT);
+        return (INT_PTR)GetStockObject(NULL_BRUSH);
+    }
     case WM_INITDIALOG: {
         if (!gdiplusToken) {
             GdiplusStartupInput gdiplusStartupInput;
@@ -367,7 +392,7 @@ INT_PTR CALLBACK MultiMonSettingsDlgProc(HWND hwndDlg, UINT uMsg, WPARAM wParam,
         for (const auto& mon : g_Monitors) {
             WCHAR title[64];
             wsprintfW(title, L"Monitor %d (%dx%d)", mon.index, mon.rect.right - mon.rect.left, mon.rect.bottom - mon.rect.top);
-            HWND hGroup = CreateWindowExW(0, L"Button", title, WS_CHILD | WS_VISIBLE | BS_GROUPBOX, 5, y, 320, 175, hScroll, NULL, g_hInstance, NULL);
+            HWND hGroup = CreateWindowExW(0, L"Button", title, WS_CHILD | WS_VISIBLE | BS_GROUPBOX, 5, y, 215, 175, hScroll, NULL, g_hInstance, NULL);
             SendMessageW(hGroup, WM_SETFONT, (WPARAM)hFont, 0);
             
             HWND hChk1 = CreateWindowExW(0, L"Button", L"System Tray", WS_CHILD | WS_VISIBLE | BS_AUTOCHECKBOX | WS_TABSTOP, 15, y + 20, 100, 15, hScroll, (HMENU)(ID_BASE_MM_TRAY + mon.index), g_hInstance, NULL);
@@ -558,6 +583,12 @@ void PopulateTriggerComboBox(HWND hCombo) {
 
 INT_PTR CALLBACK ToolbarsSettingsDlgProc(HWND hwndDlg, UINT uMsg, WPARAM wParam, LPARAM lParam) {
     switch (uMsg) {
+    case WM_CTLCOLORSTATIC:
+    case WM_CTLCOLORBTN: {
+        HDC hdcStatic = (HDC)wParam;
+        SetBkMode(hdcStatic, TRANSPARENT);
+        return (INT_PTR)GetStockObject(NULL_BRUSH);
+    }
     case WM_INITDIALOG:
         SendDlgItemMessageW(hwndDlg, IDC_TOOLBAR_LIST, LB_ADDSTRING, 0, (LPARAM)L"Address");
         SendDlgItemMessageW(hwndDlg, IDC_TOOLBAR_LIST, LB_ADDSTRING, 0, (LPARAM)L"Links");
@@ -576,6 +607,14 @@ INT_PTR CALLBACK ToolbarsSettingsDlgProc(HWND hwndDlg, UINT uMsg, WPARAM wParam,
 }
 
 INT_PTR CALLBACK GenericPageDlgProc(HWND hwndDlg, UINT uMsg, WPARAM wParam, LPARAM lParam) {
+    switch (uMsg) {
+    case WM_CTLCOLORSTATIC:
+    case WM_CTLCOLORBTN: {
+        HDC hdcStatic = (HDC)wParam;
+        SetBkMode(hdcStatic, TRANSPARENT);
+        return (INT_PTR)GetStockObject(NULL_BRUSH);
+    }
+    }
     return FALSE;
 }
 

@@ -55,7 +55,7 @@ CAPTION "Multi-Monitor"
 FONT 8, "MS Shell Dlg", 0, 0, 0x1
 BEGIN
     LTEXT           "Configure taskbar components for each monitor:", IDC_STATIC, 7, 7, 238, 8
-    CONTROL         "", IDC_DYN_SCROLLAREA, "Static", SS_BLACKFRAME | NOT WS_VISIBLE, 7, 20, 238, 191
+    CONTROL         "", IDC_DYN_SCROLLAREA, "Static", SS_BLACKFRAME | NOT WS_VISIBLE, 0, 25, 252, 193
 END
 
 IDD_STARTMENU_PROPS DIALOGEX 0, 0, 252, 218
