@@ -56,3 +56,7 @@
 
 // Orb UI combo box
 #define IDC_ORB_SELECTOR      228
+
+#define IDD_NATIVE_PROPS 240
+#define IDD_MULTIMON_PROPS 241
+#define IDC_DYN_SCROLLAREA 242

@@ -23,14 +23,17 @@ Write-Host "Signing executables using signtool..." -ForegroundColor Cyan
 $exeFiles = @(
     (Join-Path $PSScriptRoot "EliteTaskbar.exe"),
     (Join-Path $PSScriptRoot "EliteSettings.exe"),
+    (Join-Path $PSScriptRoot "EliteSettings.cpl"),
     (Join-Path $PSScriptRoot "EliteEverything.exe"),
     (Join-Path $PSScriptRoot "EliteDLLScanner.exe"),
     (Join-Path $BuildDir "EliteTaskbar.exe"),
     (Join-Path $BuildDir "EliteSettings.exe"),
+    (Join-Path $BuildDir "EliteSettings.cpl"),
     (Join-Path $BuildDir "EliteEverything.exe"),
     (Join-Path $BuildDir "EliteDLLScanner.exe"),
     (Join-Path $BuildDirx86 "EliteTaskbar_x86.exe"),
     (Join-Path $BuildDirx86 "EliteSettings_x86.exe"),
+    (Join-Path $BuildDirx86 "EliteSettings_x86.cpl"),
     (Join-Path $BuildDirx86 "EliteEverything_x86.exe"),
     (Join-Path $BuildDirx86 "EliteDLLScanner_x86.exe")
 )

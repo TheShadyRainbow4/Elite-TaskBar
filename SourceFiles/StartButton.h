@@ -16,7 +16,7 @@ public:
     StartButton();
     ~StartButton();
     
-    bool Initialize(HINSTANCE hInstance, HWND hParentTaskbar);
+    bool Initialize(HINSTANCE hInstance, HWND hParentTaskbar, int monitorIndex);
     void SetOrbImageFromResource(HINSTANCE hInstance, int resourceId);
     void ReloadOrbImage(HINSTANCE hInstance, int monitorIndex = -1);
     void Draw();
@@ -28,11 +28,13 @@ public:
     bool IsTracking() const { return m_bOrbTracking; }
     void SetTracking(bool tracking) { m_bOrbTracking = tracking; }
     HWND GetParentTaskbar() const { return m_hParentTaskbar; }
+    int GetMonitorIndex() const { return m_monitorIndex; }
 
 private:
     Gdiplus::Image* m_pOrbImage;
     HWND m_hOrbWnd;
     HWND m_hParentTaskbar;
+    int m_monitorIndex;
     OrbState m_internalOrbState;
     bool m_bOrbTracking;
 };

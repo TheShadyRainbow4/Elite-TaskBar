@@ -21,15 +21,16 @@ void StartButton::GlobalCleanup(ULONG_PTR token) {
     GdiplusShutdown(token);
 }
 
-StartButton::StartButton() : m_pOrbImage(nullptr), m_hOrbWnd(NULL), m_hParentTaskbar(NULL), m_internalOrbState(OrbState::Normal), m_bOrbTracking(false) {}
+StartButton::StartButton() : m_pOrbImage(nullptr), m_hOrbWnd(NULL), m_hParentTaskbar(NULL), m_monitorIndex(-1), m_internalOrbState(OrbState::Normal), m_bOrbTracking(false) {}
 
 StartButton::~StartButton() {
     if (m_hOrbWnd) DestroyWindow(m_hOrbWnd);
     if (m_pOrbImage) delete m_pOrbImage;
 }
 
-bool StartButton::Initialize(HINSTANCE hInstance, HWND hParentTaskbar) {
+bool StartButton::Initialize(HINSTANCE hInstance, HWND hParentTaskbar, int monitorIndex) {
     m_hParentTaskbar = hParentTaskbar;
+    m_monitorIndex = monitorIndex;
     
     WNDCLASSEXW wc = {0};
     wc.cbSize = sizeof(WNDCLASSEXW);
@@ -225,13 +226,19 @@ LRESULT CALLBACK OrbWndProc(HWND hwnd, UINT uMsg, WPARAM wParam, LPARAM lParam) 
                 pThis->SetState(OrbState::Hover);
                 pThis->Draw();
                 
-                SetWindowPos(hwnd, HWND_TOPMOST, 0, 0, 0, 0, SWP_NOMOVE | SWP_NOSIZE | SWP_NOACTIVATE);
+                // SetWindowPos(hwnd, HWND_TOPMOST, 0, 0, 0, 0, SWP_NOMOVE | SWP_NOSIZE | SWP_NOACTIVATE); // Removed to fix flashing
                 
                 DWORD mode = 0;
                 HKEY hKey;
                 if (RegOpenKeyExW(HKEY_CURRENT_USER, L"Software\\EliteSoftware\\Win32Explorer\\Advanced", 0, KEY_READ, &hKey) == ERROR_SUCCESS) {
                     DWORD cbData = sizeof(DWORD);
-                    RegQueryValueExW(hKey, L"StartMenuMode", NULL, NULL, (LPBYTE)&mode, &cbData);
+                    wchar_t modeKey[32];
+                    swprintf_s(modeKey, L"StartMenuMode_Mon%d", pThis->GetMonitorIndex());
+                    if (RegQueryValueExW(hKey, modeKey, NULL, NULL, (LPBYTE)&mode, &cbData) != ERROR_SUCCESS) {
+                        // Fallback to global mode if monitor-specific mode not set
+                        cbData = sizeof(DWORD);
+                        RegQueryValueExW(hKey, L"StartMenuMode", NULL, NULL, (LPBYTE)&mode, &cbData);
+                    }
                     RegCloseKey(hKey);
                 }
 
@@ -260,14 +267,22 @@ LRESULT CALLBACK OrbWndProc(HWND hwnd, UINT uMsg, WPARAM wParam, LPARAM lParam) 
                 GetCursorPos(&pt);
                 LPARAM lCursorParam = MAKELPARAM(pt.x, pt.y);
                 
-                if (mode == 1 || (mode == 3 && !isShiftDown) || (mode == 2 && isShiftDown)) {
+                if (mode == 0) {
+                    // Open-Shell Menu
+                    // Open-Shell hooks Shell_SecondaryTrayWnd's WM_LBUTTONDOWN. Forwarding the click makes it open on the correct monitor perfectly!
+                    bool injectShift = isShiftDown;
+                    if (injectShift) keybd_event(VK_SHIFT, 0, KEYEVENTF_KEYUP, 0);
+                    SendMessageW(hNativeTarget, WM_LBUTTONDOWN, MK_LBUTTON, MAKELPARAM(2, 2));
+                    SendMessageW(hNativeTarget, WM_LBUTTONUP, 0, MAKELPARAM(2, 2));
+                    if (injectShift) keybd_event(VK_SHIFT, 0, 0, 0);
+                } else if (mode == 1 || (mode == 3 && !isShiftDown) || (mode == 2 && isShiftDown)) {
                     // Open Native Menu (Requires Shift for Open-Shell users)
                     bool injectShift = !isShiftDown;
                     if (injectShift) keybd_event(VK_SHIFT, 0, 0, 0);
                     SendMessageW(hNativeTarget, WM_SYSCOMMAND, SC_TASKLIST, lCursorParam);
                     if (injectShift) keybd_event(VK_SHIFT, 0, KEYEVENTF_KEYUP, 0);
                 } else {
-                    // Open Open-Shell Menu (Default Win key behavior)
+                    // Elite Custom Menu or fallback
                     bool injectShift = isShiftDown;
                     if (injectShift) keybd_event(VK_SHIFT, 0, KEYEVENTF_KEYUP, 0);
                     SendMessageW(hNativeTarget, WM_SYSCOMMAND, SC_TASKLIST, lCursorParam);

@@ -11,35 +11,49 @@ IDB_START_ORB_INDIGO RCDATA "..\\Resources\\StartOrb\\indigo.png"
 IDB_START_ORB_SAPPHIRE RCDATA "..\\Resources\\StartOrb\\sapphire.png"
 IDB_START_ORB_URANUS RCDATA "..\\Resources\\StartOrb\\uranus.png"
 IDB_START_ORB_VIENNABOTTOM RCDATA "..\\Resources\\StartOrb\\vienna bottom.png"
+
 IDD_TASKBAR_PROPS DIALOGEX 0, 0, 252, 218
 STYLE DS_SETFONT | DS_FIXEDSYS | WS_CHILD | WS_DISABLED | WS_CAPTION
 CAPTION "Taskbar"
 FONT 8, "MS Shell Dlg", 0, 0, 0x1
 BEGIN
-    GROUPBOX        "Taskbar Appearance", IDC_STATIC, 7, 7, 238, 70
-    CONTROL         "Lock the taskbar", IDC_LOCK_TASKBAR, "Button", BS_AUTOCHECKBOX | WS_TABSTOP, 14, 20, 220, 10
-    CONTROL         "Auto-hide the taskbar", IDC_AUTOHIDE_TASKBAR, "Button", BS_AUTOCHECKBOX | WS_TABSTOP, 14, 34, 220, 10
-    CONTROL         "Use small icons", IDC_SMALL_ICONS, "Button", BS_AUTOCHECKBOX | WS_TABSTOP, 14, 48, 100, 10
-    CONTROL         "Show window previews", IDC_HOVER_PREVIEW, "Button", BS_AUTOCHECKBOX | WS_TABSTOP, 120, 48, 114, 10
-    CONTROL         "Use fully native TaskBand (Requires theme support)", IDC_USE_NATIVE_TASKBAND, "Button", BS_AUTOCHECKBOX | WS_TABSTOP, 15, 60, 200, 10
-    LTEXT           "Button Width:", IDC_STATIC, 14, 74, 50, 8
-    CONTROL         "Auto (Length of label)", IDC_WIDTH_AUTO, "Button", BS_AUTORADIOBUTTON | WS_GROUP | WS_TABSTOP, 65, 73, 80, 10
-    CONTROL         "Fixed", IDC_WIDTH_FIXED, "Button", BS_AUTORADIOBUTTON, 150, 73, 40, 10
-    CONTROL         "Icons Only", IDC_WIDTH_ICONS, "Button", BS_AUTORADIOBUTTON, 195, 73, 45, 10
+    GROUPBOX        "Taskbar Mode", IDC_STATIC, 7, 7, 238, 45
+    CONTROL         "Independent", IDC_MODE_INDEPENDENT, "Button", BS_AUTORADIOBUTTON | WS_GROUP | WS_TABSTOP, 14, 20, 60, 10
+    CONTROL         "Replace", IDC_MODE_REPLACE, "Button", BS_AUTORADIOBUTTON, 80, 20, 50, 10
+    CONTROL         "Secondary Only", IDC_MODE_SECONDARY_ONLY, "Button", BS_AUTORADIOBUTTON, 140, 20, 70, 10
     
-    GROUPBOX        "Taskbar Mode & Native Sync", IDC_STATIC, 7, 94, 238, 55
-    CONTROL         "Independent", IDC_MODE_INDEPENDENT, "Button", BS_AUTORADIOBUTTON | WS_GROUP | WS_TABSTOP, 14, 107, 50, 10
-    CONTROL         "Replace", IDC_MODE_REPLACE, "Button", BS_AUTORADIOBUTTON, 66, 107, 40, 10
-    CONTROL         "Secondary Only", IDC_MODE_SECONDARY_ONLY, "Button", BS_AUTORADIOBUTTON, 110, 107, 70, 10
-    CONTROL         "Write settings to native registry (Sync with explorer)", IDC_NATIVE_REGISTRY_MODE, "Button", BS_AUTOCHECKBOX | WS_TABSTOP, 14, 120, 200, 10
-    CONTROL         "Native Win7 Tray", IDC_TRAY_NATIVE, "Button", BS_AUTORADIOBUTTON | WS_GROUP | WS_TABSTOP, 14, 135, 100, 10
-    CONTROL         "Legacy Tray", IDC_TRAY_LEGACY, "Button", BS_AUTORADIOBUTTON, 120, 135, 100, 10
+    GROUPBOX        "Taskbar Appearance", IDC_STATIC, 7, 58, 238, 55
+    LTEXT           "Button Width:", IDC_STATIC, 14, 73, 50, 8
+    CONTROL         "Auto (Length of label)", IDC_WIDTH_AUTO, "Button", BS_AUTORADIOBUTTON | WS_GROUP | WS_TABSTOP, 65, 72, 80, 10
+    CONTROL         "Fixed", IDC_WIDTH_FIXED, "Button", BS_AUTORADIOBUTTON, 150, 72, 40, 10
+    CONTROL         "Icons Only", IDC_WIDTH_ICONS, "Button", BS_AUTORADIOBUTTON, 195, 72, 45, 10
+    CONTROL         "Show window previews", IDC_HOVER_PREVIEW, "Button", BS_AUTOCHECKBOX | WS_TABSTOP, 14, 90, 114, 10
+END
 
-    GROUPBOX        "Multi-Monitor & Components", IDC_STATIC, 7, 142, 238, 65
-    LTEXT           "Select Monitor:", IDC_STATIC, 14, 155, 50, 8
-    COMBOBOX        IDC_MONITOR_LIST, 65, 153, 170, 50, CBS_DROPDOWNLIST | WS_VSCROLL | WS_TABSTOP
-    LTEXT           "Enable:", IDC_STATIC, 14, 171, 40, 8
-    LISTBOX         IDC_COMPONENTS_LIST, 55, 169, 180, 30, LBS_MULTIPLESEL | LBS_NOINTEGRALHEIGHT | WS_VSCROLL | WS_TABSTOP
+IDD_NATIVE_PROPS DIALOGEX 0, 0, 252, 218
+STYLE DS_SETFONT | DS_FIXEDSYS | WS_CHILD | WS_DISABLED | WS_CAPTION
+CAPTION "Native Settings"
+FONT 8, "MS Shell Dlg", 0, 0, 0x1
+BEGIN
+    GROUPBOX        "Native Integration", IDC_STATIC, 7, 7, 238, 70
+    CONTROL         "Write settings to native registry (Sync with explorer)", IDC_NATIVE_REGISTRY_MODE, "Button", BS_AUTOCHECKBOX | WS_TABSTOP, 14, 20, 200, 10
+    CONTROL         "Use fully native TaskBand (Requires theme support)", IDC_USE_NATIVE_TASKBAND, "Button", BS_AUTOCHECKBOX | WS_TABSTOP, 14, 34, 200, 10
+    CONTROL         "Native Win7 Tray", IDC_TRAY_NATIVE, "Button", BS_AUTORADIOBUTTON | WS_GROUP | WS_TABSTOP, 14, 50, 100, 10
+    CONTROL         "Legacy Tray", IDC_TRAY_LEGACY, "Button", BS_AUTORADIOBUTTON, 120, 50, 100, 10
+    
+    GROUPBOX        "Shell Taskbar Overrides", IDC_STATIC, 7, 83, 238, 55
+    CONTROL         "Lock the taskbar", IDC_LOCK_TASKBAR, "Button", BS_AUTOCHECKBOX | WS_TABSTOP, 14, 96, 220, 10
+    CONTROL         "Auto-hide the taskbar", IDC_AUTOHIDE_TASKBAR, "Button", BS_AUTOCHECKBOX | WS_TABSTOP, 14, 110, 220, 10
+    CONTROL         "Use small icons", IDC_SMALL_ICONS, "Button", BS_AUTOCHECKBOX | WS_TABSTOP, 14, 124, 100, 10
+END
+
+IDD_MULTIMON_PROPS DIALOGEX 0, 0, 252, 218
+STYLE DS_SETFONT | DS_FIXEDSYS | WS_CHILD | WS_DISABLED | WS_CAPTION
+CAPTION "Multi-Monitor"
+FONT 8, "MS Shell Dlg", 0, 0, 0x1
+BEGIN
+    LTEXT           "Configure taskbar components for each monitor:", IDC_STATIC, 7, 7, 238, 8
+    CONTROL         "", IDC_DYN_SCROLLAREA, "Static", SS_BLACKFRAME | NOT WS_VISIBLE, 7, 20, 238, 191
 END
 
 IDD_STARTMENU_PROPS DIALOGEX 0, 0, 252, 218
@@ -47,26 +61,8 @@ STYLE DS_SETFONT | DS_FIXEDSYS | WS_CHILD | WS_DISABLED | WS_CAPTION
 CAPTION "Start Menu"
 FONT 8, "MS Shell Dlg", 0, 0, 0x1
 BEGIN
-    GROUPBOX        "Orb Customization", IDC_STATIC, 7, 7, 238, 100
-    LTEXT           "Start Button Orb:", IDC_STATIC, 14, 20, 70, 8
-    COMBOBOX        IDC_ORB_SELECTOR, 85, 18, 150, 60, CBS_DROPDOWNLIST | WS_VSCROLL | WS_TABSTOP
-    
-    LTEXT           "Preview:", IDC_STATIC, 14, 40, 70, 8
-    CONTROL         "", IDC_ORB_PREVIEW, "Static", SS_BITMAP | SS_CENTERIMAGE | WS_BORDER, 85, 38, 54, 54
-
-    GROUPBOX        "Multi-Monitor & Triggers", IDC_STATIC, 7, 110, 238, 60
-    LTEXT           "Select Taskbar:", IDC_STATIC, 14, 123, 60, 8
-    COMBOBOX        IDC_START_MONITOR_LIST, 85, 121, 150, 50, CBS_DROPDOWNLIST | WS_VSCROLL | WS_TABSTOP
-    LTEXT           "Trigger Behavior:", IDC_STATIC, 14, 143, 70, 8
-    COMBOBOX        IDC_START_TRIGGER, 85, 141, 150, 50, CBS_DROPDOWNLIST | WS_VSCROLL | WS_TABSTOP
-END
-
-IDD_DESKTOP_PROPS DIALOGEX 0, 0, 252, 218
-STYLE DS_SETFONT | DS_FIXEDSYS | WS_CHILD | WS_DISABLED | WS_CAPTION
-CAPTION "Desktop"
-FONT 8, "MS Shell Dlg", 0, 0, 0x1
-BEGIN
-    GROUPBOX        "Desktop icons", IDC_STATIC, 7, 7, 238, 100
+    LTEXT           "Configure start menu per-monitor:", IDC_STATIC, 7, 7, 238, 8
+    CONTROL         "", IDC_DYN_SCROLLAREA, "Static", SS_BLACKFRAME | NOT WS_VISIBLE, 7, 20, 238, 191
 END
 
 IDD_TOOLBARS_PROPS DIALOGEX 0, 0, 252, 218

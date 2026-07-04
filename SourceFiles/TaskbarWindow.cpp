@@ -1846,7 +1846,7 @@ bool TaskbarWindow::Initialize(HINSTANCE hInstance) {
         UpdateWindow(inst->hTaskbar);
 
         inst->startButton = new StartButton();
-        if (inst->startButton->Initialize(hInstance, inst->hTaskbar)) {
+        if (inst->startButton->Initialize(hInstance, inst->hTaskbar, inst->monitorIndex)) {
             inst->startButton->ReloadOrbImage(hInstance, inst->monitorIndex);
             inst->startButton->Show(xPos, yPos, taskbarHeight);
         }

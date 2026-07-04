@@ -1,215 +1,180 @@
-#include "TaskbarProperties.h"
+#include "TaskbarWindow.h"
 #include "resource.h"
+#include "Config.h"
 #include "Logger.h"
+#include "StartButton.h"
 #include <commctrl.h>
 #include <vector>
-#include <gdiplus.h>
-#pragma comment(lib, "gdiplus.lib")
-
-using namespace Gdiplus;
 
 void UpdateOrbPreview(HWND hwndDlg, DWORD orbId) {
-    HRSRC hResInfo = FindResourceW(GetModuleHandle(NULL), MAKEINTRESOURCEW(orbId), (LPCWSTR)RT_RCDATA);
-    if (!hResInfo) return;
-    HGLOBAL hResData = LoadResource(GetModuleHandle(NULL), hResInfo);
-    if (!hResData) return;
-    DWORD size = SizeofResource(GetModuleHandle(NULL), hResInfo);
-    void* pData = LockResource(hResData);
-    HGLOBAL hGlobal = GlobalAlloc(GMEM_MOVEABLE, size);
-    if (!hGlobal) return;
-    void* pGlobalData = GlobalLock(hGlobal);
-    memcpy(pGlobalData, pData, size);
-    GlobalUnlock(hGlobal);
-    IStream* pStream = NULL;
-    if (CreateStreamOnHGlobal(hGlobal, TRUE, &pStream) == S_OK) {
-        Bitmap* bmp = Bitmap::FromStream(pStream);
-        if (bmp && bmp->GetLastStatus() == Ok) {
-            UINT width = bmp->GetWidth();
-            UINT height = bmp->GetHeight();
-            int numFrames = ((height * 100) / width > 300) ? 4 : 3;
-            UINT sliceHeight = height / numFrames;
-
-            Bitmap* frame = bmp->Clone(0, 0, width, sliceHeight, PixelFormat32bppARGB);
-            if (frame) {
-                HBITMAP hBmp = NULL;
-                frame->GetHBITMAP(Color(255, 255, 255, 255), &hBmp);
-                if (hBmp) {
-                    HBITMAP hOld = (HBITMAP)SendDlgItemMessageW(hwndDlg, IDC_ORB_PREVIEW, STM_SETIMAGE, IMAGE_BITMAP, (LPARAM)hBmp);
-                    if (hOld) DeleteObject(hOld);
-                }
-                delete frame;
-            }
-            delete bmp;
-        }
-        pStream->Release();
+    HBITMAP hBitmap = (HBITMAP)LoadImageW(GetModuleHandleW(NULL), MAKEINTRESOURCEW(orbId), IMAGE_BITMAP, 54, 54, LR_DEFAULTCOLOR);
+    if (hBitmap) {
+        HBITMAP hOld = (HBITMAP)SendDlgItemMessageW(hwndDlg, IDC_ORB_PREVIEW, STM_SETIMAGE, IMAGE_BITMAP, (LPARAM)hBitmap);
+        if (hOld) DeleteObject(hOld);
     }
+}
+
+void SaveToNativeRegistry(LPCWSTR valueName, DWORD value) {
+    HKEY hKey;
+    if (RegCreateKeyExW(HKEY_CURRENT_USER, L"Software\\Microsoft\\Windows\\CurrentVersion\\Explorer\\Advanced", 0, NULL, REG_OPTION_NON_VOLATILE, KEY_READ | KEY_WRITE, NULL, &hKey, NULL) == ERROR_SUCCESS) {
+        RegSetValueExW(hKey, valueName, 0, REG_DWORD, (const BYTE*)&value, sizeof(DWORD));
+        RegCloseKey(hKey);
+    }
+}
+
+void NotifySettingsChange() {
+    SendMessageTimeoutW(HWND_BROADCAST, WM_SETTINGCHANGE, 0, (LPARAM)L"TraySettings", SMTO_ABORTIFHUNG, 5000, NULL);
+    SendMessageTimeoutW(HWND_BROADCAST, WM_SETTINGCHANGE, 0, (LPARAM)L"EliteTaskbarSettings", SMTO_ABORTIFHUNG, 500, NULL);
 }
 
 INT_PTR CALLBACK TaskbarSettingsDlgProc(HWND hwndDlg, UINT uMsg, WPARAM wParam, LPARAM lParam) {
     switch (uMsg) {
-    case WM_INITDIALOG:
-        Logger::Log(L"TaskbarSettingsDlgProc WM_INITDIALOG entered");
-        {
-            HKEY hKey;
-            if (RegCreateKeyExW(HKEY_CURRENT_USER, L"Software\\EliteSoftware\\Win32Explorer\\Advanced", 0, NULL, REG_OPTION_NON_VOLATILE, KEY_READ | KEY_WRITE, NULL, &hKey, NULL) == ERROR_SUCCESS) {
-                DWORD dwValue = 0;
-                DWORD cbData = sizeof(DWORD);
-                if (RegQueryValueExW(hKey, L"TaskbarMode", NULL, NULL, (LPBYTE)&dwValue, &cbData) == ERROR_SUCCESS) {
-                    if (dwValue == 1) SendDlgItemMessageW(hwndDlg, IDC_MODE_REPLACE, BM_SETCHECK, BST_CHECKED, 0);
-                    else if (dwValue == 2) SendDlgItemMessageW(hwndDlg, IDC_MODE_SECONDARY_ONLY, BM_SETCHECK, BST_CHECKED, 0);
-                    else SendDlgItemMessageW(hwndDlg, IDC_MODE_INDEPENDENT, BM_SETCHECK, BST_CHECKED, 0);
-                } else {
-                    SendDlgItemMessageW(hwndDlg, IDC_MODE_SECONDARY_ONLY, BM_SETCHECK, BST_CHECKED, 0);
-                }
-                
-                dwValue = 0;
-                cbData = sizeof(DWORD);
-                if (RegQueryValueExW(hKey, L"TrayMode", NULL, NULL, (LPBYTE)&dwValue, &cbData) == ERROR_SUCCESS) {
-                    if (dwValue == 1) SendDlgItemMessageW(hwndDlg, IDC_TRAY_LEGACY, BM_SETCHECK, BST_CHECKED, 0);
-                    else SendDlgItemMessageW(hwndDlg, IDC_TRAY_NATIVE, BM_SETCHECK, BST_CHECKED, 0);
-                } else {
-                    SendDlgItemMessageW(hwndDlg, IDC_TRAY_NATIVE, BM_SETCHECK, BST_CHECKED, 0);
-                }
-                
-                dwValue = 0;
-                cbData = sizeof(DWORD);
-                if (RegQueryValueExW(hKey, L"TaskbarButtonWidthMode", NULL, NULL, (LPBYTE)&dwValue, &cbData) == ERROR_SUCCESS) {
-                    if (dwValue == 1) SendDlgItemMessageW(hwndDlg, IDC_WIDTH_FIXED, BM_SETCHECK, BST_CHECKED, 0);
-                    else if (dwValue == 2) SendDlgItemMessageW(hwndDlg, IDC_WIDTH_ICONS, BM_SETCHECK, BST_CHECKED, 0);
-                    else SendDlgItemMessageW(hwndDlg, IDC_WIDTH_AUTO, BM_SETCHECK, BST_CHECKED, 0);
-                } else {
-                    SendDlgItemMessageW(hwndDlg, IDC_WIDTH_AUTO, BM_SETCHECK, BST_CHECKED, 0);
-                }
-                
-                dwValue = 0;
-                cbData = sizeof(DWORD);
-                if (RegQueryValueExW(hKey, L"NativeRegistryMode", NULL, NULL, (LPBYTE)&dwValue, &cbData) == ERROR_SUCCESS) {
-                    if (dwValue == 1) SendDlgItemMessageW(hwndDlg, IDC_NATIVE_REGISTRY_MODE, BM_SETCHECK, BST_CHECKED, 0);
-                }
-
-                dwValue = 0;
-                cbData = sizeof(DWORD);
-                if (RegQueryValueExW(hKey, L"TaskbarHoverPreview", NULL, NULL, (LPBYTE)&dwValue, &cbData) == ERROR_SUCCESS) {
-                    if (dwValue == 1) SendDlgItemMessageW(hwndDlg, IDC_HOVER_PREVIEW, BM_SETCHECK, BST_CHECKED, 0);
-                }
-                
-                dwValue = 0;
-                cbData = sizeof(DWORD);
-                if (RegQueryValueExW(hKey, L"UseNativeTaskBand", NULL, NULL, (LPBYTE)&dwValue, &cbData) == ERROR_SUCCESS) {
-                    if (dwValue == 1) SendDlgItemMessageW(hwndDlg, IDC_USE_NATIVE_TASKBAND, BM_SETCHECK, BST_CHECKED, 0);
-                }
-                RegCloseKey(hKey);
+    case WM_INITDIALOG: {
+        HKEY hKey;
+        if (RegOpenKeyExW(HKEY_CURRENT_USER, L"Software\\EliteSoftware\\Win32Explorer\\Advanced", 0, KEY_READ, &hKey) == ERROR_SUCCESS) {
+            DWORD dwValue = 0;
+            DWORD cbData = sizeof(DWORD);
+            
+            if (RegQueryValueExW(hKey, L"TaskbarMode", NULL, NULL, (LPBYTE)&dwValue, &cbData) == ERROR_SUCCESS) {
+                if (dwValue == 0) SendDlgItemMessageW(hwndDlg, IDC_MODE_INDEPENDENT, BM_SETCHECK, BST_CHECKED, 0);
+                else if (dwValue == 1) SendDlgItemMessageW(hwndDlg, IDC_MODE_REPLACE, BM_SETCHECK, BST_CHECKED, 0);
+                else if (dwValue == 2) SendDlgItemMessageW(hwndDlg, IDC_MODE_SECONDARY_ONLY, BM_SETCHECK, BST_CHECKED, 0);
+            } else {
+                SendDlgItemMessageW(hwndDlg, IDC_MODE_INDEPENDENT, BM_SETCHECK, BST_CHECKED, 0);
             }
             
-            // Read native settings
-            if (RegOpenKeyExW(HKEY_CURRENT_USER, L"Software\\Microsoft\\Windows\\CurrentVersion\\Explorer\\Advanced", 0, KEY_READ, &hKey) == ERROR_SUCCESS) {
-                DWORD dwValue = 0;
-                DWORD cbData = sizeof(DWORD);
-                if (RegQueryValueExW(hKey, L"TaskbarSizeMove", NULL, NULL, (LPBYTE)&dwValue, &cbData) == ERROR_SUCCESS) {
-                    if (dwValue == 0) SendDlgItemMessageW(hwndDlg, IDC_LOCK_TASKBAR, BM_SETCHECK, BST_CHECKED, 0); // 0 = Locked
-                } else {
-                    SendDlgItemMessageW(hwndDlg, IDC_LOCK_TASKBAR, BM_SETCHECK, BST_CHECKED, 0);
-                }
-                
-                dwValue = 0;
-                cbData = sizeof(DWORD);
-                if (RegQueryValueExW(hKey, L"TaskbarSmallIcons", NULL, NULL, (LPBYTE)&dwValue, &cbData) == ERROR_SUCCESS) {
-                    if (dwValue == 1) SendDlgItemMessageW(hwndDlg, IDC_SMALL_ICONS, BM_SETCHECK, BST_CHECKED, 0);
-                }
-                RegCloseKey(hKey);
+            cbData = sizeof(DWORD);
+            if (RegQueryValueExW(hKey, L"TaskbarButtonWidthMode", NULL, NULL, (LPBYTE)&dwValue, &cbData) == ERROR_SUCCESS) {
+                if (dwValue == 0) SendDlgItemMessageW(hwndDlg, IDC_WIDTH_AUTO, BM_SETCHECK, BST_CHECKED, 0);
+                else if (dwValue == 1) SendDlgItemMessageW(hwndDlg, IDC_WIDTH_FIXED, BM_SETCHECK, BST_CHECKED, 0);
+                else if (dwValue == 2) SendDlgItemMessageW(hwndDlg, IDC_WIDTH_ICONS, BM_SETCHECK, BST_CHECKED, 0);
+            } else {
+                SendDlgItemMessageW(hwndDlg, IDC_WIDTH_AUTO, BM_SETCHECK, BST_CHECKED, 0);
             }
             
-            if (RegOpenKeyExW(HKEY_CURRENT_USER, L"Software\\Microsoft\\Windows\\CurrentVersion\\Explorer\\StuckRects3", 0, KEY_READ, &hKey) == ERROR_SUCCESS) {
-                BYTE blob[64];
-                DWORD cbData = sizeof(blob);
-                if (RegQueryValueExW(hKey, L"Settings", NULL, NULL, blob, &cbData) == ERROR_SUCCESS) {
-                    if (cbData >= 9) {
-                        if (blob[8] & 0x01) {
-                            SendDlgItemMessageW(hwndDlg, IDC_AUTOHIDE_TASKBAR, BM_SETCHECK, BST_CHECKED, 0);
-                        }
-                    }
-                }
-                RegCloseKey(hKey);
+            cbData = sizeof(DWORD);
+            if (RegQueryValueExW(hKey, L"TaskbarHoverPreview", NULL, NULL, (LPBYTE)&dwValue, &cbData) == ERROR_SUCCESS) {
+                SendDlgItemMessageW(hwndDlg, IDC_HOVER_PREVIEW, BM_SETCHECK, dwValue ? BST_CHECKED : BST_UNCHECKED, 0);
             }
-            SendDlgItemMessageW(hwndDlg, IDC_MONITOR_LIST, CB_ADDSTRING, 0, (LPARAM)L"All Monitors");
-            SendDlgItemMessageW(hwndDlg, IDC_MONITOR_LIST, CB_ADDSTRING, 0, (LPARAM)L"Primary Monitor");
-            SendDlgItemMessageW(hwndDlg, IDC_MONITOR_LIST, CB_SETCURSEL, 0, 0);
-            
-            SendDlgItemMessageW(hwndDlg, IDC_COMPONENTS_LIST, LB_ADDSTRING, 0, (LPARAM)L"Start Button");
-            SendDlgItemMessageW(hwndDlg, IDC_COMPONENTS_LIST, LB_ADDSTRING, 0, (LPARAM)L"Taskband (Icons)");
-            SendDlgItemMessageW(hwndDlg, IDC_COMPONENTS_LIST, LB_ADDSTRING, 0, (LPARAM)L"Notification Area");
-            SendDlgItemMessageW(hwndDlg, IDC_COMPONENTS_LIST, LB_ADDSTRING, 0, (LPARAM)L"Clock");
-            SendDlgItemMessageW(hwndDlg, IDC_COMPONENTS_LIST, LB_ADDSTRING, 0, (LPARAM)L"Show Desktop Button");
+            RegCloseKey(hKey);
         }
         return TRUE;
-
+    }
     case WM_COMMAND:
-        if (HIWORD(wParam) == BN_CLICKED || HIWORD(wParam) == EN_CHANGE || HIWORD(wParam) == CBN_SELCHANGE || HIWORD(wParam) == LBN_SELCHANGE) {
+        if (HIWORD(wParam) == BN_CLICKED) {
             SendMessageW(GetParent(hwndDlg), PSM_CHANGED, (WPARAM)hwndDlg, 0);
         }
         return TRUE;
-
     case WM_NOTIFY: {
         LPNMHDR lpnm = (LPNMHDR)lParam;
         if (lpnm->code == PSN_APPLY) {
-            // Apply changes
             HKEY hKey;
-            
-            DWORD nativeSync = (SendDlgItemMessageW(hwndDlg, IDC_NATIVE_REGISTRY_MODE, BM_GETCHECK, 0, 0) == BST_CHECKED) ? 1 : 0;
-
             if (RegCreateKeyExW(HKEY_CURRENT_USER, L"Software\\EliteSoftware\\Win32Explorer\\Advanced", 0, NULL, REG_OPTION_NON_VOLATILE, KEY_READ | KEY_WRITE, NULL, &hKey, NULL) == ERROR_SUCCESS) {
                 DWORD mode = 0;
                 if (SendDlgItemMessageW(hwndDlg, IDC_MODE_REPLACE, BM_GETCHECK, 0, 0) == BST_CHECKED) mode = 1;
                 else if (SendDlgItemMessageW(hwndDlg, IDC_MODE_SECONDARY_ONLY, BM_GETCHECK, 0, 0) == BST_CHECKED) mode = 2;
                 RegSetValueExW(hKey, L"TaskbarMode", 0, REG_DWORD, (const BYTE*)&mode, sizeof(DWORD));
                 
-                DWORD trayMode = (SendDlgItemMessageW(hwndDlg, IDC_TRAY_LEGACY, BM_GETCHECK, 0, 0) == BST_CHECKED) ? 1 : 0;
-                RegSetValueExW(hKey, L"TrayMode", 0, REG_DWORD, (const BYTE*)&trayMode, sizeof(DWORD));
-                
                 DWORD widthMode = 0;
                 if (SendDlgItemMessageW(hwndDlg, IDC_WIDTH_FIXED, BM_GETCHECK, 0, 0) == BST_CHECKED) widthMode = 1;
                 else if (SendDlgItemMessageW(hwndDlg, IDC_WIDTH_ICONS, BM_GETCHECK, 0, 0) == BST_CHECKED) widthMode = 2;
                 RegSetValueExW(hKey, L"TaskbarButtonWidthMode", 0, REG_DWORD, (const BYTE*)&widthMode, sizeof(DWORD));
                 
-                RegSetValueExW(hKey, L"NativeRegistryMode", 0, REG_DWORD, (const BYTE*)&nativeSync, sizeof(DWORD));
-                
                 DWORD hoverPreview = (SendDlgItemMessageW(hwndDlg, IDC_HOVER_PREVIEW, BM_GETCHECK, 0, 0) == BST_CHECKED) ? 1 : 0;
                 RegSetValueExW(hKey, L"TaskbarHoverPreview", 0, REG_DWORD, (const BYTE*)&hoverPreview, sizeof(DWORD));
+                
+                RegCloseKey(hKey);
+            }
+            NotifySettingsChange();
+            SendMessageW(GetParent(hwndDlg), PSM_UNCHANGED, (WPARAM)hwndDlg, 0);
+            SetWindowLongPtr(hwndDlg, DWLP_MSGRESULT, PSNRET_NOERROR);
+            return TRUE;
+        }
+        break;
+    }
+    }
+    return FALSE;
+}
 
+INT_PTR CALLBACK NativeSettingsDlgProc(HWND hwndDlg, UINT uMsg, WPARAM wParam, LPARAM lParam) {
+    switch (uMsg) {
+    case WM_INITDIALOG: {
+        HKEY hKey;
+        if (RegOpenKeyExW(HKEY_CURRENT_USER, L"Software\\EliteSoftware\\Win32Explorer\\Advanced", 0, KEY_READ, &hKey) == ERROR_SUCCESS) {
+            DWORD dwValue = 0, cbData = sizeof(DWORD);
+            if (RegQueryValueExW(hKey, L"NativeRegistryMode", NULL, NULL, (LPBYTE)&dwValue, &cbData) == ERROR_SUCCESS)
+                SendDlgItemMessageW(hwndDlg, IDC_NATIVE_REGISTRY_MODE, BM_SETCHECK, dwValue ? BST_CHECKED : BST_UNCHECKED, 0);
+                
+            cbData = sizeof(DWORD);
+            if (RegQueryValueExW(hKey, L"UseNativeTaskBand", NULL, NULL, (LPBYTE)&dwValue, &cbData) == ERROR_SUCCESS)
+                SendDlgItemMessageW(hwndDlg, IDC_USE_NATIVE_TASKBAND, BM_SETCHECK, dwValue ? BST_CHECKED : BST_UNCHECKED, 0);
+                
+            cbData = sizeof(DWORD);
+            if (RegQueryValueExW(hKey, L"TrayMode", NULL, NULL, (LPBYTE)&dwValue, &cbData) == ERROR_SUCCESS) {
+                if (dwValue == 1) SendDlgItemMessageW(hwndDlg, IDC_TRAY_LEGACY, BM_SETCHECK, BST_CHECKED, 0);
+                else SendDlgItemMessageW(hwndDlg, IDC_TRAY_NATIVE, BM_SETCHECK, BST_CHECKED, 0);
+            } else {
+                SendDlgItemMessageW(hwndDlg, IDC_TRAY_NATIVE, BM_SETCHECK, BST_CHECKED, 0);
+            }
+            RegCloseKey(hKey);
+        }
+        if (RegOpenKeyExW(HKEY_CURRENT_USER, L"Software\\Microsoft\\Windows\\CurrentVersion\\Explorer\\Advanced", 0, KEY_READ, &hKey) == ERROR_SUCCESS) {
+            DWORD dwValue = 0, cbData = sizeof(DWORD);
+            if (RegQueryValueExW(hKey, L"TaskbarSizeMove", NULL, NULL, (LPBYTE)&dwValue, &cbData) == ERROR_SUCCESS)
+                SendDlgItemMessageW(hwndDlg, IDC_LOCK_TASKBAR, BM_SETCHECK, (dwValue == 0) ? BST_CHECKED : BST_UNCHECKED, 0);
+                
+            cbData = sizeof(DWORD);
+            if (RegQueryValueExW(hKey, L"TaskbarSmallIcons", NULL, NULL, (LPBYTE)&dwValue, &cbData) == ERROR_SUCCESS)
+                SendDlgItemMessageW(hwndDlg, IDC_SMALL_ICONS, BM_SETCHECK, dwValue ? BST_CHECKED : BST_UNCHECKED, 0);
+            RegCloseKey(hKey);
+        }
+        if (RegOpenKeyExW(HKEY_CURRENT_USER, L"Software\\Microsoft\\Windows\\CurrentVersion\\Explorer\\StuckRects3", 0, KEY_READ, &hKey) == ERROR_SUCCESS) {
+            BYTE blob[64];
+            DWORD cbData = sizeof(blob);
+            if (RegQueryValueExW(hKey, L"Settings", NULL, NULL, blob, &cbData) == ERROR_SUCCESS && cbData >= 9) {
+                bool autoHide = (blob[8] & 0x01) != 0;
+                SendDlgItemMessageW(hwndDlg, IDC_AUTOHIDE_TASKBAR, BM_SETCHECK, autoHide ? BST_CHECKED : BST_UNCHECKED, 0);
+            }
+            RegCloseKey(hKey);
+        }
+        return TRUE;
+    }
+    case WM_COMMAND:
+        if (HIWORD(wParam) == BN_CLICKED) SendMessageW(GetParent(hwndDlg), PSM_CHANGED, (WPARAM)hwndDlg, 0);
+        return TRUE;
+    case WM_NOTIFY: {
+        LPNMHDR lpnm = (LPNMHDR)lParam;
+        if (lpnm->code == PSN_APPLY) {
+            HKEY hKey;
+            if (RegCreateKeyExW(HKEY_CURRENT_USER, L"Software\\EliteSoftware\\Win32Explorer\\Advanced", 0, NULL, REG_OPTION_NON_VOLATILE, KEY_READ | KEY_WRITE, NULL, &hKey, NULL) == ERROR_SUCCESS) {
+                DWORD nativeSync = (SendDlgItemMessageW(hwndDlg, IDC_NATIVE_REGISTRY_MODE, BM_GETCHECK, 0, 0) == BST_CHECKED) ? 1 : 0;
+                RegSetValueExW(hKey, L"NativeRegistryMode", 0, REG_DWORD, (const BYTE*)&nativeSync, sizeof(DWORD));
+                
                 DWORD useNativeBand = (SendDlgItemMessageW(hwndDlg, IDC_USE_NATIVE_TASKBAND, BM_GETCHECK, 0, 0) == BST_CHECKED) ? 1 : 0;
                 RegSetValueExW(hKey, L"UseNativeTaskBand", 0, REG_DWORD, (const BYTE*)&useNativeBand, sizeof(DWORD));
-
+                
+                DWORD trayMode = (SendDlgItemMessageW(hwndDlg, IDC_TRAY_LEGACY, BM_GETCHECK, 0, 0) == BST_CHECKED) ? 1 : 0;
+                RegSetValueExW(hKey, L"TrayMode", 0, REG_DWORD, (const BYTE*)&trayMode, sizeof(DWORD));
                 RegCloseKey(hKey);
             }
             
-            // Native keys
-            if (RegCreateKeyExW(HKEY_CURRENT_USER, L"Software\\Microsoft\\Windows\\CurrentVersion\\Explorer\\Advanced", 0, NULL, REG_OPTION_NON_VOLATILE, KEY_READ | KEY_WRITE, NULL, &hKey, NULL) == ERROR_SUCCESS) {
-                DWORD locked = (SendDlgItemMessageW(hwndDlg, IDC_LOCK_TASKBAR, BM_GETCHECK, 0, 0) == BST_CHECKED) ? 0 : 1; // 0 = Locked
-                RegSetValueExW(hKey, L"TaskbarSizeMove", 0, REG_DWORD, (const BYTE*)&locked, sizeof(DWORD));
-                
-                DWORD smallIcons = (SendDlgItemMessageW(hwndDlg, IDC_SMALL_ICONS, BM_GETCHECK, 0, 0) == BST_CHECKED) ? 1 : 0;
-                RegSetValueExW(hKey, L"TaskbarSmallIcons", 0, REG_DWORD, (const BYTE*)&smallIcons, sizeof(DWORD));
-                RegCloseKey(hKey);
-            }
+            DWORD locked = (SendDlgItemMessageW(hwndDlg, IDC_LOCK_TASKBAR, BM_GETCHECK, 0, 0) == BST_CHECKED) ? 0 : 1;
+            SaveToNativeRegistry(L"TaskbarSizeMove", locked);
+            DWORD smallIcons = (SendDlgItemMessageW(hwndDlg, IDC_SMALL_ICONS, BM_GETCHECK, 0, 0) == BST_CHECKED) ? 1 : 0;
+            SaveToNativeRegistry(L"TaskbarSmallIcons", smallIcons);
             
             if (RegCreateKeyExW(HKEY_CURRENT_USER, L"Software\\Microsoft\\Windows\\CurrentVersion\\Explorer\\StuckRects3", 0, NULL, REG_OPTION_NON_VOLATILE, KEY_READ | KEY_WRITE, NULL, &hKey, NULL) == ERROR_SUCCESS) {
                 BYTE blob[64];
                 DWORD cbData = sizeof(blob);
                 if (RegQueryValueExW(hKey, L"Settings", NULL, NULL, blob, &cbData) == ERROR_SUCCESS && cbData >= 9) {
-                    if (SendDlgItemMessageW(hwndDlg, IDC_AUTOHIDE_TASKBAR, BM_GETCHECK, 0, 0) == BST_CHECKED) {
-                        blob[8] |= 0x01;
-                    } else {
-                        blob[8] &= ~0x01;
-                    }
+                    if (SendDlgItemMessageW(hwndDlg, IDC_AUTOHIDE_TASKBAR, BM_GETCHECK, 0, 0) == BST_CHECKED) blob[8] |= 0x01;
+                    else blob[8] &= ~0x01;
                     RegSetValueExW(hKey, L"Settings", 0, REG_BINARY, blob, cbData);
                 }
                 RegCloseKey(hKey);
             }
-
-            // Notify shell of setting changes
-            SendMessageTimeoutW(HWND_BROADCAST, WM_SETTINGCHANGE, 0, (LPARAM)L"TraySettings", SMTO_ABORTIFHUNG, 5000, NULL);
+            NotifySettingsChange();
             SendMessageW(GetParent(hwndDlg), PSM_UNCHANGED, (WPARAM)hwndDlg, 0);
-            
             SetWindowLongPtr(hwndDlg, DWLP_MSGRESULT, PSNRET_NOERROR);
             return TRUE;
         }
@@ -219,169 +184,231 @@ INT_PTR CALLBACK TaskbarSettingsDlgProc(HWND hwndDlg, UINT uMsg, WPARAM wParam, 
     return FALSE;
 }
 
-struct SettingsMonitorData {
-    int count;
-};
+LRESULT CALLBACK DynScrollAreaProc(HWND hwnd, UINT uMsg, WPARAM wParam, LPARAM lParam) {
+    switch (uMsg) {
+        case WM_VSCROLL: {
+            SCROLLINFO si = { sizeof(si), SIF_ALL };
+            GetScrollInfo(hwnd, SB_VERT, &si);
+            int oldPos = si.nPos;
+            switch (LOWORD(wParam)) {
+                case SB_TOP: si.nPos = si.nMin; break;
+                case SB_BOTTOM: si.nPos = si.nMax; break;
+                case SB_LINEUP: si.nPos -= 20; break;
+                case SB_LINEDOWN: si.nPos += 20; break;
+                case SB_PAGEUP: si.nPos -= si.nPage; break;
+                case SB_PAGEDOWN: si.nPos += si.nPage; break;
+                case SB_THUMBTRACK: si.nPos = si.nTrackPos; break;
+            }
+            if (si.nPos < 0) si.nPos = 0;
+            if (si.nPos > si.nMax - (int)si.nPage + 1) si.nPos = si.nMax - (int)si.nPage + 1;
+            if (si.nPos < 0) si.nPos = 0;
+            if (si.nPos != oldPos) {
+                ScrollWindowEx(hwnd, 0, oldPos - si.nPos, NULL, NULL, NULL, NULL, SW_SCROLLCHILDREN | SW_INVALIDATE | SW_ERASE);
+                SetScrollPos(hwnd, SB_VERT, si.nPos, TRUE);
+            }
+            return 0;
+        }
+        case WM_MOUSEWHEEL: {
+            int zDelta = GET_WHEEL_DELTA_WPARAM(wParam);
+            SendMessageW(hwnd, WM_VSCROLL, zDelta > 0 ? SB_LINEUP : SB_LINEDOWN, 0);
+            SendMessageW(hwnd, WM_VSCROLL, zDelta > 0 ? SB_LINEUP : SB_LINEDOWN, 0);
+            SendMessageW(hwnd, WM_VSCROLL, zDelta > 0 ? SB_LINEUP : SB_LINEDOWN, 0);
+            return 0;
+        }
+        case WM_COMMAND:
+            SendMessageW(GetParent(hwnd), WM_COMMAND, wParam, lParam);
+            return 0;
+    }
+    return DefWindowProcW(hwnd, uMsg, wParam, lParam);
+}
 
-BOOL CALLBACK SettingsMonitorEnumProc(HMONITOR hMonitor, HDC hdcMonitor, LPRECT lprcMonitor, LPARAM dwData) {
-    SettingsMonitorData* data = (SettingsMonitorData*)dwData;
-    data->count++;
+void InitDynScrollClass() {
+    static bool init = false;
+    if (init) return;
+    WNDCLASSW wc = {0};
+    wc.lpfnWndProc = DynScrollAreaProc;
+    wc.hInstance = GetModuleHandle(NULL);
+    wc.lpszClassName = L"EliteDynScrollArea";
+    wc.hCursor = LoadCursor(NULL, IDC_ARROW);
+    wc.hbrBackground = (HBRUSH)(COLOR_WINDOW);
+    RegisterClassW(&wc);
+    init = true;
+}
+
+// Global dynamically populated IDs base
+#define ID_BASE_MM_TRAY 10000
+#define ID_BASE_MM_CLOCK 11000
+#define ID_BASE_MM_TBTN 12000
+#define ID_BASE_SM_ORB 13000
+#define ID_BASE_SM_TRIG 14000
+#define ID_BASE_SM_MODE 15000
+#define ID_BASE_SM_PREV 16000
+
+HWND CreateDynScrollArea(HWND hwndDlg, int idc_placeholder) {
+    InitDynScrollClass();
+    HWND hPlaceholder = GetDlgItem(hwndDlg, idc_placeholder);
+    RECT rc; GetWindowRect(hPlaceholder, &rc);
+    POINT pt = { rc.left, rc.top };
+    ScreenToClient(hwndDlg, &pt);
+    HWND hScroll = CreateWindowExW(0, L"EliteDynScrollArea", L"", WS_CHILD | WS_VISIBLE | WS_VSCROLL, pt.x, pt.y, rc.right - rc.left, rc.bottom - rc.top, hwndDlg, NULL, GetModuleHandle(NULL), NULL);
+    DestroyWindow(hPlaceholder);
+    return hScroll;
+}
+
+struct MonitorInfo {
+    int index;
+    HMONITOR hMonitor;
+    RECT rect;
+};
+std::vector<MonitorInfo> g_Monitors;
+BOOL CALLBACK TaskbarPropsMonitorEnumProc(HMONITOR hMonitor, HDC hdcMonitor, LPRECT lprcMonitor, LPARAM dwData) {
+    MonitorInfo info;
+    info.index = (int)g_Monitors.size();
+    info.hMonitor = hMonitor;
+    info.rect = *lprcMonitor;
+    g_Monitors.push_back(info);
     return TRUE;
 }
 
-INT_PTR CALLBACK StartMenuSettingsDlgProc(HWND hwndDlg, UINT uMsg, WPARAM wParam, LPARAM lParam) {
+void PopulateOrbComboBox(HWND hCombo);
+void SelectOrbComboBox(HWND hCombo, DWORD id);
+DWORD GetSelectedOrbID(HWND hCombo);
+
+INT_PTR CALLBACK MultiMonSettingsDlgProc(HWND hwndDlg, UINT uMsg, WPARAM wParam, LPARAM lParam) {
+    static HWND hScroll = NULL;
     switch (uMsg) {
-    case WM_INITDIALOG:
-        {
-            HKEY hKey;
-            if (RegCreateKeyExW(HKEY_CURRENT_USER, L"Software\\EliteSoftware\\Win32Explorer\\Advanced", 0, NULL, REG_OPTION_NON_VOLATILE, KEY_READ | KEY_WRITE, NULL, &hKey, NULL) == ERROR_SUCCESS) {
-                DWORD dwValue = 0;
-                DWORD cbData = sizeof(DWORD);
-                if (RegQueryValueExW(hKey, L"StartMenuMode", NULL, NULL, (LPBYTE)&dwValue, &cbData) != ERROR_SUCCESS) {
-                    dwValue = 0;
-                }
-                
-                dwValue = IDB_START_ORB;
-                cbData = sizeof(DWORD);
-                if (RegQueryValueExW(hKey, L"StartOrbID", NULL, NULL, (LPBYTE)&dwValue, &cbData) != ERROR_SUCCESS) {
-                    dwValue = IDB_START_ORB;
-                }
-                
-                SendDlgItemMessageW(hwndDlg, IDC_ORB_SELECTOR, CB_ADDSTRING, 0, (LPARAM)L"Default Orb");
-                SendDlgItemMessageW(hwndDlg, IDC_ORB_SELECTOR, CB_SETITEMDATA, 0, IDB_START_ORB);
-                
-                SendDlgItemMessageW(hwndDlg, IDC_ORB_SELECTOR, CB_ADDSTRING, 0, (LPARAM)L"1Orb");
-                SendDlgItemMessageW(hwndDlg, IDC_ORB_SELECTOR, CB_SETITEMDATA, 1, IDB_START_ORB_1ORB);
-                
-                SendDlgItemMessageW(hwndDlg, IDC_ORB_SELECTOR, CB_ADDSTRING, 0, (LPARAM)L"Aqua Bottom");
-                SendDlgItemMessageW(hwndDlg, IDC_ORB_SELECTOR, CB_SETITEMDATA, 2, IDB_START_ORB_AQUABOTTOM);
-                
-                SendDlgItemMessageW(hwndDlg, IDC_ORB_SELECTOR, CB_ADDSTRING, 0, (LPARAM)L"Dunes");
-                SendDlgItemMessageW(hwndDlg, IDC_ORB_SELECTOR, CB_SETITEMDATA, 3, IDB_START_ORB_DUNES);
-                
-                SendDlgItemMessageW(hwndDlg, IDC_ORB_SELECTOR, CB_ADDSTRING, 0, (LPARAM)L"Indigo");
-                SendDlgItemMessageW(hwndDlg, IDC_ORB_SELECTOR, CB_SETITEMDATA, 4, IDB_START_ORB_INDIGO);
-                
-                SendDlgItemMessageW(hwndDlg, IDC_ORB_SELECTOR, CB_ADDSTRING, 0, (LPARAM)L"Sapphire");
-                SendDlgItemMessageW(hwndDlg, IDC_ORB_SELECTOR, CB_SETITEMDATA, 5, IDB_START_ORB_SAPPHIRE);
-                
-                SendDlgItemMessageW(hwndDlg, IDC_ORB_SELECTOR, CB_ADDSTRING, 0, (LPARAM)L"Uranus");
-                SendDlgItemMessageW(hwndDlg, IDC_ORB_SELECTOR, CB_SETITEMDATA, 6, IDB_START_ORB_URANUS);
-                
-                SendDlgItemMessageW(hwndDlg, IDC_ORB_SELECTOR, CB_ADDSTRING, 0, (LPARAM)L"Vienna Bottom");
-                SendDlgItemMessageW(hwndDlg, IDC_ORB_SELECTOR, CB_SETITEMDATA, 7, IDB_START_ORB_VIENNABOTTOM);
-                
-                int selIndex = 0;
-                int count = SendDlgItemMessageW(hwndDlg, IDC_ORB_SELECTOR, CB_GETCOUNT, 0, 0);
-                for (int i = 0; i < count; i++) {
-                    if (SendDlgItemMessageW(hwndDlg, IDC_ORB_SELECTOR, CB_GETITEMDATA, i, 0) == dwValue) {
-                        selIndex = i;
-                        break;
-                    }
-                }
-                SendDlgItemMessageW(hwndDlg, IDC_ORB_SELECTOR, CB_SETCURSEL, selIndex, 0);
-                
-                RegCloseKey(hKey);
-                UpdateOrbPreview(hwndDlg, dwValue);
-            }
-            SendDlgItemMessageW(hwndDlg, IDC_START_TRIGGER, CB_ADDSTRING, 0, (LPARAM)L"Open-Shell Menu (Default)");
-            SendDlgItemMessageW(hwndDlg, IDC_START_TRIGGER, CB_ADDSTRING, 0, (LPARAM)L"Native Windows Start Menu");
-            SendDlgItemMessageW(hwndDlg, IDC_START_TRIGGER, CB_ADDSTRING, 0, (LPARAM)L"Open-Shell Menu (Shift for Native)");
-            SendDlgItemMessageW(hwndDlg, IDC_START_TRIGGER, CB_ADDSTRING, 0, (LPARAM)L"Native Menu (Shift for Open-Shell)");
+    case WM_INITDIALOG: {
+        hScroll = CreateDynScrollArea(hwndDlg, IDC_DYN_SCROLLAREA);
+        if (g_Monitors.empty()) EnumDisplayMonitors(NULL, NULL, TaskbarPropsMonitorEnumProc, 0);
+        
+        int y = 5;
+        HFONT hFont = (HFONT)SendMessageW(hwndDlg, WM_GETFONT, 0, 0);
+        
+        HKEY hKey;
+        RegOpenKeyExW(HKEY_CURRENT_USER, L"Software\\EliteSoftware\\Win32Explorer\\Advanced", 0, KEY_READ, &hKey);
+        
+        for (const auto& mon : g_Monitors) {
+            WCHAR title[64];
+            wsprintfW(title, L"Monitor %d (%dx%d)", mon.index, mon.rect.right - mon.rect.left, mon.rect.bottom - mon.rect.top);
+            HWND hGroup = CreateWindowExW(0, L"Button", title, WS_CHILD | WS_VISIBLE | BS_GROUPBOX, 5, y, 320, 60, hScroll, NULL, GetModuleHandle(NULL), NULL);
+            SendMessageW(hGroup, WM_SETFONT, (WPARAM)hFont, 0);
             
-            // dwValue might have been read from the registry above; if not, we must read it here
-            DWORD modeValue = 0;
-            HKEY hKeyTrigger;
-            if (RegOpenKeyExW(HKEY_CURRENT_USER, L"Software\\EliteSoftware\\Win32Explorer\\Advanced", 0, KEY_READ, &hKeyTrigger) == ERROR_SUCCESS) {
-                DWORD cbData = sizeof(DWORD);
-                RegQueryValueExW(hKeyTrigger, L"StartMenuMode", NULL, NULL, (LPBYTE)&modeValue, &cbData);
-                RegCloseKey(hKeyTrigger);
-            }
-            SendDlgItemMessageW(hwndDlg, IDC_START_TRIGGER, CB_SETCURSEL, modeValue, 0);
+            HWND hChk1 = CreateWindowExW(0, L"Button", L"System Tray", WS_CHILD | WS_VISIBLE | BS_AUTOCHECKBOX, 15, y + 20, 100, 15, hScroll, (HMENU)(ID_BASE_MM_TRAY + mon.index), GetModuleHandle(NULL), NULL);
+            HWND hChk2 = CreateWindowExW(0, L"Button", L"Clock", WS_CHILD | WS_VISIBLE | BS_AUTOCHECKBOX, 120, y + 20, 100, 15, hScroll, (HMENU)(ID_BASE_MM_CLOCK + mon.index), GetModuleHandle(NULL), NULL);
+            HWND hChk3 = CreateWindowExW(0, L"Button", L"Task Buttons", WS_CHILD | WS_VISIBLE | BS_AUTOCHECKBOX, 15, y + 40, 100, 15, hScroll, (HMENU)(ID_BASE_MM_TBTN + mon.index), GetModuleHandle(NULL), NULL);
             
-            DWORD currentMode = 0;
-            if (RegOpenKeyExW(HKEY_CURRENT_USER, L"Software\\EliteSoftware\\Win32Explorer\\Advanced", 0, KEY_READ, &hKey) == ERROR_SUCCESS) {
-                DWORD cbData = sizeof(DWORD);
-                RegQueryValueExW(hKey, L"StartMenuMode", NULL, NULL, (LPBYTE)&currentMode, &cbData);
-                RegCloseKey(hKey);
-            }
-            if (currentMode > 3) currentMode = 0;
-            SendDlgItemMessageW(hwndDlg, IDC_START_TRIGGER, CB_SETCURSEL, currentMode, 0);
+            SendMessageW(hChk1, WM_SETFONT, (WPARAM)hFont, 0);
+            SendMessageW(hChk2, WM_SETFONT, (WPARAM)hFont, 0);
+            SendMessageW(hChk3, WM_SETFONT, (WPARAM)hFont, 0);
             
-            SendDlgItemMessageW(hwndDlg, IDC_START_MONITOR_LIST, CB_ADDSTRING, 0, (LPARAM)L"Global Configuration");
-            SendDlgItemMessageW(hwndDlg, IDC_START_MONITOR_LIST, CB_SETITEMDATA, 0, -1);
-            SettingsMonitorData monData = {0};
-            EnumDisplayMonitors(NULL, NULL, SettingsMonitorEnumProc, (LPARAM)&monData);
-            for (int i = 0; i < monData.count; i++) {
-                WCHAR szMon[32];
-                wsprintfW(szMon, L"Monitor %d", i);
-                SendDlgItemMessageW(hwndDlg, IDC_START_MONITOR_LIST, CB_ADDSTRING, 0, (LPARAM)szMon);
-                SendDlgItemMessageW(hwndDlg, IDC_START_MONITOR_LIST, CB_SETITEMDATA, i + 1, i);
+            HWND hLblMode = CreateWindowExW(0, L"Static", L"Start Menu Mode:", WS_CHILD | WS_VISIBLE, 15, y + 65, 120, 15, hScroll, NULL, GetModuleHandle(NULL), NULL);
+            HWND hLblTrig = CreateWindowExW(0, L"Static", L"Start Menu Trigger:", WS_CHILD | WS_VISIBLE, 15, y + 90, 120, 15, hScroll, NULL, GetModuleHandle(NULL), NULL);
+            HWND hLblOrb = CreateWindowExW(0, L"Static", L"Start Orb Theme:", WS_CHILD | WS_VISIBLE, 15, y + 115, 120, 15, hScroll, NULL, GetModuleHandle(NULL), NULL);
+
+            SendMessageW(hLblMode, WM_SETFONT, (WPARAM)hFont, 0);
+            SendMessageW(hLblTrig, WM_SETFONT, (WPARAM)hFont, 0);
+            SendMessageW(hLblOrb, WM_SETFONT, (WPARAM)hFont, 0);
+
+            HWND hCmbMode = CreateWindowExW(0, L"ComboBox", L"", WS_CHILD | WS_VISIBLE | CBS_DROPDOWNLIST | WS_VSCROLL, 140, y + 60, 160, 100, hScroll, (HMENU)(ID_BASE_SM_MODE + mon.index), GetModuleHandle(NULL), NULL);
+            HWND hCmbTrig = CreateWindowExW(0, L"ComboBox", L"", WS_CHILD | WS_VISIBLE | CBS_DROPDOWNLIST | WS_VSCROLL, 140, y + 85, 160, 100, hScroll, (HMENU)(ID_BASE_SM_TRIG + mon.index), GetModuleHandle(NULL), NULL);
+            HWND hCmbOrb = CreateWindowExW(0, L"ComboBox", L"", WS_CHILD | WS_VISIBLE | CBS_DROPDOWNLIST | WS_VSCROLL, 140, y + 110, 100, 100, hScroll, (HMENU)(ID_BASE_SM_ORB + mon.index), GetModuleHandle(NULL), NULL);
+            HWND hPreview = CreateWindowExW(0, L"Static", L"", WS_CHILD | WS_VISIBLE | SS_BITMAP | SS_CENTERIMAGE | WS_BORDER, 250, y + 100, 54, 54, hScroll, (HMENU)(ID_BASE_SM_PREV + mon.index), GetModuleHandle(NULL), NULL);
+
+            SendMessageW(hCmbMode, WM_SETFONT, (WPARAM)hFont, 0);
+            SendMessageW(hCmbTrig, WM_SETFONT, (WPARAM)hFont, 0);
+            SendMessageW(hCmbOrb, WM_SETFONT, (WPARAM)hFont, 0);
+
+            SendMessageW(hCmbMode, CB_ADDSTRING, 0, (LPARAM)L"Open-Shell Native Injection");
+            SendMessageW(hCmbMode, CB_ADDSTRING, 0, (LPARAM)L"Native Windows Start Menu");
+            SendMessageW(hCmbMode, CB_ADDSTRING, 0, (LPARAM)L"Elite Custom Menu");
+            SendMessageW(hCmbMode, CB_ADDSTRING, 0, (LPARAM)L"Open-Shell Standalone");
+
+            SendMessageW(hCmbTrig, CB_ADDSTRING, 0, (LPARAM)L"Left Click");
+            SendMessageW(hCmbTrig, CB_ADDSTRING, 0, (LPARAM)L"Middle Click");
+            SendMessageW(hCmbTrig, CB_ADDSTRING, 0, (LPARAM)L"Win Key");
+
+            PopulateOrbComboBox(hCmbOrb);
+            
+            if (hKey) {
+                DWORD dwValue = 0, cbData = sizeof(DWORD);
+                WCHAR val[64];
+                wsprintfW(val, L"EnableTray_Mon%d", mon.index);
+                if (RegQueryValueExW(hKey, val, NULL, NULL, (LPBYTE)&dwValue, &cbData) == ERROR_SUCCESS && dwValue) SendMessageW(hChk1, BM_SETCHECK, BST_CHECKED, 0);
+                else if (mon.index == 0) SendMessageW(hChk1, BM_SETCHECK, BST_CHECKED, 0);
+                
+                wsprintfW(val, L"EnableClock_Mon%d", mon.index);
+                if (RegQueryValueExW(hKey, val, NULL, NULL, (LPBYTE)&dwValue, &cbData) == ERROR_SUCCESS && dwValue) SendMessageW(hChk2, BM_SETCHECK, BST_CHECKED, 0);
+                else SendMessageW(hChk2, BM_SETCHECK, BST_CHECKED, 0);
+                
+                wsprintfW(val, L"EnableTaskBtns_Mon%d", mon.index);
+                if (RegQueryValueExW(hKey, val, NULL, NULL, (LPBYTE)&dwValue, &cbData) == ERROR_SUCCESS && dwValue) SendMessageW(hChk3, BM_SETCHECK, BST_CHECKED, 0);
+                else SendMessageW(hChk3, BM_SETCHECK, BST_CHECKED, 0);
+
+                DWORD mode = 0; cbData = sizeof(DWORD);
+                wsprintfW(val, L"StartMenuMode_Mon%d", mon.index);
+                if (RegQueryValueExW(hKey, val, NULL, NULL, (LPBYTE)&mode, &cbData) != ERROR_SUCCESS) {
+                    cbData = sizeof(DWORD);
+                    RegQueryValueExW(hKey, L"StartMenuMode", NULL, NULL, (LPBYTE)&mode, &cbData);
+                }
+                SendMessageW(hCmbMode, CB_SETCURSEL, mode, 0);
+
+                DWORD trig = 0; cbData = sizeof(DWORD);
+                wsprintfW(val, L"StartMenuTrigger_Mon%d", mon.index);
+                if (RegQueryValueExW(hKey, val, NULL, NULL, (LPBYTE)&trig, &cbData) != ERROR_SUCCESS) {
+                    cbData = sizeof(DWORD);
+                    RegQueryValueExW(hKey, L"StartMenuTrigger", NULL, NULL, (LPBYTE)&trig, &cbData);
+                }
+                SendMessageW(hCmbTrig, CB_SETCURSEL, trig, 0);
+
+                DWORD orb = 103; cbData = sizeof(DWORD);
+                wsprintfW(val, L"StartOrbID_Mon%d", mon.index);
+                if (RegQueryValueExW(hKey, val, NULL, NULL, (LPBYTE)&orb, &cbData) != ERROR_SUCCESS) {
+                    cbData = sizeof(DWORD);
+                    RegQueryValueExW(hKey, L"StartOrbID", NULL, NULL, (LPBYTE)&orb, &cbData);
+                }
+                SelectOrbComboBox(hCmbOrb, orb);
+                
+                HBITMAP hBitmap = (HBITMAP)LoadImageW(GetModuleHandle(NULL), MAKEINTRESOURCEW(orb), IMAGE_BITMAP, 54, 54, LR_DEFAULTCOLOR);
+                SendMessageW(hPreview, STM_SETIMAGE, IMAGE_BITMAP, (LPARAM)hBitmap);
+            } else {
+                if (mon.index == 0) SendMessageW(hChk1, BM_SETCHECK, BST_CHECKED, 0);
+                SendMessageW(hChk2, BM_SETCHECK, BST_CHECKED, 0);
+                SendMessageW(hChk3, BM_SETCHECK, BST_CHECKED, 0);
+                SendMessageW(hCmbMode, CB_SETCURSEL, 0, 0);
+                SendMessageW(hCmbTrig, CB_SETCURSEL, 0, 0);
+                SelectOrbComboBox(hCmbOrb, 103);
+                
+                HBITMAP hBitmap = (HBITMAP)LoadImageW(GetModuleHandle(NULL), MAKEINTRESOURCEW(103), IMAGE_BITMAP, 54, 54, LR_DEFAULTCOLOR);
+                SendMessageW(hPreview, STM_SETIMAGE, IMAGE_BITMAP, (LPARAM)hBitmap);
             }
-            SendDlgItemMessageW(hwndDlg, IDC_START_MONITOR_LIST, CB_SETCURSEL, 0, 0);
+            
+            // Adjust group box height
+            SetWindowPos(hGroup, NULL, 0, 0, 320, 155, SWP_NOMOVE | SWP_NOZORDER);
+            
+            y += 165;
         }
+        if (hKey) RegCloseKey(hKey);
+        
+        SCROLLINFO si = { sizeof(si), SIF_RANGE | SIF_PAGE, 0, y, 200 };
+        SetScrollInfo(hScroll, SB_VERT, &si, TRUE);
         return TRUE;
+    }
     case WM_COMMAND:
-        if (HIWORD(wParam) == CBN_SELCHANGE && LOWORD(wParam) == IDC_START_MONITOR_LIST) {
-            int monSel = SendDlgItemMessageW(hwndDlg, IDC_START_MONITOR_LIST, CB_GETCURSEL, 0, 0);
-            if (monSel != CB_ERR) {
-                int monIndex = SendDlgItemMessageW(hwndDlg, IDC_START_MONITOR_LIST, CB_GETITEMDATA, monSel, 0);
-                HKEY hKey;
-                if (RegOpenKeyExW(HKEY_CURRENT_USER, L"Software\\EliteSoftware\\Win32Explorer\\Advanced", 0, KEY_READ, &hKey) == ERROR_SUCCESS) {
-                    DWORD dwValue = IDB_START_ORB;
-                    DWORD cbData = sizeof(DWORD);
-                    bool found = false;
-                    if (monIndex >= 0) {
-                        WCHAR valueName[64];
-                        wsprintfW(valueName, L"StartOrbID_Mon%d", monIndex);
-                        if (RegQueryValueExW(hKey, valueName, NULL, NULL, (LPBYTE)&dwValue, &cbData) == ERROR_SUCCESS) {
-                            found = true;
-                        }
-                    }
-                    if (!found) {
-                        if (RegQueryValueExW(hKey, L"StartOrbID", NULL, NULL, (LPBYTE)&dwValue, &cbData) != ERROR_SUCCESS) {
-                            dwValue = IDB_START_ORB;
-                        }
-                    }
-                    
-                    int count = SendDlgItemMessageW(hwndDlg, IDC_ORB_SELECTOR, CB_GETCOUNT, 0, 0);
-                    int selIndex = 0;
-                    for (int i = 0; i < count; i++) {
-                        if (SendDlgItemMessageW(hwndDlg, IDC_ORB_SELECTOR, CB_GETITEMDATA, i, 0) == dwValue) {
-                            selIndex = i;
-                            break;
-                        }
-                    }
-                    SendDlgItemMessageW(hwndDlg, IDC_ORB_SELECTOR, CB_SETCURSEL, selIndex, 0);
-                    RegCloseKey(hKey);
-                    UpdateOrbPreview(hwndDlg, dwValue);
-                }
-            }
-        }
-        else if (HIWORD(wParam) == BN_CLICKED || HIWORD(wParam) == EN_CHANGE || HIWORD(wParam) == CBN_SELCHANGE) {
+        if (HIWORD(wParam) == BN_CLICKED || HIWORD(wParam) == CBN_SELCHANGE) {
             SendMessageW(GetParent(hwndDlg), PSM_CHANGED, (WPARAM)hwndDlg, 0);
             
-            if (LOWORD(wParam) == IDC_ORB_SELECTOR && HIWORD(wParam) == CBN_SELCHANGE) {
-                HKEY hKey;
-                if (RegCreateKeyExW(HKEY_CURRENT_USER, L"Software\\EliteSoftware\\Win32Explorer\\Advanced", 0, NULL, REG_OPTION_NON_VOLATILE, KEY_READ | KEY_WRITE, NULL, &hKey, NULL) == ERROR_SUCCESS) {
-                    int selIndex = SendDlgItemMessageW(hwndDlg, IDC_ORB_SELECTOR, CB_GETCURSEL, 0, 0);
-                    DWORD orbId = 0;
-                    if (selIndex != CB_ERR) {
-                        orbId = (DWORD)SendDlgItemMessageW(hwndDlg, IDC_ORB_SELECTOR, CB_GETITEMDATA, selIndex, 0);
-                        int monSel = SendDlgItemMessageW(hwndDlg, IDC_START_MONITOR_LIST, CB_GETCURSEL, 0, 0);
-                        int monIndex = (monSel != CB_ERR) ? SendDlgItemMessageW(hwndDlg, IDC_START_MONITOR_LIST, CB_GETITEMDATA, monSel, 0) : -1;
-                        if (monIndex >= 0) {
-                            WCHAR valueName[64];
-                            wsprintfW(valueName, L"StartOrbID_Mon%d", monIndex);
-                            RegSetValueExW(hKey, valueName, 0, REG_DWORD, (const BYTE*)&orbId, sizeof(DWORD));
-                        } else {
-                            RegSetValueExW(hKey, L"StartOrbID", 0, REG_DWORD, (const BYTE*)&orbId, sizeof(DWORD));
-                        }
-                    }
-                    RegCloseKey(hKey);
-                    if (orbId != 0) UpdateOrbPreview(hwndDlg, orbId);
+            int id = LOWORD(wParam);
+            if (HIWORD(wParam) == CBN_SELCHANGE && id >= ID_BASE_SM_ORB && id < ID_BASE_SM_ORB + 32) {
+                int monIndex = id - ID_BASE_SM_ORB;
+                HWND hCombo = GetDlgItem(hScroll, id);
+                int sel = SendMessageW(hCombo, CB_GETCURSEL, 0, 0);
+                if (sel != CB_ERR) {
+                    DWORD orbId = SendMessageW(hCombo, CB_GETITEMDATA, sel, 0);
+                    HWND hPreview = GetDlgItem(hScroll, ID_BASE_SM_PREV + monIndex);
+                    HBITMAP hBitmap = (HBITMAP)LoadImageW(GetModuleHandle(NULL), MAKEINTRESOURCEW(orbId), IMAGE_BITMAP, 54, 54, LR_DEFAULTCOLOR);
+                    HBITMAP hOld = (HBITMAP)SendMessageW(hPreview, STM_SETIMAGE, IMAGE_BITMAP, (LPARAM)hBitmap);
+                    if (hOld) DeleteObject(hOld);
                 }
-                SendMessageTimeoutW(HWND_BROADCAST, WM_SETTINGCHANGE, 0, (LPARAM)L"EliteTaskbarSettings", SMTO_ABORTIFHUNG, 500, NULL);
             }
         }
         return TRUE;
@@ -390,46 +417,34 @@ INT_PTR CALLBACK StartMenuSettingsDlgProc(HWND hwndDlg, UINT uMsg, WPARAM wParam
         if (lpnm->code == PSN_APPLY) {
             HKEY hKey;
             if (RegCreateKeyExW(HKEY_CURRENT_USER, L"Software\\EliteSoftware\\Win32Explorer\\Advanced", 0, NULL, REG_OPTION_NON_VOLATILE, KEY_READ | KEY_WRITE, NULL, &hKey, NULL) == ERROR_SUCCESS) {
-                DWORD mode = SendDlgItemMessageW(hwndDlg, IDC_START_TRIGGER, CB_GETCURSEL, 0, 0);
-                if (mode == CB_ERR) mode = 0;
-                RegSetValueExW(hKey, L"StartMenuMode", 0, REG_DWORD, (const BYTE*)&mode, sizeof(DWORD));
-                
-                int selIndex = SendDlgItemMessageW(hwndDlg, IDC_ORB_SELECTOR, CB_GETCURSEL, 0, 0);
-                if (selIndex != CB_ERR) {
-                    DWORD orbId = (DWORD)SendDlgItemMessageW(hwndDlg, IDC_ORB_SELECTOR, CB_GETITEMDATA, selIndex, 0);
-                    UpdateOrbPreview(hwndDlg, orbId);
+                for (const auto& mon : g_Monitors) {
+                    DWORD v1 = (SendMessageW(GetDlgItem(hScroll, ID_BASE_MM_TRAY + mon.index), BM_GETCHECK, 0, 0) == BST_CHECKED) ? 1 : 0;
+                    DWORD v2 = (SendMessageW(GetDlgItem(hScroll, ID_BASE_MM_CLOCK + mon.index), BM_GETCHECK, 0, 0) == BST_CHECKED) ? 1 : 0;
+                    DWORD v3 = (SendMessageW(GetDlgItem(hScroll, ID_BASE_MM_TBTN + mon.index), BM_GETCHECK, 0, 0) == BST_CHECKED) ? 1 : 0;
                     
-                    int monSel = SendDlgItemMessageW(hwndDlg, IDC_START_MONITOR_LIST, CB_GETCURSEL, 0, 0);
-                    int monIndex = (monSel != CB_ERR) ? SendDlgItemMessageW(hwndDlg, IDC_START_MONITOR_LIST, CB_GETITEMDATA, monSel, 0) : -1;
+                    DWORD mode = SendMessageW(GetDlgItem(hScroll, ID_BASE_SM_MODE + mon.index), CB_GETCURSEL, 0, 0);
+                    DWORD trig = SendMessageW(GetDlgItem(hScroll, ID_BASE_SM_TRIG + mon.index), CB_GETCURSEL, 0, 0);
+                    DWORD orb = GetSelectedOrbID(GetDlgItem(hScroll, ID_BASE_SM_ORB + mon.index));
+
+                    WCHAR val[64];
+                    wsprintfW(val, L"EnableTray_Mon%d", mon.index);
+                    RegSetValueExW(hKey, val, 0, REG_DWORD, (const BYTE*)&v1, sizeof(DWORD));
+                    wsprintfW(val, L"EnableClock_Mon%d", mon.index);
+                    RegSetValueExW(hKey, val, 0, REG_DWORD, (const BYTE*)&v2, sizeof(DWORD));
+                    wsprintfW(val, L"EnableTaskBtns_Mon%d", mon.index);
+                    RegSetValueExW(hKey, val, 0, REG_DWORD, (const BYTE*)&v3, sizeof(DWORD));
                     
-                    if (monIndex >= 0) {
-                        WCHAR valueName[64];
-                        wsprintfW(valueName, L"StartOrbID_Mon%d", monIndex);
-                        RegSetValueExW(hKey, valueName, 0, REG_DWORD, (const BYTE*)&orbId, sizeof(DWORD));
-                    } else {
-                        RegSetValueExW(hKey, L"StartOrbID", 0, REG_DWORD, (const BYTE*)&orbId, sizeof(DWORD));
-                        for (int i = 0; i < 32; i++) {
-                            WCHAR valueName[64];
-                            wsprintfW(valueName, L"StartOrbID_Mon%d", i);
-                            RegDeleteValueW(hKey, valueName);
-                        }
-                    }
+                    wsprintfW(val, L"StartMenuMode_Mon%d", mon.index);
+                    RegSetValueExW(hKey, val, 0, REG_DWORD, (const BYTE*)&mode, sizeof(DWORD));
+                    wsprintfW(val, L"StartMenuTrigger_Mon%d", mon.index);
+                    RegSetValueExW(hKey, val, 0, REG_DWORD, (const BYTE*)&trig, sizeof(DWORD));
+                    wsprintfW(val, L"StartOrbID_Mon%d", mon.index);
+                    RegSetValueExW(hKey, val, 0, REG_DWORD, (const BYTE*)&orb, sizeof(DWORD));
                 }
-                
                 RegCloseKey(hKey);
             }
-            
-            // Notify taskbars to update orb
-            EnumWindows([](HWND hwnd, LPARAM lParam) -> BOOL {
-                WCHAR className[256];
-                if (GetClassNameW(hwnd, className, 256) && (wcscmp(className, L"TrayNotifyWnd") == 0 || wcscmp(className, L"StartButtonWClass") == 0)) { // Need a way to notify StartButton to reload. Actually, StartButton uses WM_SETTINGCHANGE
-                     // Let's just broadcast WM_SETTINGCHANGE
-                }
-                return TRUE;
-            }, 0);
-            SendMessageTimeoutW(HWND_BROADCAST, WM_SETTINGCHANGE, 0, (LPARAM)L"EliteTaskbarSettings", SMTO_ABORTIFHUNG, 500, NULL);
+            NotifySettingsChange();
             SendMessageW(GetParent(hwndDlg), PSM_UNCHANGED, (WPARAM)hwndDlg, 0);
-            
             SetWindowLongPtr(hwndDlg, DWLP_MSGRESULT, PSNRET_NOERROR);
             return TRUE;
         }
@@ -438,31 +453,45 @@ INT_PTR CALLBACK StartMenuSettingsDlgProc(HWND hwndDlg, UINT uMsg, WPARAM wParam
     }
     return FALSE;
 }
+
+void PopulateOrbComboBox(HWND hCombo) {
+    struct OrbItem { LPCWSTR name; DWORD id; };
+    OrbItem items[] = {
+        { L"Classic Orb", IDB_START_ORB },
+        { L"1Orb", IDB_START_ORB_1ORB },
+        { L"Aqua Bottom", IDB_START_ORB_AQUABOTTOM },
+        { L"Dunes", IDB_START_ORB_DUNES },
+        { L"Indigo", IDB_START_ORB_INDIGO },
+        { L"Sapphire", IDB_START_ORB_SAPPHIRE },
+        { L"Uranus", IDB_START_ORB_URANUS },
+        { L"Vienna Bottom", IDB_START_ORB_VIENNABOTTOM }
+    };
+    for (int i = 0; i < sizeof(items)/sizeof(items[0]); i++) {
+        int idx = SendMessageW(hCombo, CB_ADDSTRING, 0, (LPARAM)items[i].name);
+        SendMessageW(hCombo, CB_SETITEMDATA, idx, items[i].id);
+    }
+}
+
+void PopulateTriggerComboBox(HWND hCombo) {
+    SendMessageW(hCombo, CB_ADDSTRING, 0, (LPARAM)L"Open-Shell Native Injection");
+    SendMessageW(hCombo, CB_ADDSTRING, 0, (LPARAM)L"Native Windows Start Menu");
+    SendMessageW(hCombo, CB_ADDSTRING, 0, (LPARAM)L"Elite Custom Menu");
+}
+
 
 INT_PTR CALLBACK ToolbarsSettingsDlgProc(HWND hwndDlg, UINT uMsg, WPARAM wParam, LPARAM lParam) {
     switch (uMsg) {
     case WM_INITDIALOG:
-        {
-            SendDlgItemMessageW(hwndDlg, IDC_TOOLBAR_LIST, LB_ADDSTRING, 0, (LPARAM)L"Address");
-            SendDlgItemMessageW(hwndDlg, IDC_TOOLBAR_LIST, LB_ADDSTRING, 0, (LPARAM)L"Links");
-            SendDlgItemMessageW(hwndDlg, IDC_TOOLBAR_LIST, LB_ADDSTRING, 0, (LPARAM)L"Desktop");
-        }
+        SendDlgItemMessageW(hwndDlg, IDC_TOOLBAR_LIST, LB_ADDSTRING, 0, (LPARAM)L"Address");
+        SendDlgItemMessageW(hwndDlg, IDC_TOOLBAR_LIST, LB_ADDSTRING, 0, (LPARAM)L"Links");
+        SendDlgItemMessageW(hwndDlg, IDC_TOOLBAR_LIST, LB_ADDSTRING, 0, (LPARAM)L"Desktop");
         return TRUE;
     case WM_COMMAND:
-        if (HIWORD(wParam) == BN_CLICKED && LOWORD(wParam) == IDC_TOOLBAR_NEW) {
-            MessageBoxW(hwndDlg, L"Folder browser dialog will appear here.", L"New Toolbar", MB_OK);
-            return TRUE;
-        }
-        if (HIWORD(wParam) == BN_CLICKED || HIWORD(wParam) == LBN_SELCHANGE) {
-            SendMessageW(GetParent(hwndDlg), PSM_CHANGED, (WPARAM)hwndDlg, 0);
-        }
+        if (HIWORD(wParam) == BN_CLICKED || HIWORD(wParam) == LBN_SELCHANGE) SendMessageW(GetParent(hwndDlg), PSM_CHANGED, (WPARAM)hwndDlg, 0);
         return TRUE;
     case WM_NOTIFY: {
         LPNMHDR lpnm = (LPNMHDR)lParam;
-        if (lpnm->code == PSN_APPLY) {
-            SetWindowLongPtr(hwndDlg, DWLP_MSGRESULT, PSNRET_NOERROR);
-            return TRUE;
-        }
+        if (lpnm->code == PSN_APPLY) { SetWindowLongPtr(hwndDlg, DWLP_MSGRESULT, PSNRET_NOERROR); return TRUE; }
         break;
     }
     }
@@ -474,98 +503,70 @@ INT_PTR CALLBACK GenericPageDlgProc(HWND hwndDlg, UINT uMsg, WPARAM wParam, LPAR
 }
 
 void ShowTaskbarProperties(HWND hwndOwner) {
-    Logger::Log(L"ShowTaskbarProperties called");
     std::vector<HPROPSHEETPAGE> pages;
     PROPSHEETPAGEW psp[6] = {0};
-
     HPROPSHEETPAGE hPage;
     
-    // 0: Taskbar
     psp[0].dwSize = sizeof(PROPSHEETPAGEW);
     psp[0].dwFlags = PSP_USETITLE;
     psp[0].hInstance = GetModuleHandle(NULL);
     psp[0].pszTemplate = MAKEINTRESOURCEW(IDD_TASKBAR_PROPS);
     psp[0].pfnDlgProc = TaskbarSettingsDlgProc;
     psp[0].pszTitle = L"Taskbar";
-    Logger::Log(L"Creating Taskbar Page...");
     hPage = CreatePropertySheetPageW(&psp[0]);
     if (hPage) pages.push_back(hPage);
 
-    // 1: Start Menu
-    psp[1].dwSize = sizeof(PROPSHEETPAGEW);
-    psp[1].dwFlags = PSP_USETITLE;
-    psp[1].hInstance = GetModuleHandle(NULL);
-    psp[1].pszTemplate = MAKEINTRESOURCEW(IDD_STARTMENU_PROPS);
-    psp[1].pfnDlgProc = StartMenuSettingsDlgProc;
-    psp[1].pszTitle = L"Start Menu";
-    hPage = CreatePropertySheetPageW(&psp[1]);
-    if (hPage) pages.push_back(hPage);
 
-    // 2: Desktop
+
     psp[2].dwSize = sizeof(PROPSHEETPAGEW);
     psp[2].dwFlags = PSP_USETITLE;
     psp[2].hInstance = GetModuleHandle(NULL);
-    psp[2].pszTemplate = MAKEINTRESOURCEW(IDD_DESKTOP_PROPS);
-    psp[2].pfnDlgProc = GenericPageDlgProc;
-    psp[2].pszTitle = L"Desktop";
+    psp[2].pszTemplate = MAKEINTRESOURCEW(IDD_MULTIMON_PROPS);
+    psp[2].pfnDlgProc = MultiMonSettingsDlgProc;
+    psp[2].pszTitle = L"Multi-Monitor Components";
     hPage = CreatePropertySheetPageW(&psp[2]);
     if (hPage) pages.push_back(hPage);
 
-    // 3: Toolbars
     psp[3].dwSize = sizeof(PROPSHEETPAGEW);
     psp[3].dwFlags = PSP_USETITLE;
     psp[3].hInstance = GetModuleHandle(NULL);
-    psp[3].pszTemplate = MAKEINTRESOURCEW(IDD_TOOLBARS_PROPS);
-    psp[3].pfnDlgProc = ToolbarsSettingsDlgProc;
-    psp[3].pszTitle = L"Toolbars";
+    psp[3].pszTemplate = MAKEINTRESOURCEW(IDD_NATIVE_PROPS);
+    psp[3].pfnDlgProc = NativeSettingsDlgProc;
+    psp[3].pszTitle = L"Native Settings";
     hPage = CreatePropertySheetPageW(&psp[3]);
     if (hPage) pages.push_back(hPage);
 
-    // Authentication
+    psp[4].dwSize = sizeof(PROPSHEETPAGEW);
+    psp[4].dwFlags = PSP_USETITLE;
+    psp[4].hInstance = GetModuleHandle(NULL);
+    psp[4].pszTemplate = MAKEINTRESOURCEW(IDD_TOOLBARS_PROPS);
+    psp[4].pfnDlgProc = ToolbarsSettingsDlgProc;
+    psp[4].pszTitle = L"Toolbars";
+    hPage = CreatePropertySheetPageW(&psp[4]);
+    if (hPage) pages.push_back(hPage);
+
     bool showDebugTabs = false;
-    LPWSTR cmdLine = GetCommandLineW();
-    if (wcsstr(cmdLine, L"/devmode")) showDebugTabs = true;
+    if (wcsstr(GetCommandLineW(), L"/devmode")) showDebugTabs = true;
     
     HKEY hKey;
     if (RegOpenKeyExW(HKEY_CURRENT_USER, L"Software\\EliteSoftware\\Win32Explorer\\Advanced", 0, KEY_READ, &hKey) == ERROR_SUCCESS) {
-        DWORD dwValue = 0;
-        DWORD cbData = sizeof(DWORD);
-        if (RegQueryValueExW(hKey, L"EnableDebugTabs", NULL, NULL, (LPBYTE)&dwValue, &cbData) == ERROR_SUCCESS) {
-            if (dwValue == 1) showDebugTabs = true;
-        }
+        DWORD dwValue = 0, cbData = sizeof(DWORD);
+        if (RegQueryValueExW(hKey, L"EnableDebugTabs", NULL, NULL, (LPBYTE)&dwValue, &cbData) == ERROR_SUCCESS && dwValue == 1) showDebugTabs = true;
         RegCloseKey(hKey);
     }
 
     if (showDebugTabs) {
-        psp[4].dwSize = sizeof(PROPSHEETPAGEW);
-        psp[4].dwFlags = PSP_USETITLE;
-        psp[4].hInstance = GetModuleHandle(NULL);
-        psp[4].pszTemplate = MAKEINTRESOURCEW(IDD_SECRET_EVERYTHING);
-        psp[4].pfnDlgProc = GenericPageDlgProc;
-        psp[4].pszTitle = L"Everything Indexer";
-        hPage = CreatePropertySheetPageW(&psp[4]);
-        if (hPage) pages.push_back(hPage);
-
         psp[5].dwSize = sizeof(PROPSHEETPAGEW);
         psp[5].dwFlags = PSP_USETITLE;
         psp[5].hInstance = GetModuleHandle(NULL);
-        psp[5].pszTemplate = MAKEINTRESOURCEW(IDD_SECRET_DLLSCANNER);
+        psp[5].pszTemplate = MAKEINTRESOURCEW(IDD_SECRET_EVERYTHING);
         psp[5].pfnDlgProc = GenericPageDlgProc;
-        psp[5].pszTitle = L"DLL Scanner";
+        psp[5].pszTitle = L"Everything Indexer";
         hPage = CreatePropertySheetPageW(&psp[5]);
         if (hPage) pages.push_back(hPage);
     }
 
-    // Determine starting tab
-    int startPage = 0;
-    if (wcsstr(cmdLine, L"/tab:startmenu")) startPage = 1;
-    else if (wcsstr(cmdLine, L"/tab:desktop")) startPage = 2;
-    else if (wcsstr(cmdLine, L"/tab:toolbars")) startPage = 3;
-
-    if (pages.empty()) {
-        MessageBoxW(hwndOwner, L"Failed to load any property sheet pages.", L"Error", MB_ICONERROR);
-        return;
-    }
+    if (pages.empty()) return;
 
     PROPSHEETHEADERW psh = { sizeof(PROPSHEETHEADERW) };
     psh.dwFlags = PSH_PROPTITLE | PSH_USEICONID;
@@ -574,28 +575,31 @@ void ShowTaskbarProperties(HWND hwndOwner) {
     psh.pszIcon = MAKEINTRESOURCEW(IDI_PREFERENCES);
     psh.pszCaption = L"Taskbar and Start Menu Properties";
     psh.nPages = (UINT)pages.size();
-    psh.nStartPage = startPage;
+    psh.nStartPage = 0;
     psh.phpage = pages.data();
 
-    Logger::Log(L"Calling PropertySheetW...");
-    psh.phpage = pages.data();
-    
     PropertySheetW(&psh);
-    Logger::Log(L"Property sheet closed.");
 }
 
 INT_PTR CALLBACK SecretDlgProc(HWND hwndDlg, UINT uMsg, WPARAM wParam, LPARAM lParam) {
     switch (uMsg) {
-        case WM_INITDIALOG:
-            return TRUE;
-        case WM_COMMAND:
-            if (LOWORD(wParam) == IDOK || LOWORD(wParam) == IDCANCEL) {
-                EndDialog(hwndDlg, LOWORD(wParam));
-                return TRUE;
-            }
-            break;
+        case WM_INITDIALOG: return TRUE;
+        case WM_COMMAND: if (LOWORD(wParam) == IDOK || LOWORD(wParam) == IDCANCEL) { EndDialog(hwndDlg, LOWORD(wParam)); return TRUE; } break;
     }
     return FALSE;
+}
+
+void SelectOrbComboBox(HWND hCombo, DWORD id) {
+    int count = SendMessageW(hCombo, CB_GETCOUNT, 0, 0);
+    for (int i = 0; i < count; i++) {
+        if (SendMessageW(hCombo, CB_GETITEMDATA, i, 0) == id) { SendMessageW(hCombo, CB_SETCURSEL, i, 0); break; }
+    }
+}
+
+DWORD GetSelectedOrbID(HWND hCombo) {
+    int sel = SendMessageW(hCombo, CB_GETCURSEL, 0, 0);
+    if (sel != CB_ERR) return SendMessageW(hCombo, CB_GETITEMDATA, sel, 0);
+    return IDB_START_ORB;
 }
 
 void ShowSecretEverything(HWND hwndOwner) {
