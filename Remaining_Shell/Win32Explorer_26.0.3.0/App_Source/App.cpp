@@ -1,4 +1,4 @@
-﻿// Copyright (C) Win32Explorer Project
+// Copyright (C) Win32Explorer Project
 // SPDX-License-Identifier: GPL-3.0-only
 // See LICENSE in the top level directory
 
@@ -85,7 +85,7 @@ App::~App() = default;
 
 void App::OnBrowserRemoved()
 {
-	if (m_browserList.IsEmpty())
+	if (m_browserList.IsEmpty() && !m_config.enableEliteTaskbar.get())
 	{
 		// The last top-level browser window has been closed, so exit the application.
 		PostQuitMessage(EXIT_CODE_NORMAL);
@@ -463,7 +463,7 @@ DriveModel *App::GetDriveModel()
 
 void App::OnWillRemoveBrowser()
 {
-	if (m_browserList.GetSize() == 1 && !m_exitStarted)
+	if (m_browserList.GetSize() == 1 && !m_exitStarted && !m_config.enableEliteTaskbar.get())
 	{
 		// The last browser window is about to be closed, which indicates that the application is
 		// going to exit. Note that the exit may have already started (e.g. if there were multiple

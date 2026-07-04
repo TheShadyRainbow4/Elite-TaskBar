@@ -83,17 +83,6 @@ void NotifySettingsChange() {
 
 INT_PTR CALLBACK TaskbarSettingsDlgProc(HWND hwndDlg, UINT uMsg, WPARAM wParam, LPARAM lParam) {
     switch (uMsg) {
-    case WM_CTLCOLORSTATIC:
-    case WM_CTLCOLORBTN: {
-        HDC hdcStatic = (HDC)wParam;
-        HWND hwndControl = (HWND)lParam;
-        SetBkMode(hdcStatic, TRANSPARENT);
-        if (IsThemeActive()) {
-            DrawThemeParentBackground(hwndControl, hdcStatic, NULL);
-            return (INT_PTR)GetStockObject(NULL_BRUSH);
-        }
-        return (INT_PTR)GetSysColorBrush(COLOR_BTNFACE);
-    }
     case WM_INITDIALOG: {
         EnableThemeDialogTexture(hwndDlg, ETDT_ENABLETAB);
         HKEY hKey;
@@ -179,17 +168,6 @@ INT_PTR CALLBACK TaskbarSettingsDlgProc(HWND hwndDlg, UINT uMsg, WPARAM wParam, 
 
 INT_PTR CALLBACK NativeSettingsDlgProc(HWND hwndDlg, UINT uMsg, WPARAM wParam, LPARAM lParam) {
     switch (uMsg) {
-    case WM_CTLCOLORSTATIC:
-    case WM_CTLCOLORBTN: {
-        HDC hdcStatic = (HDC)wParam;
-        HWND hwndControl = (HWND)lParam;
-        SetBkMode(hdcStatic, TRANSPARENT);
-        if (IsThemeActive()) {
-            DrawThemeParentBackground(hwndControl, hdcStatic, NULL);
-            return (INT_PTR)GetStockObject(NULL_BRUSH);
-        }
-        return (INT_PTR)GetSysColorBrush(COLOR_BTNFACE);
-    }
     case WM_INITDIALOG: {
         EnableThemeDialogTexture(hwndDlg, ETDT_ENABLETAB);
         HKEY hKey;
@@ -312,17 +290,6 @@ LRESULT CALLBACK DynScrollAreaProc(HWND hwnd, UINT uMsg, WPARAM wParam, LPARAM l
             SendMessageW(hwnd, WM_VSCROLL, zDelta > 0 ? SB_LINEUP : SB_LINEDOWN, 0);
             return 0;
         }
-        case WM_CTLCOLORSTATIC:
-        case WM_CTLCOLORBTN: {
-            HDC hdcStatic = (HDC)wParam;
-            HWND hwndControl = (HWND)lParam;
-            SetBkMode(hdcStatic, TRANSPARENT);
-            if (IsThemeActive()) {
-                DrawThemeParentBackground(hwndControl, hdcStatic, NULL);
-                return (LRESULT)GetStockObject(NULL_BRUSH);
-            }
-            return (LRESULT)GetSysColorBrush(COLOR_BTNFACE);
-        }
         case WM_COMMAND:
             SendMessageW(GetParent(hwnd), WM_COMMAND, wParam, lParam);
             return 0;
@@ -394,17 +361,6 @@ INT_PTR CALLBACK MultiMonSettingsDlgProc(HWND hwndDlg, UINT uMsg, WPARAM wParam,
     static HWND hScroll = NULL;
     static ULONG_PTR gdiplusToken = 0;
     switch (uMsg) {
-    case WM_CTLCOLORSTATIC:
-    case WM_CTLCOLORBTN: {
-        HDC hdcStatic = (HDC)wParam;
-        HWND hwndControl = (HWND)lParam;
-        SetBkMode(hdcStatic, TRANSPARENT);
-        if (IsThemeActive()) {
-            DrawThemeParentBackground(hwndControl, hdcStatic, NULL);
-            return (INT_PTR)GetStockObject(NULL_BRUSH);
-        }
-        return (INT_PTR)GetSysColorBrush(COLOR_BTNFACE);
-    }
     case WM_INITDIALOG: {
         EnableThemeDialogTexture(hwndDlg, ETDT_ENABLETAB);
         if (!gdiplusToken) {
@@ -614,17 +570,6 @@ void PopulateTriggerComboBox(HWND hCombo) {
 
 INT_PTR CALLBACK ToolbarsSettingsDlgProc(HWND hwndDlg, UINT uMsg, WPARAM wParam, LPARAM lParam) {
     switch (uMsg) {
-    case WM_CTLCOLORSTATIC:
-    case WM_CTLCOLORBTN: {
-        HDC hdcStatic = (HDC)wParam;
-        HWND hwndControl = (HWND)lParam;
-        SetBkMode(hdcStatic, TRANSPARENT);
-        if (IsThemeActive()) {
-            DrawThemeParentBackground(hwndControl, hdcStatic, NULL);
-            return (INT_PTR)GetStockObject(NULL_BRUSH);
-        }
-        return (INT_PTR)GetSysColorBrush(COLOR_BTNFACE);
-    }
     case WM_INITDIALOG:
         EnableThemeDialogTexture(hwndDlg, ETDT_ENABLETAB);
         SendDlgItemMessageW(hwndDlg, IDC_TOOLBAR_LIST, LB_ADDSTRING, 0, (LPARAM)L"Address");
@@ -644,19 +589,6 @@ INT_PTR CALLBACK ToolbarsSettingsDlgProc(HWND hwndDlg, UINT uMsg, WPARAM wParam,
 }
 
 INT_PTR CALLBACK GenericPageDlgProc(HWND hwndDlg, UINT uMsg, WPARAM wParam, LPARAM lParam) {
-    switch (uMsg) {
-    case WM_CTLCOLORSTATIC:
-    case WM_CTLCOLORBTN: {
-        HDC hdcStatic = (HDC)wParam;
-        HWND hwndControl = (HWND)lParam;
-        SetBkMode(hdcStatic, TRANSPARENT);
-        if (IsThemeActive()) {
-            DrawThemeParentBackground(hwndControl, hdcStatic, NULL);
-            return (INT_PTR)GetStockObject(NULL_BRUSH);
-        }
-        return (INT_PTR)GetSysColorBrush(COLOR_BTNFACE);
-    }
-    }
     return FALSE;
 }
 
@@ -767,6 +699,7 @@ void ShowSecretEverything(HWND hwndOwner) {
 void ShowSecretDLLScanner(HWND hwndOwner) {
     DialogBoxW(g_hInstance, MAKEINTRESOURCEW(IDD_SECRET_DLLSCANNER), hwndOwner, SecretDlgProc);
 }
+
 
 
 
