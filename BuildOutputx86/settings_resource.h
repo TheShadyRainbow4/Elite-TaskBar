@@ -23,6 +23,8 @@
 #define IDC_WIDTH_FIXED       225
 #define IDC_WIDTH_ICONS       226
 #define IDC_HOVER_PREVIEW     227
+#define IDC_WIDTH_FIXED_SIZE  228
+#define IDC_WIDTH_FIXED_SIZE_LBL 229
 #define IDC_USE_NATIVE_TASKBAND 231
 
 // Taskbar UI

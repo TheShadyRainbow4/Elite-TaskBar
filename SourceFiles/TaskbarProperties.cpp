@@ -6,6 +6,62 @@ extern HINSTANCE g_hInstance;
 #include "StartButton.h"
 #include <commctrl.h>
 #include <vector>
+#include <string>
+#include <gdiplus.h>
+#include <uxtheme.h>
+#include <shlwapi.h>
+
+#pragma comment(lib, "gdiplus.lib")
+#pragma comment(lib, "uxtheme.lib")
+
+using namespace Gdiplus;
+
+HBITMAP LoadPngResourceAsHBITMAP(DWORD resId) {
+    HBITMAP hBitmap = NULL;
+    HRSRC hResource = FindResourceW(g_hInstance, MAKEINTRESOURCEW(resId), (LPCWSTR)RT_RCDATA);
+    if (!hResource) return NULL;
+    DWORD imageSize = SizeofResource(g_hInstance, hResource);
+    HGLOBAL hGlobal = LoadResource(g_hInstance, hResource);
+    if (!hGlobal) return NULL;
+    const void* pResourceData = LockResource(hGlobal);
+    if (pResourceData) {
+        HGLOBAL hBuffer = GlobalAlloc(GMEM_MOVEABLE, imageSize);
+        if (hBuffer) {
+            void* pBuffer = GlobalLock(hBuffer);
+            memcpy(pBuffer, pResourceData, imageSize);
+            GlobalUnlock(hBuffer);
+            IStream* pStream = NULL;
+            if (CreateStreamOnHGlobal(hBuffer, TRUE, &pStream) == S_OK) {
+                Gdiplus::Bitmap* pBitmap = Gdiplus::Bitmap::FromStream(pStream);
+                if (pBitmap && pBitmap->GetLastStatus() == Gdiplus::Ok) {
+                    Gdiplus::Color bg(0, 0, 0, 0);
+                    pBitmap->GetHBITMAP(bg, &hBitmap);
+                }
+                if (pBitmap) delete pBitmap;
+                pStream->Release();
+            }
+        }
+    }
+    return hBitmap;
+}
+
+std::vector<std::wstring> g_OrbPaths;
+
+HBITMAP LoadDynamicOrb(DWORD id) {
+    if (id == 0) return LoadPngResourceAsHBITMAP(IDB_START_ORB);
+    int vecIdx = id - 1;
+    if (vecIdx >= 0 && vecIdx < g_OrbPaths.size()) {
+        Gdiplus::Bitmap* pBitmap = Gdiplus::Bitmap::FromFile(g_OrbPaths[vecIdx].c_str());
+        HBITMAP hBitmap = NULL;
+        if (pBitmap && pBitmap->GetLastStatus() == Gdiplus::Ok) {
+            Gdiplus::Color bg(0, 0, 0, 0);
+            pBitmap->GetHBITMAP(bg, &hBitmap);
+        }
+        if (pBitmap) delete pBitmap;
+        return hBitmap;
+    }
+    return LoadPngResourceAsHBITMAP(IDB_START_ORB);
+}
 
 void UpdateOrbPreview(HWND hwndDlg, DWORD orbId) {
     HBITMAP hBitmap = (HBITMAP)LoadImageW(g_hInstance, MAKEINTRESOURCEW(orbId), IMAGE_BITMAP, 54, 54, LR_DEFAULTCOLOR);
@@ -53,6 +109,16 @@ INT_PTR CALLBACK TaskbarSettingsDlgProc(HWND hwndDlg, UINT uMsg, WPARAM wParam, 
                 SendDlgItemMessageW(hwndDlg, IDC_WIDTH_AUTO, BM_SETCHECK, BST_CHECKED, 0);
             }
             
+            SendMessageW(GetDlgItem(hwndDlg, IDC_WIDTH_FIXED_SIZE), CB_ADDSTRING, 0, (LPARAM)L"Small");
+            SendMessageW(GetDlgItem(hwndDlg, IDC_WIDTH_FIXED_SIZE), CB_ADDSTRING, 0, (LPARAM)L"Medium");
+            SendMessageW(GetDlgItem(hwndDlg, IDC_WIDTH_FIXED_SIZE), CB_ADDSTRING, 0, (LPARAM)L"Large");
+            cbData = sizeof(DWORD);
+            if (RegQueryValueExW(hKey, L"TaskbarButtonFixedWidthSize", NULL, NULL, (LPBYTE)&dwValue, &cbData) == ERROR_SUCCESS) {
+                SendMessageW(GetDlgItem(hwndDlg, IDC_WIDTH_FIXED_SIZE), CB_SETCURSEL, dwValue, 0);
+            } else {
+                SendMessageW(GetDlgItem(hwndDlg, IDC_WIDTH_FIXED_SIZE), CB_SETCURSEL, 1, 0); // Default to Medium
+            }
+            
             cbData = sizeof(DWORD);
             if (RegQueryValueExW(hKey, L"TaskbarHoverPreview", NULL, NULL, (LPBYTE)&dwValue, &cbData) == ERROR_SUCCESS) {
                 SendDlgItemMessageW(hwndDlg, IDC_HOVER_PREVIEW, BM_SETCHECK, dwValue ? BST_CHECKED : BST_UNCHECKED, 0);
@@ -62,7 +128,7 @@ INT_PTR CALLBACK TaskbarSettingsDlgProc(HWND hwndDlg, UINT uMsg, WPARAM wParam, 
         return TRUE;
     }
     case WM_COMMAND:
-        if (HIWORD(wParam) == BN_CLICKED) {
+        if (HIWORD(wParam) == BN_CLICKED || HIWORD(wParam) == CBN_SELCHANGE) {
             SendMessageW(GetParent(hwndDlg), PSM_CHANGED, (WPARAM)hwndDlg, 0);
         }
         return TRUE;
@@ -80,6 +146,11 @@ INT_PTR CALLBACK TaskbarSettingsDlgProc(HWND hwndDlg, UINT uMsg, WPARAM wParam, 
                 if (SendDlgItemMessageW(hwndDlg, IDC_WIDTH_FIXED, BM_GETCHECK, 0, 0) == BST_CHECKED) widthMode = 1;
                 else if (SendDlgItemMessageW(hwndDlg, IDC_WIDTH_ICONS, BM_GETCHECK, 0, 0) == BST_CHECKED) widthMode = 2;
                 RegSetValueExW(hKey, L"TaskbarButtonWidthMode", 0, REG_DWORD, (const BYTE*)&widthMode, sizeof(DWORD));
+                
+                DWORD fixedSize = SendDlgItemMessageW(hwndDlg, IDC_WIDTH_FIXED_SIZE, CB_GETCURSEL, 0, 0);
+                if (fixedSize != CB_ERR) {
+                    RegSetValueExW(hKey, L"TaskbarButtonFixedWidthSize", 0, REG_DWORD, (const BYTE*)&fixedSize, sizeof(DWORD));
+                }
                 
                 DWORD hoverPreview = (SendDlgItemMessageW(hwndDlg, IDC_HOVER_PREVIEW, BM_GETCHECK, 0, 0) == BST_CHECKED) ? 1 : 0;
                 RegSetValueExW(hKey, L"TaskbarHoverPreview", 0, REG_DWORD, (const BYTE*)&hoverPreview, sizeof(DWORD));
@@ -187,6 +258,9 @@ INT_PTR CALLBACK NativeSettingsDlgProc(HWND hwndDlg, UINT uMsg, WPARAM wParam, L
 
 LRESULT CALLBACK DynScrollAreaProc(HWND hwnd, UINT uMsg, WPARAM wParam, LPARAM lParam) {
     switch (uMsg) {
+        case WM_ERASEBKGND:
+            DrawThemeParentBackground(hwnd, (HDC)wParam, NULL);
+            return 1;
         case WM_VSCROLL: {
             SCROLLINFO si = { sizeof(si), SIF_ALL };
             GetScrollInfo(hwnd, SB_VERT, &si);
@@ -220,7 +294,7 @@ LRESULT CALLBACK DynScrollAreaProc(HWND hwnd, UINT uMsg, WPARAM wParam, LPARAM l
         case WM_CTLCOLORBTN: {
             HDC hdcStatic = (HDC)wParam;
             SetBkMode(hdcStatic, TRANSPARENT);
-            return (LRESULT)(HBRUSH)(COLOR_BTNFACE + 1);
+            return (LRESULT)GetStockObject(NULL_BRUSH);
         }
         case WM_COMMAND:
             SendMessageW(GetParent(hwnd), WM_COMMAND, wParam, lParam);
@@ -237,7 +311,7 @@ void InitDynScrollClass() {
     wc.hInstance = g_hInstance;
     wc.lpszClassName = L"EliteDynScrollArea";
     wc.hCursor = LoadCursor(NULL, IDC_ARROW);
-    wc.hbrBackground = (HBRUSH)(COLOR_BTNFACE + 1);
+    wc.hbrBackground = NULL;
     RegisterClassW(&wc);
     init = true;
 }
@@ -283,8 +357,13 @@ DWORD GetSelectedOrbID(HWND hCombo);
 
 INT_PTR CALLBACK MultiMonSettingsDlgProc(HWND hwndDlg, UINT uMsg, WPARAM wParam, LPARAM lParam) {
     static HWND hScroll = NULL;
+    static ULONG_PTR gdiplusToken = 0;
     switch (uMsg) {
     case WM_INITDIALOG: {
+        if (!gdiplusToken) {
+            GdiplusStartupInput gdiplusStartupInput;
+            GdiplusStartup(&gdiplusToken, &gdiplusStartupInput, NULL);
+        }
         hScroll = CreateDynScrollArea(hwndDlg, IDC_DYN_SCROLLAREA);
         if (g_Monitors.empty()) EnumDisplayMonitors(NULL, NULL, TaskbarPropsMonitorEnumProc, 0);
         
@@ -297,7 +376,7 @@ INT_PTR CALLBACK MultiMonSettingsDlgProc(HWND hwndDlg, UINT uMsg, WPARAM wParam,
         for (const auto& mon : g_Monitors) {
             WCHAR title[64];
             wsprintfW(title, L"Monitor %d (%dx%d)", mon.index, mon.rect.right - mon.rect.left, mon.rect.bottom - mon.rect.top);
-            HWND hGroup = CreateWindowExW(0, L"Button", title, WS_CHILD | WS_VISIBLE | BS_GROUPBOX, 5, y, 320, 60, hScroll, NULL, g_hInstance, NULL);
+            HWND hGroup = CreateWindowExW(0, L"Button", title, WS_CHILD | WS_VISIBLE | BS_GROUPBOX, 5, y, 320, 175, hScroll, NULL, g_hInstance, NULL);
             SendMessageW(hGroup, WM_SETFONT, (WPARAM)hFont, 0);
             
             HWND hChk1 = CreateWindowExW(0, L"Button", L"System Tray", WS_CHILD | WS_VISIBLE | BS_AUTOCHECKBOX | WS_TABSTOP, 15, y + 20, 100, 15, hScroll, (HMENU)(ID_BASE_MM_TRAY + mon.index), g_hInstance, NULL);
@@ -316,8 +395,8 @@ INT_PTR CALLBACK MultiMonSettingsDlgProc(HWND hwndDlg, UINT uMsg, WPARAM wParam,
             SendMessageW(hLblTrig, WM_SETFONT, (WPARAM)hFont, 0);
             SendMessageW(hLblOrb, WM_SETFONT, (WPARAM)hFont, 0);
 
-            HWND hCmbMode = CreateWindowExW(0, L"ComboBox", L"", WS_CHILD | WS_VISIBLE | CBS_DROPDOWNLIST | WS_VSCROLL | WS_TABSTOP, 140, y + 60, 160, 100, hScroll, (HMENU)(ID_BASE_SM_MODE + mon.index), g_hInstance, NULL);
-            HWND hCmbTrig = CreateWindowExW(0, L"ComboBox", L"", WS_CHILD | WS_VISIBLE | CBS_DROPDOWNLIST | WS_VSCROLL | WS_TABSTOP, 140, y + 85, 160, 100, hScroll, (HMENU)(ID_BASE_SM_TRIG + mon.index), g_hInstance, NULL);
+            HWND hCmbMode = CreateWindowExW(0, L"ComboBox", L"", WS_CHILD | WS_VISIBLE | CBS_DROPDOWNLIST | WS_VSCROLL | WS_TABSTOP, 140, y + 60, 100, 100, hScroll, (HMENU)(ID_BASE_SM_MODE + mon.index), g_hInstance, NULL);
+            HWND hCmbTrig = CreateWindowExW(0, L"ComboBox", L"", WS_CHILD | WS_VISIBLE | CBS_DROPDOWNLIST | WS_VSCROLL | WS_TABSTOP, 140, y + 85, 100, 100, hScroll, (HMENU)(ID_BASE_SM_TRIG + mon.index), g_hInstance, NULL);
             HWND hCmbOrb = CreateWindowExW(0, L"ComboBox", L"", WS_CHILD | WS_VISIBLE | CBS_DROPDOWNLIST | WS_VSCROLL | WS_TABSTOP, 140, y + 110, 100, 100, hScroll, (HMENU)(ID_BASE_SM_ORB + mon.index), g_hInstance, NULL);
             HWND hPreview = CreateWindowExW(0, L"Static", L"", WS_CHILD | WS_VISIBLE | SS_BITMAP | SS_CENTERIMAGE | WS_BORDER, 250, y + 100, 54, 54, hScroll, (HMENU)(ID_BASE_SM_PREV + mon.index), g_hInstance, NULL);
 
@@ -367,32 +446,28 @@ INT_PTR CALLBACK MultiMonSettingsDlgProc(HWND hwndDlg, UINT uMsg, WPARAM wParam,
                 }
                 SendMessageW(hCmbTrig, CB_SETCURSEL, trig, 0);
 
-                DWORD orb = 103; cbData = sizeof(DWORD);
-                wsprintfW(val, L"StartOrbID_Mon%d", mon.index);
-                if (RegQueryValueExW(hKey, val, NULL, NULL, (LPBYTE)&orb, &cbData) != ERROR_SUCCESS) {
-                    cbData = sizeof(DWORD);
-                    RegQueryValueExW(hKey, L"StartOrbID", NULL, NULL, (LPBYTE)&orb, &cbData);
+                DWORD orb = 0; cbData = sizeof(DWORD);
+                wsprintfW(val, L"StartOrb_Mon%d", mon.index);
+                if (RegQueryValueExW(hKey, val, NULL, NULL, (LPBYTE)&orb, &cbData) == ERROR_SUCCESS) {
+                    SelectOrbComboBox(hCmbOrb, orb);
+                } else {
+                    SendMessageW(hCmbOrb, CB_SETCURSEL, 0, 0);
+                    orb = 0;
                 }
-                SelectOrbComboBox(hCmbOrb, orb);
-                
-                HBITMAP hBitmap = (HBITMAP)LoadImageW(g_hInstance, MAKEINTRESOURCEW(orb), IMAGE_BITMAP, 54, 54, LR_DEFAULTCOLOR);
+                HBITMAP hBitmap = LoadDynamicOrb(orb);
                 SendMessageW(hPreview, STM_SETIMAGE, IMAGE_BITMAP, (LPARAM)hBitmap);
             } else {
+                SendMessageW(hCmbOrb, CB_SETCURSEL, 0, 0);
+                HBITMAP hBitmap = LoadDynamicOrb(0);
+                SendMessageW(hPreview, STM_SETIMAGE, IMAGE_BITMAP, (LPARAM)hBitmap);
                 if (mon.index == 0) SendMessageW(hChk1, BM_SETCHECK, BST_CHECKED, 0);
                 SendMessageW(hChk2, BM_SETCHECK, BST_CHECKED, 0);
                 SendMessageW(hChk3, BM_SETCHECK, BST_CHECKED, 0);
                 SendMessageW(hCmbMode, CB_SETCURSEL, 0, 0);
                 SendMessageW(hCmbTrig, CB_SETCURSEL, 0, 0);
-                SelectOrbComboBox(hCmbOrb, 103);
-                
-                HBITMAP hBitmap = (HBITMAP)LoadImageW(g_hInstance, MAKEINTRESOURCEW(103), IMAGE_BITMAP, 54, 54, LR_DEFAULTCOLOR);
-                SendMessageW(hPreview, STM_SETIMAGE, IMAGE_BITMAP, (LPARAM)hBitmap);
             }
             
-            // Adjust group box height
-            SetWindowPos(hGroup, NULL, 0, 0, 320, 155, SWP_NOMOVE | SWP_NOZORDER);
-            
-            y += 165;
+            y += 185;
         }
         if (hKey) RegCloseKey(hKey);
         
@@ -412,7 +487,7 @@ INT_PTR CALLBACK MultiMonSettingsDlgProc(HWND hwndDlg, UINT uMsg, WPARAM wParam,
                 if (sel != CB_ERR) {
                     DWORD orbId = SendMessageW(hCombo, CB_GETITEMDATA, sel, 0);
                     HWND hPreview = GetDlgItem(hScroll, ID_BASE_SM_PREV + monIndex);
-                    HBITMAP hBitmap = (HBITMAP)LoadImageW(g_hInstance, MAKEINTRESOURCEW(orbId), IMAGE_BITMAP, 54, 54, LR_DEFAULTCOLOR);
+                    HBITMAP hBitmap = LoadDynamicOrb(orbId);
                     HBITMAP hOld = (HBITMAP)SendMessageW(hPreview, STM_SETIMAGE, IMAGE_BITMAP, (LPARAM)hBitmap);
                     if (hOld) DeleteObject(hOld);
                 }
@@ -445,7 +520,7 @@ INT_PTR CALLBACK MultiMonSettingsDlgProc(HWND hwndDlg, UINT uMsg, WPARAM wParam,
                     RegSetValueExW(hKey, val, 0, REG_DWORD, (const BYTE*)&mode, sizeof(DWORD));
                     wsprintfW(val, L"StartMenuTrigger_Mon%d", mon.index);
                     RegSetValueExW(hKey, val, 0, REG_DWORD, (const BYTE*)&trig, sizeof(DWORD));
-                    wsprintfW(val, L"StartOrbID_Mon%d", mon.index);
+                    wsprintfW(val, L"StartOrb_Mon%d", mon.index);
                     RegSetValueExW(hKey, val, 0, REG_DWORD, (const BYTE*)&orb, sizeof(DWORD));
                 }
                 RegCloseKey(hKey);
@@ -462,20 +537,39 @@ INT_PTR CALLBACK MultiMonSettingsDlgProc(HWND hwndDlg, UINT uMsg, WPARAM wParam,
 }
 
 void PopulateOrbComboBox(HWND hCombo) {
-    struct OrbItem { LPCWSTR name; DWORD id; };
-    OrbItem items[] = {
-        { L"Classic Orb", IDB_START_ORB },
-        { L"1Orb", IDB_START_ORB_1ORB },
-        { L"Aqua Bottom", IDB_START_ORB_AQUABOTTOM },
-        { L"Dunes", IDB_START_ORB_DUNES },
-        { L"Indigo", IDB_START_ORB_INDIGO },
-        { L"Sapphire", IDB_START_ORB_SAPPHIRE },
-        { L"Uranus", IDB_START_ORB_URANUS },
-        { L"Vienna Bottom", IDB_START_ORB_VIENNABOTTOM }
-    };
-    for (int i = 0; i < sizeof(items)/sizeof(items[0]); i++) {
-        int idx = SendMessageW(hCombo, CB_ADDSTRING, 0, (LPARAM)items[i].name);
-        SendMessageW(hCombo, CB_SETITEMDATA, idx, items[i].id);
+    SendMessageW(hCombo, CB_RESETCONTENT, 0, 0);
+    int idx = SendMessageW(hCombo, CB_ADDSTRING, 0, (LPARAM)L"Classic Orb (Built-in)");
+    SendMessageW(hCombo, CB_SETITEMDATA, idx, 0);
+    
+    WCHAR path[MAX_PATH];
+    GetModuleFileNameW(g_hInstance, path, MAX_PATH);
+    PathRemoveFileSpecW(path);
+    PathAppendW(path, L"..\\Resources\\StartOrb\\*.png");
+    
+    WIN32_FIND_DATAW fd;
+    HANDLE hFind = FindFirstFileW(path, &fd);
+    if (hFind != INVALID_HANDLE_VALUE) {
+        do {
+            if (!(fd.dwFileAttributes & FILE_ATTRIBUTE_DIRECTORY)) {
+                WCHAR name[MAX_PATH];
+                wcscpy_s(name, fd.cFileName);
+                PathRemoveExtensionW(name);
+                
+                int i = SendMessageW(hCombo, CB_ADDSTRING, 0, (LPARAM)name);
+                
+                WCHAR fullPath[MAX_PATH];
+                GetModuleFileNameW(g_hInstance, fullPath, MAX_PATH);
+                PathRemoveFileSpecW(fullPath);
+                PathAppendW(fullPath, L"..\\Resources\\StartOrb\\");
+                PathAppendW(fullPath, fd.cFileName);
+                
+                int vecIdx = g_OrbPaths.size();
+                g_OrbPaths.push_back(fullPath);
+                
+                SendMessageW(hCombo, CB_SETITEMDATA, i, vecIdx + 1);
+            }
+        } while (FindNextFileW(hFind, &fd));
+        FindClose(hFind);
     }
 }
 

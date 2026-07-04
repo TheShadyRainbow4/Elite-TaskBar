@@ -18,7 +18,7 @@ $resRC = $resRC -replace '#include "resource.h"', '#include "settings_resource.h
 Set-Content "$BuildDir\settings_resources.rc" -Value $resRC
 Set-Content "$BuildDirx86\settings_resources.rc" -Value $resRC
 
-$libs = "user32.lib shell32.lib shlwapi.lib comctl32.lib advapi32.lib uxtheme.lib gdi32.lib"
+$libs = "user32.lib shell32.lib shlwapi.lib comctl32.lib advapi32.lib uxtheme.lib gdi32.lib ole32.lib gdiplus.lib"
 $srcSettings = "`"$SourceDir\EliteSettingsStub.cpp`" `"$SourceDir\TaskbarProperties.cpp`""
 
 $stubCompileCmd64 = "cl.exe /EHsc /Zi /MTd /D_DEBUG /Fd`"$BuildDir\settings64.pdb`" /Fe`"$BuildDir\EliteSettings.exe`" /Fo`"$BuildDir\SettingsObj_exe_64_\\`" $srcSettings `"$BuildDir\settings_resources.res`" $libs /link /MANIFEST:EMBED /MANIFESTINPUT:`"$SourceDir\app.manifest`" /MANIFESTUAC:NO"

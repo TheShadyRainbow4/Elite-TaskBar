@@ -28,9 +28,7 @@ int APIENTRY wWinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, LPWSTR lpCmd
 extern "C" __declspec(dllexport) LONG APIENTRY CPlApplet(HWND hwndCPl, UINT uMsg, LPARAM lParam1, LPARAM lParam2) {
     switch (uMsg) {
         case CPL_INIT:
-            g_hInstance = GetModuleHandleW(L"EliteSettings.cpl"); 
-            if (!g_hInstance) g_hInstance = GetModuleHandleW(L"EliteSettings_x86.cpl");
-            if (!g_hInstance) g_hInstance = GetModuleHandleW(NULL);
+            GetModuleHandleExW(GET_MODULE_HANDLE_EX_FLAG_FROM_ADDRESS | GET_MODULE_HANDLE_EX_FLAG_UNCHANGED_REFCOUNT, (LPCWSTR)&CPlApplet, &g_hInstance);
             return TRUE;
         case CPL_GETCOUNT:
             return 1;

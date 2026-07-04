@@ -22,12 +22,14 @@ BEGIN
     CONTROL         "Replace", IDC_MODE_REPLACE, "Button", BS_AUTORADIOBUTTON, 80, 20, 50, 10
     CONTROL         "Secondary Only", IDC_MODE_SECONDARY_ONLY, "Button", BS_AUTORADIOBUTTON, 140, 20, 70, 10
     
-    GROUPBOX        "Taskbar Appearance", IDC_STATIC, 7, 58, 238, 55
+    GROUPBOX        "Taskbar Appearance", IDC_STATIC, 7, 58, 238, 70
     LTEXT           "Button Width:", IDC_STATIC, 14, 73, 50, 8
-    CONTROL         "Auto (Length of label)", IDC_WIDTH_AUTO, "Button", BS_AUTORADIOBUTTON | WS_GROUP | WS_TABSTOP, 65, 72, 80, 10
-    CONTROL         "Fixed", IDC_WIDTH_FIXED, "Button", BS_AUTORADIOBUTTON, 150, 72, 40, 10
-    CONTROL         "Icons Only", IDC_WIDTH_ICONS, "Button", BS_AUTORADIOBUTTON, 195, 72, 45, 10
-    CONTROL         "Show window previews", IDC_HOVER_PREVIEW, "Button", BS_AUTOCHECKBOX | WS_TABSTOP, 14, 90, 114, 10
+    CONTROL         "Auto", IDC_WIDTH_AUTO, "Button", BS_AUTORADIOBUTTON | WS_GROUP | WS_TABSTOP, 65, 72, 35, 10
+    CONTROL         "Fixed", IDC_WIDTH_FIXED, "Button", BS_AUTORADIOBUTTON, 105, 72, 35, 10
+    CONTROL         "Icons Only", IDC_WIDTH_ICONS, "Button", BS_AUTORADIOBUTTON, 145, 72, 45, 10
+    LTEXT           "Fixed Size:", IDC_WIDTH_FIXED_SIZE_LBL, 65, 87, 40, 8
+    COMBOBOX        IDC_WIDTH_FIXED_SIZE, 105, 85, 80, 50, CBS_DROPDOWNLIST | WS_VSCROLL | WS_TABSTOP
+    CONTROL         "Show window previews", IDC_HOVER_PREVIEW, "Button", BS_AUTOCHECKBOX | WS_TABSTOP, 14, 105, 114, 10
 END
 
 IDD_NATIVE_PROPS DIALOGEX 0, 0, 252, 218
