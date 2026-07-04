@@ -725,3 +725,5 @@ void ShowSecretEverything(HWND hwndOwner) {
 void ShowSecretDLLScanner(HWND hwndOwner) {
     DialogBoxW(g_hInstance, MAKEINTRESOURCEW(IDD_SECRET_DLLSCANNER), hwndOwner, SecretDlgProc);
 }
+
+

@@ -1,6 +1,11 @@
     case WM_CTLCOLORSTATIC:
     case WM_CTLCOLORBTN: {
         HDC hdcStatic = (HDC)wParam;
+        HWND hwndControl = (HWND)lParam;
         SetBkMode(hdcStatic, TRANSPARENT);
-        return (INT_PTR)GetStockObject(NULL_BRUSH);
+        if (IsThemeActive()) {
+            DrawThemeParentBackground(hwndControl, hdcStatic, NULL);
+            return (INT_PTR)GetStockObject(NULL_BRUSH);
+        }
+        return (INT_PTR)GetSysColorBrush(COLOR_BTNFACE);
     }
