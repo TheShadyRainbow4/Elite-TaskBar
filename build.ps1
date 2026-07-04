@@ -138,3 +138,6 @@ if (-not $failed) {
     git push origin master
     Write-Host "Done!" -ForegroundColor Green
 }
+
+Write-Host 'Compiling EliteStartMenu...' -ForegroundColor Cyan
+Invoke-ps2exe -inputFile EliteStartMenu.ps1 -outputFile BuildOutput\EliteStartMenu.exe -noConsole -STA -iconFile Resources\PREFERENCES.ico

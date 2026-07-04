@@ -112,3 +112,11 @@ All notable changes to this project will be documented in this file.
 - Completed the compilation and signing scripts for .cpl support, exporting CPlApplet natively.
 - EliteTaskbar now successfully generates EliteSettings.cpl alongside EliteSettings.exe, properly hosting the settings in a native Control Panel applet wrapper without relying on a proxy stub.
 - **Icon Rendering Pipeline**: Modified `build_settings.ps1` to dynamically swap `IDI_MAIN_PROGRAM` (101) and `IDI_PREFERENCES` (102) in a custom `settings_resources.rc` file during compilation. This guarantees `EliteSettings.exe` and `EliteSettings.cpl` inherently utilize `PREFERENCES.ico` as their primary executable icon in Windows Explorer while perfectly retaining access to all native Taskbar dialog structures.
+
+### [Unreleased] - UI Polish & Start Menu Mirror
+- **TaskbarProperties.cpp**: Fixed transparent background bug in DynScrollAreaProc where checkboxes had white backgrounds instead of COLOR_BTNFACE.
+- **TaskbarProperties.cpp**: Added WS_TABSTOP to all dynamic checkboxes and comboboxes to restore keyboard navigation.
+- **StartButton.cpp**: Rerouted 'Elite Custom Menu' (mode 2) to launch 'EliteStartMenu.exe' independently to serve as an independent Start Menu mirror across multiple monitors.
+- **EliteStartMenu.ps1**: Created an independent Start Menu implementation using WinForms to guarantee opening on the correct invoked monitor (bypassing native shell interference).
+- **build.ps1**: Added compilation step to convert EliteStartMenu.ps1 into an executable using PS2EXE.
+- **TrayIconScraper.cpp**: Added skeleton code for the upcoming native tray icon interception and display logic (Win7 Overflow / Legacy).

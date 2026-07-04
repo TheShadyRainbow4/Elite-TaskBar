@@ -1,5 +1,7 @@
 #include "StartButton.h"
 #include "Logger.h"
+#include <Shlwapi.h>
+#pragma comment(lib, "Shlwapi.lib")
 
 #pragma comment (lib,"Gdiplus.lib")
 
@@ -269,7 +271,6 @@ LRESULT CALLBACK OrbWndProc(HWND hwnd, UINT uMsg, WPARAM wParam, LPARAM lParam) 
                 
                 if (mode == 0) {
                     // Open-Shell Menu
-                    // Open-Shell hooks Shell_SecondaryTrayWnd's WM_LBUTTONDOWN. Forwarding the click makes it open on the correct monitor perfectly!
                     bool injectShift = isShiftDown;
                     if (injectShift) keybd_event(VK_SHIFT, 0, KEYEVENTF_KEYUP, 0);
                     SendMessageW(hNativeTarget, WM_LBUTTONDOWN, MK_LBUTTON, MAKELPARAM(2, 2));
@@ -282,11 +283,22 @@ LRESULT CALLBACK OrbWndProc(HWND hwnd, UINT uMsg, WPARAM wParam, LPARAM lParam) 
                     SendMessageW(hNativeTarget, WM_SYSCOMMAND, SC_TASKLIST, lCursorParam);
                     if (injectShift) keybd_event(VK_SHIFT, 0, KEYEVENTF_KEYUP, 0);
                 } else {
-                    // Elite Custom Menu or fallback
-                    bool injectShift = isShiftDown;
-                    if (injectShift) keybd_event(VK_SHIFT, 0, KEYEVENTF_KEYUP, 0);
-                    SendMessageW(hNativeTarget, WM_SYSCOMMAND, SC_TASKLIST, lCursorParam);
-                    if (injectShift) keybd_event(VK_SHIFT, 0, 0, 0);
+                    // Elite Custom Menu (Open-Shell Mirror)
+                    WCHAR path[MAX_PATH];
+                    GetModuleFileNameW(NULL, path, MAX_PATH);
+                    PathRemoveFileSpecW(path);
+                    PathAppendW(path, L"EliteStartMenu.exe");
+                    
+                    WCHAR args[256];
+                    wsprintfW(args, L"\"%s\" -MonitorIndex %d -TaskbarY %d", path, pThis->GetMonitorIndex(), pt.y);
+                    
+                    STARTUPINFOW si = { sizeof(si) };
+                    PROCESS_INFORMATION pi;
+                    CreateProcessW(path, args, NULL, NULL, FALSE, 0, NULL, NULL, &si, &pi);
+                    if (pi.hProcess) {
+                        CloseHandle(pi.hProcess);
+                        CloseHandle(pi.hThread);
+                    }
                 }
             }
             return 0;
