@@ -86,13 +86,13 @@ if (Test-Path $exePath) {
     }
 
     $targetExe = Join-Path $root "Win32Explorer.exe"
-    $targetOld = Join-Path $root "Win32Explorer.old.exe"
+    $targetOld = Join-Path $root "Win32Explorer.old.bak"
     
     if (Test-Path $targetExe) {
         if (Test-Path $targetOld) {
             Remove-Item -Path $targetOld -Force -ErrorAction SilentlyContinue
         }
-        Rename-Item -Path $targetExe -NewName "Win32Explorer.old.exe" -Force -ErrorAction SilentlyContinue
+        Rename-Item -Path $targetExe -NewName "Win32Explorer.old.bak" -Force -ErrorAction SilentlyContinue
     }
 
     Log-Message "Copying $exePath to $root\Win32Explorer.exe"

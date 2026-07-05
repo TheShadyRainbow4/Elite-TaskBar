@@ -1,18 +1,54 @@
 --- Build Log Start ---
-[2026-07-04 19:42:45] Locating MSBuild...
-[2026-07-04 19:42:45] Found MSBuild: C:\Program Files (x86)\Microsoft Visual Studio\2022\BuildTools\MSBuild\Current\Bin\MSBuild.exe
-[2026-07-04 19:42:45] Building Project_Core\Win32Explorer.sln (Release|x64)...
+[2026-07-04 20:02:23] Locating MSBuild...
+[2026-07-04 20:02:23] Found MSBuild: C:\Program Files (x86)\Microsoft Visual Studio\2022\BuildTools\MSBuild\Current\Bin\MSBuild.exe
+[2026-07-04 20:02:23] Building Project_Core\Win32Explorer.sln (Release|x64)...
 MSBuild version 17.14.40+3e7442088 for .NET Framework
 
+  ShellHelper.cpp
+iphlpapi.lib(IPHLPAPI.DLL) : warning LNK4006: __NULL_IMPORT_DESCRIPTOR already defined in version.lib(VERSION.dll); second definition ignored [C:\Users\Administrator\Desktop\Elite-TaskBar\Remaining_Shell\Win32Explorer_26.0.3.0\Shared_Libraries\Helper.vcxproj]
+userenv.lib(USERENV.dll) : warning LNK4006: __NULL_IMPORT_DESCRIPTOR already defined in version.lib(VERSION.dll); second definition ignored [C:\Users\Administrator\Desktop\Elite-TaskBar\Remaining_Shell\Win32Explorer_26.0.3.0\Shared_Libraries\Helper.vcxproj]
+wmvcore.lib(WMVCore.DLL) : warning LNK4006: __NULL_IMPORT_DESCRIPTOR already defined in version.lib(VERSION.dll); second definition ignored [C:\Users\Administrator\Desktop\Elite-TaskBar\Remaining_Shell\Win32Explorer_26.0.3.0\Shared_Libraries\Helper.vcxproj]
+rpcrt4.lib(RPCRT4.dll) : warning LNK4006: __NULL_IMPORT_DESCRIPTOR already defined in version.lib(VERSION.dll); second definition ignored [C:\Users\Administrator\Desktop\Elite-TaskBar\Remaining_Shell\Win32Explorer_26.0.3.0\Shared_Libraries\Helper.vcxproj]
+gdiplus.lib(gdiplus.dll) : warning LNK4006: __NULL_IMPORT_DESCRIPTOR already defined in version.lib(VERSION.dll); second definition ignored [C:\Users\Administrator\Desktop\Elite-TaskBar\Remaining_Shell\Win32Explorer_26.0.3.0\Shared_Libraries\Helper.vcxproj]
+shlwapi.lib(SHLWAPI.dll) : warning LNK4006: __NULL_IMPORT_DESCRIPTOR already defined in version.lib(VERSION.dll); second definition ignored [C:\Users\Administrator\Desktop\Elite-TaskBar\Remaining_Shell\Win32Explorer_26.0.3.0\Shared_Libraries\Helper.vcxproj]
+comctl32.lib(COMCTL32.dll) : warning LNK4006: __NULL_IMPORT_DESCRIPTOR already defined in version.lib(VERSION.dll); second definition ignored [C:\Users\Administrator\Desktop\Elite-TaskBar\Remaining_Shell\Win32Explorer_26.0.3.0\Shared_Libraries\Helper.vcxproj]
+uxtheme.lib(UxTheme.dll) : warning LNK4006: __NULL_IMPORT_DESCRIPTOR already defined in version.lib(VERSION.dll); second definition ignored [C:\Users\Administrator\Desktop\Elite-TaskBar\Remaining_Shell\Win32Explorer_26.0.3.0\Shared_Libraries\Helper.vcxproj]
   Helper.vcxproj -> C:\Users\Administrator\Desktop\Elite-TaskBar\Remaining_Shell\Win32Explorer_26.0.3.0\Project_Core\x64\Release\Helper.lib
-  DisplayColorsDialog.cpp
+  App.cpp
   BrowserCommandController.cpp
+  DisplayWindow.cpp
+  EventSwitcher.cpp
+  FileSelectionTests.cpp
+  FilesFoldersOptionsPage.cpp
+  HandleWindowState.cpp
+  IDropFilesCallback.cpp
+  ListViewHandler.cpp
+  MainMenu.cpp
+  MainMenuHandler.cpp
+  MainRebar.cpp
+  MainToolbar.cpp
+  MainWndSwitch.cpp
+  Misc.cpp
+  MsgHandler.cpp
+  OptionsDialog.cpp
+  PluginInitialization.cpp
+  PluginInterface.cpp
+  TabBacking.cpp
+  TabHandler.cpp
+  ToolbarContextMenu.cpp
+  Win32Explorer.cpp
+  BookmarkContextMenu.cpp
+  BookmarksMainMenu.cpp
+  OrganizeBookmarksContextMenu.cpp
+  BookmarkClipboard.cpp
+  BookmarkDataExchange.cpp
+  BookmarkHelper.cpp
      Creating library x64\Release\Win32Explorer.lib and object x64\Release\Win32Explorer.exp
   Generating code
   Finished generating code
   Win32Explorer.vcxproj -> C:\Users\Administrator\Desktop\Elite-TaskBar\Remaining_Shell\Win32Explorer_26.0.3.0\App_Source\x64\Release\Win32Explorer.exe
-[2026-07-04 19:43:36] Relocating build artifacts to project root...
-[2026-07-04 19:43:36] WARNING: Elite-EasySigner not found at C:\Users\Administrator\Desktop\Elite-TaskBar\Elite-EasySigner\Elite-EasySigner.exe, skipping sign.
-[2026-07-04 19:43:36] Copying C:\Users\Administrator\Desktop\Elite-TaskBar\Remaining_Shell\Win32Explorer_26.0.3.0\App_Source\x64\Release\Win32Explorer.exe to C:\Users\Administrator\Desktop\Elite-TaskBar\Win32Explorer.exe
-[2026-07-04 19:43:37] Build artifacts successfully relocated to root.
-[2026-07-04 19:43:37] Build SUCCESSFUL.
+[2026-07-04 20:03:36] Relocating build artifacts to project root...
+[2026-07-04 20:03:36] WARNING: Elite-EasySigner not found at C:\Users\Administrator\Desktop\Elite-TaskBar\Elite-EasySigner\Elite-EasySigner.exe, skipping sign.
+[2026-07-04 20:03:36] Copying C:\Users\Administrator\Desktop\Elite-TaskBar\Remaining_Shell\Win32Explorer_26.0.3.0\App_Source\x64\Release\Win32Explorer.exe to C:\Users\Administrator\Desktop\Elite-TaskBar\Win32Explorer.exe
+[2026-07-04 20:03:36] Build artifacts successfully relocated to root.
+[2026-07-04 20:03:36] Build SUCCESSFUL.

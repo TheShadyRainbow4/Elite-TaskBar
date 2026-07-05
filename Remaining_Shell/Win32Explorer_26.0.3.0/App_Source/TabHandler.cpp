@@ -1,4 +1,4 @@
-﻿// Copyright (C) Win32Explorer Project
+// Copyright (C) Win32Explorer Project
 // SPDX-License-Identifier: GPL-3.0-only
 // See LICENSE in the top level directory
 
@@ -14,7 +14,7 @@
 #include "TabContainer.h"
 #include "TabStorage.h"
 
-void Explorerplusplus::InitializeTabs()
+void Win32Explorer::InitializeTabs()
 {
 	m_tabBacking = TabBacking::Create(m_hContainer, this, this, m_app->GetResourceLoader(),
 		m_config, m_app->GetTabEvents());
@@ -31,35 +31,35 @@ void Explorerplusplus::InitializeTabs()
 	m_browserPane = std::make_unique<BrowserPane>(tabContainer);
 
 	m_connections.push_back(m_config->alwaysShowTabBar.addObserver(
-		std::bind(&Explorerplusplus::MaybeUpdateTabBarVisibility, this)));
+		std::bind(&Win32Explorer::MaybeUpdateTabBarVisibility, this)));
 	m_connections.push_back(m_app->GetTabEvents()->AddCreatedObserver(
-		std::bind(&Explorerplusplus::MaybeUpdateTabBarVisibility, this),
+		std::bind(&Win32Explorer::MaybeUpdateTabBarVisibility, this),
 		TabEventScope::ForBrowser(*this)));
 	m_connections.push_back(m_app->GetTabEvents()->AddRemovedObserver(
-		std::bind(&Explorerplusplus::MaybeUpdateTabBarVisibility, this),
+		std::bind(&Win32Explorer::MaybeUpdateTabBarVisibility, this),
 		TabEventScope::ForBrowser(*this)));
 
 	m_connections.push_back(m_app->GetTabEvents()->AddCreatedObserver(
-		std::bind_front(&Explorerplusplus::OnTabCreated, this), TabEventScope::ForBrowser(*this),
+		std::bind_front(&Win32Explorer::OnTabCreated, this), TabEventScope::ForBrowser(*this),
 		boost::signals2::at_front));
 	m_connections.push_back(m_app->GetTabEvents()->AddSelectedObserver(
-		std::bind_front(&Explorerplusplus::OnTabSelected, this), TabEventScope::ForBrowser(*this),
+		std::bind_front(&Win32Explorer::OnTabSelected, this), TabEventScope::ForBrowser(*this),
 		boost::signals2::at_front));
 	m_connections.push_back(m_app->GetTabEvents()->AddPreRemovalObserver(
-		std::bind_front(&Explorerplusplus::OnTabPreRemoval, this), TabEventScope::ForBrowser(*this),
+		std::bind_front(&Win32Explorer::OnTabPreRemoval, this), TabEventScope::ForBrowser(*this),
 		boost::signals2::at_back));
 	m_connections.push_back(m_app->GetTabEvents()->AddRemovedObserver(
-		std::bind_front(&Explorerplusplus::OnTabRemoved, this), TabEventScope::ForBrowser(*this)));
+		std::bind_front(&Win32Explorer::OnTabRemoved, this), TabEventScope::ForBrowser(*this)));
 
 	m_connections.push_back(m_app->GetNavigationEvents()->AddCommittedObserver(
-		std::bind_front(&Explorerplusplus::OnNavigationCommitted, this),
+		std::bind_front(&Win32Explorer::OnNavigationCommitted, this),
 		NavigationEventScope::ForActiveShellBrowser(*this), boost::signals2::at_front));
 
 	m_connections.push_back(m_app->GetShellBrowserEvents()->AddItemsChangedObserver(
-		std::bind_front(&Explorerplusplus::OnDirectoryContentsChanged, this),
+		std::bind_front(&Win32Explorer::OnDirectoryContentsChanged, this),
 		ShellBrowserEventScope::ForActiveShellBrowser(*this), boost::signals2::at_front));
 	m_connections.push_back(m_app->GetShellBrowserEvents()->AddSelectionChangedObserver(
-		std::bind_front(&Explorerplusplus::OnTabListViewSelectionChanged, this),
+		std::bind_front(&Win32Explorer::OnTabListViewSelectionChanged, this),
 		ShellBrowserEventScope::ForBrowser(*this), boost::signals2::at_front));
 
 	auto updateLayoutObserverMethod = [this](BOOL newValue)
@@ -73,7 +73,7 @@ void Explorerplusplus::InitializeTabs()
 	m_connections.push_back(m_config->extendTabControl.addObserver(updateLayoutObserverMethod));
 }
 
-void Explorerplusplus::MaybeUpdateTabBarVisibility()
+void Win32Explorer::MaybeUpdateTabBarVisibility()
 {
 	if (!m_config->alwaysShowTabBar.get()
 		&& (GetActivePane()->GetTabContainer()->GetNumTabs() == 1))
@@ -86,7 +86,7 @@ void Explorerplusplus::MaybeUpdateTabBarVisibility()
 	}
 }
 
-void Explorerplusplus::OnTabCreated(const Tab &tab)
+void Win32Explorer::OnTabCreated(const Tab &tab)
 {
 	UNREFERENCED_PARAMETER(tab);
 
@@ -95,7 +95,7 @@ void Explorerplusplus::OnTabCreated(const Tab &tab)
 	UpdateLayout();
 }
 
-void Explorerplusplus::OnNavigationCommitted(const NavigationRequest *request)
+void Win32Explorer::OnNavigationCommitted(const NavigationRequest *request)
 {
 	const auto *tab = request->GetShellBrowser()->GetTab();
 	UpdateWindowStates(*tab);
@@ -103,7 +103,7 @@ void Explorerplusplus::OnNavigationCommitted(const NavigationRequest *request)
 
 /* Creates a new tab. If a folder is selected, that folder is opened in a new
  * tab, else the default directory is opened. */
-void Explorerplusplus::OnNewTab()
+void Win32Explorer::OnNewTab()
 {
 	const Tab &selectedTab = GetActivePane()->GetTabContainer()->GetSelectedTab();
 	int selectionIndex = ListView_GetNextItem(selectedTab.GetShellBrowserImpl()->GetListView(), -1,
@@ -132,7 +132,7 @@ void Explorerplusplus::OnNewTab()
 	GetActivePane()->GetTabContainer()->CreateNewTabInDefaultDirectory({ .selected = true });
 }
 
-void Explorerplusplus::CreateInitialTabs(const WindowStorageData *storageData)
+void Win32Explorer::CreateInitialTabs(const WindowStorageData *storageData)
 {
 	if (storageData)
 	{
@@ -152,7 +152,7 @@ void Explorerplusplus::CreateInitialTabs(const WindowStorageData *storageData)
 	}
 }
 
-void Explorerplusplus::CreateTabsFromStorageData(const WindowStorageData &storageData)
+void Win32Explorer::CreateTabsFromStorageData(const WindowStorageData &storageData)
 {
 	int index = 0;
 
@@ -191,7 +191,7 @@ void Explorerplusplus::CreateTabsFromStorageData(const WindowStorageData &storag
 	}
 }
 
-void Explorerplusplus::CreateCommandLineTabs()
+void Win32Explorer::CreateCommandLineTabs()
 {
 	// It's implicitly assumed that this will succeed. Although the documentation states that
 	// GetCurrentDirectory() can fail, I'm not sure under what circumstances it ever would.
@@ -261,7 +261,7 @@ void Explorerplusplus::CreateCommandLineTabs()
 	}
 }
 
-void Explorerplusplus::OnTabSelected(const Tab &tab)
+void Win32Explorer::OnTabSelected(const Tab &tab)
 {
 	/* Hide the old listview. */
 	ShowWindow(m_hActiveListView, SW_HIDE);
@@ -276,7 +276,7 @@ void Explorerplusplus::OnTabSelected(const Tab &tab)
 	SetFocus(m_hActiveListView);
 }
 
-void Explorerplusplus::OnTabPreRemoval(const Tab &tab, int index)
+void Win32Explorer::OnTabPreRemoval(const Tab &tab, int index)
 {
 	UNREFERENCED_PARAMETER(index);
 
@@ -289,7 +289,7 @@ void Explorerplusplus::OnTabPreRemoval(const Tab &tab, int index)
 	}
 }
 
-void Explorerplusplus::OnTabRemoved(const Tab &tab)
+void Win32Explorer::OnTabRemoved(const Tab &tab)
 {
 	if (tab.GetTabContainer()->GetNumTabs() == 0)
 	{
@@ -302,7 +302,7 @@ void Explorerplusplus::OnTabRemoved(const Tab &tab)
 	}
 }
 
-concurrencpp::null_result Explorerplusplus::ScheduleFinishShutdown(WeakPtr<Explorerplusplus> self,
+concurrencpp::null_result Win32Explorer::ScheduleFinishShutdown(WeakPtr<Win32Explorer> self,
 	Runtime *runtime)
 {
 	co_await concurrencpp::resume_on(runtime->GetUiThreadExecutor());
@@ -315,19 +315,19 @@ concurrencpp::null_result Explorerplusplus::ScheduleFinishShutdown(WeakPtr<Explo
 	self->FinishShutdown();
 }
 
-void Explorerplusplus::ShowTabBar()
+void Win32Explorer::ShowTabBar()
 {
 	m_bShowTabBar = true;
 	UpdateLayout();
 }
 
-void Explorerplusplus::HideTabBar()
+void Win32Explorer::HideTabBar()
 {
 	m_bShowTabBar = false;
 	UpdateLayout();
 }
 
-void Explorerplusplus::OnTabListViewSelectionChanged(const ShellBrowser *shellBrowser)
+void Win32Explorer::OnTabListViewSelectionChanged(const ShellBrowser *shellBrowser)
 {
 	const auto *tab = shellBrowser->GetTab();
 

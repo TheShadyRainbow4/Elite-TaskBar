@@ -1,4 +1,4 @@
-﻿// Copyright (C) Win32Explorer Project
+// Copyright (C) Win32Explorer Project
 // SPDX-License-Identifier: GPL-3.0-only
 // See LICENSE in the top level directory
 
@@ -38,12 +38,12 @@
 #include <fmt/format.h>
 #include <fmt/xchar.h>
 
-Explorerplusplus *Explorerplusplus::Create(App *app, const WindowStorageData *storageData)
+Win32Explorer *Win32Explorer::Create(App *app, const WindowStorageData *storageData)
 {
-	return new Explorerplusplus(app, storageData);
+	return new Win32Explorer(app, storageData);
 }
 
-Explorerplusplus::Explorerplusplus(App *app, const WindowStorageData *storageData) :
+Win32Explorer::Win32Explorer(App *app, const WindowStorageData *storageData) :
 	m_app(app),
 	m_hContainer(CreateMainWindow(storageData)),
 	m_commandController(this, app->GetConfig(), app->GetPlatformContext()->GetClipboardStore(),
@@ -76,7 +76,7 @@ Explorerplusplus::Explorerplusplus(App *app, const WindowStorageData *storageDat
 	SetUpControlVisibilityConfigListeners();
 
 	m_windowSubclasses.push_back(std::make_unique<WindowSubclass>(m_hContainer,
-		std::bind_front(&Explorerplusplus::WindowProcedure, this)));
+		std::bind_front(&Win32Explorer::WindowProcedure, this)));
 
 	Initialize(storageData);
 
@@ -93,9 +93,9 @@ Explorerplusplus::Explorerplusplus(App *app, const WindowStorageData *storageDat
 	m_app->GetBrowserList()->AddBrowser(this);
 }
 
-Explorerplusplus::~Explorerplusplus() = default;
+Win32Explorer::~Win32Explorer() = default;
 
-HWND Explorerplusplus::CreateMainWindow(const WindowStorageData *storageData)
+HWND Win32Explorer::CreateMainWindow(const WindowStorageData *storageData)
 {
 	static bool mainWindowClassRegistered = false;
 
@@ -125,7 +125,7 @@ HWND Explorerplusplus::CreateMainWindow(const WindowStorageData *storageData)
 	return hwnd;
 }
 
-ATOM Explorerplusplus::RegisterMainWindowClass(HINSTANCE instance)
+ATOM Win32Explorer::RegisterMainWindowClass(HINSTANCE instance)
 {
 	WNDCLASSEX windowClass = {};
 	windowClass.cbSize = sizeof(windowClass);
@@ -145,20 +145,20 @@ ATOM Explorerplusplus::RegisterMainWindowClass(HINSTANCE instance)
 	return RegisterClassEx(&windowClass);
 }
 
-void Explorerplusplus::SetUpControlVisibilityConfigListeners()
+void Win32Explorer::SetUpControlVisibilityConfigListeners()
 {
 	m_connections.push_back(
-		m_config->showStatusBar.addObserver(std::bind(&Explorerplusplus::UpdateLayout, this)));
+		m_config->showStatusBar.addObserver(std::bind(&Win32Explorer::UpdateLayout, this)));
 	m_connections.push_back(
-		m_config->showFolders.addObserver(std::bind(&Explorerplusplus::UpdateLayout, this)));
+		m_config->showFolders.addObserver(std::bind(&Win32Explorer::UpdateLayout, this)));
 	m_connections.push_back(
-		m_config->showDisplayWindow.addObserver(std::bind(&Explorerplusplus::UpdateLayout, this)));
+		m_config->showDisplayWindow.addObserver(std::bind(&Win32Explorer::UpdateLayout, this)));
 
 	m_connections.push_back(
-		m_config->configChangedSignal.connect(std::bind(&Explorerplusplus::OnConfigChanged, this)));
+		m_config->configChangedSignal.connect(std::bind(&Win32Explorer::OnConfigChanged, this)));
 }
 
-void Explorerplusplus::OnConfigChanged()
+void Win32Explorer::OnConfigChanged()
 {
 	UpdateLayout();
 
@@ -176,7 +176,7 @@ void Explorerplusplus::OnConfigChanged()
 	InvalidateRect(m_hContainer, nullptr, TRUE);
 }
 
-void Explorerplusplus::Initialize(const WindowStorageData *storageData)
+void Win32Explorer::Initialize(const WindowStorageData *storageData)
 {
 	m_bookmarksMainMenu = std::make_unique<BookmarksMainMenu>(m_app, this, this,
 		m_app->GetResourceLoader(), &m_iconFetcher, m_app->GetBookmarkTree(),
@@ -220,14 +220,14 @@ void Explorerplusplus::Initialize(const WindowStorageData *storageData)
 	SetLifecycleState(LifecycleState::Main);
 }
 
-void Explorerplusplus::InitializeDisplayWindow()
+void Win32Explorer::InitializeDisplayWindow()
 {
 	m_displayWindow = DisplayWindow::Create(m_hContainer, m_config);
 
 	ApplyDisplayWindowPosition();
 }
 
-void Explorerplusplus::CreateFolderControls()
+void Win32Explorer::CreateFolderControls()
 {
 	UINT holderStyle = WS_CHILD | WS_CLIPSIBLINGS | WS_CLIPCHILDREN;
 
@@ -243,31 +243,31 @@ void Explorerplusplus::CreateFolderControls()
 	m_treeViewHolder->SetCloseButtonClickedCallback(
 		[this]() { m_config->showFolders = !m_config->showFolders.get(); });
 	m_treeViewHolder->SetResizedCallback(
-		std::bind_front(&Explorerplusplus::OnTreeViewHolderResized, this));
+		std::bind_front(&Win32Explorer::OnTreeViewHolderResized, this));
 
 	m_shellTreeView =
 		ShellTreeView::Create(m_treeViewHolder->GetHWND(), m_app, this, &m_fileActionHandler);
 	m_treeViewHolder->SetContentChild(m_shellTreeView->GetHWND());
 }
 
-void Explorerplusplus::OnTreeViewHolderResized(int newWidth)
+void Win32Explorer::OnTreeViewHolderResized(int newWidth)
 {
 	m_treeViewWidth = newWidth;
 
 	UpdateLayout();
 }
 
-Tab *Explorerplusplus::CreateTabFromPreservedTab(const PreservedTab *tab)
+Tab *Win32Explorer::CreateTabFromPreservedTab(const PreservedTab *tab)
 {
 	return &GetActivePane()->GetTabContainer()->CreateNewTab(*tab);
 }
 
-HWND Explorerplusplus::GetHWND() const
+HWND Win32Explorer::GetHWND() const
 {
 	return m_hContainer;
 }
 
-WindowStorageData Explorerplusplus::GetStorageData() const
+WindowStorageData Win32Explorer::GetStorageData() const
 {
 	WINDOWPLACEMENT placement = {};
 	placement.length = sizeof(placement);
@@ -287,17 +287,17 @@ WindowStorageData Explorerplusplus::GetStorageData() const
 		.displayWindowHeight = m_displayWindowHeight };
 }
 
-bool Explorerplusplus::IsActive() const
+bool Win32Explorer::IsActive() const
 {
 	return GetActiveWindow() == m_hContainer;
 }
 
-void Explorerplusplus::Activate()
+void Win32Explorer::Activate()
 {
 	BringWindowToForeground(m_hContainer);
 }
 
-void Explorerplusplus::TryClose()
+void Win32Explorer::TryClose()
 {
 	if (!ConfirmClose())
 	{
@@ -307,7 +307,7 @@ void Explorerplusplus::TryClose()
 	Close();
 }
 
-bool Explorerplusplus::ConfirmClose()
+bool Win32Explorer::ConfirmClose()
 {
 	if (!m_config->confirmCloseTabs)
 	{
@@ -335,7 +335,7 @@ bool Explorerplusplus::ConfirmClose()
 	return true;
 }
 
-void Explorerplusplus::Close()
+void Win32Explorer::Close()
 {
 	if (GetLifecycleState() != LifecycleState::Main)
 	{
@@ -348,7 +348,7 @@ void Explorerplusplus::Close()
 	GetActiveTabContainer()->CloseAllTabs();
 }
 
-void Explorerplusplus::BeginShutdown()
+void Win32Explorer::BeginShutdown()
 {
 	if (GetLifecycleState() != LifecycleState::Main)
 	{
@@ -364,7 +364,7 @@ void Explorerplusplus::BeginShutdown()
 	ShowWindow(m_hContainer, SW_HIDE);
 }
 
-void Explorerplusplus::FinishShutdown()
+void Win32Explorer::FinishShutdown()
 {
 	SetLifecycleState(LifecycleState::Closing);
 
@@ -373,53 +373,53 @@ void Explorerplusplus::FinishShutdown()
 	DestroyWindow(m_hContainer);
 }
 
-BrowserCommandController *Explorerplusplus::GetCommandController()
+BrowserCommandController *Win32Explorer::GetCommandController()
 {
 	return &m_commandController;
 }
 
-BrowserPane *Explorerplusplus::GetActivePane() const
+BrowserPane *Win32Explorer::GetActivePane() const
 {
 	return m_browserPane.get();
 }
 
-TabContainer *Explorerplusplus::GetActiveTabContainer()
+TabContainer *Win32Explorer::GetActiveTabContainer()
 {
 	return GetActivePane()->GetTabContainer();
 }
 
-const TabContainer *Explorerplusplus::GetActiveTabContainer() const
+const TabContainer *Win32Explorer::GetActiveTabContainer() const
 {
 	return GetActivePane()->GetTabContainer();
 }
 
-ShellBrowser *Explorerplusplus::GetActiveShellBrowser()
+ShellBrowser *Win32Explorer::GetActiveShellBrowser()
 {
 	return GetActivePane()->GetTabContainer()->GetSelectedTab().GetShellBrowser();
 }
 
-const ShellBrowser *Explorerplusplus::GetActiveShellBrowser() const
+const ShellBrowser *Win32Explorer::GetActiveShellBrowser() const
 {
 	return GetActivePane()->GetTabContainer()->GetSelectedTab().GetShellBrowser();
 }
 
-void Explorerplusplus::StartMainToolbarCustomization()
+void Win32Explorer::StartMainToolbarCustomization()
 {
 	m_mainToolbar->StartCustomization();
 }
 
-void Explorerplusplus::MenuItemSelected(HMENU menu, UINT itemId, UINT flags)
+void Win32Explorer::MenuItemSelected(HMENU menu, UINT itemId, UINT flags)
 {
 	m_statusBar->OnMenuSelect(menu, itemId, flags);
 }
 
-boost::signals2::connection Explorerplusplus::AddMenuHelpTextRequestObserver(
+boost::signals2::connection Win32Explorer::AddMenuHelpTextRequestObserver(
 	const MenuHelpTextRequestSignal::slot_type &observer)
 {
 	return m_menuHelpTextRequestSignal.connect(observer);
 }
 
-std::optional<std::wstring> Explorerplusplus::RequestMenuHelpText(HMENU menu, UINT id) const
+std::optional<std::wstring> Win32Explorer::RequestMenuHelpText(HMENU menu, UINT id) const
 {
 	auto helpText = m_menuHelpTextRequestSignal(menu, id);
 

@@ -1,4 +1,4 @@
-﻿// Copyright (C) Win32Explorer Project
+// Copyright (C) Win32Explorer Project
 // SPDX-License-Identifier: GPL-3.0-only
 // See LICENSE in the top level directory
 
@@ -27,7 +27,7 @@
 #include "../Shared_Libraries/ShellHelper.h"
 #include <wil/com.h>
 
-void Explorerplusplus::OnDestroyFiles()
+void Win32Explorer::OnDestroyFiles()
 {
 	std::list<std::wstring> fullFilenameList;
 	int iItem = -1;
@@ -43,7 +43,7 @@ void Explorerplusplus::OnDestroyFiles()
 	destroyFilesDialog->ShowModalDialog();
 }
 
-void Explorerplusplus::OnSearch()
+void Win32Explorer::OnSearch()
 {
 	CreateOrSwitchToModelessDialog(m_app->GetModelessDialogList(), L"SearchDialog",
 		[this]
@@ -56,12 +56,12 @@ void Explorerplusplus::OnSearch()
 		});
 }
 
-void Explorerplusplus::OnCustomizeColors()
+void Win32Explorer::OnCustomizeColors()
 {
 	/* Custom colors have been disabled. */
 }
 
-void Explorerplusplus::OnRunScript()
+void Win32Explorer::OnRunScript()
 {
 	CreateOrSwitchToModelessDialog(m_app->GetModelessDialogList(), L"ScriptingDialog",
 		[this]
@@ -71,13 +71,13 @@ void Explorerplusplus::OnRunScript()
 		});
 }
 
-void Explorerplusplus::OnShowOptions()
+void Win32Explorer::OnShowOptions()
 {
 	CreateOrSwitchToModelessDialog(m_app->GetModelessDialogList(), L"OptionsDialog",
 		[this] { return OptionsDialog::Create(m_hContainer, m_app, m_config, this); });
 }
 
-void Explorerplusplus::OnSearchTabs()
+void Win32Explorer::OnSearchTabs()
 {
 	CreateOrSwitchToModelessDialog(m_app->GetModelessDialogList(), L"SearchTabsDialog",
 		[this]
@@ -89,7 +89,7 @@ void Explorerplusplus::OnSearchTabs()
 		});
 }
 
-void Explorerplusplus::OnResolveLink()
+void Win32Explorer::OnResolveLink()
 {
 	TCHAR szFullFileName[MAX_PATH];
 	TCHAR szPath[MAX_PATH];
@@ -140,7 +140,7 @@ void Explorerplusplus::OnResolveLink()
 	}
 }
 
-void Explorerplusplus::OnGoToOffset(int offset)
+void Win32Explorer::OnGoToOffset(int offset)
 {
 	Tab &selectedTab = GetActivePane()->GetTabContainer()->GetSelectedTab();
 	selectedTab.GetShellBrowserImpl()->GetNavigationController()->GoToOffset(offset);

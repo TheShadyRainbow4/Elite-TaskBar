@@ -1,4 +1,4 @@
-﻿// Copyright (C) Win32Explorer Project
+// Copyright (C) Win32Explorer Project
 // SPDX-License-Identifier: GPL-3.0-only
 // See LICENSE in the top level directory
 
@@ -20,7 +20,7 @@ public:
 	static UINT GetClipboardFormat();
 
 private:
-	static inline const wchar_t CLIPBOARD_FORMAT_STRING[] = L"explorerplusplus/bookmarks";
+	static inline const wchar_t CLIPBOARD_FORMAT_STRING[] = L"win32explorer/bookmarks";
 
 	ClipboardStore *const m_clipboardStore;
 };

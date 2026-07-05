@@ -1,4 +1,4 @@
-﻿// Copyright (C) Win32Explorer Project
+// Copyright (C) Win32Explorer Project
 // SPDX-License-Identifier: GPL-3.0-only
 // See LICENSE in the top level directory
 
@@ -75,12 +75,12 @@ namespace Plugins
 class PluginManager;
 }
 
-class Explorerplusplus : public BrowserWindow, public CoreInterface, public PluginInterface
+class Win32Explorer : public BrowserWindow, public CoreInterface, public PluginInterface
 {
 public:
 	static constexpr wchar_t WINDOW_CLASS_NAME[] = L"Win32Explorer";
 
-	static Explorerplusplus *Create(App *app, const WindowStorageData *storageData = nullptr);
+	static Win32Explorer *Create(App *app, const WindowStorageData *storageData = nullptr);
 
 	// BrowserWindow
 	HWND GetHWND() const override;
@@ -176,8 +176,8 @@ private:
 		std::unique_ptr<MenuBase> menu;
 	};
 
-	Explorerplusplus(App *app, const WindowStorageData *storageData);
-	~Explorerplusplus();
+	Win32Explorer(App *app, const WindowStorageData *storageData);
+	~Win32Explorer();
 
 	static HWND CreateMainWindow(const WindowStorageData *storageData);
 	static ATOM RegisterMainWindowClass(HINSTANCE instance);
@@ -194,7 +194,7 @@ private:
 	void Initialize(const WindowStorageData *storageData);
 	bool OnActivate(int activationState, bool minimized);
 	void OnSize(UINT state);
-	static concurrencpp::null_result ScheduleUpdateLayout(WeakPtr<Explorerplusplus> self,
+	static concurrencpp::null_result ScheduleUpdateLayout(WeakPtr<Win32Explorer> self,
 		Runtime *runtime);
 	void UpdateLayout();
 	void OnDpiChanged(const RECT *updatedWindowRect);
@@ -242,7 +242,7 @@ private:
 	void OnTabSelected(const Tab &tab);
 	void OnTabPreRemoval(const Tab &tab, int index);
 	void OnTabRemoved(const Tab &tab);
-	static concurrencpp::null_result ScheduleFinishShutdown(WeakPtr<Explorerplusplus> self,
+	static concurrencpp::null_result ScheduleFinishShutdown(WeakPtr<Win32Explorer> self,
 		Runtime *runtime);
 	void ShowTabBar();
 	void HideTabBar();
@@ -466,7 +466,7 @@ private:
 	std::list<DWFolderSize> m_DWFolderSizes;
 	int m_iDWFolderSizeUniqueId;
 
-	WeakPtrFactory<Explorerplusplus> m_weakPtrFactory{ this };
+	WeakPtrFactory<Win32Explorer> m_weakPtrFactory{ this };
 };
 
 

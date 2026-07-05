@@ -1,4 +1,4 @@
-﻿// Copyright (C) Win32Explorer Project
+// Copyright (C) Win32Explorer Project
 // SPDX-License-Identifier: GPL-3.0-only
 // See LICENSE in the top level directory
 
@@ -28,7 +28,7 @@
 #include "../Shared_Libraries/WinRTBaseWrapper.h"
 #include <wil/com.h>
 
-LRESULT Explorerplusplus::OnListViewKeyDown(LPARAM lParam)
+LRESULT Win32Explorer::OnListViewKeyDown(LPARAM lParam)
 {
 	LV_KEYDOWN *keyDown = reinterpret_cast<LV_KEYDOWN *>(lParam);
 
@@ -52,7 +52,7 @@ LRESULT Explorerplusplus::OnListViewKeyDown(LPARAM lParam)
 	return 0;
 }
 
-void Explorerplusplus::OnListViewPaste()
+void Win32Explorer::OnListViewPaste()
 {
 	auto clipboardObject = m_app->GetPlatformContext()->GetClipboardStore()->GetDataObject();
 
@@ -95,7 +95,7 @@ void Explorerplusplus::OnListViewPaste()
 	}
 }
 
-int Explorerplusplus::HighlightSimilarFiles(HWND ListView) const
+int Win32Explorer::HighlightSimilarFiles(HWND ListView) const
 {
 	BOOL bSimilarTypes;
 	int iSelected;

@@ -1,4 +1,4 @@
-﻿// Copyright (C) Win32Explorer Project
+// Copyright (C) Win32Explorer Project
 // SPDX-License-Identifier: GPL-3.0-only
 // See LICENSE in the top level directory
 
@@ -16,7 +16,7 @@
 #include "TabContainer.h"
 #include "../Shared_Libraries/MenuHelper.h"
 
-void Explorerplusplus::UpdateWindowStates(const Tab &tab)
+void Win32Explorer::UpdateWindowStates(const Tab &tab)
 {
 	UpdateDisplayWindow(tab);
 }
@@ -25,7 +25,7 @@ void Explorerplusplus::UpdateWindowStates(const Tab &tab)
  * Set the state of the items in the main
  * program menu.
  */
-void Explorerplusplus::SetProgramMenuItemStates(HMENU hProgramMenu)
+void Win32Explorer::SetProgramMenuItemStates(HMENU hProgramMenu)
 {
 	const Tab &tab = GetActivePane()->GetTabContainer()->GetSelectedTab();
 

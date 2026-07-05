@@ -1,4 +1,4 @@
-﻿// Copyright (C) Win32Explorer Project
+// Copyright (C) Win32Explorer Project
 // SPDX-License-Identifier: GPL-3.0-only
 // See LICENSE in the top level directory
 
@@ -28,7 +28,7 @@ public:
 
 private:
 	static constexpr wchar_t DOCUMENTATION_URL[] =
-		L"https://explorerplusplus.readthedocs.io/en/latest/";
+		L"https://win32explorer.readthedocs.io/en/latest/";
 
 	// When changing the font size, it will be decreased/increased by this amount.
 	static constexpr int FONT_SIZE_CHANGE_DELTA = 1_pt;

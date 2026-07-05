@@ -1,4 +1,4 @@
-﻿// Copyright (C) Win32Explorer Project
+// Copyright (C) Win32Explorer Project
 // SPDX-License-Identifier: GPL-3.0-only
 // See LICENSE in the top level directory
 
@@ -27,12 +27,12 @@
 #include "../Shared_Libraries/MenuHelper.h"
 #include "../Shared_Libraries/WindowHelper.h"
 
-void Explorerplusplus::CreateMainRebarAndChildren(const WindowStorageData *storageData)
+void Win32Explorer::CreateMainRebarAndChildren(const WindowStorageData *storageData)
 {
 	m_mainRebarView = MainRebarView::Create(m_hContainer);
 
 	m_windowSubclasses.push_back(std::make_unique<WindowSubclass>(m_mainRebarView->GetHWND(),
-		std::bind_front(&Explorerplusplus::RebarSubclass, this)));
+		std::bind_front(&Win32Explorer::RebarSubclass, this)));
 
 	auto bands = InitializeMainRebarBands(storageData);
 	m_mainRebarView->AddBands(bands);
@@ -42,7 +42,7 @@ void Explorerplusplus::CreateMainRebarAndChildren(const WindowStorageData *stora
 		std::bind_front(&RebarView::LockBands, m_mainRebarView)));
 }
 
-std::vector<RebarView::Band> Explorerplusplus::InitializeMainRebarBands(
+std::vector<RebarView::Band> Win32Explorer::InitializeMainRebarBands(
 	const WindowStorageData *storageData)
 {
 	std::vector<RebarView::Band> mainRebarBands;
@@ -95,7 +95,7 @@ std::vector<RebarView::Band> Explorerplusplus::InitializeMainRebarBands(
 	return mainRebarBands;
 }
 
-RebarView::Band Explorerplusplus::InitializeToolbarBand(UINT id, HWND toolbar, bool showBand)
+RebarView::Band Win32Explorer::InitializeToolbarBand(UINT id, HWND toolbar, bool showBand)
 {
 	auto toolbarSize = static_cast<DWORD>(SendMessage(toolbar, TB_GETBUTTONSIZE, 0, 0));
 
@@ -114,7 +114,7 @@ RebarView::Band Explorerplusplus::InitializeToolbarBand(UINT id, HWND toolbar, b
 	return band;
 }
 
-RebarView::Band Explorerplusplus::InitializeNonToolbarBand(UINT id, HWND child, bool showBand)
+RebarView::Band Win32Explorer::InitializeNonToolbarBand(UINT id, HWND child, bool showBand)
 {
 	RECT rect;
 	auto res = GetWindowRect(child, &rect);
@@ -130,7 +130,7 @@ RebarView::Band Explorerplusplus::InitializeNonToolbarBand(UINT id, HWND child, 
 	return band;
 }
 
-void Explorerplusplus::UpdateMainRebarBandsFromLoadedInfo(
+void Win32Explorer::UpdateMainRebarBandsFromLoadedInfo(
 	std::vector<RebarView::Band> &mainRebarBands,
 	const std::vector<RebarBandStorageInfo> &rebarStorageInfo)
 {
@@ -158,7 +158,7 @@ void Explorerplusplus::UpdateMainRebarBandsFromLoadedInfo(
 	}
 }
 
-void Explorerplusplus::UpdateMainRebarBandFromLoadedInfo(RebarView::Band &band,
+void Win32Explorer::UpdateMainRebarBandFromLoadedInfo(RebarView::Band &band,
 	const std::vector<RebarBandStorageInfo> &rebarStorageInfo)
 {
 	auto itr = std::find_if(rebarStorageInfo.begin(), rebarStorageInfo.end(),
@@ -173,7 +173,7 @@ void Explorerplusplus::UpdateMainRebarBandFromLoadedInfo(RebarView::Band &band,
 	band.length = itr->length;
 }
 
-LRESULT Explorerplusplus::RebarSubclass(HWND hwnd, UINT msg, WPARAM wParam, LPARAM lParam)
+LRESULT Win32Explorer::RebarSubclass(HWND hwnd, UINT msg, WPARAM wParam, LPARAM lParam)
 {
 	switch (msg)
 	{
@@ -201,7 +201,7 @@ LRESULT Explorerplusplus::RebarSubclass(HWND hwnd, UINT msg, WPARAM wParam, LPAR
 	return DefSubclassProc(hwnd, msg, wParam, lParam);
 }
 
-bool Explorerplusplus::OnToolbarRightClick(const NMMOUSE *mouseInfo)
+bool Win32Explorer::OnToolbarRightClick(const NMMOUSE *mouseInfo)
 {
 	if (mouseInfo->dwItemSpec != static_cast<DWORD_PTR>(-1))
 	{
@@ -245,34 +245,34 @@ bool Explorerplusplus::OnToolbarRightClick(const NMMOUSE *mouseInfo)
 	return true;
 }
 
-void Explorerplusplus::CreateAddressBar()
+void Win32Explorer::CreateAddressBar()
 {
 	auto *addressBarView = AddressBarView::Create(m_mainRebarView->GetHWND(), m_config);
 	addressBarView->sizeUpdatedSignal.AddObserver(
-		std::bind_front(&Explorerplusplus::OnAddressBarSizeUpdated, this));
+		std::bind_front(&Win32Explorer::OnAddressBarSizeUpdated, this));
 
 	m_addressBar = AddressBar::Create(addressBarView, this, m_app->GetTabEvents(),
 		m_app->GetShellBrowserEvents(), m_app->GetNavigationEvents(), m_app->GetRuntime(),
 		m_app->GetIconFetcher());
 }
 
-void Explorerplusplus::OnAddressBarSizeUpdated()
+void Win32Explorer::OnAddressBarSizeUpdated()
 {
 	RECT rect;
 	GetWindowRect(m_addressBar->GetView()->GetHWND(), &rect);
 	m_mainRebarView->UpdateBandSize(m_addressBar->GetView()->GetHWND(), 0, GetRectHeight(&rect));
 }
 
-void Explorerplusplus::CreateMainToolbar(
+void Win32Explorer::CreateMainToolbar(
 	const std::optional<MainToolbarStorage::MainToolbarButtons> &initialButtons)
 {
 	m_mainToolbar = MainToolbar::Create(m_mainRebarView->GetHWND(), m_app, this, this,
 		m_app->GetResourceLoader(), &m_shellIconLoader, initialButtons);
 	m_mainToolbar->sizeUpdatedSignal.AddObserver(
-		std::bind(&Explorerplusplus::OnRebarToolbarSizeUpdated, this, m_mainToolbar->GetHWND()));
+		std::bind(&Win32Explorer::OnRebarToolbarSizeUpdated, this, m_mainToolbar->GetHWND()));
 }
 
-void Explorerplusplus::CreateBookmarksToolbar()
+void Win32Explorer::CreateBookmarksToolbar()
 {
 	auto bookmarksToolbarView = BookmarksToolbarView::Create(m_mainRebarView->GetHWND(), m_config);
 
@@ -280,20 +280,20 @@ void Explorerplusplus::CreateBookmarksToolbar()
 		m_app->GetAcceleratorManager(), m_app->GetResourceLoader(), &m_iconFetcher,
 		m_app->GetBookmarkTree(), m_app->GetPlatformContext());
 	m_bookmarksToolbar->GetView()->AddToolbarSizeUpdatedObserver(
-		std::bind(&Explorerplusplus::OnRebarToolbarSizeUpdated, this,
+		std::bind(&Win32Explorer::OnRebarToolbarSizeUpdated, this,
 			m_bookmarksToolbar->GetView()->GetHWND()));
 }
 
-void Explorerplusplus::CreateDrivesToolbar()
+void Win32Explorer::CreateDrivesToolbar()
 {
 	auto drivesToolbarView = DrivesToolbarView::Create(m_mainRebarView->GetHWND(), m_config);
 	m_drivesToolbar = DrivesToolbar::Create(drivesToolbarView, m_app->GetDriveModel(), this,
 		m_app->GetResourceLoader());
 	m_drivesToolbar->GetView()->AddToolbarSizeUpdatedObserver(std::bind(
-		&Explorerplusplus::OnRebarToolbarSizeUpdated, this, m_drivesToolbar->GetView()->GetHWND()));
+		&Win32Explorer::OnRebarToolbarSizeUpdated, this, m_drivesToolbar->GetView()->GetHWND()));
 }
 
-void Explorerplusplus::CreateApplicationToolbar()
+void Win32Explorer::CreateApplicationToolbar()
 {
 	auto applicationToolbarView =
 		Applications::ApplicationToolbarView::Create(m_mainRebarView->GetHWND(), m_config);
@@ -302,11 +302,11 @@ void Explorerplusplus::CreateApplicationToolbar()
 		m_app->GetApplicationModel(), &m_applicationExecutor, this, m_app->GetAcceleratorManager(),
 		m_app->GetResourceLoader());
 	m_applicationToolbar->GetView()->AddToolbarSizeUpdatedObserver(
-		std::bind(&Explorerplusplus::OnRebarToolbarSizeUpdated, this,
+		std::bind(&Win32Explorer::OnRebarToolbarSizeUpdated, this,
 			m_applicationToolbar->GetView()->GetHWND()));
 }
 
-void Explorerplusplus::OnRebarToolbarSizeUpdated(HWND toolbar)
+void Win32Explorer::OnRebarToolbarSizeUpdated(HWND toolbar)
 {
 	SIZE size;
 	[[maybe_unused]] auto res =
@@ -316,7 +316,7 @@ void Explorerplusplus::OnRebarToolbarSizeUpdated(HWND toolbar)
 	m_mainRebarView->UpdateBandSize(toolbar, size.cx, size.cy);
 }
 
-HMENU Explorerplusplus::CreateRebarHistoryMenu(BOOL bBack)
+HMENU Win32Explorer::CreateRebarHistoryMenu(BOOL bBack)
 {
 	HMENU hSubMenu = nullptr;
 	std::vector<HistoryEntry *> history;

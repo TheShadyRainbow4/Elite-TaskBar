@@ -1,4 +1,4 @@
-﻿// Copyright (C) Win32Explorer Project
+// Copyright (C) Win32Explorer Project
 // SPDX-License-Identifier: GPL-3.0-only
 // See LICENSE in the top level directory
 
@@ -11,7 +11,7 @@
 #include "../Shared_Libraries/ProcessHelper.h"
 #include <filesystem>
 
-void Explorerplusplus::InitializePlugins()
+void Win32Explorer::InitializePlugins()
 {
 	if (!m_app->GetFeatureList()->IsEnabled(Feature::Plugins))
 	{

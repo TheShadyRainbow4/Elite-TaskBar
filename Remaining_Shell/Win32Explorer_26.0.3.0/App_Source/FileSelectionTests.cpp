@@ -1,4 +1,4 @@
-﻿// Copyright (C) Win32Explorer Project
+// Copyright (C) Win32Explorer Project
 // SPDX-License-Identifier: GPL-3.0-only
 // See LICENSE in the top level directory
 
@@ -10,7 +10,7 @@
 #include "ShellBrowser/ShellBrowserImpl.h"
 #include "ShellTreeView/ShellTreeView.h"
 
-BOOL Explorerplusplus::CanPaste(PasteType pasteType) const
+BOOL Win32Explorer::CanPaste(PasteType pasteType) const
 {
 	auto directory = MaybeGetFocusedDirectory();
 
@@ -24,7 +24,7 @@ BOOL Explorerplusplus::CanPaste(PasteType pasteType) const
 }
 
 // Tests whether a hard link or symlink can be pasted.
-bool Explorerplusplus::CanPasteLink() const
+bool Win32Explorer::CanPasteLink() const
 {
 	const auto *activeShellBrowser = GetActiveShellBrowserImpl();
 	return ClipboardOperations::CanPasteLinkInDirectory(
@@ -32,7 +32,7 @@ bool Explorerplusplus::CanPasteLink() const
 		activeShellBrowser->GetDirectoryIdl().get());
 }
 
-PidlAbsolute Explorerplusplus::MaybeGetFocusedDirectory() const
+PidlAbsolute Win32Explorer::MaybeGetFocusedDirectory() const
 {
 	HWND focus = GetFocus();
 

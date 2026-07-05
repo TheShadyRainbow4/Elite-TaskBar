@@ -1,4 +1,4 @@
-﻿// Copyright (C) Win32Explorer Project
+// Copyright (C) Win32Explorer Project
 // SPDX-License-Identifier: GPL-3.0-only
 // See LICENSE in the top level directory
 
@@ -21,22 +21,22 @@
 #include <boost/range/adaptor/map.hpp>
 #include <glog/logging.h>
 
-void Explorerplusplus::ApplyDisplayWindowPosition()
+void Win32Explorer::ApplyDisplayWindowPosition()
 {
 	SendMessage(m_displayWindow->GetHWND(), WM_USER_DISPLAYWINDOWMOVED,
 		m_config->displayWindowVertical, NULL);
 }
 
-void Explorerplusplus::FolderSizeCallbackStub(int nFolders, int nFiles,
+void Win32Explorer::FolderSizeCallbackStub(int nFolders, int nFiles,
 	PULARGE_INTEGER lTotalFolderSize, LPVOID pData)
 {
-	auto *pfsei = reinterpret_cast<Explorerplusplus::FolderSizeExtraInfo *>(pData);
-	reinterpret_cast<Explorerplusplus *>(pfsei->pContainer)
+	auto *pfsei = reinterpret_cast<Win32Explorer::FolderSizeExtraInfo *>(pData);
+	reinterpret_cast<Win32Explorer *>(pfsei->pContainer)
 		->FolderSizeCallback(pfsei, nFolders, nFiles, lTotalFolderSize);
 	free(pfsei);
 }
 
-void Explorerplusplus::FolderSizeCallback(FolderSizeExtraInfo *pfsei, int nFolders, int nFiles,
+void Win32Explorer::FolderSizeCallback(FolderSizeExtraInfo *pfsei, int nFolders, int nFiles,
 	PULARGE_INTEGER lTotalFolderSize)
 {
 	UNREFERENCED_PARAMETER(nFolders);
@@ -56,7 +56,7 @@ void Explorerplusplus::FolderSizeCallback(FolderSizeExtraInfo *pfsei, int nFolde
 	PostMessage(m_hContainer, WM_APP_FOLDERSIZECOMPLETED, (WPARAM) pDWFolderSizeCompletion, 0);
 }
 
-void Explorerplusplus::OnSelectColumns()
+void Win32Explorer::OnSelectColumns()
 {
 	auto *selectColumnsDialog = SelectColumnsDialog::Create(m_app->GetResourceLoader(),
 		m_hContainer, GetActivePane()->GetTabContainer()->GetSelectedTab().GetShellBrowserImpl());

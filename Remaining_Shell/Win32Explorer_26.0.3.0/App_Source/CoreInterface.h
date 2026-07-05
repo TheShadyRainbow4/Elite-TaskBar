@@ -1,4 +1,4 @@
-﻿// Copyright (C) Win32Explorer Project
+// Copyright (C) Win32Explorer Project
 // SPDX-License-Identifier: GPL-3.0-only
 // See LICENSE in the top level directory
 
@@ -19,7 +19,7 @@ using MainMenuItemMiddleClickedSignal =
 class ShellBrowserImpl;
 class TabContainer;
 
-// Deprecated interface between Explorerplusplus and some of the other components (such as the
+// Deprecated interface between Win32Explorer and some of the other components (such as the
 // dialogs and toolbars).
 class CoreInterface
 {

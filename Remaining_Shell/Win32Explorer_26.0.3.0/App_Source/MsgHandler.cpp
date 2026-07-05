@@ -1,4 +1,4 @@
-﻿// Copyright (C) Win32Explorer Project
+// Copyright (C) Win32Explorer Project
 // SPDX-License-Identifier: GPL-3.0-only
 // See LICENSE in the top level directory
 
@@ -46,12 +46,12 @@
 #include <wil/resource.h>
 #include <algorithm>
 
-void Explorerplusplus::OpenDefaultItem(OpenFolderDisposition openFolderDisposition)
+void Win32Explorer::OpenDefaultItem(OpenFolderDisposition openFolderDisposition)
 {
 	OpenItem(m_config->defaultTabDirectory, openFolderDisposition);
 }
 
-void Explorerplusplus::OpenItem(const std::wstring &itemPath,
+void Win32Explorer::OpenItem(const std::wstring &itemPath,
 	OpenFolderDisposition openFolderDisposition)
 {
 	unique_pidl_absolute pidlItem;
@@ -63,7 +63,7 @@ void Explorerplusplus::OpenItem(const std::wstring &itemPath,
 	}
 }
 
-void Explorerplusplus::OpenItem(PCIDLIST_ABSOLUTE pidlItem,
+void Win32Explorer::OpenItem(PCIDLIST_ABSOLUTE pidlItem,
 	OpenFolderDisposition openFolderDisposition)
 {
 	SFGAOF attributes = SFGAO_FOLDER | SFGAO_STREAM | SFGAO_LINK;
@@ -106,7 +106,7 @@ void Explorerplusplus::OpenItem(PCIDLIST_ABSOLUTE pidlItem,
 	}
 }
 
-void Explorerplusplus::OpenShortcutItem(PCIDLIST_ABSOLUTE pidlItem,
+void Win32Explorer::OpenShortcutItem(PCIDLIST_ABSOLUTE pidlItem,
 	OpenFolderDisposition openFolderDisposition)
 {
 	unique_pidl_absolute target;
@@ -156,7 +156,7 @@ void Explorerplusplus::OpenShortcutItem(PCIDLIST_ABSOLUTE pidlItem,
 	}
 }
 
-void Explorerplusplus::OpenFolderItem(PCIDLIST_ABSOLUTE pidlItem,
+void Win32Explorer::OpenFolderItem(PCIDLIST_ABSOLUTE pidlItem,
 	OpenFolderDisposition openFolderDisposition)
 {
 	if (openFolderDisposition == OpenFolderDisposition::CurrentTab)
@@ -213,7 +213,7 @@ void Explorerplusplus::OpenFolderItem(PCIDLIST_ABSOLUTE pidlItem,
 	}
 }
 
-void Explorerplusplus::OpenDirectoryInNewWindow(PCIDLIST_ABSOLUTE pidlDirectory)
+void Win32Explorer::OpenDirectoryInNewWindow(PCIDLIST_ABSOLUTE pidlDirectory)
 {
 	if (m_app->GetFeatureList()->IsEnabled(Feature::MultipleWindowsPerSession))
 	{
@@ -232,21 +232,21 @@ void Explorerplusplus::OpenDirectoryInNewWindow(PCIDLIST_ABSOLUTE pidlDirectory)
 	}
 }
 
-void Explorerplusplus::OpenFileItem(const std::wstring &itemPath, const std::wstring &parameters)
+void Win32Explorer::OpenFileItem(const std::wstring &itemPath, const std::wstring &parameters)
 {
 	auto shellBrowser = GetActiveShellBrowserImpl();
 	ExecuteFileAction(m_hContainer, itemPath, L"", parameters,
 		shellBrowser->InVirtualFolder() ? L"" : shellBrowser->GetDirectoryPath().c_str());
 }
 
-void Explorerplusplus::OpenFileItem(PCIDLIST_ABSOLUTE pidlItem, const std::wstring &parameters)
+void Win32Explorer::OpenFileItem(PCIDLIST_ABSOLUTE pidlItem, const std::wstring &parameters)
 {
 	auto shellBrowser = GetActiveShellBrowserImpl();
 	ExecuteFileAction(m_hContainer, pidlItem, L"", parameters,
 		shellBrowser->InVirtualFolder() ? L"" : shellBrowser->GetDirectoryPath().c_str());
 }
 
-void Explorerplusplus::OnSize(UINT state)
+void Win32Explorer::OnSize(UINT state)
 {
 	if (state == SIZE_MINIMIZED)
 	{
@@ -257,7 +257,7 @@ void Explorerplusplus::OnSize(UINT state)
 	UpdateLayout();
 }
 
-concurrencpp::null_result Explorerplusplus::ScheduleUpdateLayout(WeakPtr<Explorerplusplus> self,
+concurrencpp::null_result Win32Explorer::ScheduleUpdateLayout(WeakPtr<Win32Explorer> self,
 	Runtime *runtime)
 {
 	// This function is designed to be called from the UI thread and the call here will also resume
@@ -274,7 +274,7 @@ concurrencpp::null_result Explorerplusplus::ScheduleUpdateLayout(WeakPtr<Explore
 	self->UpdateLayout();
 }
 
-void Explorerplusplus::UpdateLayout()
+void Win32Explorer::UpdateLayout()
 {
 	if (GetLifecycleState() != LifecycleState::Main)
 	{
@@ -473,19 +473,19 @@ void Explorerplusplus::UpdateLayout()
 		GetRectHeight(&statusBarRect), statusBarShowFlags);
 }
 
-void Explorerplusplus::OnDpiChanged(const RECT *updatedWindowRect)
+void Win32Explorer::OnDpiChanged(const RECT *updatedWindowRect)
 {
 	SetWindowPos(m_hContainer, nullptr, updatedWindowRect->left, updatedWindowRect->top,
 		GetRectWidth(updatedWindowRect), GetRectHeight(updatedWindowRect),
 		SWP_NOZORDER | SWP_NOACTIVATE);
 }
 
-std::optional<LRESULT> Explorerplusplus::OnCtlColorStatic(HWND /*hwnd*/, HDC /*hdc*/)
+std::optional<LRESULT> Win32Explorer::OnCtlColorStatic(HWND /*hwnd*/, HDC /*hdc*/)
 {
 	return std::nullopt;
 }
 
-int Explorerplusplus::OnDestroy()
+int Win32Explorer::OnDestroy()
 {
 	if (m_SHChangeNotifyID != 0)
 	{
@@ -509,7 +509,7 @@ int Explorerplusplus::OnDestroy()
 	return 0;
 }
 
-void Explorerplusplus::OnDisplayWindowResized(WPARAM wParam)
+void Win32Explorer::OnDisplayWindowResized(WPARAM wParam)
 {
 	if (m_config->displayWindowVertical)
 	{
@@ -524,7 +524,7 @@ void Explorerplusplus::OnDisplayWindowResized(WPARAM wParam)
 }
 
 /* Cycle through the current views. */
-void Explorerplusplus::OnToolbarViews()
+void Win32Explorer::OnToolbarViews()
 {
 	Tab &selectedTab = GetActivePane()->GetTabContainer()->GetSelectedTab();
 	selectedTab.GetShellBrowserImpl()->CycleViewMode(true);
@@ -534,7 +534,7 @@ void Explorerplusplus::OnToolbarViews()
 // handle Tab/Shift+Tab, the key combinations in this case are synonyms for each other. Since
 // F6/Shift+F6 would need to be handled manually anyway, handling both with the same function
 // ensures that they have identical behavior.
-void Explorerplusplus::OnFocusNextWindow(FocusChangeDirection direction)
+void Win32Explorer::OnFocusNextWindow(FocusChangeDirection direction)
 {
 	HWND focus = GetFocus();
 	HWND initialControl;
@@ -562,7 +562,7 @@ void Explorerplusplus::OnFocusNextWindow(FocusChangeDirection direction)
 	}
 }
 
-void Explorerplusplus::OnAppCommand(UINT cmd)
+void Win32Explorer::OnAppCommand(UINT cmd)
 {
 	switch (cmd)
 	{
@@ -626,7 +626,7 @@ void Explorerplusplus::OnAppCommand(UINT cmd)
 	}
 }
 
-void Explorerplusplus::CopyColumnInfoToClipboard()
+void Win32Explorer::CopyColumnInfoToClipboard()
 {
 	const auto &currentColumns = m_pActiveShellBrowser->GetCurrentColumnSet();
 
@@ -672,13 +672,13 @@ void Explorerplusplus::CopyColumnInfoToClipboard()
 	clipboardWriter.WriteText(strColumnInfo);
 }
 
-void Explorerplusplus::OnDirectoryContentsChanged(const ShellBrowser *shellBrowser)
+void Win32Explorer::OnDirectoryContentsChanged(const ShellBrowser *shellBrowser)
 {
 	const auto *tab = shellBrowser->GetTab();
 	UpdateDisplayWindow(*tab);
 }
 
-void Explorerplusplus::CreateNewWindow(const std::vector<TabStorageData> &tabs)
+void Win32Explorer::CreateNewWindow(const std::vector<TabStorageData> &tabs)
 {
 	WINDOWPLACEMENT placement = {};
 	placement.length = sizeof(placement);
@@ -698,10 +698,10 @@ void Explorerplusplus::CreateNewWindow(const std::vector<TabStorageData> &tabs)
 	initialData.displayWindowHeight = m_displayWindowHeight;
 	initialData.tabs = tabs;
 
-	Explorerplusplus::Create(m_app, &initialData);
+	Win32Explorer::Create(m_app, &initialData);
 }
 
-void Explorerplusplus::OnCloneWindow()
+void Win32Explorer::OnCloneWindow()
 {
 	std::wstring currentDirectory = m_pActiveShellBrowser->GetDirectoryPath();
 
@@ -712,7 +712,7 @@ void Explorerplusplus::OnCloneWindow()
 	LaunchCurrentProcess(m_hContainer, szQuotedCurrentDirectory);
 }
 
-void Explorerplusplus::OnDisplayWindowRClick(POINT *ptClient)
+void Win32Explorer::OnDisplayWindowRClick(POINT *ptClient)
 {
 	wil::unique_hmenu parentMenu(
 		LoadMenu(m_app->GetResourceInstance(), MAKEINTRESOURCE(IDR_DISPLAYWINDOW_RCLICK)));
@@ -738,7 +738,7 @@ void Explorerplusplus::OnDisplayWindowRClick(POINT *ptClient)
 		m_hContainer, nullptr);
 }
 
-void Explorerplusplus::OnGroupBy(SortMode groupMode)
+void Win32Explorer::OnGroupBy(SortMode groupMode)
 {
 	Tab &selectedTab = GetActivePane()->GetTabContainer()->GetSelectedTab();
 	SortMode currentGroupMode = selectedTab.GetShellBrowserImpl()->GetGroupMode();
@@ -755,52 +755,52 @@ void Explorerplusplus::OnGroupBy(SortMode groupMode)
 	}
 }
 
-void Explorerplusplus::OnGroupByNone()
+void Win32Explorer::OnGroupByNone()
 {
 	Tab &selectedTab = GetActivePane()->GetTabContainer()->GetSelectedTab();
 	selectedTab.GetShellBrowserImpl()->SetShowInGroups(false);
 }
 
-void Explorerplusplus::OnGroupSortDirectionSelected(SortDirection direction)
+void Win32Explorer::OnGroupSortDirectionSelected(SortDirection direction)
 {
 	Tab &selectedTab = GetActivePane()->GetTabContainer()->GetSelectedTab();
 	selectedTab.GetShellBrowserImpl()->SetGroupSortDirection(direction);
 }
 
-HWND Explorerplusplus::GetMainWindow() const
+HWND Win32Explorer::GetMainWindow() const
 {
 	return m_hContainer;
 }
 
-ShellBrowserImpl *Explorerplusplus::GetActiveShellBrowserImpl() const
+ShellBrowserImpl *Win32Explorer::GetActiveShellBrowserImpl() const
 {
 	return m_pActiveShellBrowser;
 }
 
-TabEvents *Explorerplusplus::GetTabEvents()
+TabEvents *Win32Explorer::GetTabEvents()
 {
 	return m_app->GetTabEvents();
 }
 
-TabContainer *Explorerplusplus::GetTabContainer() const
+TabContainer *Win32Explorer::GetTabContainer() const
 {
 	return GetActivePane()->GetTabContainer();
 }
 
-void Explorerplusplus::OnShowHiddenFiles()
+void Win32Explorer::OnShowHiddenFiles()
 {
 	Tab &tab = GetActivePane()->GetTabContainer()->GetSelectedTab();
 	tab.GetShellBrowserImpl()->SetShowHidden(!tab.GetShellBrowserImpl()->GetShowHidden());
 	tab.GetShellBrowserImpl()->GetNavigationController()->Refresh();
 }
 
-void Explorerplusplus::FocusActiveTab()
+void Win32Explorer::FocusActiveTab()
 {
 	Tab &selectedTab = GetActivePane()->GetTabContainer()->GetSelectedTab();
 	SetFocus(selectedTab.GetShellBrowserImpl()->GetListView());
 }
 
-bool Explorerplusplus::OnActivate(int activationState, bool minimized)
+bool Win32Explorer::OnActivate(int activationState, bool minimized)
 {
 	// This may be called while the window is being constructed, before it has been added to the
 	// browser list. In that case, the window won't be visible and there's no need to try and set it
