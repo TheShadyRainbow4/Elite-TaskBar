@@ -174,3 +174,6 @@ All notable changes to this project will be documented in this file.
 - Separated execution flow in WinMain.cpp so EliteTaskbar.exe and Win32Explorer.exe run independently, fixing the issue where closing one closes the other.
 - Scaled down the tab close button in ToolbarHelper.cpp to 8x8 to prevent it from overlapping the tab edges.
 
+- Implemented DisplayColorsDialog to restore missing Display Window Color Change UI, linked to config fields.
+- Restored padding logic in ToolbarHelper.cpp to fix tree exit icon shrinking, setting padding to 0 only for tab buttons.
+- Fixed C4060 compiler error in TaskbarProperties.cpp caused by empty switch statement.

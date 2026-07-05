@@ -1,39 +1,37 @@
 --- Build Log Start ---
-[2026-07-04 19:15:24] Locating MSBuild...
-[2026-07-04 19:15:24] Found MSBuild: C:\Program Files (x86)\Microsoft Visual Studio\2022\BuildTools\MSBuild\Current\Bin\MSBuild.exe
-[2026-07-04 19:15:24] Building Project_Core\Win32Explorer.sln (Release|x64)...
+[2026-07-04 19:20:19] Locating MSBuild...
+[2026-07-04 19:20:19] Found MSBuild: C:\Program Files (x86)\Microsoft Visual Studio\2022\BuildTools\MSBuild\Current\Bin\MSBuild.exe
+[2026-07-04 19:20:19] Building Project_Core\Win32Explorer.sln (Release|x64)...
 MSBuild version 17.14.40+3e7442088 for .NET Framework
 
-  SetDefaultFileManager.cpp
-iphlpapi.lib(IPHLPAPI.DLL) : warning LNK4006: __NULL_IMPORT_DESCRIPTOR already defined in version.lib(VERSION.dll); second definition ignored [C:\Users\Administrator\Desktop\Elite-TaskBar\Remaining_Shell\Win32Explorer_26.0.3.0\Shared_Libraries\Helper.vcxproj]
-userenv.lib(USERENV.dll) : warning LNK4006: __NULL_IMPORT_DESCRIPTOR already defined in version.lib(VERSION.dll); second definition ignored [C:\Users\Administrator\Desktop\Elite-TaskBar\Remaining_Shell\Win32Explorer_26.0.3.0\Shared_Libraries\Helper.vcxproj]
-wmvcore.lib(WMVCore.DLL) : warning LNK4006: __NULL_IMPORT_DESCRIPTOR already defined in version.lib(VERSION.dll); second definition ignored [C:\Users\Administrator\Desktop\Elite-TaskBar\Remaining_Shell\Win32Explorer_26.0.3.0\Shared_Libraries\Helper.vcxproj]
-rpcrt4.lib(RPCRT4.dll) : warning LNK4006: __NULL_IMPORT_DESCRIPTOR already defined in version.lib(VERSION.dll); second definition ignored [C:\Users\Administrator\Desktop\Elite-TaskBar\Remaining_Shell\Win32Explorer_26.0.3.0\Shared_Libraries\Helper.vcxproj]
-gdiplus.lib(gdiplus.dll) : warning LNK4006: __NULL_IMPORT_DESCRIPTOR already defined in version.lib(VERSION.dll); second definition ignored [C:\Users\Administrator\Desktop\Elite-TaskBar\Remaining_Shell\Win32Explorer_26.0.3.0\Shared_Libraries\Helper.vcxproj]
-shlwapi.lib(SHLWAPI.dll) : warning LNK4006: __NULL_IMPORT_DESCRIPTOR already defined in version.lib(VERSION.dll); second definition ignored [C:\Users\Administrator\Desktop\Elite-TaskBar\Remaining_Shell\Win32Explorer_26.0.3.0\Shared_Libraries\Helper.vcxproj]
-comctl32.lib(COMCTL32.dll) : warning LNK4006: __NULL_IMPORT_DESCRIPTOR already defined in version.lib(VERSION.dll); second definition ignored [C:\Users\Administrator\Desktop\Elite-TaskBar\Remaining_Shell\Win32Explorer_26.0.3.0\Shared_Libraries\Helper.vcxproj]
-uxtheme.lib(UxTheme.dll) : warning LNK4006: __NULL_IMPORT_DESCRIPTOR already defined in version.lib(VERSION.dll); second definition ignored [C:\Users\Administrator\Desktop\Elite-TaskBar\Remaining_Shell\Win32Explorer_26.0.3.0\Shared_Libraries\Helper.vcxproj]
   Helper.vcxproj -> C:\Users\Administrator\Desktop\Elite-TaskBar\Remaining_Shell\Win32Explorer_26.0.3.0\Project_Core\x64\Release\Helper.lib
-  EventSwitcher.cpp
-  FileSelectionTests.cpp
-  HandleWindowState.cpp
-  HolderWindow.cpp
-  Misc.cpp
-  MsgHandler.cpp
-  TabBacking.cpp
+  DisplayColorsDialog.cpp
+  BrowserCommandController.cpp
   ToolbarHelper.cpp
-  Win32Explorer.cpp
-  WinMain.cpp
-  DirectoryModificationHandler.cpp
-  DropTarget.cpp
-  ShellTreeView.cpp
-  ShellTreeViewContextMenuDelegate.cpp
-  TaskbarProperties.cpp
-  TaskbarWindow.cpp
-C:\Users\Administrator\Desktop\Elite-TaskBar\Remaining_Shell\Win32Explorer_26.0.3.0\App_Source\EliteTaskbar\TaskbarProperties.cpp(599,5): error C2220: the following warning is treated as an error [C:\Users\Administrator\Desktop\Elite-TaskBar\Remaining_Shell\Win32Explorer_26.0.3.0\App_Source\Win32Explorer.vcxproj]
-  (compiling source file '/EliteTaskbar/TaskbarProperties.cpp')
+C:\Users\Administrator\Desktop\Elite-TaskBar\Remaining_Shell\Win32Explorer_26.0.3.0\App_Source\LanguageHelper.h(16,8): error C2220: the following warning is treated as an error [C:\Users\Administrator\Desktop\Elite-TaskBar\Remaining_Shell\Win32Explorer_26.0.3.0\App_Source\Win32Explorer.vcxproj]
+  (compiling source file '/DisplayColorsDialog.cpp')
   
-C:\Users\Administrator\Desktop\Elite-TaskBar\Remaining_Shell\Win32Explorer_26.0.3.0\App_Source\EliteTaskbar\TaskbarProperties.cpp(599,5): warning C4060: switch statement contains no 'case' or 'default' labels [C:\Users\Administrator\Desktop\Elite-TaskBar\Remaining_Shell\Win32Explorer_26.0.3.0\App_Source\Win32Explorer.vcxproj]
-  (compiling source file '/EliteTaskbar/TaskbarProperties.cpp')
+C:\Users\Administrator\Desktop\Elite-TaskBar\Remaining_Shell\Win32Explorer_26.0.3.0\App_Source\LanguageHelper.h(16,8): warning C4099: 'Config': type name first seen using 'class' now seen using 'struct' [C:\Users\Administrator\Desktop\Elite-TaskBar\Remaining_Shell\Win32Explorer_26.0.3.0\App_Source\Win32Explorer.vcxproj]
+  (compiling source file '/DisplayColorsDialog.cpp')
+      C:\Users\Administrator\Desktop\Elite-TaskBar\Remaining_Shell\Win32Explorer_26.0.3.0\App_Source\DisplayColorsDialog.h(10,7):
+      see declaration of 'Config'
   
-[2026-07-04 19:15:39] Build FAILED with exit code 1.
+C:\Users\Administrator\Desktop\Elite-TaskBar\Remaining_Shell\Win32Explorer_26.0.3.0\App_Source\Config.h(43,8): warning C4099: 'Config': type name first seen using 'class' now seen using 'struct' [C:\Users\Administrator\Desktop\Elite-TaskBar\Remaining_Shell\Win32Explorer_26.0.3.0\App_Source\Win32Explorer.vcxproj]
+  (compiling source file '/DisplayColorsDialog.cpp')
+      C:\Users\Administrator\Desktop\Elite-TaskBar\Remaining_Shell\Win32Explorer_26.0.3.0\App_Source\Config.h(43,8):
+      see declaration of 'Config'
+  
+C:\Users\Administrator\Desktop\Elite-TaskBar\Remaining_Shell\Win32Explorer_26.0.3.0\App_Source\DisplayColorsDialog.h(10,7): error C2220: the following warning is treated as an error [C:\Users\Administrator\Desktop\Elite-TaskBar\Remaining_Shell\Win32Explorer_26.0.3.0\App_Source\Win32Explorer.vcxproj]
+  (compiling source file '/BrowserCommandController.cpp')
+  
+C:\Users\Administrator\Desktop\Elite-TaskBar\Remaining_Shell\Win32Explorer_26.0.3.0\App_Source\DisplayColorsDialog.h(10,7): warning C4099: 'Config': type name first seen using 'struct' now seen using 'class' [C:\Users\Administrator\Desktop\Elite-TaskBar\Remaining_Shell\Win32Explorer_26.0.3.0\App_Source\Win32Explorer.vcxproj]
+  (compiling source file '/BrowserCommandController.cpp')
+      C:\Users\Administrator\Desktop\Elite-TaskBar\Remaining_Shell\Win32Explorer_26.0.3.0\App_Source\Config.h(43,8):
+      see declaration of 'Config'
+  
+C:\Users\Administrator\Desktop\Elite-TaskBar\Remaining_Shell\Win32Explorer_26.0.3.0\App_Source\BrowserCommandController.cpp(608,28): error C2039: 'Refresh': is not a member of 'ShellBrowser' [C:\Users\Administrator\Desktop\Elite-TaskBar\Remaining_Shell\Win32Explorer_26.0.3.0\App_Source\Win32Explorer.vcxproj]
+  (compiling source file '/BrowserCommandController.cpp')
+      C:\Users\Administrator\Desktop\Elite-TaskBar\Remaining_Shell\Win32Explorer_26.0.3.0\App_Source\ShellBrowser\ShellBrowser.h(21,7):
+      see declaration of 'ShellBrowser'
+  
+[2026-07-04 19:20:22] Build FAILED with exit code 1.

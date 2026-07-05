@@ -1,4 +1,4 @@
-﻿// Copyright (C) Win32Explorer Project
+// Copyright (C) Win32Explorer Project
 // SPDX-License-Identifier: GPL-3.0-only
 // See LICENSE in the top level directory
 
@@ -7,6 +7,8 @@
 #include "AboutDialog.h"
 #include "BrowserWindow.h"
 #include "Config.h"
+#include "DisplayColorsDialog.h"
+#include "DialogStorageHelper.h"
 #include "MainResource.h"
 #include "ShellBrowser/ShellBrowser.h"
 #include "ShellBrowser/ShellNavigationController.h"
@@ -600,7 +602,11 @@ void BrowserCommandController::OnResetMainFontSize()
 
 void BrowserCommandController::OnChangeDisplayColors()
 {
-	/* Custom colors have been disabled. */
+	auto *displayColorsDialog = DisplayColorsDialog::Create(m_resourceLoader, m_browser->GetHWND(), m_config);
+	if (displayColorsDialog->ShowModalDialog() == BaseDialog::RETURN_OK)
+	{
+		GetActiveShellBrowser()->Refresh();
+	}
 }
 
 void BrowserCommandController::GoBack(OpenFolderDisposition disposition)

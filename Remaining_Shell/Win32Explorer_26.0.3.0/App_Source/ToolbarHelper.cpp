@@ -45,7 +45,7 @@ std::tuple<HWND, std::vector<wil::unique_himagelist>> CreateCloseButtonToolbar(H
 		ImageList_Create(bitmapInfo.bmWidth, bitmapInfo.bmHeight, ILC_COLOR32 | ILC_MASK, 0, 1));
 	ImageList_Add(hotImageList.get(), pressedBitmap.get(), nullptr);
 
-	if (!isTab) {
+	if (isTab) {
 		SendMessage(toolbar, TB_SETPADDING, 0, MAKELPARAM(0, 0));
 	}
 	SendMessage(toolbar, TB_SETBITMAPSIZE, 0, MAKELONG(bitmapInfo.bmWidth, bitmapInfo.bmHeight));

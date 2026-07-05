@@ -1187,6 +1187,7 @@
   </ItemDefinitionGroup>
   <ItemGroup>
     <ClCompile Include="AboutDialog.cpp" />
+    <ClCompile Include="DisplayColorsDialog.cpp" />
     <ClCompile Include="AcceleratorManager.cpp" />
     <ClCompile Include="AddressBarView.cpp" />
     <ClCompile Include="App.cpp" />
@@ -1526,6 +1527,7 @@
   <ItemGroup>
     <ClInclude Include="..\Project_Core\targetver.h" />
     <ClInclude Include="AboutDialog.h" />
+    <ClInclude Include="DisplayColorsDialog.h" />
     <ClInclude Include="Accelerator.h" />
     <ClInclude Include="AcceleratorManager.h" />
     <ClInclude Include="AcceleratorMappings.h" />
