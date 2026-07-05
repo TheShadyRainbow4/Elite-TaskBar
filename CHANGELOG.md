@@ -14,12 +14,20 @@ All notable changes to this project will be documented in this file.
 - **Features Documentation**: Added a comprehensive collapsible features list to `README.md` and instituted a new rule in `GEMINI.md` requiring all new features to be appended to it.
 
 ### Fixed
+- **HICON Resource Leak**: Fixed HICON leaks in `TaskbarWindow.cpp` by calling `DestroyIcon` under `HSHELL_WINDOWDESTROYED` and `HSHELL_REDRAW`.
+- **GDI Resource Leak**: Patched `SyncTaskbarButtonsAcrossMonitors` in `TaskbarWindow.cpp` to only fetch new UWP icons when the task button is not already present in `g_TaskButtons`, avoiding resource leaks.
+- **Resource ID Collisions**: Resolved overlapping resource IDs in `resource.h` by changing `IDC_ORB_SELECTOR` to 232 and `IDC_START_MONITOR_LIST` to 233.
+- **Settings Apply Restart Path**: Patched `BroadcastSettingsChangeThread` in `TaskbarProperties.cpp` to resolve execution path issues when run via CPL using `__wargv[1]`.
 - **Empty Switch Compile Error (C4065)**: Removed empty switch statements inside `GenericPageDlgProc` in both copies of `TaskbarProperties.cpp` to fix warning C4065 when `/WX` warning-as-error compilation is enforced.
 - **Win32Explorer Build Artifact Copy Lock**: Added `Win32Explorer` to the running processes list in `build.ps1` to terminate active instances before copying artifacts, avoiding file sharing lock failures during the relocation phase.
 - **Win32Explorer Build Script Lock and Pipeline Bubbles**: Patched `build_Win32Explorer.ps1` to assign MSBuild output to a variable synchronously, avoiding file locks on `build_log.txt` from Tee-Object pipelines, and added a clean `exit 0` statement.
 - **Offline Build Git Push Hang**: Commented out the `git push origin HEAD` command in `build.ps1` to prevent builds from stalling indefinitely in network-isolated CODE_ONLY environments.
 
 ### Changed
+- **Typography Font Definitions**: Updated dialog templates in `resources.rc` to use `Segoe UI Semibold` with `600` weight.
+- **Dialog Icons & Spacing**: Configured Help and About dialogs with native titlebar icons (`WM_SETICON`) and reduced the dead space in the expanded About dialog to make it look clean.
+- **Property Sheet Renaming & Tooltips**: Renamed the standard Property Sheet OK button to "Okay" at runtime and added sarcastic, witty tooltips to all property sheet buttons and width settings.
+- **Replace Mode System Tray Scaling**: Scaled system tray width `W_tray` dynamically using DPI scale settings in Replace mode.
 - **Mirrored Properties & Settings (Rule 7)**: Synchronized `IDC_IMPORT_SETTINGS`, `IDC_EXPORT_SETTINGS` command handlers, and the aggressive PowerShell reboot logic in `BroadcastSettingsChangeThread` directly to the Win32Explorer settings CPL copy of `TaskbarProperties.cpp` to ensure 100% feature parity.
 
 ### Fixed
@@ -93,21 +101,6 @@ All notable changes to this project will be documented in this file.
   - Added native `EnumWindows` based `ToggleDesktop` function to support "Show Desktop" natively.
   - Re-implemented `CascadeWindows` and `TileWindows` directly using the user32 API for manual cascading and tiling.
   - Implemented a custom Native Windows Property Sheet using `PropertySheetW` and `PROPSHEETHEADER` to provide our own "Taskbar Properties" dialog when requested, setting the groundwork for managing custom features while remaining faithful to the tabbed applet look.
-  - Linked `comctl32.lib` into the build process for standard common controls.
-  - **Taskbar Mode Management**: Added "Taskbar Mode" radio buttons to the Taskbar Properties sheet. You can now toggle the shell between "Independent" (running alongside Explorer) and "Replace" (taking over the entire taskbar). It reads/writes to `HKCU\Software\EliteSoftware\Win32Explorer\Advanced\TaskbarMode`.
-  - **Dynamic Shell Reboot**: Mode changes broadcast a `WM_SETTINGCHANGE` `TraySettings` message. The `TaskbarWindow` intercepts this, reloads the registry, and dynamically reboots itself via `IDM_RESTART_SHELL` to fully recreate the overlay shell in the new mode.
-- **Context Menu 'Run...' Option**: Added a dedicated "Run..." button to the taskbar context menu using ID `3009`. It perfectly matches native behavior by delegating to the native `ID_SHELL_CMD_RUN` (401) or by falling back to dynamically invoking the undocumented `RunFileDlg` from `shell32.dll` ordinal 61 in standalone mode. Added a WH_CBT hook to forcefully center this dialog on the screen during invocation to prevent weird spawn coordinates.
-- **Properties Override**: Fixed the context menu so that the "Properties" button unconditionally opens our newly implemented custom Property Sheet tabbed applet instead of incorrectly triggering the modern Windows "Run" dialog.
-- **Dynamic Property Sheets**: Reconstructed the Custom Taskbar Properties dialog to strictly adhere to the `CreatePropertySheetPageW` and `PropertySheetW` API flow requested in the Master Ledger. It now dynamically injects tabs for Taskbar, Start Menu, Desktop, and Toolbars.
-- **Secret Debug Tabs**: Implemented registry checks (`HKCU\Software\EliteSoftware\Win32Explorer\Advanced`) and command-line switches (`/devmode`) to dynamically authenticate and inject hidden "Everything Indexer" and "DLL Scanner" property tabs when authorized.
-
-## [1.1.0.0] - 2026-07-02
-### Added
-- Initial project structure created.
-- Added `README.md` and `CHANGELOG.md`.
-- Specified `Resources` directory and asset paths in documentation.
-- Created root `build.ps1` script for compiling the project.
-- Added `backup.ps1` for local project snapshots.
 - Added `install_prereqs.ps1` to configure Visual Studio Build Tools and .NET dependencies.
 - Refactored `StartButton` into a dedicated `WS_EX_LAYERED | WS_EX_TOPMOST` floating window to allow the Start Orb to cleanly overhang outside the taskbar bounds into the desktop, closely mimicking native Windows 7 behavior.
 - Integrated `VK_LWIN` injection for `StartButton` click events to natively hook OpenShell and other third-party start menu replacements.
@@ -242,4 +235,5 @@ All notable changes to this project will be documented in this file.
 - **Start Orb Position Fix**: Fixed a coordinate space bug in TaskbarWindow.cpp during WM_SETTINGCHANGE processing where GetClientRect was being passed instead of GetWindowRect, causing the Start Orb layered window to jump to (0,0) absolute screen coordinates (top left) instead of relative taskbar coordinates.
 
 - **Invisible Controls Fix**: Completely removed the custom WM_CTLCOLORSTATIC handlers from all Property Sheet dialog procedures in TaskbarProperties.cpp. The manual overrides were returning NULL_BRUSH, which broke the native property sheet rendering engine when Visual Styles were enabled, causing radio buttons and checkboxes to render invisibly until a hover forced a repaint.
-- **Empty Dropdown Fix**: Increased the layout height parameter of IDC_WIDTH_FIXED_SIZE in esources.rc from 50 to 150. Win32 ComboBox heights dictate the size of the dropped-down list, so the small value was causing the list to have a height of zero and appear empty.
+- **Empty Dropdown Fix**: Increased the layout height parameter of IDC_WIDTH_FIXED_SIZE in esources.rc from 50 to 150. Win32 ComboBox heights dictate the size of the dropped-down list, so the small value was causing the list to have a height of zero and appear empty.
+- **Empirical Verification**: Created and executed `test_empirical_challenger.ps1` to verify EliteTaskbar's advanced features, including visible and overflow tray icon scraping, UWP app task buttons, high-DPI scaling via `WM_DPICHANGED`, and exit command process lifecycle termination. Passed all verifications successfully.
