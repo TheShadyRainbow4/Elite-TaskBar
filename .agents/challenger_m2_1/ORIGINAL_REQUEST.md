@@ -1,0 +1,10 @@
+## 2026-07-05T04:40:00Z
+
+Empirically test the correctness of the implementation of Milestone 2 (R2: System Tray Integration & R5: Custom Icon Theming) and the C++ native settings redirect.
+Verify:
+- Clean compilation of all targets via build.ps1.
+- Test that EliteSettings.exe and EliteSettings.cpl run as fully native C++ binaries, opening the native properties sheet in-process.
+- Test that EliteTaskbar and Win32Explorer launch and display system tray icons with their correct menus (Quit menu shuts down processes).
+- Test that configuring a valid "Custom Icon Theme Folder" in the Settings UI correctly loads custom PNG/ICO files and applies them, falling back to resources when empty or missing.
+- Write a validation script or run command sequences to verify these behaviors empirically.
+- Update your progress.md heartbeat, and write a detailed handoff.md report with your verdict (PASS/FAIL) and evidence.
