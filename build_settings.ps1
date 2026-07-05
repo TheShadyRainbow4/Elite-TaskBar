@@ -46,10 +46,10 @@ Copy-Item "$BuildDir\EliteSettings.exe" -Destination "$BuildDirx86\EliteSettings
 
 
 Write-Host "Compiling Settings Stubs..."
-cmd.exe /c "cd /d `"$BuildDir`" && call `"$VsDevCmd`" -arch=x64 && rc.exe /fo `"$BuildDir\settings_cpl.res`" `"$SourceDir\settings_cpl.rc`" && $stubCompileCmd64 && $stubCPLCompileCmd64 && rc.exe /fo `"$BuildDir\everything_resources.res`" `"$SourceDir\EliteEverythingStub.rc`" && $everyCompileCmd64 && rc.exe /fo `"$BuildDir\dll_resources.res`" `"$SourceDir\EliteDLLScannerStub.rc`" && $dllCompileCmd64" 2>&1
+cmd.exe /c "cd /d `"$BuildDir`" && call `"$VsDevCmd`" -arch=x64 && rc.exe /fo `"$BuildDir\settings_resources.res`" `"$BuildDir\settings_resources.rc`" && rc.exe /fo `"$BuildDir\settings_cpl.res`" `"$SourceDir\settings_cpl.rc`" && $stubCompileCmd64 && $stubCPLCompileCmd64 && rc.exe /fo `"$BuildDir\everything_resources.res`" `"$SourceDir\EliteEverythingStub.rc`" && $everyCompileCmd64 && rc.exe /fo `"$BuildDir\dll_resources.res`" `"$SourceDir\EliteDLLScannerStub.rc`" && $dllCompileCmd64" 2>&1
 if ($LASTEXITCODE -ne 0) { throw "Stubs x64 Build failed" }
 
-cmd.exe /c "cd /d `"$BuildDirx86`" && call `"$VsDevCmd`" -arch=x86 && rc.exe /fo `"$BuildDirx86\settings_cpl.res`" `"$SourceDir\settings_cpl.rc`" && $stubCompileCmd86 && $stubCPLCompileCmd86 && rc.exe /fo `"$BuildDirx86\everything_resources.res`" `"$SourceDir\EliteEverythingStub.rc`" && $everyCompileCmd86 && rc.exe /fo `"$BuildDirx86\dll_resources.res`" `"$SourceDir\EliteDLLScannerStub.rc`" && $dllCompileCmd86" 2>&1
+cmd.exe /c "cd /d `"$BuildDirx86`" && call `"$VsDevCmd`" -arch=x86 && rc.exe /fo `"$BuildDirx86\settings_resources.res`" `"$BuildDirx86\settings_resources.rc`" && rc.exe /fo `"$BuildDirx86\settings_cpl.res`" `"$SourceDir\settings_cpl.rc`" && $stubCompileCmd86 && $stubCPLCompileCmd86 && rc.exe /fo `"$BuildDirx86\everything_resources.res`" `"$SourceDir\EliteEverythingStub.rc`" && $everyCompileCmd86 && rc.exe /fo `"$BuildDirx86\dll_resources.res`" `"$SourceDir\EliteDLLScannerStub.rc`" && $dllCompileCmd86" 2>&1
 if ($LASTEXITCODE -ne 0) { throw "Stubs x86 Build failed" }
 $ErrorActionPreference = 'Stop'
 
