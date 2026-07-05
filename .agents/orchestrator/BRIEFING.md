@@ -67,12 +67,17 @@ Coordinate and implement the advanced view modes, system tray fixes, UWP icons, 
 | Challenger 4 | teamwork_preview_challenger | Win32Explorer view modes empirical tests | completed | 49319de2-8f79-450a-a438-8b424e93bacf |
 | Auditor 3 | teamwork_preview_auditor | Forensic integrity verification | completed | a8d81470-b082-4c70-8761-85489b8fd55e |
 | Worker 5 | teamwork_preview_worker | Reviewer findings remediation | failed | 688b7e8c-5ade-42b0-bda0-674a44508733 |
-| Worker 5_gen2 | teamwork_preview_worker | Reviewer findings remediation (Replacement) | in-progress | 06d73518-eabc-4220-a775-83fa298d7309 |
+| Worker 5_gen2 | teamwork_preview_worker | Reviewer findings remediation (Replacement) | completed | 06d73518-eabc-4220-a775-83fa298d7309 |
+| Reviewer 7 | teamwork_preview_reviewer | Code correctness re-review | in-progress | 0c4368c1-ff08-45c8-ab64-737ea6ae34c9 |
+| Reviewer 8 | teamwork_preview_reviewer | UI/UX compliance re-review | in-progress | f2ff5a62-e430-4007-887f-11ed2f6ad5a0 |
+| Challenger 5 | teamwork_preview_challenger | EliteTaskbar features empirical re-tests | in-progress | 8c5aa211-154c-4a58-b5ae-6a4e942ba2b2 |
+| Challenger 6 | teamwork_preview_challenger | Win32Explorer view modes empirical re-tests | in-progress | ccd59f70-73ba-4991-8fdf-1cd503d6419b |
+| Auditor 4 | teamwork_preview_auditor | Forensic re-audit | in-progress | 0b11323e-a71b-4be7-80a5-65c0b3fc4349 |
 
 ## Succession Status
 - Succession required: no
-- Spawn count: 10 / 16
-- Pending subagents: 06d73518-eabc-4220-a775-83fa298d7309
+- Spawn count: 15 / 16
+- Pending subagents: 0c4368c1-ff08-45c8-ab64-737ea6ae34c9, f2ff5a62-e430-4007-887f-11ed2f6ad5a0, 8c5aa211-154c-4a58-b5ae-6a4e942ba2b2, ccd59f70-73ba-4991-8fdf-1cd503d6419b, 0b11323e-a71b-4be7-80a5-65c0b3fc4349
 - Predecessor: none
 - Successor: not yet spawned
 

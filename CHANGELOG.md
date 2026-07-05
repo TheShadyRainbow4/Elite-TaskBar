@@ -5,6 +5,12 @@ All notable changes to this project will be documented in this file.
 
 ## [Unreleased]
 ### Added
+- **DDF Compression Optimization (backup.ps1)**: Restricted file search scopes to active SourceFiles/root and excluded `.log`, `.txt`, and `.cab` extensions to completely prevent sharing violations and extremely slow backups.
+- **Resource ID Collision Fix (resource.h)**: Resolved colliding IDs 228/229 (`IDC_WIDTH_FIXED_SIZE` and `IDC_WIDTH_FIXED_SIZE_LBL`) by moving them to safe, unused IDs 234/235 in both resource headers.
+- **About Dialog Layout Spacing (resources.rc & TaskbarProperties.cpp)**: Re-designed About dialog templates to minimize layout gaps, scaling collapsed height to `110` DUs and expanded to `195` DUs, dynamically relocating the buttons and adjusting the 3D inset "Chin" height.
+- **Missing Hover Tooltips (TaskbarProperties.cpp)**: Registered sarcastic, witty tooltips to standard Property Sheet buttons (`IDOK`, `IDCANCEL`, `ID_APPLY`) upon `WM_SHOWWINDOW` in the sheet subclass procedure.
+- **Settings Apply Restart Path Fix (TaskbarProperties.cpp)**: Bypassed the System32 fallback when running inside Control Panel DLLs by using `GetModuleFileNameW` with `g_hInstance` rather than `NULL`.
+- **GetWindowIconFix HICON Resource Leak Fix (TaskbarWindow.cpp)**: Reuses the existing icon handle when the button is already in `g_TaskButtons` in `SyncTaskbarButtonsAcrossMonitors`.
 - **Direct Code Signing (signtool.exe)**: Bypassed the interactive `Elite-EasySigner` UI tool in `build_sign.ps1` and `Win32Explorer_26.0.3.0/build_Win32Explorer.ps1` by executing `signtool.exe` directly in silent mode using `EliteSoftware_Special.pfx` and password `Minecraft145!!`. This prevents hanging in non-interactive build environments.
 - **Double System Tray Scraping (R4)**: Updated `TrayIconScraper.cpp` in both directories to query `NotifyIconOverflowWindow` in addition to the standard tray pager. It scrapes and aggregates icons from both visible and overflow toolbars seamlessly.
 - **Unified UWP Icon Extraction (R5)**: Integrated clean extraction support inside `TaskbarWindow.cpp` to correctly resolve high-quality program icons for Modern UWP apps by reading app layouts, replacing standard low-res fallback icon calls.

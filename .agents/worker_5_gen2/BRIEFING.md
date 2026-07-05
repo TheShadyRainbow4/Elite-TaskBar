@@ -1,52 +1,42 @@
-# BRIEFING — 2026-07-05T10:11:00Z
+# BRIEFING — 2026-07-05T10:30:00Z
 
 ## Mission
-Remediate the Milestone 3 implementation issues and synchronize features across both `SourceFiles/` and `Win32Explorer_26.0.3.0/App_Source/EliteTaskbar/`.
+Merge, synchronize, and complete the remediation of Milestone 3 features across both SourceFiles/ and Win32Explorer_26.0.3.0/App_Source/EliteTaskbar/.
 
 ## 🔒 My Identity
-- Archetype: worker_5_gen2
+- Archetype: Implementer / QA / Specialist
 - Roles: implementer, qa, specialist
-- Working directory: C:\Users\Administrator\Desktop\Elite-TaskBar\.agents\worker_5_gen2
-- Original parent: 06d73518-eabc-4220-a775-83fa298d7309
+- Working directory: C:\Users\Administrator\Desktop\Elite-TaskBar\.agents\worker_5_gen2\
+- Original parent: 56c49f71-824d-4231-b976-720d6718b2ae
 - Milestone: Milestone 3 Remediation
 
 ## 🔒 Key Constraints
-- GetWindowIconFix HICON Resource Leak fixes in TaskbarWindow.cpp.
-- Settings Apply Restart Path Fix in TaskbarProperties.cpp.
-- Missing Hover Tooltips in TaskbarProperties.cpp.
-- About & Help dialog icons configuration.
-- About dialog layout spacing reduction in resources.rc.
-- Resource ID collision fix in resource.h.
-- Replace mode system tray DPI scaling in TaskbarWindow.cpp.
-- Run build.ps1 to verify successful compilation with no warning-as-errors.
-- Synchronize all changes identically between SourceFiles/ and Win32Explorer_26.0.3.0/App_Source/EliteTaskbar/.
-- Do not cheat, no hardcoding, no dummy implementations.
+- CODE_ONLY network mode: no external HTTP client calls.
+- Mirror CPL parity: Standalone CPL must exactly match settings EXE changes.
+- Layout Compliance: Output files in designated source/build folders, only metadata in `.agents/`.
+- Pre-flight and Post-flight rules: read documentation first, update CHANGELOG.md after edits.
 
 ## Current Parent
-- Conversation ID: 06d73518-eabc-4220-a775-83fa298d7309
-- Updated: not yet
+- Conversation ID: 56c49f71-824d-4231-b976-720d6718b2ae
+- Updated: 2026-07-05T10:30:00Z
 
 ## Task Summary
-- **What to build**: The 8 requested Milestone 3 fixes and updates.
-- **Success criteria**: Fixes are implemented, clean compilation using build.ps1, runs and displays correctly, and sync is maintained.
-- **Interface contracts**: C:\Users\Administrator\Desktop\Elite-TaskBar\GEMINI.md
-- **Code layout**: SourceFiles/ and Win32Explorer_26.0.3.0/App_Source/EliteTaskbar/
+- **What to build**: Remediation of Milestone 3 features (Resource ID Collisions, About Dialog spacing, restarting path, tooltip registers, resource leaks).
+- **Success criteria**: All targets build and link successfully in both x64 and x86 configurations under `build.ps1` with zero warnings-as-errors.
+- **Interface contracts**: Parity between CPL and settings EXE.
+- **Code layout**: Source in `SourceFiles/` and `Win32Explorer_26.0.3.0/App_Source/EliteTaskbar/`.
 
 ## Key Decisions Made
-- [TBD]
-
-## Change Tracker
-- **Files modified**: None yet
-- **Build status**: Untested
-- **Pending issues**: None
-
-## Quality Status
-- **Build/test result**: Untested
-- **Lint status**: Untested
-- **Tests added/modified**: None yet
-
-## Loaded Skills
-- None
+- Excluded heavy folders and locked log files in `backup.ps1` to prevent sharing violations and infinite CAB packaging hangs.
+- Moved resource IDs 228/229 to safe, unused slots 234/235 to resolve collisions.
+- Subclassed property sheets on `WM_SHOWWINDOW` to guarantee tooltips are registered on standard buttons.
+- Passed `g_hInstance` to `GetModuleFileNameW` inside CPL execution path to retrieve CPL directory rather than `rundll32.exe`'s System32 path.
 
 ## Artifact Index
-- C:\Users\Administrator\Desktop\Elite-TaskBar\.agents\worker_5_gen2\handoff.md — My handoff report
+- C:\Users\Administrator\Desktop\Elite-TaskBar\SourceFiles\TaskbarProperties.cpp - Settings applet logic
+- C:\Users\Administrator\Desktop\Elite-TaskBar\Win32Explorer_26.0.3.0\App_Source\EliteTaskbar\TaskbarProperties.cpp - Mirrored settings logic
+- C:\Users\Administrator\Desktop\Elite-TaskBar\SourceFiles\resources.rc - About dialog resource definitions
+- C:\Users\Administrator\Desktop\Elite-TaskBar\Win32Explorer_26.0.3.0\App_Source\EliteTaskbar\resources.rc - Mirrored dialog resource definitions
+- C:\Users\Administrator\Desktop\Elite-TaskBar\SourceFiles\resource.h - Resource IDs
+- C:\Users\Administrator\Desktop\Elite-TaskBar\Win32Explorer_26.0.3.0\App_Source\EliteTaskbar\resource.h - Mirrored resource IDs
+- C:\Users\Administrator\Desktop\Elite-TaskBar\backup.ps1 - Optimized CAB backup pipeline
