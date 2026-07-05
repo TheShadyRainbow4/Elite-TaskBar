@@ -75,6 +75,31 @@ $root = "C:\Users\Administrator\Desktop\Elite-TaskBar"
 # Copy EXE
 $exePath = Join-Path $exeDir "Win32Explorer.exe"
 if (Test-Path $exePath) {
+    # Sign the executable before copying
+    $signtool = "C:\Program Files (x86)\Windows Kits\10\bin\10.0.22621.0\x64\signtool.exe"
+    if (-not (Test-Path $signtool)) {
+        $signtool = "C:\Program Files (x86)\Windows Kits\10\bin\x64\signtool.exe"
+    }
+    $pfxPath = "C:\Users\Administrator\Desktop\Elite-TaskBar\Elite-EasySigner\EliteSoftware_Special.pfx"
+    $password = "Minecraft145!!"
+
+    if (Test-Path $pfxPath) {
+        Log-Message "Signing $exePath..."
+        & $signtool sign /f $pfxPath /p $password /fd SHA256 /t http://timestamp.digicert.com /v $exePath | Out-Null
+    } else {
+        Log-Message "WARNING: Certificate not found at $pfxPath, skipping sign."
+    }
+
+    $targetExe = Join-Path $root "Win32Explorer.exe"
+    $targetOld = Join-Path $root "Win32Explorer.old.exe"
+    
+    if (Test-Path $targetExe) {
+        if (Test-Path $targetOld) {
+            Remove-Item -Path $targetOld -Force -ErrorAction SilentlyContinue
+        }
+        Rename-Item -Path $targetExe -NewName "Win32Explorer.old.exe" -Force -ErrorAction SilentlyContinue
+    }
+
     Log-Message "Copying $exePath to $root"
     Copy-Item -Path $exePath -Destination $root -Force
 } else {

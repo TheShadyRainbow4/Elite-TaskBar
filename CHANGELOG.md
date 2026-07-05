@@ -164,3 +164,6 @@ All notable changes to this project will be documented in this file.
 
 - Fixed an issue where the file manager exiting would forcibly close the taskbar even if nableEliteTaskbar was explicitly toggled off but the taskbar was running.
 
+- Updated `build_Win32Explorer.ps1` to properly sign the executable using the project's PFX certificate.
+- Added logic to the build script to safely overwrite active executables by renaming locked ones to `.old.exe` before copying the new artifact.
+
