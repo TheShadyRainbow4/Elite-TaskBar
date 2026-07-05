@@ -125,6 +125,8 @@ void LoadFromKey(HKEY settingsKey, Config &config)
 		config.enableEliteTaskbar);
 	RegistrySettings::Read32BitValueFromRegistry(settingsKey, L"EnableEliteStartMenu",
 		config.enableEliteStartMenu);
+	RegistrySettings::Read32BitValueFromRegistry(settingsKey, L"EnablePortableMirror",
+		config.enablePortableMirror);
 
 	auto theme = config.theme.get();
 	res = RegistrySettings::ReadBetterEnumValue(settingsKey, L"Theme", theme);
@@ -315,6 +317,8 @@ void SaveToKey(HKEY settingsKey, const Config &config)
 		config.enableEliteTaskbar.get());
 	RegistrySettings::SaveDword(settingsKey, L"EnableEliteStartMenu",
 		config.enableEliteStartMenu.get());
+	RegistrySettings::SaveDword(settingsKey, L"EnablePortableMirror",
+		config.enablePortableMirror.get());
 	RegistrySettings::SaveString(settingsKey, L"NewTabDirectory", config.defaultTabDirectory);
 	RegistrySettings::SaveDword(settingsKey, L"IconTheme", config.iconSet);
 	RegistrySettings::SaveDword(settingsKey, L"Language", config.language);

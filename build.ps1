@@ -139,6 +139,17 @@ if (-not $failed) {
     & ".\build_Win32Explorer.ps1"
     Set-Location $origDir
     
+    Write-Host "Auto-committing submodule Win32Explorer_26.0.3.0..." -ForegroundColor Cyan
+    $origDirGit = Get-Location
+    $submoduleDir = "$ScriptDir\Win32Explorer_26.0.3.0"
+    if (Test-Path $submoduleDir) {
+        Set-Location $submoduleDir
+        git add .
+        git commit -m "Auto-commit submodule after successful build"
+        git push origin master
+        Set-Location $origDirGit
+    }
+    
     Write-Host "Auto-committing and pushing to repository..." -ForegroundColor Cyan
     git add .
     git commit -m "Auto-commit after successful build (build.ps1)"

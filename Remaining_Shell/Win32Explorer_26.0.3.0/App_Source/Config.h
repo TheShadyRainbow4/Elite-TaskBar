@@ -127,6 +127,7 @@ struct Config
 	ValueWrapper<bool> enableShellBagsSupport = false;
 	ValueWrapper<bool> enableEliteTaskbar = false;
 	ValueWrapper<bool> enableEliteStartMenu = false;
+	ValueWrapper<bool> enablePortableMirror = false;
 
 	// These are settings that are shared between all tabs. It's not
 	// possible to adjust them on a per-tab basis.

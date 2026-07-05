@@ -134,6 +134,9 @@ All notable changes to this project will be documented in this file.
 - Modified `build_Win32Explorer.ps1` to explicitly copy the compiled `Win32Explorer.exe` directly into the `Elite-TaskBar` project root directory upon successful compilation.
 
 ## [Unreleased]
+### Changed
+- **Registry Roots for Portable Mirror**: Added `useHKLM` parameter to `RegistryAppStorageFactory::MaybeCreate`, `OpenKeyForLoad`, and `CreateKeyForSave` function declarations and implementations to support dynamic registry roots (HKLM vs HKCU) based on Portable Mirror Mode. Added `enablePortableMirror` field to `Config` struct in `Config.h` and integrated registry load/save calls in `ConfigRegistryStorage.cpp` and XML load/save calls in `ConfigXmlStorage.cpp`.
+
 ### Added
 - Added \Remaining_Shell/\ to \.gitignore\ to prevent massive build objects and artifacts from bloating the repo.
 - Injected EliteTaskbar source files directly into Win32Explorer codebase via \Win32Explorer.vcxproj\.

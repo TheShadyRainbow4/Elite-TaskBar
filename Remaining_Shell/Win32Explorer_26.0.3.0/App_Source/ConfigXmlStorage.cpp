@@ -183,6 +183,7 @@ void LoadFromNode(IXMLDOMNode *settingsNode, Config &config)
 	GetBoolSetting(settingsNode, L"EnableShellBagsSupport", config.enableShellBagsSupport);
 	GetBoolSetting(settingsNode, L"EnableEliteTaskbar", config.enableEliteTaskbar);
 	GetBoolSetting(settingsNode, L"EnableEliteStartMenu", config.enableEliteStartMenu);
+	GetBoolSetting(settingsNode, L"EnablePortableMirror", config.enablePortableMirror);
 
 	GetBoolSetting(settingsNode, L"LargeToolbarIcons", config.useLargeToolbarIcons);
 	GetBoolSetting(settingsNode, L"LockToolbars", config.lockToolbars);
@@ -380,6 +381,8 @@ void SaveToNode(IXMLDOMDocument *xmlDocument, IXMLDOMElement *settingsNode, cons
 		L"EnableEliteTaskbar", XMLSettings::EncodeBoolValue(config.enableEliteTaskbar.get()));
 	XMLSettings::WriteStandardSetting(xmlDocument, settingsNode, SETTING_NODE_NAME,
 		L"EnableEliteStartMenu", XMLSettings::EncodeBoolValue(config.enableEliteStartMenu.get()));
+	XMLSettings::WriteStandardSetting(xmlDocument, settingsNode, SETTING_NODE_NAME,
+		L"EnablePortableMirror", XMLSettings::EncodeBoolValue(config.enablePortableMirror.get()));
 
 	XMLSettings::WriteStandardSetting(xmlDocument, settingsNode, SETTING_NODE_NAME,
 		L"LargeToolbarIcons", XMLSettings::EncodeBoolValue(config.useLargeToolbarIcons.get()));
