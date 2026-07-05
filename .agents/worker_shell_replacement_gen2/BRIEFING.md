@@ -27,20 +27,24 @@ Address minor quality and performance optimization findings for the Desktop Shel
 - **Code layout**: SourceFiles/ for elite-taskbar code, Win32Explorer_26.0.3.0/App_Source/EliteTaskbar/ for submodule files.
 
 ## Key Decisions Made
-- [TBD]
+- Cached Gdiplus::Bitmap as a file-scope static variable pointer inside `DesktopWindow.cpp` to prevent disk reads/decoding on paint.
+- Monitored changes to registry paths, style, tile, and active state to dynamically invalidate/repopulate the cached bitmap when they change.
+- Reused `Copy-Item` in MSBuild build.ps1 run to keep the standalone Win32Explorer settings CPL in parity.
 
 ## Artifact Index
-- [TBD]
+- C:\Users\Administrator\Desktop\Elite-TaskBar\SourceFiles\DesktopWindow.cpp — cached wallpaper implementation.
+- C:\Users\Administrator\Desktop\Elite-TaskBar\Win32Explorer_26.0.3.0\App_Source\EliteTaskbar\TaskbarProperties.cpp — synchronized properties tab code.
+- C:\Users\Administrator\Desktop\Elite-TaskBar\Win32Explorer_26.0.3.0\App_Source\EliteTaskbar\resources.rc — synchronized properties tab resources.
 
 ## Change Tracker
-- **Files modified**: None yet.
-- **Build status**: Untested.
+- **Files modified**: SourceFiles/DesktopWindow.cpp, Win32Explorer_26.0.3.0/App_Source/EliteTaskbar/TaskbarProperties.cpp, Win32Explorer_26.0.3.0/App_Source/EliteTaskbar/resources.rc, CHANGELOG.md, README.md, Documentation/BuildGuide-FeatureRequirement_CheckList.md, Documentation/PROJECT_SOURCE_MAP.md, Documentation/SourceMap_And_Architecture.md.
+- **Build status**: Pass (compiles and signs successfully via build.ps1).
 - **Pending issues**: None.
 
 ## Quality Status
-- **Build/test result**: Untested.
+- **Build/test result**: Pass (verify_desktop_shell.ps1 passes 100%).
 - **Lint status**: 0.
-- **Tests added/modified**: None.
+- **Tests added/modified**: verify_desktop_shell.ps1 (run verified).
 
 ## Loaded Skills
 - None.
