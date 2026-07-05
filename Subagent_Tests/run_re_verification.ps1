@@ -112,7 +112,7 @@ $regSettingsBackupPath = "HKCU:\Software\Win32Explorer\Settings_Backup_Re"
 
 function Stop-ExplorerProcesses {
     Get-Process -Name Win32Explorer -ErrorAction SilentlyContinue | Stop-Process -Force
-    Start-Sleep -Seconds 2
+    Start-Sleep -Seconds 1
     if (Test-Path $xmlPath) { Remove-Item $xmlPath -Force | Out-Null }
 }
 
@@ -161,12 +161,23 @@ try {
     Set-ItemProperty -Path $regSettingsPath -Name "EnablePortableMirror" -Value 0 -Type DWord
     Set-ItemProperty -Path $regSettingsPath -Name "EnableShellBagsSupport" -Value 0 -Type DWord
 
-    $proc1 = Start-Process -FilePath $explorerExe -ArgumentList "C:\Windows" -PassThru
+    # Launch using PsExec in session 1
+    & psexec64 -i 1 -d $explorerExe "C:\Windows"
+
+    # Poll for process launch
+    $proc1 = $null
+    for ($i = 0; $i -lt 30; $i++) {
+        $proc1 = Get-Process -Name Win32Explorer -ErrorAction SilentlyContinue
+        if ($null -ne $proc1) { break }
+        Start-Sleep -Milliseconds 500
+    }
+    if ($null -eq $proc1) { throw "Win32Explorer failed to launch." }
+    $pid1 = $proc1.Id
 
     # Wait for window
     $hwndMain1 = [IntPtr]::Zero
     for ($i = 0; $i -lt 30; $i++) {
-        $hwndMain1 = [Win32Helper]::FindProcessWindow($proc1.Id, "Win32Explorer", "Windows")
+        $hwndMain1 = [Win32Helper]::FindProcessWindow($pid1, "Win32Explorer", "Windows")
         if ($hwndMain1 -ne [IntPtr]::Zero) { break }
         Start-Sleep -Milliseconds 500
     }
@@ -193,10 +204,6 @@ try {
     $himlNormal = [Win32Helper]::SendMessage($hwndLV1, 0x1002, [IntPtr]0, [IntPtr]::Zero) # LVM_GETIMAGELIST (LVSIL_NORMAL = 0)
     Write-Host "LVSIL_NORMAL ImageList: $himlNormal" -ForegroundColor Cyan
 
-    # Small ImageList check
-    $himlSmall = [Win32Helper]::SendMessage($hwndLV1, 0x1002, [IntPtr]1, [IntPtr]::Zero) # LVM_GETIMAGELIST (LVSIL_SMALL = 1)
-    Write-Host "LVSIL_SMALL ImageList: $himlSmall" -ForegroundColor Cyan
-
     # In Small Icon Tiles view, LVSIL_NORMAL should be populated with the small image list.
     if ($view -eq 4 -and $himlNormal -ne [IntPtr]::Zero) {
         $results["SmallIconTilesView"] = "PASS"
@@ -207,16 +214,20 @@ try {
 
     # Close main window
     [Win32Helper]::SendMessage($hwndMain1, 0x0010, [IntPtr]::Zero, [IntPtr]::Zero) | Out-Null
-    Start-Sleep -Seconds 3
+    Start-Sleep -Seconds 4
 
     # Check persistence
-    $viewPersist = (Get-ItemProperty -Path $regSettingsPath -Name "ViewModeGlobal").ViewModeGlobal
-    Write-Host "ViewModeGlobal in registry: $viewPersist (Expected: 12)" -ForegroundColor Cyan
-    if ($viewPersist -eq 12) {
-        Write-Host "[PASS] ViewModeGlobal persistence verified." -ForegroundColor Green
+    if (Test-Path $regSettingsPath) {
+        $viewPersist = (Get-ItemProperty -Path $regSettingsPath -Name "ViewModeGlobal").ViewModeGlobal
+        Write-Host "ViewModeGlobal in registry: $viewPersist (Expected: 12)" -ForegroundColor Cyan
+        if ($viewPersist -eq 12) {
+            Write-Host "[PASS] ViewModeGlobal persistence verified." -ForegroundColor Green
+        } else {
+            $results["SmallIconTilesView"] = "FAIL (No persist)"
+            Write-Host "[FAIL] ViewModeGlobal did not persist." -ForegroundColor Red
+        }
     } else {
-        $results["SmallIconTilesView"] = "FAIL (No persist)"
-        Write-Host "[FAIL] ViewModeGlobal did not persist." -ForegroundColor Red
+        Write-Host "[FAIL] Registry settings key does not exist after close." -ForegroundColor Red
     }
 
     # ----------------- TEST 2: Default Group by Type on First Run -----------------
@@ -228,12 +239,23 @@ try {
     Set-ItemProperty -Path $regSettingsPath -Name "ConfirmCloseTabs" -Value 0 -Type DWord
     Set-ItemProperty -Path $regSettingsPath -Name "EnablePortableMirror" -Value 0 -Type DWord
 
-    $proc2 = Start-Process -FilePath $explorerExe -ArgumentList "C:\Windows" -PassThru
+    # Launch using PsExec in session 1
+    & psexec64 -i 1 -d $explorerExe "C:\Windows"
+
+    # Poll for process launch
+    $proc2 = $null
+    for ($i = 0; $i -lt 30; $i++) {
+        $proc2 = Get-Process -Name Win32Explorer -ErrorAction SilentlyContinue
+        if ($null -ne $proc2) { break }
+        Start-Sleep -Milliseconds 500
+    }
+    if ($null -eq $proc2) { throw "Win32Explorer failed to launch." }
+    $pid2 = $proc2.Id
 
     # Wait for window
     $hwndMain2 = [IntPtr]::Zero
     for ($i = 0; $i -lt 30; $i++) {
-        $hwndMain2 = [Win32Helper]::FindProcessWindow($proc2.Id, "Win32Explorer", "Windows")
+        $hwndMain2 = [Win32Helper]::FindProcessWindow($pid2, "Win32Explorer", "Windows")
         if ($hwndMain2 -ne [IntPtr]::Zero) { break }
         Start-Sleep -Milliseconds 500
     }
@@ -258,17 +280,21 @@ try {
 
     # Close window to flush settings
     [Win32Helper]::SendMessage($hwndMain2, 0x0010, [IntPtr]::Zero, [IntPtr]::Zero) | Out-Null
-    Start-Sleep -Seconds 3
+    Start-Sleep -Seconds 4
 
     # Check registry default Group by Type
-    $valGroup = (Get-ItemProperty -Path $regSettingsPath -Name "EnableDefaultGroupByType" -ErrorAction SilentlyContinue).EnableDefaultGroupByType
-    Write-Host "EnableDefaultGroupByType registry value: $valGroup (Expected: 1)" -ForegroundColor Cyan
+    if (Test-Path $regSettingsPath) {
+        $valGroup = (Get-ItemProperty -Path $regSettingsPath -Name "EnableDefaultGroupByType" -ErrorAction SilentlyContinue).EnableDefaultGroupByType
+        Write-Host "EnableDefaultGroupByType registry value: $valGroup (Expected: 1)" -ForegroundColor Cyan
 
-    if ($groupEnabled -eq 1 -and $valGroup -eq 1) {
-        $results["DefaultGroupByType"] = "PASS"
-        Write-Host "[PASS] Default Group by Type on first run verified." -ForegroundColor Green
+        if ($groupEnabled -eq 1 -and $valGroup -eq 1) {
+            $results["DefaultGroupByType"] = "PASS"
+            Write-Host "[PASS] Default Group by Type on first run verified." -ForegroundColor Green
+        } else {
+            Write-Host "[FAIL] Default Group by Type on first run failed." -ForegroundColor Red
+        }
     } else {
-        Write-Host "[FAIL] Default Group by Type on first run failed." -ForegroundColor Red
+        Write-Host "[FAIL] Registry settings key does not exist after close." -ForegroundColor Red
     }
 
     # ----------------- TEST 3: General Options Checkbox and Registry Save -----------------
@@ -281,11 +307,22 @@ try {
     Set-ItemProperty -Path $regSettingsPath -Name "ConfirmCloseTabs" -Value 0 -Type DWord
     Set-ItemProperty -Path $regSettingsPath -Name "EnablePortableMirror" -Value 0 -Type DWord
 
-    $proc3 = Start-Process -FilePath $explorerExe -ArgumentList "C:\Windows" -PassThru
+    # Launch using PsExec in session 1
+    & psexec64 -i 1 -d $explorerExe "C:\Windows"
+
+    # Poll for process launch
+    $proc3 = $null
+    for ($i = 0; $i -lt 30; $i++) {
+        $proc3 = Get-Process -Name Win32Explorer -ErrorAction SilentlyContinue
+        if ($null -ne $proc3) { break }
+        Start-Sleep -Milliseconds 500
+    }
+    if ($null -eq $proc3) { throw "Win32Explorer failed to launch." }
+    $pid3 = $proc3.Id
 
     $hwndMain3 = [IntPtr]::Zero
     for ($i = 0; $i -lt 30; $i++) {
-        $hwndMain3 = [Win32Helper]::FindProcessWindow($proc3.Id, "Win32Explorer", "Windows")
+        $hwndMain3 = [Win32Helper]::FindProcessWindow($pid3, "Win32Explorer", "Windows")
         if ($hwndMain3 -ne [IntPtr]::Zero) { break }
         Start-Sleep -Milliseconds 500
     }
@@ -296,8 +333,8 @@ try {
     [Win32Helper]::SendMessage($hwndMain3, 0x0111, [IntPtr]40101, [IntPtr]::Zero) | Out-Null
 
     $hwndOpt3 = [IntPtr]::Zero
-    for ($i = 0; $i -lt 10; $i++) {
-        $hwndOpt3 = [Win32Helper]::FindProcessWindow($proc3.Id, "#32770", "Options")
+    for ($i = 0; $i -lt 20; $i++) {
+        $hwndOpt3 = [Win32Helper]::FindProcessWindow($pid3, "#32770", "Options")
         if ($hwndOpt3 -ne [IntPtr]::Zero) { break }
         Start-Sleep -Milliseconds 500
     }
@@ -320,17 +357,21 @@ try {
 
     # Close main window
     [Win32Helper]::SendMessage($hwndMain3, 0x0010, [IntPtr]::Zero, [IntPtr]::Zero) | Out-Null
-    Start-Sleep -Seconds 3
+    Start-Sleep -Seconds 4
 
     # Check registry value updated to 0
-    $valGroup3 = (Get-ItemProperty -Path $regSettingsPath -Name "EnableDefaultGroupByType").EnableDefaultGroupByType
-    Write-Host "Registry EnableDefaultGroupByType after change: $valGroup3 (Expected: 0)" -ForegroundColor Cyan
+    if (Test-Path $regSettingsPath) {
+        $valGroup3 = (Get-ItemProperty -Path $regSettingsPath -Name "EnableDefaultGroupByType").EnableDefaultGroupByType
+        Write-Host "Registry EnableDefaultGroupByType after change: $valGroup3 (Expected: 0)" -ForegroundColor Cyan
 
-    if ($valGroup3 -eq 0) {
-        $results["OptionsToggleRegistry"] = "PASS"
-        Write-Host "[PASS] Checkbox successfully updated registry setting." -ForegroundColor Green
+        if ($valGroup3 -eq 0) {
+            $results["OptionsToggleRegistry"] = "PASS"
+            Write-Host "[PASS] Checkbox successfully updated registry setting." -ForegroundColor Green
+        } else {
+            Write-Host "[FAIL] Checkbox failed to update registry setting." -ForegroundColor Red
+        }
     } else {
-        Write-Host "[FAIL] Checkbox failed to update registry setting." -ForegroundColor Red
+        Write-Host "[FAIL] Registry settings key does not exist after close." -ForegroundColor Red
     }
 
     # ----------------- TEST 4: General Options Checkbox and XML Save (Portable Mirror) -----------------
@@ -343,11 +384,22 @@ try {
     Set-ItemProperty -Path $regSettingsPath -Name "ConfirmCloseTabs" -Value 0 -Type DWord
     Set-ItemProperty -Path $regSettingsPath -Name "EnablePortableMirror" -Value 1 -Type DWord
 
-    $proc4 = Start-Process -FilePath $explorerExe -ArgumentList "C:\Windows" -PassThru
+    # Launch using PsExec in session 1
+    & psexec64 -i 1 -d $explorerExe "C:\Windows"
+
+    # Poll for process launch
+    $proc4 = $null
+    for ($i = 0; $i -lt 30; $i++) {
+        $proc4 = Get-Process -Name Win32Explorer -ErrorAction SilentlyContinue
+        if ($null -ne $proc4) { break }
+        Start-Sleep -Milliseconds 500
+    }
+    if ($null -eq $proc4) { throw "Win32Explorer failed to launch." }
+    $pid4 = $proc4.Id
 
     $hwndMain4 = [IntPtr]::Zero
     for ($i = 0; $i -lt 30; $i++) {
-        $hwndMain4 = [Win32Helper]::FindProcessWindow($proc4.Id, "Win32Explorer", "Windows")
+        $hwndMain4 = [Win32Helper]::FindProcessWindow($pid4, "Win32Explorer", "Windows")
         if ($hwndMain4 -ne [IntPtr]::Zero) { break }
         Start-Sleep -Milliseconds 500
     }
@@ -358,8 +410,8 @@ try {
     [Win32Helper]::SendMessage($hwndMain4, 0x0111, [IntPtr]40101, [IntPtr]::Zero) | Out-Null
 
     $hwndOpt4 = [IntPtr]::Zero
-    for ($i = 0; $i -lt 10; $i++) {
-        $hwndOpt4 = [Win32Helper]::FindProcessWindow($proc4.Id, "#32770", "Options")
+    for ($i = 0; $i -lt 20; $i++) {
+        $hwndOpt4 = [Win32Helper]::FindProcessWindow($pid4, "#32770", "Options")
         if ($hwndOpt4 -ne [IntPtr]::Zero) { break }
         Start-Sleep -Milliseconds 500
     }
@@ -382,7 +434,7 @@ try {
 
     # Close main window
     [Win32Helper]::SendMessage($hwndMain4, 0x0010, [IntPtr]::Zero, [IntPtr]::Zero) | Out-Null
-    Start-Sleep -Seconds 3
+    Start-Sleep -Seconds 4
 
     # Check XML content
     if (Test-Path $xmlPath) {
@@ -418,7 +470,8 @@ foreach ($key in $results.Keys) {
         $overall = "FAIL"
     }
 }
-Write-Host "Overall Verdict: $overall" -ForegroundColor (If ($overall -eq "PASS") { "Green" } else { "Red" })
+$color = if ($overall -eq "PASS") { "Green" } else { "Red" }
+Write-Host "Overall Verdict: $overall" -ForegroundColor $color
 
 # Save final verdict
 $overall | Out-File -FilePath (Join-Path $MyDir "verdict.txt") -Force

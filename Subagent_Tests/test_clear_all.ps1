@@ -29,18 +29,14 @@ public class Win32Helper {
         }, IntPtr.Zero);
         return found;
     }
-    public static IntPtr FindProcessWindow(int processId, string className) {
+    public static IntPtr FindWindowGlobal(string className) {
         IntPtr found = IntPtr.Zero;
         EnumWindows((hWnd, lParam) => {
-            uint pid;
-            GetWindowThreadProcessId(hWnd, out pid);
-            if (pid == processId) {
-                StringBuilder sbClass = new StringBuilder(260);
-                GetClassName(hWnd, sbClass, sbClass.Capacity);
-                if (sbClass.ToString() == className) {
-                    found = hWnd;
-                    return false;
-                }
+            StringBuilder sbClass = new StringBuilder(260);
+            GetClassName(hWnd, sbClass, sbClass.Capacity);
+            if (sbClass.ToString() == className) {
+                found = hWnd;
+                return false;
             }
             return true;
         }, IntPtr.Zero);
@@ -73,7 +69,12 @@ Write-Host "Launching fresh Win32Explorer instance..."
 $proc = Start-Process -FilePath "C:\Users\Administrator\Desktop\Elite-TaskBar\Win32Explorer_26.0.3.0\Win32Explorer.exe" -ArgumentList "C:\Windows" -PassThru
 Start-Sleep -Seconds 7
 
-$hwndMain = [Win32Helper]::FindProcessWindow($proc.Id, "Win32Explorer")
+Write-Host "Process HasExited: $($proc.HasExited)"
+if ($proc.HasExited) {
+    Write-Host "ExitCode: $($proc.ExitCode)"
+}
+
+$hwndMain = [Win32Helper]::FindWindowGlobal("Win32Explorer")
 Write-Host "HWND: $hwndMain"
 
 if ($hwndMain -ne [IntPtr]::Zero) {

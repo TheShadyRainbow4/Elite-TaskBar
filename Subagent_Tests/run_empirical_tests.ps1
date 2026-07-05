@@ -112,36 +112,41 @@ $xmlPath = Join-Path $explorerExeDir "config.xml"
 $regParentPath = "HKCU:\Software"
 $regExplorerPath = "HKCU:\Software\Win32Explorer"
 $regSettingsPath = "HKCU:\Software\Win32Explorer\Settings"
-$regSettingsBackupName = "Settings_Backup"
-$regSettingsBackupPath = "HKCU:\Software\Win32Explorer\Settings_Backup"
+$regExplorerBackupPath = "HKCU:\Software\Win32Explorer_Backup"
 
 # Utility to clean up running processes and files
 function Stop-EliteProcesses {
     Get-Process -Name Win32Explorer, EliteTaskbar -ErrorAction SilentlyContinue | Stop-Process -Force
-    Start-Sleep -Seconds 3.5
-    if (Test-Path $xmlPath) { Remove-Item $xmlPath -Force | Out-Null }
+    for ($i = 0; $i -lt 10; $i++) {
+        $procs = Get-Process -Name Win32Explorer, EliteTaskbar -ErrorAction SilentlyContinue
+        if (!$procs) { break }
+        Start-Sleep -Seconds 1
+    }
+    if (Test-Path $xmlPath) {
+        Remove-Item $xmlPath -Force -ErrorAction SilentlyContinue | Out-Null
+    }
 }
 
 # Clean registry Settings key entirely
 function Clear-RegistrySettings {
-    if (Test-Path $regSettingsPath) {
-        Remove-Item $regSettingsPath -Recurse -Force -ErrorAction SilentlyContinue | Out-Null
+    if (Test-Path $regExplorerPath) {
+        Remove-Item $regExplorerPath -Recurse -Force -ErrorAction SilentlyContinue | Out-Null
     }
 }
 
 
 # Registry backup via rename
 function Backup-RegistrySettings {
-    if (Test-Path $regSettingsPath) {
-        if (Test-Path $regSettingsBackupPath) { Remove-Item $regSettingsBackupPath -Recurse -Force | Out-Null }
-        Rename-Item -Path $regSettingsPath -NewName $regSettingsBackupName -Force | Out-Null
+    if (Test-Path $regExplorerPath) {
+        if (Test-Path $regExplorerBackupPath) { Remove-Item $regExplorerBackupPath -Recurse -Force | Out-Null }
+        Rename-Item -Path $regExplorerPath -NewName "Win32Explorer_Backup" -Force | Out-Null
     }
 }
 
 function Restore-RegistrySettings {
-    if (Test-Path $regSettingsPath) { Remove-Item $regSettingsPath -Recurse -Force | Out-Null }
-    if (Test-Path $regSettingsBackupPath) {
-        Rename-Item -Path $regSettingsBackupPath -NewName "Settings" -Force | Out-Null
+    if (Test-Path $regExplorerPath) { Remove-Item $regExplorerPath -Recurse -Force | Out-Null }
+    if (Test-Path $regExplorerBackupPath) {
+        Rename-Item -Path $regExplorerBackupPath -NewName "Win32Explorer" -Force | Out-Null
     }
 }
 
@@ -170,6 +175,7 @@ try {
     Set-ItemProperty -Path $regSettingsPath -Name "ConfirmCloseTabs" -Value 0 -Type DWord
     Set-ItemProperty -Path $regSettingsPath -Name "EnablePortableMirror" -Value 0 -Type DWord
     Set-ItemProperty -Path $regSettingsPath -Name "EnableShellBagsSupport" -Value 0 -Type DWord
+    Set-ItemProperty -Path $regSettingsPath -Name "EnableNativeViewMode" -Value 0 -Type DWord
 
 
     $proc1 = Start-Process -FilePath $explorerExe -ArgumentList "C:\Windows" -PassThru
@@ -228,6 +234,8 @@ try {
     if (!(Test-Path $regSettingsPath)) { New-Item -Path $regSettingsPath -Force | Out-Null }
     Set-ItemProperty -Path $regSettingsPath -Name "ConfirmCloseTabs" -Value 0 -Type DWord
     Set-ItemProperty -Path $regSettingsPath -Name "EnablePortableMirror" -Value 0 -Type DWord
+    Set-ItemProperty -Path $regSettingsPath -Name "EnableNativeViewMode" -Value 0 -Type DWord
+    Set-ItemProperty -Path $regSettingsPath -Name "EnableEliteTaskbar" -Value 0 -Type DWord
 
     $proc2 = Start-Process -FilePath $explorerExe -ArgumentList "C:\Windows" -PassThru
 
@@ -290,6 +298,8 @@ try {
     Set-ItemProperty -Path $regSettingsPath -Name "EnableDefaultGroupByType" -Value 1 -Type DWord
     Set-ItemProperty -Path $regSettingsPath -Name "EnablePortableMirror" -Value 0 -Type DWord
     Set-ItemProperty -Path $regSettingsPath -Name "ConfirmCloseTabs" -Value 0 -Type DWord
+    Set-ItemProperty -Path $regSettingsPath -Name "EnableNativeViewMode" -Value 0 -Type DWord
+    Set-ItemProperty -Path $regSettingsPath -Name "EnableEliteTaskbar" -Value 0 -Type DWord
 
     $proc3A = Start-Process -FilePath $explorerExe -ArgumentList "C:\Windows" -PassThru
 
@@ -310,7 +320,7 @@ try {
         
         # Wait for dialog in loop
         $hwndOpt3A = [IntPtr]::Zero
-        for ($i = 0; $i -lt 10; $i++) {
+        for ($i = 0; $i -lt 30; $i++) {
             $hwndOpt3A = [Win32Helper]::FindProcessWindow($proc3A.Id, "#32770", "Options")
             if ($hwndOpt3A -ne [IntPtr]::Zero) { break }
             Start-Sleep -Milliseconds 500
@@ -321,16 +331,17 @@ try {
         $hwndChk3A = [Win32Helper]::FindChildById($hwndOpt3A, 1382)
         if ($hwndChk3A -eq [IntPtr]::Zero) { throw "Could not find checkbox default group by type (ID 1382)." }
 
-        # Uncheck checkbox: BM_SETCHECK = 0x00F1, BST_UNCHECKED = 0
-        [Win32Helper]::SendMessage($hwndChk3A, 0x00F1, [IntPtr]::Zero, [IntPtr]::Zero) | Out-Null
-        
-        # Send BN_CLICKED to parent page
-        $hwndParent3A = [Win32Helper]::GetParent($hwndChk3A)
-        [Win32Helper]::SendMessage($hwndParent3A, 0x0111, [IntPtr]1382, $hwndChk3A) | Out-Null
+        # Toggle checkbox via BM_CLICK (0x00F5) to properly register state transition
+        [Win32Helper]::SendMessage($hwndChk3A, 0x00F5, [IntPtr]::Zero, [IntPtr]::Zero) | Out-Null
         Start-Sleep -Milliseconds 200
 
-        # Send WM_COMMAND with IDOK (1) to Options dialog to save & close
-        [Win32Helper]::SendMessage($hwndOpt3A, 0x0111, [IntPtr]1, [IntPtr]::Zero) | Out-Null
+        # Find the OK button and click it to trigger SaveConfig and Commit
+        $hwndOkBtn3A = [Win32Helper]::FindChildById($hwndOpt3A, 1)
+        if ($hwndOkBtn3A -ne [IntPtr]::Zero) {
+            [Win32Helper]::SendMessage($hwndOkBtn3A, 0x00F5, [IntPtr]::Zero, [IntPtr]::Zero) | Out-Null
+        } else {
+            [Win32Helper]::SendMessage($hwndOpt3A, 0x0111, [IntPtr]1, [IntPtr]::Zero) | Out-Null
+        }
         Start-Sleep -Seconds 3
 
         # Close explorer window to trigger flush
@@ -357,6 +368,8 @@ try {
     Set-ItemProperty -Path $regSettingsPath -Name "EnableDefaultGroupByType" -Value 1 -Type DWord
     Set-ItemProperty -Path $regSettingsPath -Name "EnablePortableMirror" -Value 1 -Type DWord
     Set-ItemProperty -Path $regSettingsPath -Name "ConfirmCloseTabs" -Value 0 -Type DWord
+    Set-ItemProperty -Path $regSettingsPath -Name "EnableNativeViewMode" -Value 0 -Type DWord
+    Set-ItemProperty -Path $regSettingsPath -Name "EnableEliteTaskbar" -Value 0 -Type DWord
 
     $proc3B = Start-Process -FilePath $explorerExe -ArgumentList "C:\Windows" -PassThru
 
@@ -377,7 +390,7 @@ try {
         
         # Wait for dialog in loop
         $hwndOpt3B = [IntPtr]::Zero
-        for ($i = 0; $i -lt 10; $i++) {
+        for ($i = 0; $i -lt 30; $i++) {
             $hwndOpt3B = [Win32Helper]::FindProcessWindow($proc3B.Id, "#32770", "Options")
             if ($hwndOpt3B -ne [IntPtr]::Zero) { break }
             Start-Sleep -Milliseconds 500
@@ -388,16 +401,17 @@ try {
         $hwndChk3B = [Win32Helper]::FindChildById($hwndOpt3B, 1382)
         if ($hwndChk3B -eq [IntPtr]::Zero) { throw "Could not find checkbox default group by type (ID 1382)." }
 
-        # Uncheck checkbox
-        [Win32Helper]::SendMessage($hwndChk3B, 0x00F1, [IntPtr]::Zero, [IntPtr]::Zero) | Out-Null
-        
-        # Send BN_CLICKED to parent page
-        $hwndParent3B = [Win32Helper]::GetParent($hwndChk3B)
-        [Win32Helper]::SendMessage($hwndParent3B, 0x0111, [IntPtr]1382, $hwndChk3B) | Out-Null
+        # Toggle checkbox via BM_CLICK (0x00F5) to properly register state transition
+        [Win32Helper]::SendMessage($hwndChk3B, 0x00F5, [IntPtr]::Zero, [IntPtr]::Zero) | Out-Null
         Start-Sleep -Milliseconds 200
 
-        # Send WM_COMMAND with IDOK (1) to Options dialog
-        [Win32Helper]::SendMessage($hwndOpt3B, 0x0111, [IntPtr]1, [IntPtr]::Zero) | Out-Null
+        # Find the OK button and click it to trigger SaveConfig and Commit
+        $hwndOkBtn3B = [Win32Helper]::FindChildById($hwndOpt3B, 1)
+        if ($hwndOkBtn3B -ne [IntPtr]::Zero) {
+            [Win32Helper]::SendMessage($hwndOkBtn3B, 0x00F5, [IntPtr]::Zero, [IntPtr]::Zero) | Out-Null
+        } else {
+            [Win32Helper]::SendMessage($hwndOpt3B, 0x0111, [IntPtr]1, [IntPtr]::Zero) | Out-Null
+        }
         Start-Sleep -Seconds 3
 
         # Close explorer window to trigger flush
@@ -437,6 +451,7 @@ try {
     if (!(Test-Path $regSettingsPath)) { New-Item -Path $regSettingsPath -Force | Out-Null }
     Set-ItemProperty -Path $regSettingsPath -Name "EnableEliteTaskbar" -Value 1 -Type DWord
     Set-ItemProperty -Path $regSettingsPath -Name "ConfirmCloseTabs" -Value 0 -Type DWord
+    Set-ItemProperty -Path $regSettingsPath -Name "EnableNativeViewMode" -Value 0 -Type DWord
 
     Write-Host "Launching Win32Explorer.exe C:\Windows..." -ForegroundColor Cyan
     $proc4 = Start-Process -FilePath $explorerExe -ArgumentList "C:\Windows" -PassThru

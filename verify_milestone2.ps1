@@ -28,7 +28,7 @@ if (-not $exists) {
 
 # Check 2: Verify Settings Apps (Stub EXE & CPL DLL) launch native property sheet in-process
 Write-Host "`nTesting EliteSettings.exe GUI launch..." -ForegroundColor Cyan
-$procSettings = Start-Process -FilePath $settingsExePath -PassThru
+$procSettings = Start-Process -FilePath $settingsExePath -WorkingDirectory $ScriptDir -PassThru
 Start-Sleep -Seconds 3
 
 # Check for window title using Get-Process
@@ -110,7 +110,7 @@ $pathAdv = "HKCU:\Software\EliteSoftware\Win32Explorer\Advanced"
 if (!(Test-Path $pathAdv)) { New-Item -Path $pathAdv -Force | Out-Null }
 Set-ItemProperty -Path $pathAdv -Name "TaskbarMode" -Value 0 -Type DWord
 
-$procTaskbar = Start-Process -FilePath $taskbarPath -PassThru
+$procTaskbar = Start-Process -FilePath $taskbarPath -WorkingDirectory $ScriptDir -PassThru
 Start-Sleep -Seconds 3
 
 $hwndTaskbar = [WinWindowUtil]::FindWindowW("Elite_SecondaryTrayWnd", $null)
@@ -134,14 +134,14 @@ if ($hwndTaskbar -ne 0) {
 # Check 4: Verify Win32Explorer process lifecycle and close behavior
 Write-Host "`nTesting Win32Explorer.exe process lifecycle..." -ForegroundColor Cyan
 Get-Process -Name Win32Explorer -ErrorAction SilentlyContinue | Stop-Process -Force
-Start-Sleep -Seconds 2
+Start-Sleep -Seconds 5
 
 # Set settings to prevent blocking confirmation dialogs
 $pathSettings = "HKCU:\Software\Win32Explorer\Settings"
 if (!(Test-Path $pathSettings)) { New-Item -Path $pathSettings -Force | Out-Null }
 Set-ItemProperty -Path $pathSettings -Name "ConfirmCloseTabs" -Value 0 -Type DWord
 
-$procExplorer = Start-Process -FilePath $explorerPath -PassThru
+$procExplorer = Start-Process -FilePath $explorerPath -WorkingDirectory $ScriptDir -PassThru
 Start-Sleep -Seconds 6
 
 $hwndExplorer = [WinWindowUtil]::FindWindowByClass($procExplorer.Id, "Win32Explorer")

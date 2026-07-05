@@ -187,6 +187,7 @@ if (-not $failed) {
     Set-Location $origDir
     
     # Relocate x64 artifact to root for developer execution
+    if (Test-Path "$ScriptDir\Win32Explorer.exe") { Rename-Item "$ScriptDir\Win32Explorer.exe" "Win32Explorer_old_$Suffix.exe" -Force -ErrorAction SilentlyContinue }
     Copy-Item "$BuildDir\Win32Explorer.exe" "$ScriptDir\Win32Explorer.exe" -Force
     
     Write-Host "Auto-committing and pushing to repository..." -ForegroundColor Cyan
