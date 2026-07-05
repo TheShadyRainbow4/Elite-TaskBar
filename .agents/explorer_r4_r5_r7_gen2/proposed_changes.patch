@@ -1,0 +1,412 @@
+diff --git a/SourceFiles/TaskbarWindow.h b/SourceFiles/TaskbarWindow.h
+index dynamic..dpi 100644
+--- a/SourceFiles/TaskbarWindow.h
++++ b/SourceFiles/TaskbarWindow.h
+@@ -21,6 +21,8 @@ struct TaskbarInstance {
+     int taskbarHeight;
++    UINT dpi;
++    int baseTaskbarHeight;
+     class StartButton* startButton;
+     HWND hNativeTrayNotify;
+     bool bStolenSysPager;
+diff --git a/SourceFiles/TrayIconScraper.h b/SourceFiles/TrayIconScraper.h
+index dynamic..scraped 100644
+--- a/SourceFiles/TrayIconScraper.h
++++ b/SourceFiles/TrayIconScraper.h
+@@ -9,6 +9,8 @@ struct ScrapedTrayIcon {
+     HICON hIcon;
++    wchar_t szTip[260];
+ };
+ 
++extern std::vector<ScrapedTrayIcon> g_CurrentTrayIcons;
+ std::vector<ScrapedTrayIcon> ScrapeTrayIcons();
+ void UpdateTrayToolbar(HWND hToolbar, HIMAGELIST hImageList, const std::vector<ScrapedTrayIcon>& icons);
+diff --git a/SourceFiles/TrayIconScraper.cpp b/SourceFiles/TrayIconScraper.cpp
+index dynamic..scrapedcpp 100644
+--- a/SourceFiles/TrayIconScraper.cpp
++++ b/SourceFiles/TrayIconScraper.cpp
+@@ -25,51 +25,83 @@ std::vector<ScrapedTrayIcon> g_CurrentTrayIcons;
+ 
+-std::vector<ScrapedTrayIcon> ScrapeTrayIcons() {
+-    std::vector<ScrapedTrayIcon> icons;
+-    HWND hTray = FindWindowW(L"Shell_TrayWnd", NULL);
+-    if (!hTray) return icons;
+-    HWND hNotify = FindWindowExW(hTray, NULL, L"TrayNotifyWnd", NULL);
+-    if (!hNotify) return icons;
+-    HWND hSysPager = FindWindowExW(hNotify, NULL, L"SysPager", NULL);
+-    if (!hSysPager) return icons;
+-    HWND hToolbar = FindWindowExW(hSysPager, NULL, L"ToolbarWindow32", NULL);
+-    if (!hToolbar) return icons;
+-
+-    DWORD pid = 0;
+-    GetWindowThreadProcessId(hToolbar, &pid);
+-    HANDLE hProcess = OpenProcess(PROCESS_VM_READ | PROCESS_VM_OPERATION, FALSE, pid);
+-    if (!hProcess) return icons;
+-
+-    LPVOID pRemoteTbb = VirtualAllocEx(hProcess, NULL, sizeof(TBBUTTON), MEM_COMMIT, PAGE_READWRITE);
+-    if (!pRemoteTbb) {
+-        CloseHandle(hProcess);
+-        return icons;
+-    }
+-
+-    int count = SendMessageW(hToolbar, TB_BUTTONCOUNT, 0, 0);
+-    for (int i = 0; i < count; i++) {
+-        TBBUTTON tbb = {0};
+-        if (SendMessageW(hToolbar, TB_GETBUTTON, i, (LPARAM)pRemoteTbb)) {
+-            SIZE_T bytesRead = 0;
+-            ReadProcessMemory(hProcess, pRemoteTbb, &tbb, sizeof(TBBUTTON), &bytesRead);
+-            if (bytesRead == sizeof(TBBUTTON)) {
+-                TRAYDATA td = {0};
+-                if (tbb.dwData) {
+-                    ReadProcessMemory(hProcess, (LPCVOID)tbb.dwData, &td, sizeof(TRAYDATA), &bytesRead);
+-                    ScrapedTrayIcon icon = {0};
+-                    icon.hwnd = td.hwnd;
+-                    icon.uCallbackMessage = td.uCallbackMessage;
+-                    icon.uID = td.uID;
+-                    icon.hIcon = td.hIcon;
+-                    if (icon.hwnd && icon.hIcon) {
+-                        icons.push_back(icon);
+-                    }
+-                }
+-            }
+-        }
+-    }
+-
+-    VirtualFreeEx(hProcess, pRemoteTbb, 0, MEM_RELEASE);
+-    CloseHandle(hProcess);
+-    return icons;
++void ScrapeToolbar(HWND hToolbar, std::vector<ScrapedTrayIcon>& icons) {
++    DWORD pid = 0;
++    GetWindowThreadProcessId(hToolbar, &pid);
++    HANDLE hProcess = OpenProcess(PROCESS_VM_READ | PROCESS_VM_OPERATION, FALSE, pid);
++    if (!hProcess) return;
++
++    LPVOID pRemoteTbb = VirtualAllocEx(hProcess, NULL, sizeof(TBBUTTON), MEM_COMMIT, PAGE_READWRITE);
++    if (!pRemoteTbb) {
++        CloseHandle(hProcess);
++        return;
++    }
++
++    int count = (int)SendMessageW(hToolbar, TB_BUTTONCOUNT, 0, 0);
++    for (int i = 0; i < count; i++) {
++        TBBUTTON tbb = {0};
++        if (SendMessageW(hToolbar, TB_GETBUTTON, i, (LPARAM)pRemoteTbb)) {
++            SIZE_T bytesRead = 0;
++            ReadProcessMemory(hProcess, pRemoteTbb, &tbb, sizeof(TBBUTTON), &bytesRead);
++            if (bytesRead == sizeof(TBBUTTON)) {
++                TRAYDATA td = {0};
++                if (tbb.dwData) {
++                    ReadProcessMemory(hProcess, (LPCVOID)tbb.dwData, &td, sizeof(TRAYDATA), &bytesRead);
++                    ScrapedTrayIcon icon = {0};
++                    icon.hwnd = td.hwnd;
++                    icon.uCallbackMessage = td.uCallbackMessage;
++                    icon.uID = td.uID;
++                    icon.hIcon = td.hIcon;
++                    
++                    // Retrieve tooltip string
++                    wchar_t szTip[260] = {0};
++                    if (tbb.iString && tbb.iString != -1) {
++                        ReadProcessMemory(hProcess, (LPCVOID)tbb.iString, szTip, sizeof(szTip), &bytesRead);
++                    }
++                    wcsncpy_s(icon.szTip, szTip, 260);
++                    
++                    if (icon.hwnd && icon.hIcon) {
++                        bool duplicate = false;
++                        for (const auto& existing : icons) {
++                            if (existing.hwnd == icon.hwnd && existing.uID == icon.uID) {
++                                duplicate = true;
++                                break;
++                            }
++                        }
++                        if (!duplicate) {
++                            icons.push_back(icon);
++                        }
++                    }
++                }
++            }
++        }
++    }
++
++    VirtualFreeEx(hProcess, pRemoteTbb, 0, MEM_RELEASE);
++    CloseHandle(hProcess);
+ }
++
++std::vector<ScrapedTrayIcon> ScrapeTrayIcons() {
++    std::vector<ScrapedTrayIcon> icons;
++    
++    // 1. Scrape visible toolbar
++    HWND hTray = FindWindowW(L"Shell_TrayWnd", NULL);
++    if (hTray) {
++        HWND hNotify = FindWindowExW(hTray, NULL, L"TrayNotifyWnd", NULL);
++        if (hNotify) {
++            HWND hSysPager = FindWindowExW(hNotify, NULL, L"SysPager", NULL);
++            if (hSysPager) {
++                HWND hToolbar = FindWindowExW(hSysPager, NULL, L"ToolbarWindow32", NULL);
++                if (hToolbar) {
++                    ScrapeToolbar(hToolbar, icons);
++                }
++            }
++        }
++    }
++    
++    // 2. Scrape overflow toolbar
++    HWND hOverflow = FindWindowW(L"NotifyIconOverflowWindow", NULL);
++    if (hOverflow) {
++        HWND hOverflowToolbar = FindWindowExW(hOverflow, NULL, L"ToolbarWindow32", NULL);
++        if (hOverflowToolbar) {
++            ScrapeToolbar(hOverflowToolbar, icons);
++        }
++    }
++    
++    return icons;
++}
+diff --git a/SourceFiles/TaskbarWindow.cpp b/SourceFiles/TaskbarWindow.cpp
+index taskbar..window 100644
+--- a/SourceFiles/TaskbarWindow.cpp
++++ b/SourceFiles/TaskbarWindow.cpp
+@@ -10,2 +10,5 @@
+ #include <uxtheme.h>
++#include <propsys.h>
++#include <propkey.h>
++#include <shobjidl.h>
+ 
+@@ -281,2 +284,65 @@ LRESULT CALLBACK TaskSwitchSubclassProc(HWND hWnd, UINT uMsg, WPARAM wParam, LPA
+ 
++// Subclass procedure for routing tray items mouse clicks and interactions in independent mode
++LRESULT CALLBACK TrayToolbarSubclassProc(HWND hWnd, UINT uMsg, WPARAM wParam, LPARAM lParam, UINT_PTR uIdSubclass, DWORD_PTR dwRefData) {
++    switch (uMsg) {
++    case WM_LBUTTONDOWN:
++    case WM_LBUTTONUP:
++    case WM_RBUTTONDOWN:
++    case WM_RBUTTONUP:
++    case WM_MBUTTONDOWN:
++    case WM_MBUTTONUP:
++    case WM_LBUTTONDBLCLK:
++    case WM_RBUTTONDBLCLK:
++    case WM_MBUTTONDBLCLK:
++    case WM_MOUSEMOVE: {
++        POINT pt;
++        pt.x = GET_X_LPARAM(lParam);
++        pt.y = GET_Y_LPARAM(lParam);
++        
++        int btnIndex = (int)SendMessageW(hWnd, TB_HITTEST, 0, (LPARAM)&pt);
++        if (btnIndex >= 0 && btnIndex < (int)g_CurrentTrayIcons.size()) {
++            const auto& icon = g_CurrentTrayIcons[btnIndex];
++            PostMessageW(icon.hwnd, icon.uCallbackMessage, icon.uID, uMsg);
++        }
++        break;
++    }
++    }
++    return DefSubclassProc(hWnd, uMsg, wParam, lParam);
++}
++
++// Subclass procedure for showing tray tooltips on hover in independent mode
++LRESULT CALLBACK TraySysPagerSubclassProc(HWND hWnd, UINT uMsg, WPARAM wParam, LPARAM lParam, UINT_PTR uIdSubclass, DWORD_PTR dwRefData) {
++    if (uMsg == WM_NOTIFY) {
++        LPNMHDR nmhdr = (LPNMHDR)lParam;
++        if (nmhdr->code == TTN_GETDISPINFOW) {
++            LPNMTTDISPINFOW pDispInfo = (LPNMTTDISPINFOW)lParam;
++            int btnIndex = (int)pDispInfo->hdr.idFrom;
++            if (btnIndex >= 0 && btnIndex < (int)g_CurrentTrayIcons.size()) {
++                pDispInfo->lpszText = g_CurrentTrayIcons[btnIndex].szTip;
++                pDispInfo->hinst = NULL;
++                return 0;
++            }
++        }
++    }
++    return DefSubclassProc(hWnd, uMsg, wParam, lParam);
++}
++
++// Layout coordinator to adjust tray size dynamically
++void UpdateTrayLayout(HWND hTrayNotify) {
++    TaskbarInstance* inst = GetTaskbarInstance(hTrayNotify);
++    if (!inst || !inst->hToolbar) return;
++    
++    int btnCount = SendMessageW(inst->hToolbar, TB_BUTTONCOUNT, 0, 0);
++    int W_tray = 48; // minimum fallback
++    if (btnCount > 0) {
++        RECT rc = {0};
++        if (SendMessageW(inst->hToolbar, TB_GETITEMRECT, btnCount - 1, (LPARAM)&rc)) {
++            W_tray = rc.right + 4;
++        }
++    }
++    
++    int W_clock = inst->hTrayClock ? MulDiv(140, inst->dpi, 96) : 0;
++    int totalWidth = W_tray + W_clock;
++    
++    // Reposition pager and toolbar
++    SetWindowPos(inst->hSysPager, NULL, 0, 0, W_tray, inst->taskbarHeight, SWP_NOZORDER | SWP_NOACTIVATE);
++    SetWindowPos(inst->hToolbar, NULL, 0, 0, W_tray, inst->taskbarHeight, SWP_NOZORDER | SWP_NOACTIVATE);
++    
++    // Reposition clock
++    if (inst->hTrayClock) {
++        SetWindowPos(inst->hTrayClock, NULL, W_tray, 0, W_clock, inst->taskbarHeight, SWP_NOZORDER | SWP_NOACTIVATE);
++    }
++    
++    // Reposition TrayNotifyWnd
++    RECT rcTask;
++    GetClientRect(inst->hTaskbar, &rcTask);
++    int screenWidth = rcTask.right - rcTask.left;
++    SetWindowPos(inst->hTrayNotify, NULL, screenWidth - totalWidth - 15, 0, totalWidth, inst->taskbarHeight, SWP_NOZORDER | SWP_NOACTIVATE);
++    
++    // Resize TaskSwitch (Taskband)
++    if (inst->hTaskSwitch) {
++        int startBtnWidth = 60;
++        int remainingWidth = screenWidth - startBtnWidth - totalWidth - 15;
++        SetWindowPos(inst->hTaskSwitch, NULL, startBtnWidth, 0, remainingWidth, inst->taskbarHeight, SWP_NOZORDER | SWP_NOACTIVATE);
++    }
++}
++
+@@ -440,3 +506,56 @@
+-                    DWORD_PTR dwRes;
+-                    if (!SendMessageTimeoutW(hwnd, WM_GETICON, ICON_SMALL, 0, SMTO_ABORTIFHUNG, 500, &dwRes)) dwRes = 0;
+-                    info.hIcon = (HICON)dwRes;
+-                    if (!info.hIcon) info.hIcon = (HICON)GetClassLongPtrW(hwnd, GCLP_HICONSM);
++                    info.hIcon = ExtractWindowIcon(hwnd);
++
++// UWP and Win32 Unified Icon Extraction Helper
++HICON ExtractWindowIcon(HWND hwnd) {
++    DWORD_PTR dwRes = 0;
++    HICON hIcon = NULL;
++    
++    // Check for UWP frame window class
++    WCHAR szClass[256] = {0};
++    GetClassNameW(hwnd, szClass, 256);
++    if (wcscmp(szClass, L"ApplicationFrameWindow") == 0) {
++        // Try Property Store and COM Shell Item extraction
++        IPropertyStore* pPropStore = nullptr;
++        HRESULT hr = SHGetPropertyStoreForWindow(hwnd, IID_PPV_ARGS(&pPropStore));
++        if (SUCCEEDED(hr)) {
++            PROPVARIANT var;
++            PropVariantInit(&var);
++            hr = pPropStore->GetValue(PKEY_AppUserModel_ID, &var);
++            if (SUCCEEDED(hr) && var.vt == VT_LPWSTR) {
++                std::wstring path = L"shell:AppsFolder\\" + std::wstring(var.pwszVal);
++                IShellItem* pShellItem = nullptr;
++                hr = SHCreateItemFromParsingName(path.c_str(), nullptr, IID_PPV_ARGS(&pShellItem));
++                if (SUCCEEDED(hr)) {
++                    IShellItemImageFactory* pImageFactory = nullptr;
++                    hr = pShellItem->QueryInterface(IID_PPV_ARGS(&pImageFactory));
++                    if (SUCCEEDED(hr)) {
++                        HBITMAP hBitmap = nullptr;
++                        SIZE size = {16, 16};
++                        hr = pImageFactory->GetImage(size, SIIGBF_BIGNORMAL | SIIGBF_ICONONLY, &hBitmap);
++                        if (SUCCEEDED(hr)) {
++                            ICONINFO ii = {0};
++                            ii.fIcon = TRUE;
++                            HBITMAP hMask = CreateBitmap(16, 16, 1, 1, nullptr);
++                            ii.hbmMask = hMask;
++                            ii.hbmColor = hBitmap;
++                            hIcon = CreateIconIndirect(&ii);
++                            DeleteObject(hMask);
++                            DeleteObject(hBitmap);
++                        }
++                        pImageFactory->Release();
++                    }
++                    pShellItem->Release();
++                }
++            }
++            PropVariantClear(&var);
++            pPropStore->Release();
++        }
++        
++        // Fallback: search child CoreWindow for executable path and extract icon
++        if (!hIcon) {
++            HWND hChild = FindWindowExW(hwnd, nullptr, L"Windows.UI.Core.CoreWindow", nullptr);
++            if (hChild) {
++                DWORD childPid = 0;
++                GetWindowThreadProcessId(hChild, &childPid);
++                HANDLE hProcess = OpenProcess(PROCESS_QUERY_LIMITED_INFORMATION, FALSE, childPid);
++                if (hProcess) {
++                    WCHAR szPath[MAX_PATH] = {0};
++                    DWORD dwSize = MAX_PATH;
++                    if (QueryFullProcessImageNameW(hProcess, 0, szPath, &dwSize)) {
++                        SHFILEINFOW sfi = {0};
++                        if (SHGetFileInfoW(szPath, 0, &sfi, sizeof(sfi), SHGFI_ICON | SHGFI_SMALLICON)) {
++                            hIcon = sfi.hIcon;
++                        }
++                    }
++                    CloseHandle(hProcess);
++                }
++            }
++        }
++    }
++    
++    if (!hIcon) {
++        if (SendMessageTimeoutW(hwnd, WM_GETICON, ICON_SMALL, 0, SMTO_ABORTIFHUNG, 500, &dwRes)) {
++            hIcon = (HICON)dwRes;
++        }
++        if (!hIcon) {
++            hIcon = (HICON)GetClassLongPtrW(hwnd, GCLP_HICONSM);
++        }
++    }
++    return hIcon;
++}
+ 
+@@ -1135,6 +1254,2 @@
+-                DWORD_PTR dwRes;
+-                if (!SendMessageTimeoutW(hwndShell, WM_GETICON, ICON_SMALL, 0, SMTO_ABORTIFHUNG, 500, &dwRes)) dwRes = 0;
+-                info.hIcon = (HICON)dwRes;
+-                
+-                if (!info.hIcon) {
+-                    info.hIcon = (HICON)GetClassLongPtrW(hwndShell, GCLP_HICONSM);
+-                }
++                info.hIcon = ExtractWindowIcon(hwndShell);
+ 
+@@ -1182,2 +1297,20 @@
+ 
++    if (uMsg == WM_DPICHANGED) {
++        UINT dpiX = LOWORD(wParam);
++        RECT* prcNew = (RECT*)lParam;
++        TaskbarInstance* inst = GetTaskbarInstance(hwnd);
++        if (inst) {
++            inst->dpi = dpiX;
++            inst->taskbarHeight = MulDiv(inst->baseTaskbarHeight, dpiX, 96);
++            
++            SetWindowPos(hwnd, NULL, prcNew->left, prcNew->top, prcNew->right - prcNew->left, prcNew->bottom - prcNew->top, SWP_NOZORDER | SWP_NOACTIVATE);
++            
++            // Refresh fonts/layout
++            if (inst->startButton) {
++                inst->startButton->Show(prcNew->left, prcNew->top, inst->taskbarHeight);
++            }
++            UpdateTrayLayout(inst->hTrayNotify);
++            InvalidateRect(hwnd, NULL, TRUE);
++        }
++        return 0;
++    }
++
++    if (uMsg == WM_COPYDATA) {
+@@ -1546,2 +1679,3 @@
+                 UpdateTrayToolbar(inst->hToolbar, inst->hTrayImageList, icons);
++                UpdateTrayLayout(inst->hTrayNotify);
+             }
+@@ -1799,2 +1933,14 @@
+         inst->taskbarHeight = taskbarHeight;
++        inst->baseTaskbarHeight = taskbarHeight;
++        inst->dpi = 96;
++        
++        HMODULE hShcore = GetModuleHandleW(L"shcore.dll");
++        if (hShcore) {
++            typedef HRESULT(WINAPI* GetDpiForMonitorFn)(HMONITOR, int, UINT*, UINT*);
++            GetDpiForMonitorFn pfn = (GetDpiForMonitorFn)GetProcAddress(hShcore, "GetDpiForMonitor");
++            if (pfn) {
++                UINT dpiX = 96, dpiY = 96;
++                if (SUCCEEDED(pfn(inst->hMonitor, 0, &dpiX, &dpiY))) inst->dpi = dpiX;
++            }
++        }
++        inst->taskbarHeight = MulDiv(inst->baseTaskbarHeight, inst->dpi, 96);
+ 
+@@ -1883,2 +2029,4 @@
+-                inst->hToolbar = CreateWindowExW(0, L"ToolbarWindow32", L"", WS_CHILD | WS_VISIBLE | WS_CLIPSIBLINGS | WS_CLIPCHILDREN | TBSTYLE_FLAT | TBSTYLE_TRANSPARENT | CCS_NODIVIDER | CCS_NORESIZE, 0, 0, 100, taskbarHeight, inst->hSysPager, NULL, hInstance, NULL);
++                inst->hToolbar = CreateWindowExW(0, L"ToolbarWindow32", L"", WS_CHILD | WS_VISIBLE | WS_CLIPSIBLINGS | WS_CLIPCHILDREN | TBSTYLE_FLAT | TBSTYLE_TRANSPARENT | CCS_NODIVIDER | CCS_NORESIZE | TBSTYLE_TOOLTIPS, 0, 0, 100, taskbarHeight, inst->hSysPager, NULL, hInstance, NULL);
++                SetWindowSubclass(inst->hToolbar, TrayToolbarSubclassProc, 2, 0);
++                SetWindowSubclass(inst->hSysPager, TraySysPagerSubclassProc, 3, 0);
+                 SendMessageW(inst->hToolbar, TB_BUTTONSTRUCTSIZE, sizeof(TBBUTTON), 0);
+ 
+@@ -1955,6 +2103,2 @@
+-                    SendMessageTimeoutW(hwnd, WM_GETICON, ICON_SMALL, 0, SMTO_ABORTIFHUNG, 500, &dwRes);
+-                    info.hIcon = (HICON)dwRes;
+-                    if (!info.hIcon) {
+-                        info.hIcon = (HICON)GetClassLongPtrW(hwnd, GCLP_HICONSM);
+-                    }
++                    info.hIcon = ExtractWindowIcon(hwnd);

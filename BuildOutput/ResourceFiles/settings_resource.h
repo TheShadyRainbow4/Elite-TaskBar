@@ -1,4 +1,5 @@
 #pragma once
+#pragma warning(disable: 4715)
 
 #define IDI_MAIN_PROGRAM 102
 #define IDI_PREFERENCES  101
@@ -70,6 +71,8 @@
 #define IDC_THEME_FOLDER_PATH        260
 #define IDC_THEME_FOLDER_BROWSE      261
 #define IDC_ENABLE_DARK_MODE         262
+#define IDC_IMPORT_SETTINGS          270
+#define IDC_EXPORT_SETTINGS          271
 
 #define IDD_HELP_DIALOG              280
 #define IDD_ABOUT_DIALOG             281

@@ -1,89 +1,119 @@
-# Handoff Report: Read-Only Investigation of EliteTaskbar Advanced Features (R4, R5, R7)
+# Handoff Report: Read-Only Investigation of EliteTaskbar R3, R4, R5, and R7
 
 ## 1. Observation
-We have performed a read-only code exploration of the EliteTaskbar repository, focusing on `TaskbarWindow.h`, `TaskbarWindow.cpp`, `TrayIconScraper.h`, and `TrayIconScraper.cpp`. The following observations were made:
 
-### A. System Tray & Overflow Handling (R4)
-- **Static Dimensions:** In `TaskbarWindow.cpp`, lines 1878 to 1894, `inst->hTrayNotify` is created with a hardcoded width of `240` and height `taskbarHeight`. Within it, `inst->hSysPager` (tray) is created at `x = 0` with width `100`, and `inst->hTrayClock` is created at `x = 100` with width `140`. The layout is static and never shifts to accommodate more tray icons. If tray icons exceed 4, they are drawn over by the clock or clipped.
-- **Scraped Click Loss in Independent Mode:** In `TaskbarWindow.cpp`, timer `1001` (lines 1541-1549) scrapes the tray icons from the native taskbar via `ScrapeTrayIcons()` and updates the toolbar `inst->hToolbar` (lines 1546) using `UpdateTrayToolbar()`. However:
-  - There is no subclassing of `inst->hToolbar` or the tray parent windows to handle clicks.
-  - The window procedures (`TaskbarWindowProc` or `TrayNotifyProc`) contain no handlers for `WM_NOTIFY` or `WM_COMMAND` originating from `inst->hToolbar`. Consequently, mouse events (clicks, double-clicks, right-clicks) on the tray toolbar in independent mode do absolutely nothing.
-- **Incomplete Scraping:** `ScrapeTrayIcons()` in `TrayIconScraper.cpp` (lines 27-75) only scrapes icons from `Shell_TrayWnd` -> `TrayNotifyWnd` -> `SysPager` -> `ToolbarWindow32`. It does not scrape from the native overflow window (`NotifyIconOverflowWindow` -> `ToolbarWindow32`).
-- **GDI Tray Clicks:** In replacement mode, clicks on custom-drawn tray icons are processed using `g_TrayIcons` (lines 767-827), but the click-mapping relies on a simple coordinate division without validating if the click was inside the actual icon bounds.
+We have performed a read-only code exploration of the EliteTaskbar repository under `SourceFiles/`. The following observations were made:
 
-### B. UWP App Icons Extraction (R5)
-- **Generic Icon Fallback:** In `TaskbarWindow.cpp` (lines 440-442, 1135-1140, and 1956-1960), window icons are extracted using:
+### A. Default Operational Settings (R3)
+- In `SourceFiles/main.cpp`, lines 17-17, the global configuration structure `g_Config` is initialized as:
+  ```cpp
+  EliteTaskbarConfig g_Config = { L"", TaskbarMode::Independent, ButtonWidthMode::Auto, TrayOverflowMode::Win7Flyout, false, false, {} };
+  ```
+- In `SourceFiles/main.cpp`, lines 23-23, inside `QueryOperationalMode()`:
+  ```cpp
+  g_Config.Mode = TaskbarMode::Independent; // Default
+  ```
+- In `SourceFiles/TaskbarProperties.cpp`, lines 448-454, when initializing the Settings properties dialog:
+  ```cpp
+  if (RegQueryValueExW(hKey, L"TaskbarMode", NULL, NULL, (LPBYTE)&dwValue, &cbData) == ERROR_SUCCESS) {
+      if (dwValue == 0) SendDlgItemMessageW(hwndDlg, IDC_MODE_INDEPENDENT, BM_SETCHECK, BST_CHECKED, 0);
+      else if (dwValue == 1) SendDlgItemMessageW(hwndDlg, IDC_MODE_REPLACE, BM_SETCHECK, BST_CHECKED, 0);
+      else if (dwValue == 2) SendDlgItemMessageW(hwndDlg, IDC_MODE_SECONDARY_ONLY, BM_SETCHECK, BST_CHECKED, 0);
+  } else {
+      SendDlgItemMessageW(hwndDlg, IDC_MODE_INDEPENDENT, BM_SETCHECK, BST_CHECKED, 0);
+  }
+  ```
+
+### B. System Tray Overflow and Interactions (R4)
+- **Loss of Mouse Input:** In `SourceFiles/TaskbarWindow.cpp`, the tray pager window `inst->hSysPager` and toolbar `inst->hToolbar` (created at lines 1882-1883) are not subclassed.
+- **Lost Notifications:** The main window procedure `WindowProc` only handles `WM_NOTIFY` from the taskband (`inst->hTaskSwitch`) for item previews/menus (lines 1267-1320). No `WM_NOTIFY` or mouse event routing is implemented for `inst->hToolbar`. Consequently, mouse interactions (clicks, right-clicks, dragging) on the tray icons are entirely lost.
+- **Scraper Incompleteness:** The current scraping function `ScrapeTrayIcons()` in `SourceFiles/TrayIconScraper.cpp` (lines 27-75) only queries the visible tray toolbar `ToolbarWindow32` under `Shell_TrayWnd`. It completely ignores the overflow area (`NotifyIconOverflowWindow` -> `ToolbarWindow32`), causing icons in the overflow menu to be cut off and missing from the replicated taskbar.
+- **Replacement Mode Click Mapping:** In `SourceFiles/TaskbarWindow.cpp` (lines 802-825), the click mapping divides mouse coordinates without verifying if the click coordinates hit within the specific 16px bound of the icons.
+
+### C. UWP App Icons Extraction (R5)
+- In `SourceFiles/TaskbarWindow.cpp`, window icons are retrieved using standard GDI messages (lines 439-442, 1134-1140, 1955-1960):
   ```cpp
   if (!SendMessageTimeoutW(hwnd, WM_GETICON, ICON_SMALL, 0, SMTO_ABORTIFHUNG, 500, &dwRes)) dwRes = 0;
   info.hIcon = (HICON)dwRes;
   if (!info.hIcon) info.hIcon = (HICON)GetClassLongPtrW(hwnd, GCLP_HICONSM);
   ```
-  For UWP apps (class `"ApplicationFrameWindow"`), the frame belongs to `ApplicationFrameHost.exe`. Querying `WM_GETICON` or `GCLP_HICONSM` on these frame windows returns the generic default host application icon rather than the hosted UWP app's specific icon.
+- Windows of class `"ApplicationFrameWindow"` are host windows owned by `ApplicationFrameHost.exe`. Sending `WM_GETICON` or querying `GCLP_HICONSM` on these handles returns the default generic icon of `ApplicationFrameHost.exe` instead of the hosted UWP application's icon (e.g. Settings, Calculator, Mail).
 
-### C. DPI Scaling and Font Blurriness (R7)
-- **DPI Unawareness in Rendering:** Although `app.manifest` enables `PerMonitorV2` DPI awareness, there is no code handling `WM_DPICHANGED` or scaling GDI rendering.
-- **Hardcoded Font Heights:** GDI fonts in `TaskbarWindow.cpp` are created with static pixel heights:
-  - Line 229 (Window previews): `lf.lfHeight = -12;`
-  - Line 890 (Clock): `lf.lfHeight = -11;`
-- **Mismatched DPI Blurriness:** When the application runs, Windows scales the entire window using bitmap scaling if the monitor DPI doesn't match the system DPI (which is the DPI of the monitor the process initialized on). This causes rendering to be blurry on monitor 1 (100%) and monitor 2 (125%) while remaining crisp on monitor 3 (150%).
+### D. Multi-Monitor DPI Blurriness (R7)
+- While `SourceFiles/app.manifest` defines `PerMonitorV2` DPI awareness (line 20), there is no handling of `WM_DPICHANGED` messages in `WindowProc` (lines 1108-1320).
+- Static layout variables are used: `taskbarHeight` is a local initialization variable (line 1702), and font heights are hardcoded in paint handlers:
+  - Previews (line 229): `lf.lfHeight = -12;`
+  - Clock (line 890): `lf.lfHeight = -11;`
+- Consequently, when moving across multi-monitor setups, DWM performs bitmap scaling, rendering the taskbar text and icons blurry on monitors that differ from the primary monitor's scaling factor.
 
 ---
 
 ## 2. Logic Chain
 
-### A. Tray Overflow Fix (R4)
-1. **Deduction on Sizing:** Since `hSysPager` is restricted to `x=0, width=100`, the tray area can display a maximum of 4 icons (`16px chevron + 4 * 24px = 112px`). To prevent clipping, we must dynamically calculate the tray width based on the visible icons count (`totalVisible`) and expand/collapse states.
-2. **Deduction on Clock Alignment:** The clock must be positioned dynamically at `x = W_tray` and the overall `TrayNotifyWnd` width set to `W_tray + W_clock` so the clock moves left as the tray grows, preventing overlaps.
-3. **Deduction on Event Routing:** Since `inst->hToolbar` in independent mode receives mouse messages, subclassing it is necessary to capture `WM_LBUTTONDOWN`, `WM_RBUTTONUP`, etc., hit-test the clicked button, and forward the message using `PostMessageW(icon.hwnd, icon.uCallbackMessage, icon.uID, uMsg)`.
-4. **Deduction on Scraping both areas:** To capture all system tray icons, we must scrape both `Shell_TrayWnd`'s toolbar and `NotifyIconOverflowWindow`'s toolbar.
+### A. Operational Mode (R3)
+- Based on observations in `main.cpp` (lines 17, 23) and `TaskbarProperties.cpp` (lines 448-454), `g_Config.Mode` defaults to `TaskbarMode::Independent` if registry parameters are absent or set to `0`. This satisfies the default settings requirement.
 
-### B. UWP App Icons Fix (R5)
-1. **Deduction on Window Class:** UWP apps reside in windows with the class name `"ApplicationFrameWindow"`.
-2. **Deduction on AUMID:** The App User Model ID (AUMID) uniquely identifies the hosted UWP package and is stored in the window property store under `PKEY_AppUserModel_ID`.
-3. **Deduction on Shell COM extraction:** Passing the AUMID to `SHCreateItemFromParsingName` retrieves an `IShellItem` from the virtual applications folder. We can query `IShellItemImageFactory` and call `GetImage()` to get the native high-res icon bitmap, preserving clean transparency.
+### B. Tray Interactions & Overflow (R4)
+- **Click Routing:** Subclassing `inst->hToolbar` (e.g. `TrayToolbarSubclassProc`) is necessary to capture client-area mouse messages (`WM_LBUTTONUP`, `WM_RBUTTONUP`, etc.). Sending `TB_HITTEST` retrieves the button index under the cursor, which maps directly to the scraped item in `g_CurrentTrayIcons`. We can then route the messages using `PostMessageW(icon.hwnd, icon.uCallbackMessage, icon.uID, uMsg)`.
+- **Tooltip Mapping:** Since `tbb.iString` in Explorer's tray toolbar contains a pointer to the Unicode tooltip string, we can read this string from the remote process using `ReadProcessMemory` during scraping. Enabling `TBSTYLE_TOOLTIPS` on `inst->hToolbar` and subclassing `inst->hSysPager` to handle `TTN_GETDISPINFOW` enables the native tooltip system to query and display these tooltips automatically.
+- **Double-Scraping:** Finding both `Shell_TrayWnd` (visible) and `NotifyIconOverflowWindow` (overflow) toolbar controls, and scraping both into the same collection, prevents icons from being cut off.
+- **Dynamic Layout:** Querying `TB_GETITEMRECT` for the last button inside the tray toolbar gives the exact client width required by the icons. We can then adjust the width of `SysPager` and shift the clock to `x = W_tray`, updating the parent `TrayNotifyWnd` and taskband dimensions accordingly.
 
-### C. High-DPI Text Blurriness Fix (R7)
-1. **Deduction on DPI Scaling:** To achieve crisp rendering, bitmap scaling by DWM must be avoided. The process must scale its client geometry, fonts, and controls dynamically for each monitor's target DPI.
-2. **Deduction on Font Scaling:** Scaling the font size (`lf.lfHeight = MulDiv(originalFontHeight, dpi, 96)`) ensures that GDI renders characters at native resolutions.
-3. **Deduction on WM_DPICHANGED:** Handling `WM_DPICHANGED` updates the DPI factor, scales window dimensions, scales child controls, and triggers a repaint to keep rendering sharp at all times.
+### C. UWP App Icons (R5)
+- UWP windows have class name `"ApplicationFrameWindow"`.
+- We can extract the unique App User Model ID (AUMID) by querying the window's `IPropertyStore` for the `PKEY_AppUserModel_ID` key.
+- By parsing this AUMID inside `shell:AppsFolder\\` via `SHCreateItemFromParsingName`, we obtain an `IShellItem`. Querying `IShellItemImageFactory::GetImage` retrieves the clean 32-bit ARGB bitmap of the UWP application.
+- Converting this bitmap to `HICON` via `CreateIconIndirect` provides the correct high-res icon.
+- As a robust fallback, locating child windows of class `"Windows.UI.Core.CoreWindow"`, obtaining their PID, querying the image path using `QueryFullProcessImageNameW`, and calling `SHGetFileInfoW` extracts the native application icon.
+
+### D. Multi-Monitor High-DPI Rendering (R7)
+- Handling `WM_DPICHANGED` captures the new DPI scaling factor.
+- Storing `dpi` in `TaskbarInstance` allows dynamically scaling font sizes:
+  `lf.lfHeight = MulDiv(baseFontHeight, dpi, 96);`
+- Redefining layout parameters (e.g. `inst->taskbarHeight = MulDiv(inst->baseTaskbarHeight, dpi, 96)`) and resizing window boundaries using `SetWindowPos` according to the suggested rectangle (`lParam`) ensures crisp, native rendering on all monitors.
 
 ---
 
 ## 3. Caveats
-- **Helper DLLs:** This investigation assumes no injection DLL is used, and that tray messages can be cleanly forwarded via `PostMessageW`. This has been proven to work for almost all standard Win32 notification icons.
-- **Process Privileges:** Drag-and-drop or certain interactions in replacement mode may fail if UIPI blockages occur unless `psexec` or similar tools are utilized (as outlined in global rules).
-- **Windows Version:** Tested against modern Windows 10/11 structures. On Windows 7 or Vista, certain AUMID APIs may not exist, so robust dynloading or standard fallback logic (`SHGetFileInfoW` on the target UWP process) is provided.
+
+- **COM Initialization:** Calling shell items from `shell:AppsFolder` requires COM initialization. The application calls `CoInitializeEx` on startup, but thread apartment rules must be strictly adhered to during shell operations.
+- **OS Version Compatibility:** On older systems (Windows 7/8), `PKEY_AppUserModel_ID` may not be present on frame windows, so the child `CoreWindow` query / `SHGetFileInfoW` executable path fallback is critical for backward compatibility.
+- **Registry Permissions:** Querying the root returned by `GetEliteRegistryRoot()` protects registry configurations across portable/installed modes.
 
 ---
 
 ## 4. Conclusion
-To resolve the identified objectives, the following implementation plan is proposed:
 
-### R4: Tray Overflow Fix Implementation
-1. **Extend `ScrapedTrayIcon`:** Include `szTip` field in the structure to store tooltips.
-2. **Double-Scrape Architecture:** Modify `ScrapeTrayIcons()` to scrape both visible tray toolbar and `NotifyIconOverflowWindow`'s toolbar.
-3. **Dynamic Layout Coordinator:** Implement `UpdateTrayLayout(HWND hTrayNotify)` to compute the dynamic size `W_tray` and move the clock to `x = W_tray`.
-4. **Toolbar Subclassing:** Subclass `inst->hToolbar` (and `g_hTrayFlyout` for replacement mode) to forward clicks via `PostMessageW`.
-5. **Dynamic Tooltips:** Create a tracking tooltip (`TOOLTIPS_CLASSW`) and display it using `TTM_TRACKACTIVATE` with `szTip` on `WM_MOUSEMOVE`.
+The analysis validates the following implementation strategies:
+1. **R3 Default settings:** The codebase already defaults to `TaskbarMode::Independent`.
+2. **R4 Tray Overflow & Mouse routing:**
+   - Double-scrape visible toolbar and `"NotifyIconOverflowWindow"`.
+   - Read tooltips using remote process memory scraping (`tbb.iString`).
+   - Subclass `inst->hToolbar` (routing click messages to target windows) and `inst->hSysPager` (providing tooltip strings via `TTN_GETDISPINFOW`).
+   - Dynamically resize `hSysPager` using `TB_GETITEMRECT` bounds of the last button, and dynamically adjust the positions of the clock and parent notifier.
+3. **R5 UWP Icons:**
+   - Check if class is `"ApplicationFrameWindow"`.
+   - Extract AUMID via Property Store, instantiate `IShellItem` and retrieve `HBITMAP` via `IShellItemImageFactory::GetImage`, converting it to `HICON`.
+   - Fallback to reading the executable path of child `"Windows.UI.Core.CoreWindow"`.
+4. **R7 High-DPI text scaling:**
+   - Initialize `inst->dpi` on monitor startup via `GetDpiForMonitor`.
+   - Handle `WM_DPICHANGED` to dynamically scale taskbar height, start button size, clock, and repainting.
+   - Scale `lf.lfHeight` in `PreviewWndProc` and `TrayClockProc` by `MulDiv(baseHeight, dpi, 96)`.
 
-### R5: UWP App Icons Fix Implementation
-1. **Check for UWP frame:** Compare class name to `"ApplicationFrameWindow"`.
-2. **Query Property Store:** Retrieve AUMID using `SHGetPropertyStoreForWindow` and `PKEY_AppUserModel_ID`.
-3. **Extract Shell Bitmap:** Call `SHCreateItemFromParsingName` and use `IShellItemImageFactory::GetImage` to extract a 16x16 or 32x32 bitmap.
-4. **Convert to Icon:** Convert the 32-bit ARGB bitmap to `HICON` using `CreateIconIndirect`.
-5. **Fallback:** Enumerate children to find `Windows.UI.Core.CoreWindow` PID, query the executable path, and call `SHGetFileInfoW`.
-
-### R7: High-DPI Text Blurriness Fix Implementation
-1. **Add DPI fields:** Add `UINT dpi;` to `TaskbarInstance`.
-2. **Query Monitor DPI:** Use dynamic-loaded `GetDpiForMonitor` from `shcore.dll` with a fallback to `GetDeviceCaps` for Windows 7.
-3. **DPI-aware Font Heights:** Multiply font `lfHeight` by `DPI / 96`.
-4. **DPI-aware Layout Sizing:** Scale taskbar height, start button size, clock width, and notify area size based on the scaling factor.
-5. **Handle `WM_DPICHANGED`:** Capture message, update DPI, call `SetWindowPos`, and redraw.
+A detailed patch file has been generated and saved at:
+`C:\Users\Administrator\Desktop\Elite-TaskBar\._agents\explorer_r4_r5_r7_gen2\proposed_changes.patch`
 
 ---
 
 ## 5. Verification Method
-1. **Build Verification:** Run `build.ps1` to ensure compiling completes successfully.
-2. **Check DPI Scaling:** Launch `EliteTaskbar.exe` and drag the taskbar to different monitors. Verify the text remains crisp and does not appear blurry or stretched.
-3. **Check Tray Interactions:** In both independent and replacement modes, right-click/left-click/double-click all tray icons. Verify that their menus and applications react normally.
-4. **Check UWP Icons:** Launch UWP apps (e.g. Settings, Calculator) and confirm that their correct icons are displayed on the taskbar instead of the default generic `ApplicationFrameHost` icon.
+
+To verify the proposed implementation:
+1. **Compilation:** Execute `build.ps1` to build the binary. Ensure it compiles without warnings/errors.
+2. **Tray Interactions:**
+   - Run the taskbar. Verify that clicking, right-clicking, double-clicking, and hovering over scraped tray icons correctly invokes their menus/dialogs.
+   - Ensure the chevron menu (`NotifyIconOverflowWindow`) items are correctly scraped and populated.
+3. **UWP Icons:**
+   - Open UWP applications (e.g. Settings, Calculator). Confirm that their distinct icons are displayed on the taskbar.
+4. **High-DPI Scaling:**
+   - Drag the EliteTaskbar window between monitors with different scaling sizes (e.g., 100%, 125%, 150%).
+   - Verify that the text and clock remain crisp, and layout bounds resize dynamically on `WM_DPICHANGED`.

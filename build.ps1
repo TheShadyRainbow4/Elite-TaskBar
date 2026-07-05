@@ -7,7 +7,7 @@ $ErrorActionPreference = 'Stop'
 $ScriptDir = $PSScriptRoot
 
 Write-Host "Checking for running Elite processes..." -ForegroundColor Cyan
-Get-Process -Name EliteTaskbar, EliteSettings, EliteEverything, EliteDLLScanner -ErrorAction SilentlyContinue | Stop-Process -Force
+Get-Process -Name EliteTaskbar, EliteSettings, EliteEverything, EliteDLLScanner, Win32Explorer -ErrorAction SilentlyContinue | Stop-Process -Force
 Get-CimInstance Win32_Process -Filter "Name = 'rundll32.exe'" | Where-Object CommandLine -match "EliteSettings\.cpl" | Invoke-CimMethod -MethodName Terminate | Out-Null
 Start-Sleep -Seconds 1
 
@@ -167,7 +167,7 @@ if (-not $failed) {
     $ErrorActionPreference = 'Continue'
     git add .
     git commit -m "Auto-commit after successful build (build.ps1)"
-    git push origin HEAD
+    # git push origin HEAD
     $ErrorActionPreference = 'Stop'
     Write-Host "Done!" -ForegroundColor Green
 }

@@ -4,6 +4,14 @@ All notable changes to this project will be documented in this file.
 
 
 ## [Unreleased]
+### Added
+- **Settings Import/Export**: Added "Import Settings..." and "Export Settings..." buttons to the Native Settings tab (`IDC_IMPORT_SETTINGS`, `IDC_EXPORT_SETTINGS`). Implemented a C++ routine in `TaskbarProperties.cpp` to dynamically traverse the `HKCU\Software\EliteSoftware\Win32Explorer\Advanced` registry keys, query the native Windows `TaskbarSizeMove`, `TaskbarSmallIcons`, and `StuckRects3` keys, and serialize them cleanly into a `.reg` file.
+- **Aggressive Import Sync**: Tied the `.reg` import directly into `NotifySettingsChange()` to forcefully hard-reboot the taskbar and explorer when a new settings file is imported, ensuring instantaneous glitch-free application.
+- **Features Documentation**: Added a comprehensive collapsible features list to `README.md` and instituted a new rule in `GEMINI.md` requiring all new features to be appended to it.
+
+### Fixed
+- **Settings Build Linker Error**: Added `#pragma comment(lib, "comdlg32.lib")` to `TaskbarProperties.cpp` to resolve `LNK2019` errors for `GetOpenFileNameW` and `GetSaveFileNameW` during `EliteSettings.exe` compilation.
+
 ### Changed
 - **About Dialog Spacing (R8)**: Adjusted `IDD_ABOUT_DIALOG` button layout in both `SourceFiles/resources.rc` and `Win32Explorer_26.0.3.0/App_Source/EliteTaskbar/resources.rc` to y=118, and updated dynamic positioning and chin rendering in `SourceFiles/TaskbarProperties.cpp`.
 - **Default Taskbar Mode (R3)**: Updated both `SourceFiles/EliteSettings.ps1` and `Win32Explorer_26.0.3.0/App_Source/EliteTaskbar/EliteSettings.ps1` to default `TaskbarMode` to Independent when the registry value is missing, and ensured that both `SourceFiles/TaskbarProperties.cpp` and `Win32Explorer_26.0.3.0/App_Source/EliteTaskbar/TaskbarProperties.cpp` default to checking `IDC_MODE_INDEPENDENT`.
@@ -219,3 +227,6 @@ All notable changes to this project will be documented in this file.
 - **Property Sheet Menu Fix**: Adjusted property sheet window size in TaskbarProperties.cpp to compensate for the injected menu bar height (SM_CYMENU), preventing the bottom buttons (OK/Cancel/Apply) from being visually clipped.
 
 - **Start Orb Position Fix**: Fixed a coordinate space bug in TaskbarWindow.cpp during WM_SETTINGCHANGE processing where GetClientRect was being passed instead of GetWindowRect, causing the Start Orb layered window to jump to (0,0) absolute screen coordinates (top left) instead of relative taskbar coordinates.
+
+- **Invisible Controls Fix**: Completely removed the custom WM_CTLCOLORSTATIC handlers from all Property Sheet dialog procedures in TaskbarProperties.cpp. The manual overrides were returning NULL_BRUSH, which broke the native property sheet rendering engine when Visual Styles were enabled, causing radio buttons and checkboxes to render invisibly until a hover forced a repaint.
+- **Empty Dropdown Fix**: Increased the layout height parameter of IDC_WIDTH_FIXED_SIZE in esources.rc from 50 to 150. Win32 ComboBox heights dictate the size of the dropped-down list, so the small value was causing the list to have a height of zero and appear empty.

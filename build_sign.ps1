@@ -5,17 +5,7 @@ param(
 
 $ErrorActionPreference = 'Stop'
 
-$signerTool = "$PSScriptRoot\Elite-EasySigner\Elite-EasySigner_x64.exe"
-if (-not (Test-Path $signerTool)) {
-    $signerTool = "$PSScriptRoot\Elite-EasySigner\Elite-EasySigner_x86.exe"
-}
-
-if (-not (Test-Path $signerTool)) {
-    Write-Warning "Could not find Elite-EasySigner at $signerTool. Skipping signature."
-    exit 0
-}
-
-Write-Host "Signing executables using Elite-EasySigner..." -ForegroundColor Cyan
+Write-Host "Signing executables using signtool.exe..." -ForegroundColor Cyan
 
 $exeFiles = @(
     (Join-Path $PSScriptRoot "EliteTaskbar.exe"),
@@ -35,17 +25,24 @@ $exeFiles = @(
     (Join-Path $BuildDirx86 "EliteDLLScanner_x86.exe")
 )
 
-$validFiles = @()
-foreach ($file in $exeFiles) {
-    if (Test-Path $file) {
-        $validFiles += "`"$file`""
-    }
+$signtool = (Get-ChildItem -Path "C:\Program Files (x86)\Windows Kits\10\bin\*" -Filter signtool.exe -Recurse | Where-Object { $_.FullName -like "*x64*" } | Select-Object -First 1).FullName
+if (-not $signtool) {
+    $signtool = (Get-ChildItem -Path "C:\Program Files (x86)\Windows Kits\10\bin\*" -Filter signtool.exe -Recurse | Select-Object -First 1).FullName
 }
 
-if ($validFiles.Count -gt 0) {
-    Write-Host "Signing $($validFiles.Count) files..." -ForegroundColor Yellow
-    $argsString = $validFiles -join " "
-    Invoke-Expression "& `"$signerTool`" $argsString"
+$pfx = Join-Path $PSScriptRoot "Elite-EasySigner\EliteSoftware_Special.pfx"
+$pass = "Minecraft145!!"
+
+if ($signtool -and (Test-Path $pfx)) {
+    Write-Host "Found signtool: $signtool"
+    foreach ($file in $exeFiles) {
+        if (Test-Path $file) {
+            Write-Host "Signing $file..."
+            & $signtool sign /f $pfx /p $pass /fd SHA256 /v $file
+        }
+    }
+} else {
+    Write-Warning "signtool.exe or PFX certificate not found! Skipping signing."
 }
 
 Write-Host "Signing stage completed!" -ForegroundColor Green

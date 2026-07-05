@@ -23,20 +23,46 @@
 ## 🚀 Elite-Taskbar Deep Dive & Features
 
 ### 🖼️ Core Features & Capabilities
+
 Elite-Taskbar is designed from the ground up to seamlessly blend into the Windows environment, providing a perfect legacy Aero Glass experience while retaining 100% of the functionality expected from the Windows Shell.
 
-* **Aero Glass Rendering**: Utilizes `DwmEnableBlurBehindWindow` and `DrawThemeBackground` to draw pixel-perfect Windows 7 style glass taskbars.
-* **Orb Overlays**: Features a mathematically perfect Layered Window (`WS_EX_LAYERED`) start button orb that supports 3-state hover animations (Normal, Hover, Pressed) utilizing raw `Gdiplus` for per-pixel alpha.
-* **Intelligent Context Menus**: The taskbar respects the Windows standard context menus. Rather than attempting to "fake" window cascading or tiling, Elite-Taskbar routes raw, undocumented Shell Command IDs directly to the native (hidden) taskbar. This guarantees 100% stable execution of features like:
-  * Cascade Windows (`ID 410`)
-  * Show Windows Stacked (`ID 409`)
-  * Show Windows Side by Side (`ID 408`)
-  * Show Desktop (`ID 407`)
-  * Task Manager (`ID 405`)
-  * Lock Taskbar (`ID 404`)
-  * Properties (`ID 401`)
-* **Robust Tray Clock**: The clock uses the `BeginBufferedPaint` API to draw composited, glowing white text directly onto the Aero Glass frame. It also includes an ironclad fallback mechanism for Standard User environments (or environments hooked by software like Windhawk) falling back to raw GDI `DrawTextW` if the DWM buffer fails, guaranteeing the time is *always* visible.
-* **Native Flyout Integration**: Clicking the clock summons the *actual* Windows Calendar flyout by locating the native `TrayClockWClass` and firing synthetic mouse clicks at it, bridging the gap between the custom shell and native components.
+<details>
+<summary><b>1. Core Shell Replacements</b></summary>
+
+* **Complete Taskbar Overhaul**: Aero Glass rendering, Topmost Z-order, per-monitor DPI scaling.
+* **Win32Explorer Integration**: Deep integration with the Win32Explorer file manager, capable of completely hijacking native folder browsing.
+* **Fallback Start Menu**: Integrated custom Start Menu using assimilated Open-Shell rendering for perfect compatibility.
+* **Desktop Rendering**: Native `Progman` replacement capable of rendering registry-configured wallpapers and launching a `SysListView32` desktop icon grid.
+
+</details>
+
+<details>
+<summary><b>2. Visual & Theming Engine</b></summary>
+
+* **GDI & GDI+ Drawing**: Pixel-perfect UI elements, including 3-state animated Start Orbs (Normal, Hover, Pressed).
+* **High DPI Awareness**: `PerMonitorV2` compliance ensuring crisp text and imagery across multi-monitor setups.
+* **Custom Start Orbs**: Included themes like Indigo, Sapphire, Uranus, Dunes, AquaBottom, and ViennaBottom.
+* **Legacy System Tray**: Options for a modern tray or a classic retro linear system tray.
+
+</details>
+
+<details>
+<summary><b>3. Advanced Settings & Configuration</b></summary>
+
+* **EliteSettings Applet**: A dedicated CPL and EXE properties menu utilizing classic WinForms & native C++ property sheets.
+* **Aggressive Registry Sync**: Writes settings dynamically to `HKCU` to perfectly match native Explorer behaviors (e.g., `TaskbarSizeMove`, `TaskbarSmallIcons`).
+* **Settings Import/Export**: Instantly backup and restore all shell configurations, including native Windows parameters, to a `.reg` file with hot-reloading.
+
+</details>
+
+<details>
+<summary><b>4. Native Behavior & Integrity</b></summary>
+
+* **Intelligent Context Menus**: Routes raw undocumented Shell Command IDs (e.g., Cascade Windows, Show Desktop) for 100% native execution.
+* **Robust Tray Clock**: Hooks into the native `TrayClockWClass` and seamlessly summons the standard Windows calendar flyout.
+* **Graceful Degradation**: Fallback mechanisms (e.g., DWM buffer to raw GDI `DrawTextW`) ensure critical UI elements like the clock are always visible even if themes break.
+
+</details>
 
 ---
 

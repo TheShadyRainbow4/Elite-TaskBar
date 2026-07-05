@@ -120,3 +120,38 @@ I investigated this and realized:
 Please add this "Apply Button Hang & Taskbar Crash" bug to your list of fixes. (You can also disregard the "group by type" part of their report as the trigger, since it happens on any Apply).
 
 
+
+
+## Follow-up — 2026-07-05T08:06:44Z
+
+# Teamwork Project Prompt — Draft
+
+> Status: Launched
+> Goal: Teamwork preview running
+
+Implement Phase XI (Desktop Replacement) and Phase XIX (Fallback Start Menu) for EliteTaskbar to achieve full shell replacement capability.
+
+Working directory: C:\Users\Administrator\Desktop\Elite-TaskBar
+Integrity mode: development
+
+## Requirements
+
+### R1. Desktop Window & Background Rendering
+Register a borderless, bottom-Z-order window class named "Progman". Intercept `WM_ERASEBKGND` or `WM_PAINT` to read the user's wallpaper path from the registry (`HKCU\Control Panel\Desktop\Wallpaper`) and render the image using GDI.
+
+### R2. Desktop Icon Grid
+Create a child window of Progman using the "SHELLDLL_DefView" class. Initialize a "SysListView32" common control, bind it to the `IShellFolder` interface for Desktop directories (`CSIDL_DESKTOPDIRECTORY` and `CSIDL_COMMON_DESKTOPDIRECTORY`), and implement `SHChangeNotifyRegister` to live-update the grid upon file changes.
+
+### R3. Open-Shell Rendering Extraction
+Assimilate the Open-Shell Start Menu skinning engine and ItemList rendering logic from the local `Open-Shell-Menu-Source` directory into EliteTaskbar.
+
+### R4. Start Menu Fallback Hook
+Wire the EliteTaskbar Start Orb `HWND` to unconditionally invoke the integrated Open-Shell rendering class natively, bypassing modern Windows start menus, effectively acting as the permanent fallback.
+
+## Acceptance Criteria
+
+### Verification
+- [ ] Code compiles successfully via `.\build.ps1` without errors.
+- [ ] The custom `Progman` window spawns behind all other windows and correctly draws the system wallpaper on the desktop.
+- [ ] The desktop grid correctly displays shortcuts and files from the user's actual Desktop directory, and automatically updates when a new file is added/deleted.
+- [ ] Clicking the EliteTaskbar Start button successfully invokes the custom Open-Shell start menu UI.

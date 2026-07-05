@@ -1,3 +1,4 @@
+#pragma warning(disable: 4996)
 #include "TaskbarWindow.h"
 #include "resource.h"
 extern HINSTANCE g_hInstance;
@@ -11,6 +12,7 @@ extern HINSTANCE g_hInstance;
 #include <uxtheme.h>
 #include <shlwapi.h>
 #include <shlobj.h>
+#pragma comment(lib, "comdlg32.lib")
 
 static void AddTooltip(HWND hwndParent, HWND hwndControl, LPCWSTR text) {
     if (!hwndControl) return;
@@ -147,9 +149,9 @@ INT_PTR CALLBACK AboutDlgProc(HWND hwndDlg, UINT uMsg, WPARAM wParam, LPARAM lPa
         
         RECT rcChin;
         if (bExpanded) {
-            rcChin = { 0, 185, 250, 210 };
+            rcChin = { 0, 215, 250, 245 };
         } else {
-            rcChin = { 0, 115, 250, 140 };
+            rcChin = { 0, 110, 250, 140 };
         }
         MapDialogRect(hwndDlg, &rcChin);
         
@@ -216,17 +218,17 @@ INT_PTR CALLBACK AboutDlgProc(HWND hwndDlg, UINT uMsg, WPARAM wParam, LPARAM lPa
             if (bExpanded) {
                 SetDlgItemTextW(hwndDlg, IDC_ABOUT_EXPAND, L"Less Info <<");
                 
-                RECT rcDlg = { 0, 0, 250, 210 };
+                RECT rcDlg = { 0, 0, 250, 245 };
                 MapDialogRect(hwndDlg, &rcDlg);
                 SetWindowPos(hwndDlg, NULL, 0, 0, rcDlg.right, rcDlg.bottom, SWP_NOMOVE | SWP_NOZORDER | SWP_NOACTIVATE);
                 
                 ShowWindow(GetDlgItem(hwndDlg, IDC_ABOUT_MOREINFO), SW_SHOW);
                 
-                RECT rcExpand = { 10, 190, 70, 204 };
+                RECT rcExpand = { 10, 223, 70, 237 };
                 MapDialogRect(hwndDlg, &rcExpand);
                 SetWindowPos(GetDlgItem(hwndDlg, IDC_ABOUT_EXPAND), NULL, rcExpand.left, rcExpand.top, rcExpand.right - rcExpand.left, rcExpand.bottom - rcExpand.top, SWP_NOZORDER | SWP_NOACTIVATE);
                 
-                RECT rcOk = { 190, 190, 240, 204 };
+                RECT rcOk = { 190, 223, 240, 237 };
                 MapDialogRect(hwndDlg, &rcOk);
                 SetWindowPos(GetDlgItem(hwndDlg, IDOK), NULL, rcOk.left, rcOk.top, rcOk.right - rcOk.left, rcOk.bottom - rcOk.top, SWP_NOZORDER | SWP_NOACTIVATE);
             } else {
@@ -234,11 +236,11 @@ INT_PTR CALLBACK AboutDlgProc(HWND hwndDlg, UINT uMsg, WPARAM wParam, LPARAM lPa
                 
                 ShowWindow(GetDlgItem(hwndDlg, IDC_ABOUT_MOREINFO), SW_HIDE);
                 
-                RECT rcExpand = { 10, 120, 70, 134 };
+                RECT rcExpand = { 10, 118, 70, 132 };
                 MapDialogRect(hwndDlg, &rcExpand);
                 SetWindowPos(GetDlgItem(hwndDlg, IDC_ABOUT_EXPAND), NULL, rcExpand.left, rcExpand.top, rcExpand.right - rcExpand.left, rcExpand.bottom - rcExpand.top, SWP_NOZORDER | SWP_NOACTIVATE);
                 
-                RECT rcOk = { 190, 120, 240, 134 };
+                RECT rcOk = { 190, 118, 240, 132 };
                 MapDialogRect(hwndDlg, &rcOk);
                 SetWindowPos(GetDlgItem(hwndDlg, IDOK), NULL, rcOk.left, rcOk.top, rcOk.right - rcOk.left, rcOk.bottom - rcOk.top, SWP_NOZORDER | SWP_NOACTIVATE);
                 
@@ -425,32 +427,43 @@ void SetDefaultFileManagerCPP(DWORD mode) {
     }
 }
 
-void NotifySettingsChange() {
+DWORD WINAPI BroadcastSettingsChangeThread(LPVOID lpParam) {
     SendMessageTimeoutW(HWND_BROADCAST, WM_SETTINGCHANGE, 0, (LPARAM)L"TraySettings", SMTO_ABORTIFHUNG, 5000, NULL);
     SendMessageTimeoutW(HWND_BROADCAST, WM_SETTINGCHANGE, 0, (LPARAM)L"EliteTaskbarSettings", SMTO_ABORTIFHUNG, 500, NULL);
+    
+    // Aggressively restart the apps to ensure all settings are applied safely and cleanly
+    WCHAR exePath[MAX_PATH] = {0};
+    GetModuleFileNameW(NULL, exePath, MAX_PATH);
+    PathRemoveFileSpecW(exePath); // Get directory of the current settings CPL/EXE
+
+    wchar_t psCmd[2048];
+    swprintf_s(psCmd, L"-NoProfile -WindowStyle Hidden -Command \"Stop-Process -Name EliteTaskbar -Force; Stop-Process -Name Win32Explorer -Force; Start-Sleep -Milliseconds 500; Start-Process -FilePath '%s\\EliteTaskbar.exe' -ErrorAction SilentlyContinue; Start-Process -FilePath '%s\\Win32Explorer.exe' -ErrorAction SilentlyContinue\"", exePath, exePath);
+
+    ShellExecuteW(NULL, NULL, L"powershell.exe", psCmd, NULL, SW_HIDE);
+        
+    return 0;
+}
+
+void NotifySettingsChange() {
+    HANDLE hThread = CreateThread(NULL, 0, BroadcastSettingsChangeThread, NULL, 0, NULL);
+    if (hThread) {
+        CloseHandle(hThread);
+    }
 }
 
 INT_PTR CALLBACK TaskbarSettingsDlgProc(HWND hwndDlg, UINT uMsg, WPARAM wParam, LPARAM lParam) {
     switch (uMsg) {
-    case WM_CTLCOLORSTATIC:
-    case WM_CTLCOLORBTN: {
-        HDC hdcStatic = (HDC)wParam;
-        HWND hwndControl = (HWND)lParam;
-        SetBkMode(hdcStatic, TRANSPARENT);
-        if (IsThemeActive()) {
-            DrawThemeParentBackground(hwndControl, hdcStatic, NULL);
-            return (INT_PTR)GetStockObject(NULL_BRUSH);
-        }
-        return (INT_PTR)GetSysColorBrush(COLOR_BTNFACE);
-    }
     case WM_INITDIALOG: {
         EnableThemeDialogTexture(hwndDlg, ETDT_ENABLETAB);
         AddDlgTooltip(hwndDlg, IDC_MODE_INDEPENDENT, L"Run custom taskbars completely separately from Explorer. Twice the taskbars, twice the fun.");
         AddDlgTooltip(hwndDlg, IDC_MODE_REPLACE, L"Replace the native Windows taskbar. Begone, modern Windows shell!");
         AddDlgTooltip(hwndDlg, IDC_MODE_SECONDARY_ONLY, L"Only override secondary monitors. Explorer keeps the primary. Safe compromise?");
-          AddDlgTooltip(hwndDlg, IDC_WIDTH_FIXED_SIZE, L"Size of taskbar buttons when Fixed width is selected.");
-          AddDlgTooltip(hwndDlg, IDC_HOVER_PREVIEW, L"Show window preview thumbnails on hover.");
-          AddDlgTooltip(hwndDlg, IDC_PORTABLE_MIRROR, L"Keep settings in a local XML file and HKLM. Portable, like your bad choices.");
+        AddDlgTooltip(hwndDlg, IDC_WIDTH_FIXED_SIZE, L"Size of taskbar buttons when Fixed width is selected.");
+        AddDlgTooltip(hwndDlg, IDC_HOVER_PREVIEW, L"Show window preview thumbnails on hover.");
+        AddDlgTooltip(hwndDlg, IDC_PORTABLE_MIRROR, L"Keep settings in a local XML file and HKLM. Portable, like your bad choices.");
+        AddDlgTooltip(hwndDlg, IDC_THEME_FOLDER_PATH, L"Directory where your beautiful custom PNG/ICO icons reside. Make it pretty!");
+        AddDlgTooltip(hwndDlg, IDC_THEME_FOLDER_BROWSE, L"Open folder selector to find your icon folder. Hope your folders are clean!");
+        AddDlgTooltip(hwndDlg, IDC_ENABLE_DARK_MODE, L"Permanently disabled because dark mode is forbidden by our design guidelines!");
         HKEY hKey;
         if (RegOpenKeyExW(GetEliteRegistryRoot(), L"Software\\EliteSoftware\\Win32Explorer\\Advanced", 0, KEY_READ, &hKey) == ERROR_SUCCESS) {
             DWORD dwValue = 0;
@@ -492,29 +505,40 @@ INT_PTR CALLBACK TaskbarSettingsDlgProc(HWND hwndDlg, UINT uMsg, WPARAM wParam, 
             if (RegQueryValueExW(hKey, L"EnablePortableMirror", NULL, NULL, (LPBYTE)&dwValue, &cbData) == ERROR_SUCCESS) {
                 SendDlgItemMessageW(hwndDlg, IDC_PORTABLE_MIRROR, BM_SETCHECK, dwValue ? BST_CHECKED : BST_UNCHECKED, 0);
             }
+
+            WCHAR szThemePath[MAX_PATH] = {0};
+            DWORD cbThemePath = sizeof(szThemePath);
+            if (RegQueryValueExW(hKey, L"CustomThemePath", NULL, NULL, (LPBYTE)szThemePath, &cbThemePath) == ERROR_SUCCESS) {
+                SetDlgItemTextW(hwndDlg, IDC_THEME_FOLDER_PATH, szThemePath);
+            }
+            EnableWindow(GetDlgItem(hwndDlg, IDC_ENABLE_DARK_MODE), FALSE);
             RegCloseKey(hKey);
         }
         return TRUE;
     }
     case WM_COMMAND:
-          if (HIWORD(wParam) == BN_CLICKED || HIWORD(wParam) == CBN_SELCHANGE) {
-              SendMessageW(GetParent(hwndDlg), PSM_CHANGED, (WPARAM)hwndDlg, 0);
-          }
-          return TRUE;
+        if (LOWORD(wParam) == IDC_THEME_FOLDER_BROWSE) {
+            BrowseForFolder(hwndDlg, GetDlgItem(hwndDlg, IDC_THEME_FOLDER_PATH));
+            return TRUE;
+        }
+        if (HIWORD(wParam) == BN_CLICKED || HIWORD(wParam) == CBN_SELCHANGE || HIWORD(wParam) == EN_CHANGE) {
+            SendMessageW(GetParent(hwndDlg), PSM_CHANGED, (WPARAM)hwndDlg, 0);
+        }
+        return TRUE;
     case WM_NOTIFY: {
         LPNMHDR lpnm = (LPNMHDR)lParam;
         if (lpnm->code == PSN_APPLY) {
-              DWORD portable = (SendDlgItemMessageW(hwndDlg, IDC_PORTABLE_MIRROR, BM_GETCHECK, 0, 0) == BST_CHECKED) ? 1 : 0;
-              HKEY hKeyBoth;
-              // Write EnablePortableMirror to HKLM and HKCU
-              if (RegCreateKeyExW(HKEY_LOCAL_MACHINE, L"Software\\EliteSoftware\\Win32Explorer\\Advanced", 0, NULL, REG_OPTION_NON_VOLATILE, KEY_READ | KEY_WRITE, NULL, &hKeyBoth, NULL) == ERROR_SUCCESS) {
-                  RegSetValueExW(hKeyBoth, L"EnablePortableMirror", 0, REG_DWORD, (const BYTE*)&portable, sizeof(DWORD));
-                  RegCloseKey(hKeyBoth);
-              }
-              if (RegCreateKeyExW(HKEY_CURRENT_USER, L"Software\\EliteSoftware\\Win32Explorer\\Advanced", 0, NULL, REG_OPTION_NON_VOLATILE, KEY_READ | KEY_WRITE, NULL, &hKeyBoth, NULL) == ERROR_SUCCESS) {
-                  RegSetValueExW(hKeyBoth, L"EnablePortableMirror", 0, REG_DWORD, (const BYTE*)&portable, sizeof(DWORD));
-                  RegCloseKey(hKeyBoth);
-              }
+            DWORD portable = (SendDlgItemMessageW(hwndDlg, IDC_PORTABLE_MIRROR, BM_GETCHECK, 0, 0) == BST_CHECKED) ? 1 : 0;
+            HKEY hKeyBoth;
+            // Write EnablePortableMirror to HKLM and HKCU
+            if (RegCreateKeyExW(HKEY_LOCAL_MACHINE, L"Software\\EliteSoftware\\Win32Explorer\\Advanced", 0, NULL, REG_OPTION_NON_VOLATILE, KEY_READ | KEY_WRITE, NULL, &hKeyBoth, NULL) == ERROR_SUCCESS) {
+                RegSetValueExW(hKeyBoth, L"EnablePortableMirror", 0, REG_DWORD, (const BYTE*)&portable, sizeof(DWORD));
+                RegCloseKey(hKeyBoth);
+            }
+            if (RegCreateKeyExW(HKEY_CURRENT_USER, L"Software\\EliteSoftware\\Win32Explorer\\Advanced", 0, NULL, REG_OPTION_NON_VOLATILE, KEY_READ | KEY_WRITE, NULL, &hKeyBoth, NULL) == ERROR_SUCCESS) {
+                RegSetValueExW(hKeyBoth, L"EnablePortableMirror", 0, REG_DWORD, (const BYTE*)&portable, sizeof(DWORD));
+                RegCloseKey(hKeyBoth);
+            }
 
             HKEY hKey;
             HKEY hKeyRoot = (portable == 1) ? HKEY_LOCAL_MACHINE : HKEY_CURRENT_USER;
@@ -537,6 +561,10 @@ INT_PTR CALLBACK TaskbarSettingsDlgProc(HWND hwndDlg, UINT uMsg, WPARAM wParam, 
                 DWORD hoverPreview = (SendDlgItemMessageW(hwndDlg, IDC_HOVER_PREVIEW, BM_GETCHECK, 0, 0) == BST_CHECKED) ? 1 : 0;
                 RegSetValueExW(hKey, L"TaskbarHoverPreview", 0, REG_DWORD, (const BYTE*)&hoverPreview, sizeof(DWORD));
                 
+                WCHAR szThemePath[MAX_PATH] = {0};
+                GetDlgItemTextW(hwndDlg, IDC_THEME_FOLDER_PATH, szThemePath, MAX_PATH);
+                RegSetValueExW(hKey, L"CustomThemePath", 0, REG_SZ, (const BYTE*)szThemePath, (DWORD)(wcslen(szThemePath) + 1) * sizeof(WCHAR));
+                
                 RegCloseKey(hKey);
             }
             NotifySettingsChange();
@@ -552,17 +580,6 @@ INT_PTR CALLBACK TaskbarSettingsDlgProc(HWND hwndDlg, UINT uMsg, WPARAM wParam, 
 
 INT_PTR CALLBACK NativeSettingsDlgProc(HWND hwndDlg, UINT uMsg, WPARAM wParam, LPARAM lParam) {
     switch (uMsg) {
-    case WM_CTLCOLORSTATIC:
-    case WM_CTLCOLORBTN: {
-        HDC hdcStatic = (HDC)wParam;
-        HWND hwndControl = (HWND)lParam;
-        SetBkMode(hdcStatic, TRANSPARENT);
-        if (IsThemeActive()) {
-            DrawThemeParentBackground(hwndControl, hdcStatic, NULL);
-            return (INT_PTR)GetStockObject(NULL_BRUSH);
-        }
-        return (INT_PTR)GetSysColorBrush(COLOR_BTNFACE);
-    }
     case WM_INITDIALOG: {
         EnableThemeDialogTexture(hwndDlg, ETDT_ENABLETAB);
         AddDlgTooltip(hwndDlg, IDC_NATIVE_REGISTRY_MODE, L"Sync settings with Windows Explorer. Keep the OS in the loop.");
@@ -624,9 +641,95 @@ INT_PTR CALLBACK NativeSettingsDlgProc(HWND hwndDlg, UINT uMsg, WPARAM wParam, L
         }
         return TRUE;
     }
-    case WM_COMMAND:
+    case WM_COMMAND: {
+        int wmId = LOWORD(wParam);
+        if (wmId == IDC_EXPORT_SETTINGS) {
+            WCHAR path[MAX_PATH] = {0};
+            OPENFILENAMEW ofn = {0};
+            ofn.lStructSize = sizeof(ofn);
+            ofn.hwndOwner = hwndDlg;
+            ofn.lpstrFilter = L"Registry Files (*.reg)\0*.reg\0All Files (*.*)\0*.*\0";
+            ofn.lpstrFile = path;
+            ofn.nMaxFile = MAX_PATH;
+            ofn.Flags = OFN_OVERWRITEPROMPT | OFN_PATHMUSTEXIST;
+            ofn.lpstrDefExt = L"reg";
+            if (GetSaveFileNameW(&ofn)) {
+                FILE* f;
+                _wfopen_s(&f, path, L"w, ccs=UTF-16LE");
+                if (f) {
+                    fwprintf(f, L"Windows Registry Editor Version 5.00\n");
+                    
+                    auto WriteKey = [&](HKEY root, LPCWSTR sub, LPCWSTR full) {
+                        HKEY hKey;
+                        if (RegOpenKeyExW(root, sub, 0, KEY_READ, &hKey) == ERROR_SUCCESS) {
+                            fwprintf(f, L"\n[%s]\n", full);
+                            DWORD i = 0; WCHAR name[256]; DWORD nameLen = 256; DWORD type; BYTE data[1024]; DWORD dataLen = 1024;
+                            while (RegEnumValueW(hKey, i, name, &nameLen, NULL, &type, data, &dataLen) == ERROR_SUCCESS) {
+                                if (type == REG_DWORD && dataLen == 4) { fwprintf(f, L"\"%s\"=dword:%08x\n", name, *(DWORD*)data); }
+                                else if (type == REG_SZ) { fwprintf(f, L"\"%s\"=\"%s\"\n", name, (WCHAR*)data); }
+                                else if (type == REG_BINARY) {
+                                    fwprintf(f, L"\"%s\"=hex:", name);
+                                    for (DWORD j = 0; j < dataLen; j++) { fwprintf(f, L"%02x%s", data[j], (j == dataLen - 1) ? L"" : L","); }
+                                    fwprintf(f, L"\n");
+                                }
+                                i++; nameLen = 256; dataLen = 1024;
+                            }
+                            RegCloseKey(hKey);
+                        }
+                    };
+                    
+                    auto WriteVal = [&](HKEY root, LPCWSTR sub, LPCWSTR full, LPCWSTR vname) {
+                        HKEY hKey;
+                        if (RegOpenKeyExW(root, sub, 0, KEY_READ, &hKey) == ERROR_SUCCESS) {
+                            DWORD type; BYTE data[1024]; DWORD dataLen = 1024;
+                            if (RegQueryValueExW(hKey, vname, NULL, &type, data, &dataLen) == ERROR_SUCCESS) {
+                                fwprintf(f, L"\n[%s]\n", full);
+                                if (type == REG_DWORD && dataLen == 4) { fwprintf(f, L"\"%s\"=dword:%08x\n", vname, *(DWORD*)data); }
+                                else if (type == REG_BINARY) {
+                                    fwprintf(f, L"\"%s\"=hex:", vname);
+                                    for (DWORD j = 0; j < dataLen; j++) { fwprintf(f, L"%02x%s", data[j], (j == dataLen - 1) ? L"" : L","); }
+                                    fwprintf(f, L"\n");
+                                }
+                            }
+                            RegCloseKey(hKey);
+                        }
+                    };
+
+                    WriteKey(HKEY_CURRENT_USER, L"Software\\EliteSoftware\\Win32Explorer\\Advanced", L"HKEY_CURRENT_USER\\Software\\EliteSoftware\\Win32Explorer\\Advanced");
+                    WriteVal(HKEY_CURRENT_USER, L"Software\\Microsoft\\Windows\\CurrentVersion\\Explorer\\Advanced", L"HKEY_CURRENT_USER\\Software\\Microsoft\\Windows\\CurrentVersion\\Explorer\\Advanced", L"TaskbarSizeMove");
+                    WriteVal(HKEY_CURRENT_USER, L"Software\\Microsoft\\Windows\\CurrentVersion\\Explorer\\Advanced", L"HKEY_CURRENT_USER\\Software\\Microsoft\\Windows\\CurrentVersion\\Explorer\\Advanced", L"TaskbarSmallIcons");
+                    WriteVal(HKEY_CURRENT_USER, L"Software\\Microsoft\\Windows\\CurrentVersion\\Explorer\\StuckRects3", L"HKEY_CURRENT_USER\\Software\\Microsoft\\Windows\\CurrentVersion\\Explorer\\StuckRects3", L"Settings");
+                    fclose(f);
+                    MessageBoxW(hwndDlg, L"Settings exported successfully.", L"Success", MB_ICONINFORMATION);
+                }
+            }
+            return TRUE;
+        } else if (wmId == IDC_IMPORT_SETTINGS) {
+            WCHAR path[MAX_PATH] = {0};
+            OPENFILENAMEW ofn = {0};
+            ofn.lStructSize = sizeof(ofn);
+            ofn.hwndOwner = hwndDlg;
+            ofn.lpstrFilter = L"Registry Files (*.reg)\0*.reg\0All Files (*.*)\0*.*\0";
+            ofn.lpstrFile = path;
+            ofn.nMaxFile = MAX_PATH;
+            ofn.Flags = OFN_FILEMUSTEXIST;
+            ofn.lpstrDefExt = L"reg";
+            if (GetOpenFileNameW(&ofn)) {
+                WCHAR cmd[2048];
+                swprintf_s(cmd, L"reg import \"%s\"", path);
+                _wsystem(cmd);
+                
+                // Force UI update
+                PostMessageW(hwndDlg, WM_INITDIALOG, 0, 0);
+                NotifySettingsChange();
+                MessageBoxW(hwndDlg, L"Settings imported successfully.", L"Success", MB_ICONINFORMATION);
+            }
+            return TRUE;
+        }
+        
         if (HIWORD(wParam) == BN_CLICKED) SendMessageW(GetParent(hwndDlg), PSM_CHANGED, (WPARAM)hwndDlg, 0);
         return TRUE;
+    }
     case WM_NOTIFY: {
         LPNMHDR lpnm = (LPNMHDR)lParam;
         if (lpnm->code == PSN_APPLY) {
@@ -711,17 +814,6 @@ LRESULT CALLBACK DynScrollAreaProc(HWND hwnd, UINT uMsg, WPARAM wParam, LPARAM l
             SendMessageW(hwnd, WM_VSCROLL, zDelta > 0 ? SB_LINEUP : SB_LINEDOWN, 0);
             return 0;
         }
-        case WM_CTLCOLORSTATIC:
-        case WM_CTLCOLORBTN: {
-            HDC hdcStatic = (HDC)wParam;
-            HWND hwndControl = (HWND)lParam;
-            SetBkMode(hdcStatic, TRANSPARENT);
-            if (IsThemeActive()) {
-                DrawThemeParentBackground(hwndControl, hdcStatic, NULL);
-                return (LRESULT)GetStockObject(NULL_BRUSH);
-            }
-            return (LRESULT)GetSysColorBrush(COLOR_BTNFACE);
-        }
         case WM_COMMAND:
             SendMessageW(GetParent(hwnd), WM_COMMAND, wParam, lParam);
             return 0;
@@ -793,17 +885,6 @@ INT_PTR CALLBACK MultiMonSettingsDlgProc(HWND hwndDlg, UINT uMsg, WPARAM wParam,
     static HWND hScroll = NULL;
     static ULONG_PTR gdiplusToken = 0;
     switch (uMsg) {
-    case WM_CTLCOLORSTATIC:
-    case WM_CTLCOLORBTN: {
-        HDC hdcStatic = (HDC)wParam;
-        HWND hwndControl = (HWND)lParam;
-        SetBkMode(hdcStatic, TRANSPARENT);
-        if (IsThemeActive()) {
-            DrawThemeParentBackground(hwndControl, hdcStatic, NULL);
-            return (INT_PTR)GetStockObject(NULL_BRUSH);
-        }
-        return (INT_PTR)GetSysColorBrush(COLOR_BTNFACE);
-    }
     case WM_INITDIALOG: {
         EnableThemeDialogTexture(hwndDlg, ETDT_ENABLETAB);
         if (!gdiplusToken) {
@@ -1021,17 +1102,6 @@ void PopulateTriggerComboBox(HWND hCombo) {
 
 INT_PTR CALLBACK ToolbarsSettingsDlgProc(HWND hwndDlg, UINT uMsg, WPARAM wParam, LPARAM lParam) {
     switch (uMsg) {
-    case WM_CTLCOLORSTATIC:
-    case WM_CTLCOLORBTN: {
-        HDC hdcStatic = (HDC)wParam;
-        HWND hwndControl = (HWND)lParam;
-        SetBkMode(hdcStatic, TRANSPARENT);
-        if (IsThemeActive()) {
-            DrawThemeParentBackground(hwndControl, hdcStatic, NULL);
-            return (INT_PTR)GetStockObject(NULL_BRUSH);
-        }
-        return (INT_PTR)GetSysColorBrush(COLOR_BTNFACE);
-    }
     case WM_INITDIALOG:
         EnableThemeDialogTexture(hwndDlg, ETDT_ENABLETAB);
         SendDlgItemMessageW(hwndDlg, IDC_TOOLBAR_LIST, LB_ADDSTRING, 0, (LPARAM)L"Address");
@@ -1053,19 +1123,6 @@ INT_PTR CALLBACK ToolbarsSettingsDlgProc(HWND hwndDlg, UINT uMsg, WPARAM wParam,
 }
 
 INT_PTR CALLBACK GenericPageDlgProc(HWND hwndDlg, UINT uMsg, WPARAM wParam, LPARAM lParam) {
-    switch (uMsg) {
-    case WM_CTLCOLORSTATIC:
-    case WM_CTLCOLORBTN: {
-        HDC hdcStatic = (HDC)wParam;
-        HWND hwndControl = (HWND)lParam;
-        SetBkMode(hdcStatic, TRANSPARENT);
-        if (IsThemeActive()) {
-            DrawThemeParentBackground(hwndControl, hdcStatic, NULL);
-            return (INT_PTR)GetStockObject(NULL_BRUSH);
-        }
-        return (INT_PTR)GetSysColorBrush(COLOR_BTNFACE);
-    }
-    }
     return FALSE;
 }
 
@@ -1177,6 +1234,7 @@ void ShowSecretEverything(HWND hwndOwner) {
 void ShowSecretDLLScanner(HWND hwndOwner) {
     DialogBoxW(g_hInstance, MAKEINTRESOURCEW(IDD_SECRET_DLLSCANNER), hwndOwner, SecretDlgProc);
 }
+
 
 
 
