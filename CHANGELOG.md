@@ -167,3 +167,5 @@ All notable changes to this project will be documented in this file.
 - Updated `build_Win32Explorer.ps1` to properly sign the executable using the project's PFX certificate.
 - Added logic to the build script to safely overwrite active executables by renaming locked ones to `.old.exe` before copying the new artifact.
 
+- Reverted signtool usage in build scripts and properly integrated Elite-EasySigner as requested.
+
