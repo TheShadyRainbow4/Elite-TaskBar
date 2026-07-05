@@ -190,8 +190,17 @@ if (-not $failed) {
     if (Test-Path "$ScriptDir\Win32Explorer.exe") { Rename-Item "$ScriptDir\Win32Explorer.exe" "Win32Explorer_old_$Suffix.exe" -Force -ErrorAction SilentlyContinue }
     Copy-Item "$BuildDir\Win32Explorer.exe" "$ScriptDir\Win32Explorer.exe" -Force
     
-    Write-Host "Auto-committing and pushing to repository..." -ForegroundColor Cyan
+    Write-Host "Auto-committing submodules and main repository..." -ForegroundColor Cyan
     $ErrorActionPreference = 'Continue'
+    
+    Get-ChildItem -Path $PSScriptRoot -Filter ".git" -Recurse -Directory -Force -ErrorAction SilentlyContinue | ForEach-Object {
+        $repoPath = $_.Parent.FullName
+        if ($repoPath -ne $PSScriptRoot) {
+            git -C $repoPath add .
+            git -C $repoPath commit -m "Auto-commit after successful build (build.ps1)"
+        }
+    }
+    
     git add .
     git commit -m "Auto-commit after successful build (build.ps1)"
     # git push origin HEAD

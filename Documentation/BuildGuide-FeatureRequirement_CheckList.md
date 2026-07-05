@@ -485,3 +485,13 @@
 [2026-07-05 07:46] - Win32Explorer View Mode, Grouping, and Test Sync Remediation completed. Added case IDM_VIEW_SMALLICONTILES routing, startup showInGroups check with MoveItemsIntoGroups(), robust BM_SETCHECK and SetForegroundWindow in run_re_verification.ps1.
 [2026-07-05 16:38] - E2E Testing Track completed. Added [verify_final_polish.ps1, run_comprehensive_e2e.ps1, E2E test suite covering 10 features across 4 tiers].
 [2026-07-05 16:42] - PROJECT.md Milestone 4 marked as DONE. Added [milestone update, changelog update].
+
+---
+## MILESTONE 5 FEEDBACK FIXES (CURRENT WORK)
+---
+
+1. Tray Item Limit: Define TRAY_LIMIT 48 and replace hardcoded 4 limit in all checks, including drawn count overflow checks in TrayFlyoutProc. **[COMPLETED]**
+2. Missing Icons (Scraping Fallback): Implement GetProcessIcon fallback using QueryFullProcessImageNameW and SHGetFileInfoW, and use it in GetWindowIconFix and ScrapeTrayIconsFromToolbar. **[COMPLETED]**
+3. White Background Bar: Call SetWindowTheme(hSysPager, L"", L"") and SetWindowTheme(hToolbar, L"", L"") to strip native visual style themed backgrounds. Implement DrawThemeParentBackground and custom parent background/WM_ERASEBKGND drawing in SysPagerSubclassProc and TrayToolbarSubclassProc subclass procedures. **[COMPLETED]**
+
+[2026-07-05 16:48] - Milestone 5 Feedback Fixes completed. Added [TRAY_LIMIT, GetProcessIcon, SetWindowTheme calls on hSysPager and hToolbar, WM_ERASEBKGND handling in TrayToolbarSubclassProc].
