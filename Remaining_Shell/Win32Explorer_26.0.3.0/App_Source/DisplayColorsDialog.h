@@ -13,6 +13,8 @@ class DisplayColorsDialog : public BaseDialog
 {
 public:
 	static DisplayColorsDialog *Create(const ResourceLoader *resourceLoader, HWND hParent, Config *config);
+	COLORREF GetCurrentCenterColor();
+	COLORREF GetCurrentSurroundColor();
 
 protected:
 	INT_PTR OnInitDialog() override;
@@ -29,8 +31,6 @@ private:
 	void ApplyColorsToSliders();
 	void SaveColors();
 
-	COLORREF GetCurrentCenterColor();
-	COLORREF GetCurrentSurroundColor();
 	void InvalidatePreview();
 
 	Config *m_config;
