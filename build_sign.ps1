@@ -32,11 +32,17 @@ $exeFiles = @(
     (Join-Path $BuildDirx86 "EliteDLLScanner_x86.exe")
 )
 
+$validFiles = @()
 foreach ($file in $exeFiles) {
     if (Test-Path $file) {
-        Write-Host "Signing $file..." -ForegroundColor Yellow
-        & $signerTool $file | Out-Null
+        $validFiles += "`"$file`""
     }
+}
+
+if ($validFiles.Count -gt 0) {
+    Write-Host "Signing $($validFiles.Count) files..." -ForegroundColor Yellow
+    $argsString = $validFiles -join " "
+    Invoke-Expression "& `"$signerTool`" $argsString"
 }
 
 Write-Host "Signing stage completed!" -ForegroundColor Green
