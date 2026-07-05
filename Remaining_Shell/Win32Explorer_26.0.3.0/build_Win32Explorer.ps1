@@ -76,7 +76,7 @@ $root = "C:\Users\Administrator\Desktop\Elite-TaskBar"
 $exePath = Join-Path $exeDir "Win32Explorer.exe"
 if (Test-Path $exePath) {
     # Sign the executable before copying using Elite-EasySigner
-    $signerTool = "C:\Users\Administrator\Desktop\Elite-TaskBar\Elite-EasySigner\Elite-EasySigner_x64.exe"
+    $signerTool = "C:\Users\Administrator\Desktop\Elite-TaskBar\Elite-EasySigner\Elite-EasySigner.exe"
     
     if (Test-Path $signerTool) {
         Log-Message "Signing $exePath using Elite-EasySigner..."
@@ -95,8 +95,8 @@ if (Test-Path $exePath) {
         Rename-Item -Path $targetExe -NewName "Win32Explorer.old.exe" -Force -ErrorAction SilentlyContinue
     }
 
-    Log-Message "Copying $exePath to $root"
-    Copy-Item -Path $exePath -Destination $root -Force
+    Log-Message "Copying $exePath to $root\Win32Explorer.exe"
+    Copy-Item -Path $exePath -Destination $targetExe -Force
 } else {
     Log-Message "WARNING: EXE not found at $exePath"
 }

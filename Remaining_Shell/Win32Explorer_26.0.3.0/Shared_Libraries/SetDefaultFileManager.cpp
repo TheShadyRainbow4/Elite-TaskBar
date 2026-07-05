@@ -1,4 +1,4 @@
-﻿// Copyright (C) Win32Explorer Project
+// Copyright (C) Win32Explorer Project
 // SPDX-License-Identifier: GPL-3.0-only
 // See LICENSE in the top level directory
 
@@ -168,21 +168,18 @@ LSTATUS DefaultFileManagerInternal::RemoveAsDefaultFileManagerInternal(
 	wil::unique_hkey shellKey;
 	LSTATUS res = RegOpenKeyEx(HKEY_CURRENT_USER, shellKeyPath.c_str(), 0, KEY_WRITE, &shellKey);
 
-	if (res != ERROR_SUCCESS)
+	if (res == ERROR_SUCCESS)
 	{
-		return res;
-	}
-
-	res = RegistrySettings::SaveString(shellKey.get(), L"", defaultValue);
-
-	if (res != ERROR_SUCCESS)
-	{
-		return res;
+		// Delete the default value so it falls back to HKCR system defaults
+		RegDeleteValueW(shellKey.get(), L"");
 	}
 
 	// Remove the main application key.
 	std::wstring commandKeyPath = std::wstring(shellKeyPath) + L"\\" + applicationKeyName;
 	res = SHDeleteKey(HKEY_CURRENT_USER, commandKeyPath.c_str());
+	if (res == ERROR_FILE_NOT_FOUND) {
+		res = ERROR_SUCCESS;
+	}
 
 	return res;
 }

@@ -1,4 +1,4 @@
-﻿// Copyright (C) Win32Explorer Project
+// Copyright (C) Win32Explorer Project
 // SPDX-License-Identifier: GPL-3.0-only
 // See LICENSE in the top level directory
 
@@ -53,7 +53,7 @@ ShellTreeView *ShellTreeView::Create(HWND hParent, App *app, BrowserWindow *brow
 
 ShellTreeView::ShellTreeView(HWND hParent, App *app, BrowserWindow *browser,
 	FileActionHandler *fileActionHandler) :
-	ShellDropTargetWindow(CreateTreeView(hParent)),
+	ShellDropTargetWindow(CreateTreeView(hParent, app->GetConfig())),
 	m_hTreeView(GetHWND()),
 	m_app(app),
 	m_browser(browser),
@@ -131,13 +131,30 @@ ShellTreeView::ShellTreeView(HWND hParent, App *app, BrowserWindow *browser,
 		std::bind_front(&ShellTreeView::OnCutItemChanged, this)));
 	m_connections.push_back(m_config->showQuickAccessInTreeView.addObserver(
 		std::bind_front(&ShellTreeView::OnShowQuickAccessUpdated, this)));
+	m_connections.push_back(m_config->showTreeviewHorizontalScrollbar.addObserver(
+		std::bind_front(&ShellTreeView::OnShowTreeviewHorizontalScrollbarUpdated, this)));
 }
 
-HWND ShellTreeView::CreateTreeView(HWND parent)
+HWND ShellTreeView::CreateTreeView(HWND parent, const Config* config)
 {
-	return ::CreateTreeView(parent,
-		WS_CHILD | WS_VISIBLE | WS_TABSTOP | TVS_SHOWSELALWAYS | TVS_HASBUTTONS | TVS_EDITLABELS
-			| TVS_TRACKSELECT);
+	DWORD style = WS_CHILD | WS_VISIBLE | WS_TABSTOP | TVS_SHOWSELALWAYS | TVS_HASBUTTONS | TVS_EDITLABELS
+		| TVS_TRACKSELECT;
+	if (!config->showTreeviewHorizontalScrollbar.get()) {
+		style |= TVS_NOHSCROLL;
+	}
+	return ::CreateTreeView(parent, style);
+}
+
+void ShellTreeView::OnShowTreeviewHorizontalScrollbarUpdated(bool newValue)
+{
+	DWORD style = GetWindowLongW(m_hTreeView, GWL_STYLE);
+	if (newValue) {
+		style &= ~TVS_NOHSCROLL;
+	} else {
+		style |= TVS_NOHSCROLL;
+	}
+	SetWindowLongW(m_hTreeView, GWL_STYLE, style);
+	SetWindowPos(m_hTreeView, NULL, 0, 0, 0, 0, SWP_NOMOVE | SWP_NOSIZE | SWP_NOZORDER | SWP_FRAMECHANGED);
 }
 
 ShellTreeView::~ShellTreeView()
@@ -157,6 +174,19 @@ LRESULT ShellTreeView::TreeViewProc(HWND hwnd, UINT msg, WPARAM wParam, LPARAM l
 {
 	switch (msg)
 	{
+	case WM_NCCALCSIZE:
+	{
+		if (!m_config->showTreeviewHorizontalScrollbar.get())
+		{
+			DWORD style = GetWindowLongW(hwnd, GWL_STYLE);
+			if (style & WS_HSCROLL)
+			{
+				SetWindowLongW(hwnd, GWL_STYLE, style & ~WS_HSCROLL);
+			}
+		}
+		break;
+	}
+
 	case WM_SETFOCUS:
 		m_commandTarget.TargetFocused();
 		break;

@@ -51,6 +51,8 @@ void LoadFromKey(HKEY settingsKey, Config &config)
 	RegistrySettings::Read32BitValueFromRegistry(settingsKey, L"ShowInfoTips", config.showInfoTips);
 	RegistrySettings::Read32BitValueFromRegistry(settingsKey, L"TreeViewDelayEnabled",
 		config.treeViewDelayEnabled);
+	RegistrySettings::Read32BitValueFromRegistry(settingsKey, L"ShowTreeviewHorizontalScrollbar",
+		config.showTreeviewHorizontalScrollbar);
 	RegistrySettings::Read32BitValueFromRegistry(settingsKey, L"LockToolbars", config.lockToolbars);
 	RegistrySettings::Read32BitValueFromRegistry(settingsKey, L"UseFullRowSelect",
 		config.useFullRowSelect);
@@ -268,6 +270,7 @@ void SaveToKey(HKEY settingsKey, const Config &config)
 	RegistrySettings::SaveDword(settingsKey, L"ShowInfoTips", config.showInfoTips);
 	RegistrySettings::SaveDword(settingsKey, L"InfoTipType", config.infoTipType);
 	RegistrySettings::SaveDword(settingsKey, L"TreeViewDelayEnabled", config.treeViewDelayEnabled);
+	RegistrySettings::SaveDword(settingsKey, L"ShowTreeviewHorizontalScrollbar", config.showTreeviewHorizontalScrollbar.get());
 	RegistrySettings::SaveDword(settingsKey, L"LockToolbars", config.lockToolbars.get());
 	RegistrySettings::SaveDword(settingsKey, L"ExtendTabControl", config.extendTabControl.get());
 	RegistrySettings::SaveDword(settingsKey, L"UseFullRowSelect", config.useFullRowSelect.get());

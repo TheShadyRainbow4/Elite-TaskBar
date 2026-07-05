@@ -162,6 +162,7 @@ BOOL ShowLegacyClockExperience(HWND hWnd) {
 #define IDM_RESTART_SHELL           3011
 #define IDM_START_EXPLORER          3012
 #define IDM_TASKBAR_SETTINGS        3013
+#define IDM_EXIT_ALL_ELITETASKBAR   3014
 
 UINT g_uTaskbarCreatedMsg = 0;
 OrbState g_orbState = OrbState::Normal;
@@ -240,8 +241,8 @@ LRESULT CALLBACK PreviewWndProc(HWND hwnd, UINT uMsg, WPARAM wParam, LPARAM lPar
                 CloseThemeData(hTheme);
             }
             
-            // Draw close button border
-            RECT rcClose = { rcClient.right - 20, 5, rcClient.right - 5, 20 };
+            // Draw close button border (Scaled down to avoid clipping)
+            RECT rcClose = { rcClient.right - 18, 6, rcClient.right - 6, 18 };
             DrawFrameControl(hdc, &rcClose, DFC_CAPTION, DFCS_CAPTIONCLOSE | DFCS_FLAT);
 
             EndPaint(hwnd, &ps);
@@ -251,7 +252,7 @@ LRESULT CALLBACK PreviewWndProc(HWND hwnd, UINT uMsg, WPARAM wParam, LPARAM lPar
             POINT pt = { GET_X_LPARAM(lParam), GET_Y_LPARAM(lParam) };
             RECT rcClient;
             GetClientRect(hwnd, &rcClient);
-            RECT rcClose = { rcClient.right - 20, 5, rcClient.right - 5, 20 };
+            RECT rcClose = { rcClient.right - 18, 6, rcClient.right - 6, 18 };
             
             HWND targetHwnd = (HWND)GetWindowLongPtrW(hwnd, GWLP_USERDATA);
             if (PtInRect(&rcClose, pt)) {
@@ -1246,8 +1247,20 @@ LRESULT CALLBACK WindowProc(HWND hwnd, UINT uMsg, WPARAM wParam, LPARAM lParam) 
         return 0;
     }
     case WM_NOTIFY: {
+        TaskbarInstance* inst = GetTaskbarInstance(hwnd);
         LPNMHDR nmhdr = (LPNMHDR)lParam;
-        if (nmhdr->code == TBN_HOTITEMCHANGE) {
+        if (nmhdr->code == NM_CUSTOMDRAW) {
+            LPNMTBCUSTOMDRAW lpNMCustomDraw = (LPNMTBCUSTOMDRAW)lParam;
+            if (inst && (lpNMCustomDraw->nmcd.hdr.hwndFrom == inst->hTaskSwitch || lpNMCustomDraw->nmcd.hdr.hwndFrom == inst->hToolbar)) {
+                if (lpNMCustomDraw->nmcd.dwDrawStage == CDDS_PREPAINT) {
+                    return CDRF_NOTIFYITEMDRAW;
+                } else if (lpNMCustomDraw->nmcd.dwDrawStage == CDDS_ITEMPREPAINT) {
+                    lpNMCustomDraw->clrText = RGB(255, 255, 255);
+                    return CDRF_DODEFAULT;
+                }
+            }
+        }
+        else if (nmhdr->code == TBN_HOTITEMCHANGE) {
             LPNMTBHOTITEM lpnmhi = (LPNMTBHOTITEM)lParam;
             if (g_Config.ShowPreviews) {
                 if (lpnmhi->dwFlags & HICF_ENTERING) {
@@ -1341,7 +1354,8 @@ LRESULT CALLBACK WindowProc(HWND hwnd, UINT uMsg, WPARAM wParam, LPARAM lParam) 
             if (GetAsyncKeyState(VK_SHIFT) & 0x8000) {
                 AppendMenuW(hMenu, MF_STRING, IDM_RESTART_SHELL, L"Restart Explorer");
             }
-            AppendMenuW(hMenu, MF_STRING, IDM_EXIT_ELITETASKBAR, L"Exit Elite Taskbar");
+            AppendMenuW(hMenu, MF_STRING, IDM_EXIT_ELITETASKBAR, L"Exit This Taskbar");
+            AppendMenuW(hMenu, MF_STRING, IDM_EXIT_ALL_ELITETASKBAR, L"Exit All Taskbars");
 
             SetForegroundWindow(hwnd);
             TrackPopupMenu(hMenu, TPM_LEFTALIGN | TPM_BOTTOMALIGN | TPM_RIGHTBUTTON, pt.x, pt.y, 0, hwnd, NULL);
@@ -1443,6 +1457,13 @@ LRESULT CALLBACK WindowProc(HWND hwnd, UINT uMsg, WPARAM wParam, LPARAM lParam) 
             case IDM_EXIT_ELITETASKBAR:
                 SendMessageW(hwnd, WM_CLOSE, 0, 0);
                 break;
+            case IDM_EXIT_ALL_ELITETASKBAR:
+                for (auto* tb : g_Taskbars) {
+                    if (IsWindow(tb->hTaskbar)) {
+                        PostMessageW(tb->hTaskbar, WM_CLOSE, 0, 0);
+                    }
+                }
+                break;
             case IDM_START_EXPLORER:
                 ShellExecuteW(NULL, L"open", L"explorer.exe", L"shell:::{20D04FE0-3AEA-1069-A2D8-08002B30309D}", NULL, SW_SHOWNORMAL); // Opens "This PC"
                 break;
@@ -1467,7 +1488,8 @@ LRESULT CALLBACK WindowProc(HWND hwnd, UINT uMsg, WPARAM wParam, LPARAM lParam) 
             AppendMenuW(hMenu, MF_STRING, IDM_START_EXPLORER, L"Open Windows Explorer");
             AppendMenuW(hMenu, MF_STRING, IDM_TASKBAR_PROPERTIES, L"Properties");
             AppendMenuW(hMenu, MF_SEPARATOR, 0, NULL);
-            AppendMenuW(hMenu, MF_STRING, IDM_EXIT_ELITETASKBAR, L"Exit Elite Taskbar");
+            AppendMenuW(hMenu, MF_STRING, IDM_EXIT_ELITETASKBAR, L"Exit This Taskbar");
+            AppendMenuW(hMenu, MF_STRING, IDM_EXIT_ALL_ELITETASKBAR, L"Exit All Taskbars");
         } else {
             // Taskbar Context Menu
             HMENU hToolbars = CreatePopupMenu();
@@ -1508,7 +1530,8 @@ LRESULT CALLBACK WindowProc(HWND hwnd, UINT uMsg, WPARAM wParam, LPARAM lParam) 
                 AppendMenuW(hMenu, MF_STRING, IDM_RESTART_SHELL, L"Restart Shell");
                 AppendMenuW(hMenu, MF_SEPARATOR, 0, NULL);
             }
-            AppendMenuW(hMenu, MF_STRING, IDM_EXIT_ELITETASKBAR, L"Exit Elite Taskbar");
+            AppendMenuW(hMenu, MF_STRING, IDM_EXIT_ELITETASKBAR, L"Exit This Taskbar");
+            AppendMenuW(hMenu, MF_STRING, IDM_EXIT_ALL_ELITETASKBAR, L"Exit All Taskbars");
         }
 
         SetForegroundWindow(hwnd);

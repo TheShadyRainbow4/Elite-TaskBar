@@ -473,16 +473,18 @@ BEGIN
                     "Button",BS_AUTOCHECKBOX | WS_TABSTOP,10,149,207,10
     CONTROL         "Full row selection in details &view",IDC_OPTION_FULLROWSELECT,
                     "Button",BS_AUTOCHECKBOX | WS_TABSTOP,10,162,207,10
-    GROUPBOX        "Navigation pane",IDC_GROUP_NAVIGATION_PANE,3,184,219,55
+    GROUPBOX        "Navigation pane",IDC_GROUP_NAVIGATION_PANE,3,184,219,68
     CONTROL         "Automatically synchronize treeview with main pane",IDC_OPTION_SYNCTREEVIEW,
                     "Button",BS_AUTOCHECKBOX | WS_TABSTOP,10,197,207,10
     CONTROL         "Automatically expand nodes on selection",IDC_OPTION_TREEVIEWSELECTIONEXPAND,
                     "Button",BS_AUTOCHECKBOX | WS_TABSTOP,10,210,207,10
     CONTROL         "&Disable treeview delay",IDC_OPTION_TREEVIEWDELAY,
                     "Button",BS_AUTOCHECKBOX | WS_TABSTOP,10,223,207,10
-    GROUPBOX        "Display Window",IDC_GROUP_DISPLAY_WINDOW,3,244,219,30
+    CONTROL         "&Enable horizontal scrollbar in treeview",IDC_OPTION_TREEVIEW_HSCROLL,
+                    "Button",BS_AUTOCHECKBOX | WS_TABSTOP,10,236,207,10
+    GROUPBOX        "Display Window",IDC_GROUP_DISPLAY_WINDOW,3,257,219,30
     CONTROL         "&Show file previews in display window",IDC_OPTION_FILEPREVIEWS,
-                    "Button",BS_AUTOCHECKBOX | WS_TABSTOP,10,259,207,10
+                    "Button",BS_AUTOCHECKBOX | WS_TABSTOP,10,272,207,10
 END
 
 IDD_CUSTOMIZE_COLORS DIALOGEX 0, 0, 363, 175

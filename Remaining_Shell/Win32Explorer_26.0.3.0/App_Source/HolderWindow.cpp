@@ -1,4 +1,4 @@
-﻿// Copyright (C) Win32Explorer Project
+// Copyright (C) Win32Explorer Project
 // SPDX-License-Identifier: GPL-3.0-only
 // See LICENSE in the top level directory
 
@@ -208,8 +208,23 @@ void HolderWindow::SetFont(HFONT font)
 void HolderWindow::OnPaint()
 {
 	PAINTSTRUCT ps;
-	BeginPaint(m_hwnd, &ps);
-	PerformPaint(ps);
+	HDC hdc = BeginPaint(m_hwnd, &ps);
+	
+	BP_PAINTPARAMS params = { sizeof(BP_PAINTPARAMS) };
+	HDC hdcMem;
+	HPAINTBUFFER hBuffer = BeginBufferedPaint(hdc, &ps.rcPaint, BPBF_COMPATIBLEBITMAP, &params, &hdcMem);
+	if (hBuffer)
+	{
+		PAINTSTRUCT psMem = ps;
+		psMem.hdc = hdcMem;
+		PerformPaint(psMem);
+		EndBufferedPaint(hBuffer, TRUE);
+	}
+	else
+	{
+		PerformPaint(ps);
+	}
+	
 	EndPaint(m_hwnd, &ps);
 }
 
@@ -259,6 +274,10 @@ void HolderWindow::PerformPaint(const PAINTSTRUCT &ps)
 void HolderWindow::OnSize(int width, int height)
 {
 	UpdateLayout(width, height);
+
+	int captionSectionHeight = GetCaptionSectionHeight();
+	RECT captionRect = { 0, 0, width, captionSectionHeight };
+	InvalidateRect(m_hwnd, &captionRect, TRUE);
 }
 
 void HolderWindow::UpdateLayout()
@@ -299,6 +318,8 @@ void HolderWindow::UpdateLayout(int width, int height)
 
 	[[maybe_unused]] auto res = EndDeferWindowPos(deferInfo);
 	assert(res);
+
+	InvalidateRect(m_hwnd, nullptr, TRUE);
 }
 
 int HolderWindow::GetCaptionSectionHeight()

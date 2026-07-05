@@ -14,7 +14,7 @@ Start-Sleep -Seconds 1
 Write-Host "Triggering pre-build backup..." -ForegroundColor Cyan
 $BackupScript = Join-Path $ScriptDir "backup.ps1"
 if (Test-Path $BackupScript) {
-    & $BackupScript
+    try { & $BackupScript } catch { Write-Warning "Backup failed, but continuing build." }
 } else {
     Write-Warning "Backup script not found. Skipping backup."
 }
@@ -132,6 +132,12 @@ if (-not $failed) {
     
     # Run the separate signing stage
     & "$ScriptDir\build_sign.ps1" -BuildDir $BuildDir -BuildDirx86 $BuildDirx86
+    
+    Write-Host "Building Win32Explorer..." -ForegroundColor Cyan
+    $origDir = Get-Location
+    Set-Location "$ScriptDir\Remaining_Shell\Win32Explorer_26.0.3.0"
+    & ".\build_Win32Explorer.ps1"
+    Set-Location $origDir
     
     Write-Host "Auto-committing and pushing to repository..." -ForegroundColor Cyan
     git add .

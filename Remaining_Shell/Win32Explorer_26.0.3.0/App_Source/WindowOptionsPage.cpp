@@ -52,6 +52,8 @@ std::unique_ptr<ResizableDialogHelper> WindowOptionsPage::InitializeResizeDialog
 		MovingType::None, SizingType::Horizontal);
 	controls.emplace_back(GetDlgItem(GetDialog(), IDC_OPTION_TREEVIEWDELAY), MovingType::None,
 		SizingType::Horizontal);
+	controls.emplace_back(GetDlgItem(GetDialog(), IDC_OPTION_TREEVIEW_HSCROLL), MovingType::None,
+		SizingType::Horizontal);
 	controls.emplace_back(GetDlgItem(GetDialog(), IDC_GROUP_DISPLAY_WINDOW), MovingType::None,
 		SizingType::Horizontal);
 	controls.emplace_back(GetDlgItem(GetDialog(), IDC_OPTION_FILEPREVIEWS), MovingType::None,
@@ -120,6 +122,11 @@ void WindowOptionsPage::InitializeControls()
 		CheckDlgButton(GetDialog(), IDC_OPTION_TREEVIEWDELAY, BST_CHECKED);
 	}
 
+	if (m_config->showTreeviewHorizontalScrollbar.get())
+	{
+		CheckDlgButton(GetDialog(), IDC_OPTION_TREEVIEW_HSCROLL, BST_CHECKED);
+	}
+
 	if (m_config->globalFolderSettings.showGridlines.get())
 	{
 		CheckDlgButton(GetDialog(), IDC_OPTION_GRIDLINES, BST_CHECKED);
@@ -153,6 +160,7 @@ void WindowOptionsPage::OnCommand(WPARAM wParam, LPARAM lParam)
 	case IDC_OPTION_SYNCTREEVIEW:
 	case IDC_OPTION_TREEVIEWSELECTIONEXPAND:
 	case IDC_OPTION_TREEVIEWDELAY:
+	case IDC_OPTION_TREEVIEW_HSCROLL:
 	case IDC_OPTION_EXTENDTABCONTROL:
 	case IDC_OPTION_GRIDLINES:
 	case IDC_OPTION_CHECKBOXSELECTION:
@@ -196,6 +204,9 @@ void WindowOptionsPage::SaveSettings()
 
 	m_config->treeViewDelayEnabled =
 		!(IsDlgButtonChecked(GetDialog(), IDC_OPTION_TREEVIEWDELAY) == BST_CHECKED);
+
+	m_config->showTreeviewHorizontalScrollbar =
+		(IsDlgButtonChecked(GetDialog(), IDC_OPTION_TREEVIEW_HSCROLL) == BST_CHECKED);
 
 	m_config->globalFolderSettings.showGridlines =
 		(IsDlgButtonChecked(GetDialog(), IDC_OPTION_GRIDLINES) == BST_CHECKED);

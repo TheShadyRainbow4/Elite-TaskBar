@@ -5,7 +5,7 @@ param(
 
 $ErrorActionPreference = 'Stop'
 
-$signerTool = "$PSScriptRoot\Elite-EasySigner\Elite-EasySigner_x64.exe"
+$signerTool = "$PSScriptRoot\Elite-EasySigner\Elite-EasySigner.exe"
 
 if (-not (Test-Path $signerTool)) {
     Write-Warning "Could not find Elite-EasySigner at $signerTool. Skipping signature."

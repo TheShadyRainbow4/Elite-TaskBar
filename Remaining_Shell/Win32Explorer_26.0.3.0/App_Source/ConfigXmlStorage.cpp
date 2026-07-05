@@ -223,6 +223,7 @@ void LoadFromNode(IXMLDOMNode *settingsNode, Config &config)
 	GetBoolSetting(settingsNode, L"TVAutoExpandSelected", config.treeViewAutoExpandSelected);
 	GetBoolSetting(settingsNode, L"UseFullRowSelect", config.useFullRowSelect);
 	GetBoolSetting(settingsNode, L"TreeViewDelayEnabled", config.treeViewDelayEnabled);
+	GetBoolSetting(settingsNode, L"ShowTreeviewHorizontalScrollbar", config.showTreeviewHorizontalScrollbar);
 	GetBetterEnumSetting(settingsNode, L"ViewModeGlobal", config.defaultFolderSettings.viewMode);
 	GetTextSetting(settingsNode, L"NewTabDirectory", config.defaultTabDirectory);
 	GetBetterEnumSetting(settingsNode, L"InfoTipType", config.infoTipType);
@@ -467,6 +468,8 @@ void SaveToNode(IXMLDOMDocument *xmlDocument, IXMLDOMElement *settingsNode, cons
 		XMLSettings::EncodeIntValue(config.iconSet));
 	XMLSettings::WriteStandardSetting(xmlDocument, settingsNode, SETTING_NODE_NAME,
 		L"TreeViewDelayEnabled", XMLSettings::EncodeBoolValue(config.treeViewDelayEnabled));
+	XMLSettings::WriteStandardSetting(xmlDocument, settingsNode, SETTING_NODE_NAME,
+		L"ShowTreeviewHorizontalScrollbar", XMLSettings::EncodeBoolValue(config.showTreeviewHorizontalScrollbar.get()));
 	XMLSettings::WriteStandardSetting(xmlDocument, settingsNode, SETTING_NODE_NAME,
 		L"ViewModeGlobal", XMLSettings::EncodeIntValue(config.defaultFolderSettings.viewMode));
 	XMLSettings::WriteStandardSetting(xmlDocument, settingsNode, SETTING_NODE_NAME,

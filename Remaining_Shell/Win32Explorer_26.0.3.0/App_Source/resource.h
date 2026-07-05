@@ -1054,6 +1054,7 @@
 #define IDC_OPTION_SHELLBAGS            1377
 #define IDC_OPTION_ELITETASKBAR         1378
 #define IDC_OPTION_ELITESTARTMENU       1379
+#define IDC_OPTION_TREEVIEW_HSCROLL     1380
 #define IDC_GROUP_ELITESHELL            1380
 
 // Next default values for new objects

@@ -169,3 +169,8 @@ All notable changes to this project will be documented in this file.
 
 - Reverted signtool usage in build scripts and properly integrated Elite-EasySigner as requested.
 
+
+## [Unreleased]
+- Separated execution flow in WinMain.cpp so EliteTaskbar.exe and Win32Explorer.exe run independently, fixing the issue where closing one closes the other.
+- Scaled down the tab close button in ToolbarHelper.cpp to 8x8 to prevent it from overlapping the tab edges.
+

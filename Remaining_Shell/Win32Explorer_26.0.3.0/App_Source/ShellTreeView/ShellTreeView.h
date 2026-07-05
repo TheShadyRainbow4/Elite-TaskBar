@@ -1,4 +1,4 @@
-﻿// Copyright (C) Win32Explorer Project
+// Copyright (C) Win32Explorer Project
 // SPDX-License-Identifier: GPL-3.0-only
 // See LICENSE in the top level directory
 
@@ -113,7 +113,7 @@ private:
 		FileActionHandler *fileActionHandler);
 	~ShellTreeView();
 
-	static HWND CreateTreeView(HWND parent);
+	static HWND CreateTreeView(HWND parent, const Config* config);
 
 	LRESULT TreeViewProc(HWND hwnd, UINT msg, WPARAM wParam, LPARAM lParam);
 	LRESULT ParentWndProc(HWND hwnd, UINT uMsg, WPARAM wParam, LPARAM lParam);
@@ -127,6 +127,7 @@ private:
 	void AddShellNamespaceRootItem();
 	HTREEITEM AddRootItem(PCIDLIST_ABSOLUTE pidl, HTREEITEM insertAfter = TVI_LAST);
 	void OnShowQuickAccessUpdated(bool newValue);
+	void OnShowTreeviewHorizontalScrollbarUpdated(bool newValue);
 	HRESULT ExpandDirectory(HTREEITEM hParent);
 	HTREEITEM AddItem(HTREEITEM parent, PCIDLIST_ABSOLUTE pidl, HTREEITEM insertAfter = TVI_LAST);
 	void SortChildren(HTREEITEM parent);

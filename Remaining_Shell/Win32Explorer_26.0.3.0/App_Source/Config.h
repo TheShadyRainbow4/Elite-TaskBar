@@ -62,6 +62,7 @@ struct Config
 	bool openNewTabNextToCurrent = false;
 	bool treeViewDelayEnabled = false;
 	bool treeViewAutoExpandSelected = false;
+	ValueWrapper<bool> showTreeviewHorizontalScrollbar = false;
 	bool showTaskbarThumbnails = false;
 	ValueWrapper<bool> useFullRowSelect = false;
 	bool showFilePreviews = true;
@@ -122,7 +123,7 @@ struct Config
 	ValueWrapper<LOGFONT> displayWindowFont = DisplayWindowDefaults::FONT;
 
 	// Elite Shell Integration
-	ValueWrapper<bool> enableNativeViewMode = false;
+	ValueWrapper<bool> enableNativeViewMode = true;
 	ValueWrapper<bool> enableShellBagsSupport = false;
 	ValueWrapper<bool> enableEliteTaskbar = false;
 	ValueWrapper<bool> enableEliteStartMenu = false;

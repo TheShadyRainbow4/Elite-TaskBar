@@ -1,4 +1,4 @@
-﻿// Copyright (C) Win32Explorer Project
+// Copyright (C) Win32Explorer Project
 // SPDX-License-Identifier: GPL-3.0-only
 // See LICENSE in the top level directory
 
@@ -30,7 +30,7 @@ TabBacking::TabBacking(HWND parent, BrowserWindow *browser, CoreInterface *coreI
 	m_coreInterface(coreInterface)
 {
 	std::tie(m_toolbar, m_toolbarImageLists) = ToolbarHelper::CreateCloseButtonToolbar(m_hwnd,
-		CLOSE_BUTTON_ID, resourceLoader->LoadString(IDS_TAB_CLOSE_TIP), resourceLoader);
+		CLOSE_BUTTON_ID, resourceLoader->LoadString(IDS_TAB_CLOSE_TIP), resourceLoader, 16, true);
 
 	SIZE toolbarSize;
 	auto sizeRes = SendMessage(m_toolbar, TB_GETMAXSIZE, 0, reinterpret_cast<LPARAM>(&toolbarSize));

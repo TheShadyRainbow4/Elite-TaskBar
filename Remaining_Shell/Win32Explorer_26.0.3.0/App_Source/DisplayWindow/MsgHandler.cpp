@@ -1,4 +1,4 @@
-﻿// Copyright (C) Win32Explorer Project
+// Copyright (C) Win32Explorer Project
 // SPDX-License-Identifier: GPL-3.0-only
 // See LICENSE in the top level directory
 
@@ -63,8 +63,29 @@ void DisplayWindow::Draw(HDC hdc, RECT *rc, RECT *updateRect)
 
 void DisplayWindow::DrawBackground(HDC hdcMem, RECT *rc)
 {
-	HBRUSH backgroundBrush = GetSysColorBrush(COLOR_BTNFACE);
-	FillRect(hdcMem, rc, backgroundBrush);
+	COLORREF surroundColor = m_config->displayWindowSurroundColor.get();
+	COLORREF centreColor = m_config->displayWindowCentreColor.get();
+
+	TRIVERTEX vertex[2];
+	vertex[0].x     = rc->left;
+	vertex[0].y     = rc->top;
+	vertex[0].Red   = GetRValue(surroundColor) << 8;
+	vertex[0].Green = GetGValue(surroundColor) << 8;
+	vertex[0].Blue  = GetBValue(surroundColor) << 8;
+	vertex[0].Alpha = 0x0000;
+
+	vertex[1].x     = rc->right;
+	vertex[1].y     = rc->bottom;
+	vertex[1].Red   = GetRValue(centreColor) << 8;
+	vertex[1].Green = GetGValue(centreColor) << 8;
+	vertex[1].Blue  = GetBValue(centreColor) << 8;
+	vertex[1].Alpha = 0x0000;
+
+	GRADIENT_RECT gRect;
+	gRect.UpperLeft  = 0;
+	gRect.LowerRight = 1;
+
+	GradientFill(hdcMem, vertex, 2, &gRect, 1, m_bVertical ? GRADIENT_FILL_RECT_V : GRADIENT_FILL_RECT_H);
 
 	/* This draws a separator line across the top edge of the window,
 	so that it is visually separated from other windows. */
@@ -266,7 +287,7 @@ void DisplayWindow::PaintText(HDC hdc, unsigned int x)
 	HGDIOBJ hOriginalObject = SelectObject(hdc, m_font.get());
 
 	SetBkMode(hdc, TRANSPARENT);
-	SetTextColor(hdc, GetSysColor(COLOR_BTNTEXT));
+	SetTextColor(hdc, m_config->displayWindowTextColor.get());
 
 	GetClientRect(m_hwnd, &rcClient);
 	xCurrent = x;

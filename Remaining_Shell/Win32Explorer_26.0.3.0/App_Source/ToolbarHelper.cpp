@@ -13,21 +13,23 @@ namespace ToolbarHelper
 {
 
 std::tuple<HWND, std::vector<wil::unique_himagelist>> CreateCloseButtonToolbar(HWND parent,
-	int closeButtonId, const std::wstring &tooltip, const ResourceLoader *resourceLoader)
+	int closeButtonId, const std::wstring &tooltip, const ResourceLoader *resourceLoader, int iconSize, bool isTab)
 {
-	HWND toolbar = CreateToolbar(parent,
-		WS_CHILD | WS_VISIBLE | WS_CLIPSIBLINGS | TBSTYLE_TOOLTIPS | TBSTYLE_LIST
-			| TBSTYLE_TRANSPARENT | TBSTYLE_FLAT | CCS_NODIVIDER | CCS_NOPARENTALIGN | CCS_NORESIZE,
-		TBSTYLE_EX_MIXEDBUTTONS | TBSTYLE_EX_DOUBLEBUFFER);
+	DWORD style = WS_CHILD | WS_VISIBLE | WS_CLIPSIBLINGS | TBSTYLE_TOOLTIPS
+			| TBSTYLE_TRANSPARENT | TBSTYLE_FLAT | CCS_NODIVIDER | CCS_NOPARENTALIGN | CCS_NORESIZE;
+	if (!isTab) {
+		style |= TBSTYLE_LIST;
+	}
+
+	HWND toolbar = CreateToolbar(parent, style, TBSTYLE_EX_MIXEDBUTTONS | TBSTYLE_EX_DOUBLEBUFFER);
 	SendMessage(toolbar, TB_BUTTONSTRUCTSIZE, sizeof(TBBUTTON), 0);
 
 	UINT dpi = DpiCompatibility::GetInstance().GetDpiForWindow(toolbar);
 
-	// Use 16x16 as the golden standard for tabs.
 	wil::unique_hbitmap normalBitmap =
-		resourceLoader->LoadBitmapFromPNGForDpi(Icon::CloseButton, 16, 16, dpi);
+		resourceLoader->LoadBitmapFromPNGForDpi(Icon::CloseButton, iconSize, iconSize, dpi);
 	wil::unique_hbitmap pressedBitmap =
-		resourceLoader->LoadBitmapFromPNGForDpi(Icon::PressedCloseButton, 16, 16, dpi);
+		resourceLoader->LoadBitmapFromPNGForDpi(Icon::PressedCloseButton, iconSize, iconSize, dpi);
 
 	BITMAP bitmapInfo;
 	[[maybe_unused]] int res = GetObject(normalBitmap.get(), sizeof(bitmapInfo), &bitmapInfo);
@@ -43,6 +45,9 @@ std::tuple<HWND, std::vector<wil::unique_himagelist>> CreateCloseButtonToolbar(H
 		ImageList_Create(bitmapInfo.bmWidth, bitmapInfo.bmHeight, ILC_COLOR32 | ILC_MASK, 0, 1));
 	ImageList_Add(hotImageList.get(), pressedBitmap.get(), nullptr);
 
+	if (!isTab) {
+		SendMessage(toolbar, TB_SETPADDING, 0, MAKELPARAM(0, 0));
+	}
 	SendMessage(toolbar, TB_SETBITMAPSIZE, 0, MAKELONG(bitmapInfo.bmWidth, bitmapInfo.bmHeight));
 	SendMessage(toolbar, TB_SETBUTTONSIZE, 0, MAKELPARAM(bitmapInfo.bmWidth, bitmapInfo.bmHeight));
 
@@ -54,7 +59,10 @@ std::tuple<HWND, std::vector<wil::unique_himagelist>> CreateCloseButtonToolbar(H
 	tbButton.iBitmap = normalImageIndex;
 	tbButton.idCommand = closeButtonId;
 	tbButton.fsState = TBSTATE_ENABLED;
-	tbButton.fsStyle = TBSTYLE_BUTTON | TBSTYLE_AUTOSIZE;
+	tbButton.fsStyle = TBSTYLE_BUTTON;
+	if (!isTab) {
+		tbButton.fsStyle |= TBSTYLE_AUTOSIZE;
+	}
 	tbButton.dwData = 0;
 	tbButton.iString = reinterpret_cast<INT_PTR>(tooltip.c_str());
 	SendMessage(toolbar, TB_INSERTBUTTON, 0, reinterpret_cast<LPARAM>(&tbButton));
