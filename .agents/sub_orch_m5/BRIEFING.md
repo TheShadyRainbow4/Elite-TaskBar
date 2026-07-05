@@ -59,12 +59,13 @@ Implement Milestone 5 features: Dynamic Primary Display Spoofing, Tray-Clock Gap
 | Explorer 1 | teamwork_preview_explorer | Flyouts & Tray Actions analysis | completed | 3103c5d7-9949-45d4-a0a0-894fd8b15721 |
 | Explorer 2 | teamwork_preview_explorer | Clock Gap & Scraper Fixes analysis | completed | b240fbb1-600b-4c7b-be97-85d1c66aca8e |
 | Explorer 3 | teamwork_preview_explorer | Two-Row Tray & Settings analysis | completed | 33b3a906-dc1b-44d3-83bf-13a5928fc1b5 |
-| Worker | teamwork_preview_worker | Implement Milestone 5 features | in-progress | 5e88643b-d2c4-4520-a30b-165d0c0b6232 |
+| Worker | teamwork_preview_worker | Implement Milestone 5 features | completed | 5e88643b-d2c4-4520-a30b-165d0c0b6232 |
+| Worker Remediation | teamwork_preview_worker | Implement Tray Feedback Fixes | in-progress | 945661bb-e9d7-4ed4-a26a-ea596e9c541d |
 
 ## Succession Status
 - Succession required: no
-- Spawn count: 4 / 16
-- Pending subagents: 5e88643b-d2c4-4520-a30b-165d0c0b6232
+- Spawn count: 5 / 16
+- Pending subagents: 945661bb-e9d7-4ed4-a26a-ea596e9c541d
 - Predecessor: none
 - Successor: not yet spawned
 

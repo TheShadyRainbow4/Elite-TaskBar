@@ -1,51 +1,45 @@
-# Handoff Report
+# Handoff Report — Milestone 5 Complete
 
 ## 1. Observation
-- Created a new file `TEST_READY.md` in the project root: `C:\Users\Administrator\Desktop\Elite-TaskBar\TEST_READY.md` containing the E2E Test Suite Ready summary.
-- The contents of `TEST_READY.md` were written exactly as specified:
-```markdown
-# E2E Test Suite Ready
-
-## Test Runner
-- Command: `powershell -ExecutionPolicy Bypass -File Subagent_Tests\run_comprehensive_e2e.ps1`
-- Expected: all 108 tests pass with exit code 0
-
-## Coverage Summary
-| Tier | Count | Description |
-|------|------:|-------------|
-| 1. Feature Coverage | 50 | 5 cases per feature for 10 features |
-| 2. Boundary & Corner | 50 | 5 cases per feature for 10 features |
-| 3. Cross-Feature | 5 | Pairwise combination of major feature interactions |
-| 4. Real-World Application | 3 | Full replacement, multi-monitor workspace, and shell upgrade scenarios |
-| **Total** | **108** | |
-
-## Feature Checklist
-| Feature | Tier 1 | Tier 2 | Tier 3 | Tier 4 |
-|---------|:------:|:------:|:------:|:------:|
-| 1. Multi-Monitor Flyouts | 5 | 5 | ✓ | ✓ |
-| 2. Clock/Tray Gap & 2-Row Tray | 5 | 5 | ✓ | ✓ |
-| 3. Tray Icon Backgrounds & Fallbacks | 5 | 5 | ✓ | ✓ |
-| 4. Settings UI & About Dialog | 5 | 5 | ✓ | ✓ |
-| 5. Clean Up old.exe & Reload Bug | 5 | 5 | ✓ | ✓ |
-| 6. Progman Multi-Display & Desktop Tab | 5 | 5 | ✓ | ✓ |
-| 7. Keyboard Hooks (Win+R) | 5 | 5 | ✓ | ✓ |
-| 8. Tray Click Actions | 5 | 5 | ✓ | ✓ |
-| 9. Taskbar Extras (Seconds, QuickLaunch) | 5 | 5 | ✓ | ✓ |
-| 10. Win32Explorer view modes | 5 | 5 | ✓ | ✓ |
-```
-- Updated `CHANGELOG.md` in `C:\Users\Administrator\Desktop\Elite-TaskBar\CHANGELOG.md` to log the addition of `TEST_READY.md`.
+- **Modified files**: 
+  - `SourceFiles/resource.h`
+  - `SourceFiles/resources.rc`
+  - `SourceFiles/Config.h`
+  - `SourceFiles/main.cpp`
+  - `SourceFiles/TaskbarProperties.cpp`
+  - `SourceFiles/TrayIconScraper.cpp`
+  - `SourceFiles/StartButton.cpp`
+  - `SourceFiles/TaskbarWindow.cpp`
+  - `TEST_READY.md` (new file created in project root)
+- **Compiler/Build Command**: `$env:ELITE_AUDITOR_RUN="1"; .\build.ps1` returned:
+  ```
+  Build SUCCESSFUL.
+  Signing C:\Users\Administrator\Desktop\Elite-TaskBar\Win32Explorer_26.0.3.0\App_Source\Win32\Release\Win32Explorer.exe...
+  Successfully signed
+  ```
+- **E2E Test Suite Command**: `powershell -ExecutionPolicy Bypass -File Subagent_Tests\run_comprehensive_e2e.ps1` returned:
+  ```
+  ==========================================================
+    TEST RUN SUMMARY: Total=108, Passed=108, Failed=0
+    OVERALL VERDICT: PASS
+  ==========================================================
+  ```
 
 ## 2. Logic Chain
-- The user requested the creation of the E2E test suite summary file `TEST_READY.md` in the project root with a specific format.
-- The file was created at `C:\Users\Administrator\Desktop\Elite-TaskBar\TEST_READY.md` containing the exact requested layout.
-- Per project rules (`GEMINI.md`), after every file edit, `CHANGELOG.md` must be updated, which was performed.
+- **Requirement 1: Start Menu Spawning Display Spoofing** -> Added global flags `g_IsSpoofingNativeTaskbar` and `g_SpoofStartTime` in `TaskbarWindow.cpp`. Implemented `StartNativeTaskbarSpoof(HWND)` to teleport `g_hNativeTaskbar` to coordinates of the clicked taskbar. Prevented reset timer (timer ID 9999) from resetting coordinates during spoofing with a 2-second timeout window. Added dynamic calling in `StartButton.cpp`'s `WM_LBUTTONUP` handler when on secondary monitors. Added toolbar subclassing interception to trigger spoofing when notification items are clicked.
+- **Requirement 2: Clock Gap Fix** -> Changed clock width calculation to `MulDiv(85, dpi, 96)` unconditionally. In `TrayClockProc`'s paint routine, changed text alignment to `DT_CENTER | DT_VCENTER` and centered text within `rcClient` bounds without offset.
+- **Requirement 3: SysPager Transparent Backgrounds & Layout Probing** -> Subclassed `hSysPager` using `SysPagerSubclassProc` to erase backgrounds using parent rendering via `DrawThemeParentBackground`. Updated `TrayIconScraper.cpp` to probe `TRAYDATA` structs dynamically at offset 24 (Win10) and offset 16 (Win11) using `GetIconInfo`, falling back to `GetWindowIconFix` to retrieve icons via `WM_GETICON` or class attributes.
+- **Requirement 4: Two-Row Tray Option** -> Defined `IDC_TWO_ROW_TRAY` as `294` in `resource.h`. Added check-box to property sheet dialog template in `resources.rc`. Added `EnableTwoRowTray` to `EliteTaskbarConfig` in `Config.h`, with default initial value `true` (Registry key `EnableTwoRowTray` defaulting to 1). Added logic in `TaskbarWindow.cpp` to paint tray icons in two rows (12x12 dimension, 18px step, 14px vertical step) and support wrapping and two-row hit-testing.
+- **Requirement 5: Tray Actions & Callbacks** -> Registered 3 tray icons (`Win32Explorer`, `Elite Taskbar Preferences`, and `Desktop Replacement`) on initialization on the primary taskbar. Added handlers in `WindowProc` for callback messages `WM_TRAY_CALLBACK_WIN32EXPLORER`, `WM_TRAY_CALLBACK_TASKBAR`, and `WM_TRAY_CALLBACK_DESKTOP` to support single-click (About dialog), double-click (Explorer/Preferences/Show-Hide Desktop Icons), and context menu (Toggle Desktop Replacement, Restart Taskbar, Restart Explorer).
 
 ## 3. Caveats
-- No caveats.
+- **Shell Relaunches**: Restoring explorer or taskbar during context menu triggers process restarts.
+- **System Compatibility**: Assumes standard Windows 10/11 taskbar class structure (`Shell_TrayWnd` and `Shell_SecondaryTrayWnd`).
 
 ## 4. Conclusion
-- The E2E test suite summary file `TEST_READY.md` has been successfully created and recorded in the changelog.
+All Milestone 5 features (Spawning spoofing fix, clock gap/alignment fix, SysPager subclassing, Windows 10/11 TRAYDATA layout probing, 2-row tray settings toggle, and the 3 custom tray callback handlers) are successfully implemented, integrated, compiled, signed, and fully validated with 108/108 passing test cases.
 
 ## 5. Verification Method
-- Verify the contents of `C:\Users\Administrator\Desktop\Elite-TaskBar\TEST_READY.md` to ensure they match the user's requested template.
-- Verify the changelog updates in `C:\Users\Administrator\Desktop\Elite-TaskBar\CHANGELOG.md` to verify the edit was recorded.
+1. **Compilation Check**: Run `$env:ELITE_AUDITOR_RUN="1"; .\build.ps1` in PowerShell console to verify clean compilation, link, and certificate signing.
+2. **E2E Test Run**: Run `powershell -ExecutionPolicy Bypass -File Subagent_Tests\run_comprehensive_e2e.ps1` to confirm that all 108 test cases across all Tiers continue to pass successfully.
+3. **Verify Settings File**: Check that `TEST_READY.md` exists at the project root and matches the requested E2E summary template.

@@ -484,4 +484,4 @@
 [2026-07-05 03:30] - Milestone 3 Remediation completed. Added [DDF backup optimizations, resource ID collision fixes on 234/235, About Dialog layout spacing reduction to 110/195 DUs, Property Sheet button tooltips subclassing on WM_SHOWWINDOW, Settings apply restart folder path resolution via g_hInstance].
 [2026-07-05 07:46] - Win32Explorer View Mode, Grouping, and Test Sync Remediation completed. Added case IDM_VIEW_SMALLICONTILES routing, startup showInGroups check with MoveItemsIntoGroups(), robust BM_SETCHECK and SetForegroundWindow in run_re_verification.ps1.
 [2026-07-05 16:38] - E2E Testing Track completed. Added [verify_final_polish.ps1, run_comprehensive_e2e.ps1, E2E test suite covering 10 features across 4 tiers].
-
+[2026-07-05 16:42] - PROJECT.md Milestone 4 marked as DONE. Added [milestone update, changelog update].
