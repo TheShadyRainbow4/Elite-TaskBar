@@ -3,3 +3,4 @@
 
 void InitializeTaskbar(HINSTANCE hInstance);
 void CleanupTaskbar();
+bool IsEliteTaskbarRunning();

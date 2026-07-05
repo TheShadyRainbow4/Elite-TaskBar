@@ -1441,12 +1441,6 @@ LRESULT CALLBACK WindowProc(HWND hwnd, UINT uMsg, WPARAM wParam, LPARAM lParam) 
                 break;
 
             case IDM_EXIT_ELITETASKBAR:
-                EnumThreadWindows(GetCurrentThreadId(), [](HWND hwndEnum, LPARAM lParam) -> BOOL {
-                    if (hwndEnum != (HWND)lParam) {
-                        PostMessageW(hwndEnum, WM_CLOSE, 0, 0);
-                    }
-                    return TRUE;
-                }, (LPARAM)hwnd);
                 SendMessageW(hwnd, WM_CLOSE, 0, 0);
                 break;
             case IDM_START_EXPLORER:
@@ -1651,8 +1645,31 @@ LRESULT CALLBACK WindowProc(HWND hwnd, UINT uMsg, WPARAM wParam, LPARAM lParam) 
         return 0;
     }
     case WM_DESTROY:
-        PostQuitMessage(0);
+    {
+        for (auto it = g_Taskbars.begin(); it != g_Taskbars.end(); ++it) {
+            if ((*it)->hTaskbar == hwnd) {
+                g_Taskbars.erase(it);
+                break;
+            }
+        }
+        
+        bool hasBrowser = false;
+        EnumThreadWindows(GetCurrentThreadId(), [](HWND hwndEnum, LPARAM lParam) -> BOOL {
+            wchar_t className[256];
+            if (GetClassNameW(hwndEnum, className, 256)) {
+                if (wcscmp(className, L"Win32Explorer") == 0) {
+                    *(bool*)lParam = true;
+                    return FALSE;
+                }
+            }
+            return TRUE;
+        }, (LPARAM)&hasBrowser);
+        
+        if (!hasBrowser && g_Taskbars.empty()) {
+            PostQuitMessage(0);
+        }
         return 0;
+    }
     }
     return DefWindowProcW(hwnd, uMsg, wParam, lParam);
 }
@@ -2008,3 +2025,7 @@ void TaskbarWindow::Cleanup() {
 
 
 
+
+bool IsEliteTaskbarRunning() {
+    return !g_Taskbars.empty();
+}

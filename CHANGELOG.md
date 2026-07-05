@@ -160,3 +160,5 @@ All notable changes to this project will be documented in this file.
 - Fixed white boxes around checkboxes and radio buttons in taskbar settings dialogs by restoring the transparent background drawing logic.
 - Fixed crash when exiting the Elite Taskbar by gracefully closing all open Win32Explorer windows before terminating the taskbar thread.
 
+- Made the application selectively stay alive if 'Win32Explorer' browser windows are still open when the Elite Taskbar is manually exited, instead of closing the entire process.
+

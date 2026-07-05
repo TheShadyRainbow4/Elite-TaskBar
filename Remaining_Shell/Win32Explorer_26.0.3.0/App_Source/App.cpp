@@ -28,6 +28,7 @@
 #include "XmlAppStorageFactory.h"
 #include "../Shared_Libraries/CachedIcons.h"
 #include "../Shared_Libraries/Helper.h"
+#include "EliteTaskbar/TaskbarMain.h"
 #include <fmt/format.h>
 #include <fmt/xchar.h>
 
@@ -85,7 +86,7 @@ App::~App() = default;
 
 void App::OnBrowserRemoved()
 {
-	if (m_browserList.IsEmpty() && !m_config.enableEliteTaskbar.get())
+	if (m_browserList.IsEmpty() && !(m_config.enableEliteTaskbar.get() && IsEliteTaskbarRunning()))
 	{
 		// The last top-level browser window has been closed, so exit the application.
 		PostQuitMessage(EXIT_CODE_NORMAL);
@@ -463,7 +464,7 @@ DriveModel *App::GetDriveModel()
 
 void App::OnWillRemoveBrowser()
 {
-	if (m_browserList.GetSize() == 1 && !m_exitStarted && !m_config.enableEliteTaskbar.get())
+	if (m_browserList.GetSize() == 1 && !m_exitStarted && !(m_config.enableEliteTaskbar.get() && IsEliteTaskbarRunning()))
 	{
 		// The last browser window is about to be closed, which indicates that the application is
 		// going to exit. Note that the exit may have already started (e.g. if there were multiple
