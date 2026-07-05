@@ -1441,6 +1441,12 @@ LRESULT CALLBACK WindowProc(HWND hwnd, UINT uMsg, WPARAM wParam, LPARAM lParam) 
                 break;
 
             case IDM_EXIT_ELITETASKBAR:
+                EnumThreadWindows(GetCurrentThreadId(), [](HWND hwndEnum, LPARAM lParam) -> BOOL {
+                    if (hwndEnum != (HWND)lParam) {
+                        PostMessageW(hwndEnum, WM_CLOSE, 0, 0);
+                    }
+                    return TRUE;
+                }, (LPARAM)hwnd);
                 SendMessageW(hwnd, WM_CLOSE, 0, 0);
                 break;
             case IDM_START_EXPLORER:

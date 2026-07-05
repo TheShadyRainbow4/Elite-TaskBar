@@ -157,3 +157,6 @@ All notable changes to this project will be documented in this file.
 - Disabled unimplemented settings checkboxes ('Native View Mode', 'ShellBags', and 'Elite Start Menu') and labeled them '(Coming Soon)'.
 - Fixed tab close button size to 16x16 to prevent clipping off the edge of the tab area.
 
+- Fixed white boxes around checkboxes and radio buttons in taskbar settings dialogs by restoring the transparent background drawing logic.
+- Fixed crash when exiting the Elite Taskbar by gracefully closing all open Win32Explorer windows before terminating the taskbar thread.
+
