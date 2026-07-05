@@ -16,10 +16,7 @@ std::tuple<HWND, std::vector<wil::unique_himagelist>> CreateCloseButtonToolbar(H
 	int closeButtonId, const std::wstring &tooltip, const ResourceLoader *resourceLoader, int iconSize, bool isTab)
 {
 	DWORD style = WS_CHILD | WS_VISIBLE | WS_CLIPSIBLINGS | TBSTYLE_TOOLTIPS
-			| TBSTYLE_TRANSPARENT | TBSTYLE_FLAT | CCS_NODIVIDER | CCS_NOPARENTALIGN | CCS_NORESIZE;
-	if (!isTab) {
-		style |= TBSTYLE_LIST;
-	}
+			| TBSTYLE_TRANSPARENT | TBSTYLE_FLAT | CCS_NODIVIDER | CCS_NOPARENTALIGN | CCS_NORESIZE | TBSTYLE_LIST;
 
 	HWND toolbar = CreateToolbar(parent, style, TBSTYLE_EX_MIXEDBUTTONS | TBSTYLE_EX_DOUBLEBUFFER);
 	SendMessage(toolbar, TB_BUTTONSTRUCTSIZE, sizeof(TBBUTTON), 0);

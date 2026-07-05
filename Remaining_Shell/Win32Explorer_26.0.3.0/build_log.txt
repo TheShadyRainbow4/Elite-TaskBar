@@ -1,17 +1,26 @@
 --- Build Log Start ---
-[2026-07-04 19:25:50] Locating MSBuild...
-[2026-07-04 19:25:50] Found MSBuild: C:\Program Files (x86)\Microsoft Visual Studio\2022\BuildTools\MSBuild\Current\Bin\MSBuild.exe
-[2026-07-04 19:25:50] Building Project_Core\Win32Explorer.sln (Release|x64)...
+[2026-07-04 19:40:07] Locating MSBuild...
+[2026-07-04 19:40:07] Found MSBuild: C:\Program Files (x86)\Microsoft Visual Studio\2022\BuildTools\MSBuild\Current\Bin\MSBuild.exe
+[2026-07-04 19:40:07] Building Project_Core\Win32Explorer.sln (Release|x64)...
 MSBuild version 17.14.40+3e7442088 for .NET Framework
 
   Helper.vcxproj -> C:\Users\Administrator\Desktop\Elite-TaskBar\Remaining_Shell\Win32Explorer_26.0.3.0\Project_Core\x64\Release\Helper.lib
-  TaskbarProperties.cpp
-     Creating library x64\Release\Win32Explorer.lib and object x64\Release\Win32Explorer.exp
-  Generating code
-  Finished generating code
-  Win32Explorer.vcxproj -> C:\Users\Administrator\Desktop\Elite-TaskBar\Remaining_Shell\Win32Explorer_26.0.3.0\App_Source\x64\Release\Win32Explorer.exe
-[2026-07-04 19:26:42] Relocating build artifacts to project root...
-[2026-07-04 19:26:42] WARNING: Elite-EasySigner not found at C:\Users\Administrator\Desktop\Elite-TaskBar\Elite-EasySigner\Elite-EasySigner.exe, skipping sign.
-[2026-07-04 19:26:42] Copying C:\Users\Administrator\Desktop\Elite-TaskBar\Remaining_Shell\Win32Explorer_26.0.3.0\App_Source\x64\Release\Win32Explorer.exe to C:\Users\Administrator\Desktop\Elite-TaskBar\Win32Explorer.exe
-[2026-07-04 19:26:42] Build artifacts successfully relocated to root.
-[2026-07-04 19:26:42] Build SUCCESSFUL.
+  BrowserCommandController.cpp
+  DisplayColorsDialog.cpp
+  DisplayWindow.cpp
+  ToolbarHelper.cpp
+C:\Users\Administrator\Desktop\Elite-TaskBar\Remaining_Shell\Win32Explorer_26.0.3.0\App_Source\DisplayColorsDialog.cpp(35,29): error C2248: 'DisplayColorsDialog::GetCurrentSurroundColor': cannot access private member declared in class 'DisplayColorsDialog' [C:\Users\Administrator\Desktop\Elite-TaskBar\Remaining_Shell\Win32Explorer_26.0.3.0\App_Source\Win32Explorer.vcxproj]
+  (compiling source file '/DisplayColorsDialog.cpp')
+      C:\Users\Administrator\Desktop\Elite-TaskBar\Remaining_Shell\Win32Explorer_26.0.3.0\App_Source\DisplayColorsDialog.h(33,11):
+      see declaration of 'DisplayColorsDialog::GetCurrentSurroundColor'
+      C:\Users\Administrator\Desktop\Elite-TaskBar\Remaining_Shell\Win32Explorer_26.0.3.0\App_Source\DisplayColorsDialog.h(12,7):
+      see declaration of 'DisplayColorsDialog'
+  
+C:\Users\Administrator\Desktop\Elite-TaskBar\Remaining_Shell\Win32Explorer_26.0.3.0\App_Source\DisplayColorsDialog.cpp(36,27): error C2248: 'DisplayColorsDialog::GetCurrentCenterColor': cannot access private member declared in class 'DisplayColorsDialog' [C:\Users\Administrator\Desktop\Elite-TaskBar\Remaining_Shell\Win32Explorer_26.0.3.0\App_Source\Win32Explorer.vcxproj]
+  (compiling source file '/DisplayColorsDialog.cpp')
+      C:\Users\Administrator\Desktop\Elite-TaskBar\Remaining_Shell\Win32Explorer_26.0.3.0\App_Source\DisplayColorsDialog.h(32,11):
+      see declaration of 'DisplayColorsDialog::GetCurrentCenterColor'
+      C:\Users\Administrator\Desktop\Elite-TaskBar\Remaining_Shell\Win32Explorer_26.0.3.0\App_Source\DisplayColorsDialog.h(12,7):
+      see declaration of 'DisplayColorsDialog'
+  
+[2026-07-04 19:40:12] Build FAILED with exit code 1.

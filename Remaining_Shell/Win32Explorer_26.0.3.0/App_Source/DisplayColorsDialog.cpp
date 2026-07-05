@@ -22,10 +22,43 @@ DisplayColorsDialog::DisplayColorsDialog(const ResourceLoader *resourceLoader, H
 {
 }
 
+static LRESULT CALLBACK PreviewWndProc(HWND hwnd, UINT uMsg, WPARAM wParam, LPARAM lParam, UINT_PTR uIdSubclass, DWORD_PTR dwRefData)
+{
+	DisplayColorsDialog* pDlg = (DisplayColorsDialog*)dwRefData;
+	if (uMsg == WM_PAINT)
+	{
+		PAINTSTRUCT ps;
+		HDC hdc = BeginPaint(hwnd, &ps);
+		RECT rc;
+		GetClientRect(hwnd, &rc);
+		
+		COLORREF surround = pDlg->GetCurrentSurroundColor();
+		COLORREF center = pDlg->GetCurrentCenterColor();
+		
+		HBRUSH hSurround = CreateSolidBrush(surround);
+		FillRect(hdc, &rc, hSurround);
+		DeleteObject(hSurround);
+		
+		InflateRect(&rc, -2, -2);
+		HBRUSH hCenter = CreateSolidBrush(center);
+		FillRect(hdc, &rc, hCenter);
+		DeleteObject(hCenter);
+		
+		EndPaint(hwnd, &ps);
+		return 0; // handled
+	}
+	else if (uMsg == WM_NCDESTROY)
+	{
+		RemoveWindowSubclass(hwnd, PreviewWndProc, uIdSubclass);
+	}
+	return DefSubclassProc(hwnd, uMsg, wParam, lParam);
+}
+
 INT_PTR DisplayColorsDialog::OnInitDialog()
 {
 	ApplyColorsToSliders();
 	CenterWindow(GetParent(m_hDlg), m_hDlg);
+	SetWindowSubclass(GetDlgItem(m_hDlg, IDC_STATIC_PREVIEWDISPLAY), PreviewWndProc, 1, (DWORD_PTR)this);
 	return TRUE;
 }
 
@@ -63,6 +96,7 @@ void DisplayColorsDialog::SyncSliderToEdit(HWND hwndSlider, HWND hwndEdit)
 {
 	int pos = static_cast<int>(SendMessage(hwndSlider, TBM_GETPOS, 0, 0));
 	SetWindowText(hwndEdit, std::to_wstring(pos).c_str());
+	InvalidatePreview();
 }
 
 void DisplayColorsDialog::SyncEditToSlider(HWND hwndEdit, HWND hwndSlider)
@@ -73,22 +107,37 @@ void DisplayColorsDialog::SyncEditToSlider(HWND hwndEdit, HWND hwndSlider)
 		int val = std::stoi(text);
 		if (val >= 0 && val <= 255) {
 			SendMessage(hwndSlider, TBM_SETPOS, TRUE, val);
+			InvalidatePreview();
 		}
 	} catch (...) {}
 }
 
+COLORREF DisplayColorsDialog::GetCurrentCenterColor()
+{
+	int r = GetDlgItemInt(m_hDlg, IDC_EDIT_CENTRE_RED, nullptr, FALSE);
+	int g = GetDlgItemInt(m_hDlg, IDC_EDIT_CENTRE_GREEN, nullptr, FALSE);
+	int b = GetDlgItemInt(m_hDlg, IDC_EDIT_CENTRE_BLUE, nullptr, FALSE);
+	return RGB(r, g, b);
+}
+
+COLORREF DisplayColorsDialog::GetCurrentSurroundColor()
+{
+	int r = GetDlgItemInt(m_hDlg, IDC_EDIT_SURROUND_RED, nullptr, FALSE);
+	int g = GetDlgItemInt(m_hDlg, IDC_EDIT_SURROUND_GREEN, nullptr, FALSE);
+	int b = GetDlgItemInt(m_hDlg, IDC_EDIT_SURROUND_BLUE, nullptr, FALSE);
+	return RGB(r, g, b);
+}
+
+void DisplayColorsDialog::InvalidatePreview()
+{
+	HWND hPreview = GetDlgItem(m_hDlg, IDC_STATIC_PREVIEWDISPLAY);
+	if (hPreview) InvalidateRect(hPreview, nullptr, TRUE);
+}
+
 void DisplayColorsDialog::SaveColors()
 {
-	auto getColor = [this](int rEdit, int gEdit, int bEdit) -> COLORREF
-	{
-		int r = GetDlgItemInt(m_hDlg, rEdit, nullptr, FALSE);
-		int g = GetDlgItemInt(m_hDlg, gEdit, nullptr, FALSE);
-		int b = GetDlgItemInt(m_hDlg, bEdit, nullptr, FALSE);
-		return RGB(r, g, b);
-	};
-
-	m_config->displayWindowCentreColor = getColor(IDC_EDIT_CENTRE_RED, IDC_EDIT_CENTRE_GREEN, IDC_EDIT_CENTRE_BLUE);
-	m_config->displayWindowSurroundColor = getColor(IDC_EDIT_SURROUND_RED, IDC_EDIT_SURROUND_GREEN, IDC_EDIT_SURROUND_BLUE);
+	m_config->displayWindowCentreColor = GetCurrentCenterColor();
+	m_config->displayWindowSurroundColor = GetCurrentSurroundColor();
 }
 
 INT_PTR DisplayColorsDialog::OnCommand(WPARAM wParam, LPARAM lParam)
@@ -111,6 +160,7 @@ INT_PTR DisplayColorsDialog::OnCommand(WPARAM wParam, LPARAM lParam)
 		m_config->displayWindowCentreColor = DisplayWindowDefaults::CENTRE_COLOR;
 		m_config->displayWindowSurroundColor = DisplayWindowDefaults::SURROUND_COLOR;
 		ApplyColorsToSliders();
+		InvalidatePreview();
 		break;
 
 	case IDC_EDIT_CENTRE_RED:

@@ -29,5 +29,9 @@ private:
 	void ApplyColorsToSliders();
 	void SaveColors();
 
+	COLORREF GetCurrentCenterColor();
+	COLORREF GetCurrentSurroundColor();
+	void InvalidatePreview();
+
 	Config *m_config;
 };
