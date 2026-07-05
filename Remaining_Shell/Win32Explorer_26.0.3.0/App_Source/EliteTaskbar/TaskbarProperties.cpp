@@ -12,6 +12,23 @@ extern HINSTANCE g_hInstance;
 #include <gdiplus.h>
 #include <uxtheme.h>
 #include <shlwapi.h>
+#include <shlobj.h>
+
+static void BrowseForFolder(HWND hwndOwner, HWND hwndEdit) {
+    BROWSEINFOW bi = { 0 };
+    bi.hwndOwner = hwndOwner;
+    bi.ulFlags = BIF_RETURNONLYFSDIRS | BIF_USENEWUI;
+    bi.lpszTitle = L"Select Custom Icon Theme Folder:";
+    LPITEMIDLIST pidl = SHBrowseForFolderW(&bi);
+    if (pidl) {
+        WCHAR szPath[MAX_PATH];
+        if (SHGetPathFromIDListW((PCIDLIST_ABSOLUTE)pidl, szPath)) {
+            SetWindowTextW(hwndEdit, szPath);
+            SendMessageW(GetParent(hwndEdit), PSM_CHANGED, (WPARAM)GetParent(hwndEdit), 0);
+        }
+        CoTaskMemFree(pidl);
+    }
+}
 
 #pragma comment(lib, "gdiplus.lib")
 #pragma comment(lib, "uxtheme.lib")
@@ -87,7 +104,7 @@ INT_PTR CALLBACK TaskbarSettingsDlgProc(HWND hwndDlg, UINT uMsg, WPARAM wParam, 
     case WM_INITDIALOG: {
         EnableThemeDialogTexture(hwndDlg, ETDT_ENABLETAB);
         HKEY hKey;
-        if (RegOpenKeyExW(HKEY_CURRENT_USER, L"Software\\EliteSoftware\\Win32Explorer\\Advanced", 0, KEY_READ, &hKey) == ERROR_SUCCESS) {
+        if (RegOpenKeyExW(GetEliteRegistryRoot(), L"Software\\EliteSoftware\\Win32Explorer\\Advanced", 0, KEY_READ, &hKey) == ERROR_SUCCESS) {
             DWORD dwValue = 0;
             DWORD cbData = sizeof(DWORD);
             
@@ -99,34 +116,25 @@ INT_PTR CALLBACK TaskbarSettingsDlgProc(HWND hwndDlg, UINT uMsg, WPARAM wParam, 
                 SendDlgItemMessageW(hwndDlg, IDC_MODE_INDEPENDENT, BM_SETCHECK, BST_CHECKED, 0);
             }
             
-            cbData = sizeof(DWORD);
-            if (RegQueryValueExW(hKey, L"TaskbarButtonWidthMode", NULL, NULL, (LPBYTE)&dwValue, &cbData) == ERROR_SUCCESS) {
-                if (dwValue == 0) SendDlgItemMessageW(hwndDlg, IDC_WIDTH_AUTO, BM_SETCHECK, BST_CHECKED, 0);
-                else if (dwValue == 1) SendDlgItemMessageW(hwndDlg, IDC_WIDTH_FIXED, BM_SETCHECK, BST_CHECKED, 0);
-                else if (dwValue == 2) SendDlgItemMessageW(hwndDlg, IDC_WIDTH_ICONS, BM_SETCHECK, BST_CHECKED, 0);
-            } else {
-                SendDlgItemMessageW(hwndDlg, IDC_WIDTH_AUTO, BM_SETCHECK, BST_CHECKED, 0);
+            WCHAR szThemePath[MAX_PATH] = {0};
+            DWORD cbThemePath = sizeof(szThemePath);
+            if (RegQueryValueExW(hKey, L"CustomThemePath", NULL, NULL, (LPBYTE)szThemePath, &cbThemePath) == ERROR_SUCCESS) {
+                SetDlgItemTextW(hwndDlg, IDC_THEME_FOLDER_PATH, szThemePath);
             }
-            
-            SendMessageW(GetDlgItem(hwndDlg, IDC_WIDTH_FIXED_SIZE), CB_ADDSTRING, 0, (LPARAM)L"Small");
-            SendMessageW(GetDlgItem(hwndDlg, IDC_WIDTH_FIXED_SIZE), CB_ADDSTRING, 0, (LPARAM)L"Medium");
-            SendMessageW(GetDlgItem(hwndDlg, IDC_WIDTH_FIXED_SIZE), CB_ADDSTRING, 0, (LPARAM)L"Large");
-            cbData = sizeof(DWORD);
-            if (RegQueryValueExW(hKey, L"TaskbarButtonFixedWidthSize", NULL, NULL, (LPBYTE)&dwValue, &cbData) == ERROR_SUCCESS) {
-                SendMessageW(GetDlgItem(hwndDlg, IDC_WIDTH_FIXED_SIZE), CB_SETCURSEL, dwValue, 0);
-            } else {
-                SendMessageW(GetDlgItem(hwndDlg, IDC_WIDTH_FIXED_SIZE), CB_SETCURSEL, 1, 0); // Default to Medium
-            }
-            
-            cbData = sizeof(DWORD);
-            if (RegQueryValueExW(hKey, L"TaskbarHoverPreview", NULL, NULL, (LPBYTE)&dwValue, &cbData) == ERROR_SUCCESS) {
-                SendDlgItemMessageW(hwndDlg, IDC_HOVER_PREVIEW, BM_SETCHECK, dwValue ? BST_CHECKED : BST_UNCHECKED, 0);
-            }
+            EnableWindow(GetDlgItem(hwndDlg, IDC_ENABLE_DARK_MODE), FALSE);
             RegCloseKey(hKey);
         }
         return TRUE;
     }
     case WM_COMMAND:
+        if (LOWORD(wParam) == IDC_THEME_FOLDER_BROWSE) {
+            BrowseForFolder(hwndDlg, GetDlgItem(hwndDlg, IDC_THEME_FOLDER_PATH));
+            return TRUE;
+        }
+        if (LOWORD(wParam) == IDC_THEME_FOLDER_PATH && HIWORD(wParam) == EN_CHANGE) {
+            SendMessageW(GetParent(hwndDlg), PSM_CHANGED, (WPARAM)hwndDlg, 0);
+            return TRUE;
+        }
         if (HIWORD(wParam) == BN_CLICKED || HIWORD(wParam) == CBN_SELCHANGE) {
             SendMessageW(GetParent(hwndDlg), PSM_CHANGED, (WPARAM)hwndDlg, 0);
         }
@@ -134,25 +142,28 @@ INT_PTR CALLBACK TaskbarSettingsDlgProc(HWND hwndDlg, UINT uMsg, WPARAM wParam, 
     case WM_NOTIFY: {
         LPNMHDR lpnm = (LPNMHDR)lParam;
         if (lpnm->code == PSN_APPLY) {
+            DWORD portable = 0;
+            HKEY hTemp;
+            if (RegOpenKeyExW(HKEY_CURRENT_USER, L"Software\\EliteSoftware\\Win32Explorer\\Advanced", 0, KEY_READ, &hTemp) == ERROR_SUCCESS) {
+                DWORD val = 0;
+                DWORD size = sizeof(DWORD);
+                if (RegQueryValueExW(hTemp, L"EnablePortableMirror", NULL, NULL, (LPBYTE)&val, &size) == ERROR_SUCCESS) {
+                    portable = val;
+                }
+                RegCloseKey(hTemp);
+            }
+
             HKEY hKey;
-            if (RegCreateKeyExW(HKEY_CURRENT_USER, L"Software\\EliteSoftware\\Win32Explorer\\Advanced", 0, NULL, REG_OPTION_NON_VOLATILE, KEY_READ | KEY_WRITE, NULL, &hKey, NULL) == ERROR_SUCCESS) {
+            HKEY hKeyRoot = (portable == 1) ? HKEY_LOCAL_MACHINE : HKEY_CURRENT_USER;
+            if (RegCreateKeyExW(hKeyRoot, L"Software\\EliteSoftware\\Win32Explorer\\Advanced", 0, NULL, REG_OPTION_NON_VOLATILE, KEY_READ | KEY_WRITE, NULL, &hKey, NULL) == ERROR_SUCCESS) {
                 DWORD mode = 0;
                 if (SendDlgItemMessageW(hwndDlg, IDC_MODE_REPLACE, BM_GETCHECK, 0, 0) == BST_CHECKED) mode = 1;
                 else if (SendDlgItemMessageW(hwndDlg, IDC_MODE_SECONDARY_ONLY, BM_GETCHECK, 0, 0) == BST_CHECKED) mode = 2;
                 RegSetValueExW(hKey, L"TaskbarMode", 0, REG_DWORD, (const BYTE*)&mode, sizeof(DWORD));
                 
-                DWORD widthMode = 0;
-                if (SendDlgItemMessageW(hwndDlg, IDC_WIDTH_FIXED, BM_GETCHECK, 0, 0) == BST_CHECKED) widthMode = 1;
-                else if (SendDlgItemMessageW(hwndDlg, IDC_WIDTH_ICONS, BM_GETCHECK, 0, 0) == BST_CHECKED) widthMode = 2;
-                RegSetValueExW(hKey, L"TaskbarButtonWidthMode", 0, REG_DWORD, (const BYTE*)&widthMode, sizeof(DWORD));
-                
-                DWORD fixedSize = SendDlgItemMessageW(hwndDlg, IDC_WIDTH_FIXED_SIZE, CB_GETCURSEL, 0, 0);
-                if (fixedSize != CB_ERR) {
-                    RegSetValueExW(hKey, L"TaskbarButtonFixedWidthSize", 0, REG_DWORD, (const BYTE*)&fixedSize, sizeof(DWORD));
-                }
-                
-                DWORD hoverPreview = (SendDlgItemMessageW(hwndDlg, IDC_HOVER_PREVIEW, BM_GETCHECK, 0, 0) == BST_CHECKED) ? 1 : 0;
-                RegSetValueExW(hKey, L"TaskbarHoverPreview", 0, REG_DWORD, (const BYTE*)&hoverPreview, sizeof(DWORD));
+                WCHAR szThemePath[MAX_PATH] = {0};
+                GetDlgItemTextW(hwndDlg, IDC_THEME_FOLDER_PATH, szThemePath, MAX_PATH);
+                RegSetValueExW(hKey, L"CustomThemePath", 0, REG_SZ, (const BYTE*)szThemePath, (DWORD)(wcslen(szThemePath) + 1) * sizeof(WCHAR));
                 
                 RegCloseKey(hKey);
             }
@@ -687,7 +698,7 @@ INT_PTR CALLBACK SecretDlgProc(HWND hwndDlg, UINT uMsg, WPARAM wParam, LPARAM lP
 void SelectOrbComboBox(HWND hCombo, DWORD id) {
     int count = SendMessageW(hCombo, CB_GETCOUNT, 0, 0);
     for (int i = 0; i < count; i++) {
-        if (SendMessageW(hCombo, CB_GETITEMDATA, i, 0) == id) { SendMessageW(hCombo, CB_SETCURSEL, i, 0); break; }
+        if ((DWORD)SendMessageW(hCombo, CB_GETITEMDATA, i, 0) == id) { SendMessageW(hCombo, CB_SETCURSEL, i, 0); break; }
     }
 }
 

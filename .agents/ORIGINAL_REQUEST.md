@@ -41,3 +41,9 @@ Add an option for "Portable Mirror" mode, which saves configuration to an XML fi
 - [ ] Win32Explorer can display files in Thumbnail Tiles mode and groups files by Type by default.
 - [ ] Appearance tab supports theme importing and the Dark Mode toggle remains disabled.
 - [ ] Portable Mirror mode writes XML to disk and mirrors settings to `HKLM`.
+
+## Follow-up — 2026-07-05T04:29:45Z
+
+CRITICAL REDIRECT:
+Abandon all work on `EliteSettings.ps1` immediately. The user has explicitly stated that Elite Settings should ONLY be the native C++ property sheet (`TaskbarProperties.cpp` / CPL) using their native Win32 controls. Stop upgrading the legacy PowerShell script.
+Please adjust your plans, notify the implementation swarm, and discontinue any further edits or upgrades to EliteSettings.ps1.

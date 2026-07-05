@@ -11,8 +11,8 @@ Data flows through registry keys located at `HKCU\Software\EliteSoftware\Win32Ex
 ## Milestones
 | # | Name | Scope | Dependencies | Status |
 |---|------|-------|-------------|--------|
-| 1 | R6: Portable Mirror Mode & R3: Settings Sync | Save config to XML file / HKLM, CPL repair, Replace Explorer toggles and fix stuck logic. | None | IN_PROGRESS |
-| 2 | R2: System Tray & R5: Custom Icon Theming | Add system tray icons and Quit option to Taskbar/Explorer. Custom Icon Theme Importer. | M1 | PLANNED |
+| 1 | R6: Portable Mirror Mode & R3: Settings Sync | Save config to XML file / HKLM, CPL repair, Replace Explorer toggles and fix stuck logic. | None | DONE |
+| 2 | R2: System Tray & R5: Custom Icon Theming | Add system tray icons and Quit option to Taskbar/Explorer. Custom Icon Theme Importer. | M1 | IN_PROGRESS |
 | 3 | R1: Deep Metadata & R4: View Modes & Grouping | Display extended metadata (Ratings/Authors/Dimensions) in details. Thumbnail Tiles and Group by Type. | M1 | PLANNED |
 
 ## Interface Contracts

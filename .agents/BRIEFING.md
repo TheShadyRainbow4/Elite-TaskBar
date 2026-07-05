@@ -13,11 +13,13 @@ Coordinate the EliteTaskbar suite feature implementations and run cron monitors 
 - No technical decisions — relay only
 - Victory Audit is MANDATORY before reporting completion
 - Never report completion without a VICTORY CONFIRMED verdict
+- Abandon all work/upgrades on legacy `EliteSettings.ps1` (native C++ property sheet & CPL only)
 
 ## User Context
 - **Last user request**: Implement 6 advanced UI and architectural features across C++ Win32Explorer, C++ EliteTaskbar, and C# EliteSettings.
 - **Pending clarifications**: [none]
 - **Delivered results**: [none]
+- **Directives received**: 2026-07-05T03:29:40Z - Abandon all work on `EliteSettings.ps1`. Settings must only be C++ property sheets (`TaskbarProperties.cpp` and CPL).
 
 ## Project Status
 - **Phase**: in progress

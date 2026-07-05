@@ -4,6 +4,8 @@
 
 #include "stdafx.h"
 #include "App.h"
+#include "EliteTaskbar/resource.h"
+#define WM_TRAYICON (WM_USER + 200)
 #include "Win32Explorer.h"
 #include "AsyncIconFetcher.h"
 #include "BrowserWindow.h"
@@ -80,9 +82,18 @@ App::App(const CommandLine::Settings *commandLineSettings) :
 	{
 		m_config.changeNotifyMode = ChangeNotifyMode::Filesystem;
 	}
+
+	m_eventWindow.windowMessageSignal.AddObserver(std::bind(&App::OnEventWindowMessage, this, std::placeholders::_1, std::placeholders::_2, std::placeholders::_3, std::placeholders::_4));
 }
 
-App::~App() = default;
+App::~App()
+{
+	NOTIFYICONDATAW nid = { 0 };
+	nid.cbSize = sizeof(NOTIFYICONDATAW);
+	nid.hWnd = m_eventWindow.GetHWND();
+	nid.uID = 2;
+	Shell_NotifyIconW(NIM_DELETE, &nid);
+}
 
 void App::OnBrowserRemoved()
 {
@@ -140,6 +151,16 @@ void App::SetUpSession()
 	SetUpLanguageResourceInstance();
 
 	RestoreSession(windows);
+
+	NOTIFYICONDATAW nid = { 0 };
+	nid.cbSize = sizeof(NOTIFYICONDATAW);
+	nid.hWnd = m_eventWindow.GetHWND();
+	nid.uID = 2;
+	nid.uFlags = NIF_ICON | NIF_MESSAGE | NIF_TIP;
+	nid.uCallbackMessage = WM_TRAYICON;
+	nid.hIcon = LoadIconW(GetModuleHandle(nullptr), MAKEINTRESOURCEW(IDI_MAIN_PROGRAM));
+	wcscpy_s(nid.szTip, L"Win32Explorer - Because modern WinUI is just too slow for your heavy lifting.");
+	Shell_NotifyIconW(NIM_ADD, &nid);
 }
 
 void App::LoadSettings(std::vector<WindowStorageData> &windows)
@@ -616,6 +637,37 @@ void App::SessionEnding()
 
 	SaveSettings();
 }
+
+void App::OnEventWindowMessage(HWND hwnd, UINT msg, WPARAM wParam, LPARAM lParam)
+{
+	UNREFERENCED_PARAMETER(wParam);
+	if (msg == WM_TRAYICON)
+	{
+		if (lParam == WM_RBUTTONUP)
+		{
+			POINT pt;
+			GetCursorPos(&pt);
+			HMENU hMenu = CreatePopupMenu();
+			if (hMenu)
+			{
+				AppendMenuW(hMenu, MF_STRING, 1001, L"Open New Window");
+				AppendMenuW(hMenu, MF_STRING, 1002, L"Quit Win32Explorer");
+				SetForegroundWindow(hwnd);
+				int cmd = TrackPopupMenu(hMenu, TPM_LEFTALIGN | TPM_BOTTOMALIGN | TPM_RIGHTBUTTON | TPM_RETURNCMD, pt.x, pt.y, 0, hwnd, NULL);
+				if (cmd == 1001)
+				{
+					Win32Explorer::Create(this);
+				}
+				else if (cmd == 1002)
+				{
+					TryExit();
+				}
+				DestroyMenu(hMenu);
+			}
+		}
+	}
+}
+
 
 
 

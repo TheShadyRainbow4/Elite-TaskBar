@@ -42,4 +42,18 @@ Perform a forensic integrity audit on Milestone 1 implementation to check for by
 - Executed the `verify_milestone1.ps1` empirical verification script and verified it passes successfully.
 
 ## Artifact Index
-- C
+- C:\Users\Administrator\Desktop\Elite-TaskBar\.agents\auditor_m1\handoff.md — Forensic Audit Handoff Report
+
+## Attack Surface
+- **Hypotheses tested**:
+  - "Are there hardcoded mock values bypasses in taskbar logic?" -> Result: PASS (no hardcoded test bypasses or facades found).
+  - "Does Portable Mirror Mode dual-save to config.xml and route to HKLM correctly?" -> Result: PASS (Save-Settings writes HKLM registry entries and config.xml elements correctly, which is read in C++ and PS1 settings).
+  - "Does CPL extract the embedded resource correctly?" -> Result: PASS (extracted byte array MZ header validated).
+  - "Does reversing replacement to None clean registry?" -> Result: PASS (keys deleted, values reset).
+- **Vulnerabilities found**: none.
+- **Untested angles**: HKLM write behavior under non-elevated Administrator privileges (mitigated by try-catch blocks in Save-Settings).
+
+## Loaded Skills
+- **Source**: none
+- **Local copy**: none
+- **Core methodology**: none

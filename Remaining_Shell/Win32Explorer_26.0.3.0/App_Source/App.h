@@ -1,4 +1,4 @@
-﻿// Copyright (C) Win32Explorer Project
+// Copyright (C) Win32Explorer Project
 // SPDX-License-Identifier: GPL-3.0-only
 // See LICENSE in the top level directory
 
@@ -98,6 +98,7 @@ private:
 	void SetUpSession();
 	void LoadSettings(std::vector<WindowStorageData> &windows);
 	void SaveSettings();
+	void OnEventWindowMessage(HWND hwnd, UINT msg, WPARAM wParam, LPARAM lParam);
 	void SetUpLanguageResourceInstance();
 	void RestoreSession(const std::vector<WindowStorageData> &windows);
 	void RestorePreviousWindows(const std::vector<WindowStorageData> &windows);

@@ -27,7 +27,7 @@ $ddfContent = @(
 
 # Get all files excluding Backups and .git
 $filesToBackup = Get-ChildItem -Path $ScriptDir -Recurse -File | Where-Object {
-    $_.FullName -notmatch "\\Backups\\" -and $_.FullName -notmatch "\\\.git\\"
+    $_.FullName -notmatch "\\Backups\\" -and $_.FullName -notmatch "\\\.git\\" -and $_.FullName -notmatch "\\vcpkg" -and $_.FullName -notmatch "\\BuildOutput" -and $_.FullName -notmatch "\\\.vs\\" -and $_.Extension -notmatch "^\.(obj|pdb|ilk|tlog|idb|iobj|ipch|sdf|res)$"
 }
 
 foreach ($file in $filesToBackup) {

@@ -134,10 +134,27 @@ if (-not $failed) {
     & "$ScriptDir\build_sign.ps1" -BuildDir $BuildDir -BuildDirx86 $BuildDirx86
     
     Write-Host "Building Win32Explorer..." -ForegroundColor Cyan
+    Write-Host "Syncing Win32Explorer source changes from Remaining_Shell..." -ForegroundColor Cyan
     $origDir = Get-Location
+    # Sync files before build
+    & robocopy "$ScriptDir\Remaining_Shell\Win32Explorer_26.0.3.0" "$ScriptDir\Win32Explorer_26.0.3.0" /S /XD .git .vs vcpkg vcpkg_installed x64 Debug Release /XF *.obj *.pdb *.log *.txt *.lib *.recipe *.tlog *.iobj *.exp *.ipch *.ilk *.res *.bak *.old | Out-Null
+    if ($LASTEXITCODE -lt 8) {
+        $global:LASTEXITCODE = 0
+    }
+    
     Set-Location "$ScriptDir\Win32Explorer_26.0.3.0"
     & ".\build_Win32Explorer.ps1" -Platform "x64"
+    if ($LASTEXITCODE -ne 0) {
+        Write-Error "Win32Explorer x64 build failed!"
+        Set-Location $origDir
+        exit 1
+    }
     & ".\build_Win32Explorer.ps1" -Platform "Win32"
+    if ($LASTEXITCODE -ne 0) {
+        Write-Error "Win32Explorer Win32 build failed!"
+        Set-Location $origDir
+        exit 1
+    }
     Set-Location $origDir
     
     Write-Host "Auto-committing submodule Win32Explorer_26.0.3.0..." -ForegroundColor Cyan

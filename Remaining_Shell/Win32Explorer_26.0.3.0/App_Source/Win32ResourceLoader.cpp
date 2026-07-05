@@ -1,4 +1,4 @@
-﻿// Copyright (C) Win32Explorer Project
+// Copyright (C) Win32Explorer Project
 // SPDX-License-Identifier: GPL-3.0-only
 // See LICENSE in the top level directory
 
@@ -11,6 +11,11 @@
 #include "../Shared_Libraries/Helper.h"
 #include "../Shared_Libraries/ImageHelper.h"
 #include "../Shared_Libraries/ResourceHelper.h"
+#include <filesystem>
+#include <fstream>
+#include <string>
+#include <vector>
+#include <psapi.h>
 
 Win32ResourceLoader::Win32ResourceLoader(HINSTANCE resourceInstance, IconSet iconSet,
 	const DarkModeManager *darkModeManager, ThemeManager *themeManager) :
@@ -108,12 +113,170 @@ std::unique_ptr<Gdiplus::Bitmap> Win32ResourceLoader::LoadGdiplusBitmapFromPNGAn
 	return invertedBitmap;
 }
 
+static std::wstring GetIconName(Icon icon) {
+    switch (icon) {
+        case Icon::AddBookmark: return L"AddBookmark";
+        case Icon::ArrowRight: return L"ArrowRight";
+        case Icon::Back: return L"Back";
+        case Icon::Bookmarks: return L"Bookmarks";
+        case Icon::CloseButton: return L"CloseButton";
+        case Icon::CloseTab: return L"CloseTab";
+        case Icon::CommandLine: return L"CommandLine";
+        case Icon::CommandLineAdmin: return L"CommandLineAdmin";
+        case Icon::Copy: return L"Copy";
+        case Icon::CopyTo: return L"CopyTo";
+        case Icon::CustomizeColors: return L"CustomizeColors";
+        case Icon::Cut: return L"Cut";
+        case Icon::Delete: return L"Delete";
+        case Icon::DeletePermanently: return L"DeletePermanently";
+        case Icon::Filter: return L"Filter";
+        case Icon::Folder: return L"Folder";
+        case Icon::FolderTree: return L"FolderTree";
+        case Icon::Forward: return L"Forward";
+        case Icon::Help: return L"Help";
+        case Icon::Lock: return L"Lock";
+        case Icon::MassRename: return L"MassRename";
+        case Icon::MergeFiles: return L"MergeFiles";
+        case Icon::MoveTo: return L"MoveTo";
+        case Icon::NewFolder: return L"NewFolder";
+        case Icon::NewTab: return L"NewTab";
+        case Icon::Options: return L"Options";
+        case Icon::Paste: return L"Paste";
+        case Icon::PasteShortcut: return L"PasteShortcut";
+        case Icon::PressedCloseButton: return L"PressedCloseButton";
+        case Icon::Properties: return L"Properties";
+        case Icon::Refresh: return L"Refresh";
+        case Icon::Rename: return L"Rename";
+        case Icon::Search: return L"Search";
+        case Icon::SelectColumns: return L"SelectColumns";
+        case Icon::SplitFiles: return L"SplitFiles";
+        case Icon::Undo: return L"Undo";
+        case Icon::Up: return L"Up";
+        case Icon::Views: return L"Views";
+        default: return L"Unknown";
+    }
+}
+
+static std::wstring GetCustomThemePath()
+{
+    wchar_t szPath[MAX_PATH];
+    if (GetModuleFileNameW(NULL, szPath, MAX_PATH))
+    {
+        std::filesystem::path configPath(szPath);
+        configPath.replace_filename(L"config.xml");
+        if (std::filesystem::exists(configPath))
+        {
+            std::ifstream file(configPath);
+            if (file.is_open())
+            {
+                std::string line;
+                while (std::getline(file, line))
+                {
+                    size_t pos = line.find("name=\"CustomThemePath\"");
+                    if (pos == std::string::npos)
+                    {
+                        pos = line.find("name='CustomThemePath'");
+                    }
+                    if (pos != std::string::npos)
+                    {
+                        size_t startPos = line.find('>', pos);
+                        if (startPos != std::string::npos)
+                        {
+                            size_t endPos = line.find('<', startPos);
+                            if (endPos != std::string::npos && endPos > startPos + 1)
+                            {
+                                std::string pathUtf8 = line.substr(startPos + 1, endPos - startPos - 1);
+                                int len = MultiByteToWideChar(CP_UTF8, 0, pathUtf8.c_str(), -1, NULL, 0);
+                                if (len > 0)
+                                {
+                                    std::vector<wchar_t> wpath(len);
+                                    MultiByteToWideChar(CP_UTF8, 0, pathUtf8.c_str(), -1, &wpath[0], len);
+                                    return std::wstring(&wpath[0]);
+                                }
+                            }
+                        }
+                    }
+                }
+            }
+        }
+    }
+
+    HKEY hKey;
+    if (RegOpenKeyExW(HKEY_LOCAL_MACHINE, L"Software\\EliteSoftware\\Win32Explorer\\Advanced", 0, KEY_READ, &hKey) == ERROR_SUCCESS)
+    {
+        wchar_t szValue[MAX_PATH] = {0};
+        DWORD cbData = sizeof(szValue);
+        if (RegQueryValueExW(hKey, L"CustomThemePath", NULL, NULL, (LPBYTE)szValue, &cbData) == ERROR_SUCCESS)
+        {
+            RegCloseKey(hKey);
+            return std::wstring(szValue);
+        }
+        RegCloseKey(hKey);
+    }
+    if (RegOpenKeyExW(HKEY_CURRENT_USER, L"Software\\EliteSoftware\\Win32Explorer\\Advanced", 0, KEY_READ, &hKey) == ERROR_SUCCESS)
+    {
+        wchar_t szValue[MAX_PATH] = {0};
+        DWORD cbData = sizeof(szValue);
+        if (RegQueryValueExW(hKey, L"CustomThemePath", NULL, NULL, (LPBYTE)szValue, &cbData) == ERROR_SUCCESS)
+        {
+            RegCloseKey(hKey);
+            return std::wstring(szValue);
+        }
+        RegCloseKey(hKey);
+    }
+
+    return L"";
+}
+
 // This function is based on the steps performed by
 // https://docs.microsoft.com/en-us/windows/win32/api/commctrl/nf-commctrl-loadiconmetric when
 // loading an icon (see the remarks section on that page for details).
 std::unique_ptr<Gdiplus::Bitmap> Win32ResourceLoader::LoadGdiplusBitmapFromPNGAndScale(Icon icon,
 	int iconWidth, int iconHeight) const
 {
+    std::wstring customThemePath = GetCustomThemePath();
+    if (!customThemePath.empty())
+    {
+        std::wstring iconName = GetIconName(icon);
+        std::filesystem::path customPngPath(customThemePath);
+        customPngPath /= iconName + L".png";
+        std::filesystem::path customIcoPath(customThemePath);
+        customIcoPath /= iconName + L".ico";
+
+        std::filesystem::path finalPath;
+        if (std::filesystem::exists(customPngPath))
+        {
+            finalPath = customPngPath;
+        }
+        else if (std::filesystem::exists(customIcoPath))
+        {
+            finalPath = customIcoPath;
+        }
+
+        if (!finalPath.empty())
+        {
+            auto bitmap = std::make_unique<Gdiplus::Bitmap>(finalPath.c_str());
+            if (bitmap && bitmap->GetLastStatus() == Gdiplus::Ok)
+            {
+                if (bitmap->GetWidth() == static_cast<UINT>(iconWidth) && bitmap->GetHeight() == static_cast<UINT>(iconHeight))
+                {
+                    return bitmap;
+                }
+
+                auto scaledBitmap = std::make_unique<Gdiplus::Bitmap>(iconWidth, iconHeight);
+                scaledBitmap->SetResolution(bitmap->GetHorizontalResolution(), bitmap->GetVerticalResolution());
+
+                Gdiplus::Graphics graphics(scaledBitmap.get());
+                float scalingFactorX = static_cast<float>(iconWidth) / static_cast<float>(bitmap->GetWidth());
+                float scalingFactorY = static_cast<float>(iconHeight) / static_cast<float>(bitmap->GetHeight());
+                graphics.ScaleTransform(scalingFactorX, scalingFactorY);
+                graphics.DrawImage(bitmap.get(), 0, 0);
+
+                return scaledBitmap;
+            }
+        }
+    }
+
 	const IconMapping *mapping = nullptr;
 
 	switch (m_iconSet)

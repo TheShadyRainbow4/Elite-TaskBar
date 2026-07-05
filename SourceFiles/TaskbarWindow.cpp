@@ -160,6 +160,7 @@ BOOL ShowLegacyClockExperience(HWND hWnd) {
 #define IDM_RESTART_SHELL           3011
 #define IDM_START_EXPLORER          3012
 #define IDM_TASKBAR_SETTINGS        3013
+#define WM_TRAYICON (WM_USER + 200)
 
 UINT g_uTaskbarCreatedMsg = 0;
 OrbState g_orbState = OrbState::Normal;
@@ -1187,8 +1188,28 @@ LRESULT CALLBACK WindowProc(HWND hwnd, UINT uMsg, WPARAM wParam, LPARAM lParam) 
     }
 
     switch (uMsg) {
+    case WM_TRAYICON: {
+        if (lParam == WM_RBUTTONUP) {
+            POINT pt;
+            GetCursorPos(&pt);
+            HMENU hMenu = CreatePopupMenu();
+            if (hMenu) {
+                AppendMenuW(hMenu, MF_STRING, IDM_TASKBAR_SETTINGS, L"Elite Taskbar Settings");
+                AppendMenuW(hMenu, MF_STRING, IDM_EXIT_ELITETASKBAR, L"Quit EliteTaskbar");
+                SetForegroundWindow(hwnd);
+                int cmd = TrackPopupMenu(hMenu, TPM_LEFTALIGN | TPM_BOTTOMALIGN | TPM_RIGHTBUTTON | TPM_RETURNCMD, pt.x, pt.y, 0, hwnd, NULL);
+                if (cmd != 0) {
+                    PostMessageW(hwnd, WM_COMMAND, MAKEWPARAM(cmd, 0), 0);
+                }
+                DestroyMenu(hMenu);
+            }
+            return 0;
+        }
+        break;
+    }
     case WM_CREATE: {
         SetTimer(hwnd, 9999, 100, NULL);
+
         SetTimer(hwnd, 9998, 500, NULL);
         DWM_BLURBEHIND bb = {0};
         bb.dwFlags = DWM_BB_ENABLE;
@@ -1951,6 +1972,18 @@ bool TaskbarWindow::Initialize(HINSTANCE hInstance) {
         PostMessageW(HWND_BROADCAST, g_uTaskbarCreatedMsg, 0, 0);
     }
 
+    if (!g_Taskbars.empty()) {
+        NOTIFYICONDATAW nid = {0};
+        nid.cbSize = sizeof(NOTIFYICONDATAW);
+        nid.hWnd = g_Taskbars[0]->hTaskbar;
+        nid.uID = 1;
+        nid.uFlags = NIF_ICON | NIF_MESSAGE | NIF_TIP;
+        nid.uCallbackMessage = WM_TRAYICON;
+        nid.hIcon = LoadIconW(hInstance, MAKEINTRESOURCEW(IDI_MAIN_PROGRAM));
+        wcscpy_s(nid.szTip, L"EliteTaskbar - Keeping your windows in line since Windows Vista went out of fashion.");
+        Shell_NotifyIconW(NIM_ADD, &nid);
+    }
+
     return true;
 }
 
@@ -1963,6 +1996,14 @@ void TaskbarWindow::RunMessageLoop() {
 }
 
 void TaskbarWindow::Cleanup() {
+    if (!g_Taskbars.empty()) {
+        NOTIFYICONDATAW nid = {0};
+        nid.cbSize = sizeof(NOTIFYICONDATAW);
+        nid.hWnd = g_Taskbars[0]->hTaskbar;
+        nid.uID = 1;
+        Shell_NotifyIconW(NIM_DELETE, &nid);
+    }
+
     for (auto* inst : g_Taskbars) {
         APPBARDATA abd = {0};
         abd.cbSize = sizeof(APPBARDATA);

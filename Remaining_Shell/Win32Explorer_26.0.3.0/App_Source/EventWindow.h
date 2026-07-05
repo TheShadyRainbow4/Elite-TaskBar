@@ -1,4 +1,4 @@
-﻿// Copyright (C) Win32Explorer Project
+// Copyright (C) Win32Explorer Project
 // SPDX-License-Identifier: GPL-3.0-only
 // See LICENSE in the top level directory
 
@@ -20,6 +20,8 @@ public:
 	// Signals
 	SignalWrapper<EventWindow, void(HWND hwnd, UINT msg, WPARAM wParam, LPARAM lParam)>
 		windowMessageSignal;
+
+	HWND GetHWND() const { return m_hwnd.get(); }
 
 private:
 	static constexpr wchar_t CLASS_NAME[] = L"Win32ExplorerEventWindowClass";
