@@ -20,7 +20,7 @@ Implement three feedback fixes (Tray Item Limit, Missing Icons scraping fallback
 
 ## Current Parent
 - Conversation ID: 9d3a25c6-79e6-4bc0-8e9d-1dc6ca522bef
-- Updated: 2026-07-05T16:43:09-07:00
+- Updated: 2026-07-05T16:50:50-07:00
 
 ## Task Summary
 - **What to build**: 
@@ -32,20 +32,26 @@ Implement three feedback fixes (Tray Item Limit, Missing Icons scraping fallback
 - **Code layout**: C:\Users\Administrator\Desktop\Elite-TaskBar\PROJECT.md
 
 ## Key Decisions Made
-- [TBD]
+- Used `MAKEINTRESOURCEW(32512)` as a direct fallback icon to prevent compilation errors under mismatched UNICODE character set compilation defaults.
+- Used `PROCESS_QUERY_LIMITED_INFORMATION` with a fallback to `PROCESS_QUERY_INFORMATION | PROCESS_VM_READ` to query process image paths, maximizing compatibility and permission limits.
 
 ## Artifact Index
 - C:\Users\Administrator\Desktop\Elite-TaskBar\.agents\worker_m5_re\handoff.md — Handoff report
 
 ## Change Tracker
-- **Files modified**: [TBD]
-- **Build status**: [TBD]
-- **Pending issues**: [TBD]
+- **Files modified**:
+  - `SourceFiles/TaskbarWindow.cpp` — Tray limit updates, subclass theme stripping and background erase painting.
+  - `SourceFiles/TrayIconScraper.cpp` — Process path queries and file icon fallback extraction.
+  - `CHANGELOG.md` — Appended entries detailing the tray fixes.
+  - `README.md` — Documented the new additions in features lists.
+  - `Documentation/BuildGuide-FeatureRequirement_CheckList.md` — Marked Checklist entries completed.
+- **Build status**: Pass
+- **Pending issues**: None
 
 ## Quality Status
-- **Build/test result**: [TBD]
-- **Lint status**: [TBD]
-- **Tests added/modified**: [TBD]
+- **Build/test result**: Pass
+- **Lint status**: 0 violations
+- **Tests added/modified**: Verified visually and via `build.ps1` signing pipeline.
 
 ## Loaded Skills
 - C:\Users\Administrator\.gemini\config\skills\accidental-data-loss-prevention\SKILL.md — Prevent accidental data loss
