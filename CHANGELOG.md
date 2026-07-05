@@ -20,6 +20,7 @@ All notable changes to this project will be documented in this file.
 - **Features Documentation**: Added a comprehensive collapsible features list to `README.md` and instituted a new rule in `GEMINI.md` requiring all new features to be appended to it.
 
 ### Fixed
+- **Empirical Test View Mode & Button Click Simulation**: Patched `run_empirical_tests.ps1` to configure `EnableNativeViewMode = 0` in all test cases, ensuring that the custom view mode is active to successfully verify `SmallIconTiles` (12). Also updated the Options dialog checkbox and OK button interactions to use standard `BM_CLICK` (0x00F5) on control handles, avoiding window messaging routing failures and properly registering settings changes.
 - **Win32Explorer build command lock bypass**: Restored the `/t:Win32Explorer` target argument in `build_Win32Explorer.ps1` to build only the main file manager binary, bypassing the broken template compilation errors in the testing suite.
 - **Robust Artifact Copying File Lock Bypass**: Integrated automatic target file renaming (`*_old_random.*`) in `build.ps1` before copy operations to ensure running/locked stubs and binaries are successfully replaced on the fly.
 - **Win32Explorer Build Deadlock**: Changed `build_Win32Explorer.ps1` to use a separate lock file (`elite_win32explorer_build.lock`) instead of sharing `elite_taskbar_build.lock` with its parent `build.ps1` script, eliminating the deadlock during multi-process parent-child compilation.
