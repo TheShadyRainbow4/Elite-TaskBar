@@ -17,6 +17,12 @@
 static HWND s_hProgman = NULL;
 static HWND s_hNativeProgman = NULL;
 static HWND s_hNativeWorkerW = NULL;
+static Gdiplus::Bitmap* s_pCachedWallpaper = nullptr;
+static std::wstring s_cachedWallpaperPath = L"";
+static int s_cachedStyle = -1;
+static bool s_cachedTile = false;
+static bool s_cachedDrawWallpaper = true;
+
 
 LRESULT CALLBACK ProgmanWndProc(HWND hwnd, UINT uMsg, WPARAM wParam, LPARAM lParam);
 LRESULT CALLBACK DefViewWndProc(HWND hwnd, UINT uMsg, WPARAM wParam, LPARAM lParam);
@@ -104,6 +110,15 @@ namespace DesktopWindow {
     void Cleanup() {
         Logger::Log(L"DesktopWindow::Cleanup starting.");
         
+        if (s_pCachedWallpaper) {
+            delete s_pCachedWallpaper;
+            s_pCachedWallpaper = nullptr;
+        }
+        s_cachedWallpaperPath.clear();
+        s_cachedStyle = -1;
+        s_cachedTile = false;
+        s_cachedDrawWallpaper = true;
+
         if (s_hProgman) {
             DestroyWindow(s_hProgman);
             s_hProgman = NULL;
@@ -414,39 +429,59 @@ void DrawWallpaper(HDC hdc, int scrW, int scrH) {
         RegQueryValueExW(hKey, L"DesktopWallpaperEnabled", NULL, NULL, (LPBYTE)&drawWallpaper, &cbData);
         RegCloseKey(hKey);
     }
-    
-    if (!drawWallpaper) {
-        HBRUSH hBrush = CreateSolidBrush(GetSysColor(COLOR_BACKGROUND));
-        RECT rc = { 0, 0, scrW, scrH };
-        FillRect(hdc, &rc, hBrush);
-        DeleteObject(hBrush);
-        return;
-    }
 
     std::wstring wallpaperPath = L"";
     int style = 10; // default Fill
     bool tile = false;
 
-    if (RegOpenKeyExW(HKEY_CURRENT_USER, L"Control Panel\\Desktop", 0, KEY_READ, &hKey) == ERROR_SUCCESS) {
-        wchar_t szBuffer[MAX_PATH] = { 0 };
-        DWORD dwSize = sizeof(szBuffer);
-        if (RegQueryValueExW(hKey, L"Wallpaper", NULL, NULL, (LPBYTE)szBuffer, &dwSize) == ERROR_SUCCESS) {
-            wallpaperPath = szBuffer;
+    if (drawWallpaper) {
+        if (RegOpenKeyExW(HKEY_CURRENT_USER, L"Control Panel\\Desktop", 0, KEY_READ, &hKey) == ERROR_SUCCESS) {
+            wchar_t szBuffer[MAX_PATH] = { 0 };
+            DWORD dwSize = sizeof(szBuffer);
+            if (RegQueryValueExW(hKey, L"Wallpaper", NULL, NULL, (LPBYTE)szBuffer, &dwSize) == ERROR_SUCCESS) {
+                wallpaperPath = szBuffer;
+            }
+            
+            dwSize = sizeof(szBuffer);
+            if (RegQueryValueExW(hKey, L"WallpaperStyle", NULL, NULL, (LPBYTE)szBuffer, &dwSize) == ERROR_SUCCESS) {
+                style = _wtoi(szBuffer);
+            }
+            
+            dwSize = sizeof(szBuffer);
+            if (RegQueryValueExW(hKey, L"TileWallpaper", NULL, NULL, (LPBYTE)szBuffer, &dwSize) == ERROR_SUCCESS) {
+                tile = (_wtoi(szBuffer) == 1);
+            }
+            RegCloseKey(hKey);
         }
-        
-        dwSize = sizeof(szBuffer);
-        if (RegQueryValueExW(hKey, L"WallpaperStyle", NULL, NULL, (LPBYTE)szBuffer, &dwSize) == ERROR_SUCCESS) {
-            style = _wtoi(szBuffer);
-        }
-        
-        dwSize = sizeof(szBuffer);
-        if (RegQueryValueExW(hKey, L"TileWallpaper", NULL, NULL, (LPBYTE)szBuffer, &dwSize) == ERROR_SUCCESS) {
-            tile = (_wtoi(szBuffer) == 1);
-        }
-        RegCloseKey(hKey);
     }
 
-    if (wallpaperPath.empty() || !PathFileExistsW(wallpaperPath.c_str())) {
+    // Determine if settings have changed
+    bool settingsChanged = (drawWallpaper != (s_cachedDrawWallpaper ? 1 : 0)) ||
+                            (wallpaperPath != s_cachedWallpaperPath) ||
+                            (style != s_cachedStyle) ||
+                            (tile != s_cachedTile);
+
+    if (settingsChanged || !s_pCachedWallpaper) {
+        if (s_pCachedWallpaper) {
+            delete s_pCachedWallpaper;
+            s_pCachedWallpaper = nullptr;
+        }
+
+        s_cachedDrawWallpaper = (drawWallpaper == 1);
+        s_cachedWallpaperPath = wallpaperPath;
+        s_cachedStyle = style;
+        s_cachedTile = tile;
+
+        if (s_cachedDrawWallpaper && !s_cachedWallpaperPath.empty() && PathFileExistsW(s_cachedWallpaperPath.c_str())) {
+            s_pCachedWallpaper = new Gdiplus::Bitmap(s_cachedWallpaperPath.c_str());
+            if (s_pCachedWallpaper->GetLastStatus() != Gdiplus::Ok) {
+                delete s_pCachedWallpaper;
+                s_pCachedWallpaper = nullptr;
+            }
+        }
+    }
+
+    if (!s_cachedDrawWallpaper || !s_pCachedWallpaper) {
         HBRUSH hBrush = CreateSolidBrush(GetSysColor(COLOR_BACKGROUND));
         RECT rc = { 0, 0, scrW, scrH };
         FillRect(hdc, &rc, hBrush);
@@ -454,24 +489,15 @@ void DrawWallpaper(HDC hdc, int scrW, int scrH) {
         return;
     }
 
-    Gdiplus::Bitmap bitmap(wallpaperPath.c_str());
-    if (bitmap.GetLastStatus() != Gdiplus::Ok) {
-        HBRUSH hBrush = CreateSolidBrush(GetSysColor(COLOR_BACKGROUND));
-        RECT rc = { 0, 0, scrW, scrH };
-        FillRect(hdc, &rc, hBrush);
-        DeleteObject(hBrush);
-        return;
-    }
-
-    int imgW = bitmap.GetWidth();
-    int imgH = bitmap.GetHeight();
+    int imgW = s_pCachedWallpaper->GetWidth();
+    int imgH = s_pCachedWallpaper->GetHeight();
 
     Gdiplus::Graphics graphics(hdc);
     graphics.SetInterpolationMode(Gdiplus::InterpolationModeHighQualityBicubic);
     graphics.SetPixelOffsetMode(Gdiplus::PixelOffsetModeHighQuality);
 
-    if (tile) {
-        Gdiplus::TextureBrush brush(&bitmap);
+    if (s_cachedTile) {
+        Gdiplus::TextureBrush brush(s_pCachedWallpaper);
         brush.SetWrapMode(Gdiplus::WrapModeTile);
         graphics.FillRectangle(&brush, 0, 0, scrW, scrH);
     } else {
@@ -481,7 +507,7 @@ void DrawWallpaper(HDC hdc, int scrW, int scrH) {
         double imgAspect = (double)imgW / imgH;
         double scrAspect = (double)scrW / scrH;
 
-        switch (style) {
+        switch (s_cachedStyle) {
             case 0: // Center
                 if (imgW <= scrW) {
                     destX = (scrW - imgW) / 2;
@@ -549,7 +575,7 @@ void DrawWallpaper(HDC hdc, int scrW, int scrH) {
                 break;
         }
 
-        graphics.DrawImage(&bitmap, 
+        graphics.DrawImage(s_pCachedWallpaper, 
             Gdiplus::Rect(destX, destY, destW, destH),
             srcX, srcY, srcW, srcH, 
             Gdiplus::UnitPixel);

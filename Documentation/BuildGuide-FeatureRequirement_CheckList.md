@@ -328,11 +328,11 @@
 # XI. DESKTOP WINDOW ROUTING & ICON GRID (PROGMAN)
 ---
 
-1. Desktop Window Registration: Register and spawn a borderless, bottom-Z-order window using the class name "Progman".
-2. Wallpaper Rendering: Intercept WM_ERASEBKGND or WM_PAINT on the Progman HWND. Read the wallpaper path from HKCU\Control Panel\Desktop\Wallpaper and use SystemParametersInfo(SPI_GETDESKWALLPAPER) to render the image using GDI BitBlt or StretchBlt.
-3. Icon Grid Initialization: Create a child window of Progman using the "SHELLDLL_DefView" class, and within that, initialize a "SysListView32" common control.
-4. Directory Binding: Populate the SysListView32 by enumerating the IShellFolder interface for CSIDL_DESKTOPDIRECTORY and CSIDL_COMMON_DESKTOPDIRECTORY.
-5. File System Watcher: Implement SHChangeNotifyRegister to catch file creations/deletions on the desktop and automatically refresh the SysListView32 grid.
+1. Desktop Window Registration: Register and spawn a borderless, bottom-Z-order window using the class name "Progman". **[COMPLETED]**
+2. Wallpaper Rendering: Intercept WM_ERASEBKGND or WM_PAINT on the Progman HWND. Read the wallpaper path from HKCU\Control Panel\Desktop\Wallpaper and use SystemParametersInfo(SPI_GETDESKWALLPAPER) to render the image using GDI BitBlt or StretchBlt. **[COMPLETED]**
+3. Icon Grid Initialization: Create a child window of Progman using the "SHELLDLL_DefView" class, and within that, initialize a "SysListView32" common control. **[COMPLETED]**
+4. Directory Binding: Populate the SysListView32 by enumerating the IShellFolder interface for CSIDL_DESKTOPDIRECTORY and CSIDL_COMMON_DESKTOPDIRECTORY. **[COMPLETED]**
+5. File System Watcher: Implement SHChangeNotifyRegister to catch file creations/deletions on the desktop and automatically refresh the SysListView32 grid. **[COMPLETED]**
 
 ---
 # XII. GLOBAL HOTKEYS & SHELL SERVICES

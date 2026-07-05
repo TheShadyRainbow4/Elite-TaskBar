@@ -40,6 +40,15 @@ This document serves as a high-level map and explanation for all files within th
     - Exposes `g_TrayTooltipsMap` and `GetScrapedTrayTooltip()` to fetch tooltip texts.
     - Re-populates and updates our taskbar system tray toolbar (`UpdateTrayToolbar`) with the scraped icons.
 
+## Desktop Replacement Component
+- **DesktopWindow.h / DesktopWindow.cpp**: Replaces the default Windows desktop shell (`Progman` and `WorkerW` / `SHELLDLL_DefView` / `SysListView32`).
+  - **Responsibilities**:
+    - Spawns a custom bottom-Z-order desktop window with the native class name `"Progman"`.
+    - Spawns a child window class `"SHELLDLL_DefView"`, containing a `"SysListView32"` control representing the desktop icon grid.
+    - Hides the native Windows desktop windows (`Progman` and `WorkerW` hosting the native shell view) to prevent duplicate icon lists and overlapping paint events.
+    - Intercepts background erase/paint messages to render the desktop wallpaper using GDI+. It caches the decoded wallpaper `Gdiplus::Bitmap` and automatically invalidates/reloads it when the user's wallpaper path, style, or tile configuration changes in the registry.
+    - Restores the native desktop windows to visible state upon cleanup to ensure seamless co-existence and system stability.
+
 ## Settings & Properties Dialogs
 - **EliteSettingsStub.cpp**: The source file for the `EliteSettings.exe` stub executable. It exists solely to call `ShellExecuteW` to launch `EliteTaskbar.exe /settings`, ensuring that launching the settings dialog from external sources correctly delegates to the main taskbar executable where the property sheet resources live.
 - **TaskbarProperties.h / TaskbarProperties.cpp**: Implements the **Custom Settings** tabbed property sheet.

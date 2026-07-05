@@ -72,6 +72,15 @@ The application is structured into discrete components, each managing a specific
 - **Purpose**: XML application manifest.
 - **Functionality**: Explicitly declares OS compatibility (Windows 7/8/10/11) and sets the process to `PerMonitorV2` DPI awareness. This prevents Windows from forcibly blurring or stretching the taskbar on high-resolution or multi-monitor setups.
 
+### 10. `DesktopWindow.cpp` & `DesktopWindow.h`
+- **Purpose**: Implements the Desktop Shell Replacement component, providing a custom desktop window (`Progman` / `SHELLDLL_DefView` / `SysListView32`) with icon grid layout and GDI+ wallpaper drawing.
+- **Functionality**:
+  - Hides native Windows desktop windows (`Progman` and `WorkerW`) to ensure clean co-existence without rendering collisions.
+  - Spawns a custom bottom-Z-order `Progman` window spanning the virtual screen dimensions.
+  - Spawns a child `SHELLDLL_DefView` window with a `SysListView32` control to render desktop icons.
+  - Uses `SHChangeNotifyRegister` to watch file system changes on the desktop folder and update the list view grid dynamically.
+  - Implements an optimized desktop wallpaper painter using GDI+. It queries registry wallpaper settings (path, style, tile) and caches the decoded `Gdiplus::Bitmap` to avoid expensive disk operations on every `WM_PAINT` or `WM_ERASEBKGND` message.
+
 ## ⚙️ How It Works (The Lifecycle)
 1. **Launch**: `build.ps1` compiles the code and launches `EliteTaskbar.exe`.
 2. **Boot**: `main.cpp` locks the instance mutex and initializes COM/GDI+/BufferedPaint.
