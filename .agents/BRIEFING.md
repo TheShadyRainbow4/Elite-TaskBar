@@ -18,6 +18,7 @@ Coordinate the EliteTaskbar UI fixes, multi-monitor display corrections, tray fu
 - Enforce strict build synchronization across the swarm; use targeted build scripts (e.g. build_settings.ps1) and prevent concurrent compilation.
 - Constraint: Automated shell restarts may be performed as needed for testing/deployment (temporary focus lock warning lifted).
 - Tray Constraints: Remove or drastically increase the hardcoded 4-item visible tray limit (especially for 2-row mode). Fix missing/blank tray icons by correcting the scraping fallbacks. Fix the rendering glitch where a white background bar shows above tray items.
+- Layout & Aesthetic Constraints: Restore the Aero/glossy hover state on toolbar items (do not strip visual styles via `SetWindowTheme(..., L"", L"")`). Fix toolbar heights/margins to fit cleanly. Vertically align active program items and the clock text.
 
 ## User Context
 - **Last user request**: UI fixes, multi-monitor corrections, tray enhancements, advanced shell integration, CPL Start Menu tab hover bug, cleanup of *old*.exe, custom desktop background settings CPL tab, slideshow mode, Win+R hooks, tray icon click behaviors, quick launch bar, and thumbnail tile view modes.
