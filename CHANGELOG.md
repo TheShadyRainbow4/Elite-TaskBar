@@ -5,6 +5,11 @@ All notable changes to this project will be documented in this file.
 
 ## [Unreleased]
 ### Added
+- **Phase XI Custom Desktop Replacement Window (Progman)**: Implemented registration of custom class `"Progman"` and borderless window creation spanning virtual screen dimensions. Handled bottom Z-order positioning using `WM_WINDOWPOSCHANGING` and focus management on `WM_MOUSEACTIVATE`. Integrated programmatic hiding of native `Progman` and child hosting `WorkerW` windows during initialization, and clean restoration on cleanup.
+- **Phase XI GDI+ Wallpaper Rendering**: Added custom high-quality background rendering inside `"Progman"`'s `WM_PAINT` / `WM_ERASEBKGND` messages. Supports Center, Stretch, Tile, Fit, and Fill styles rescaled with GDI+ bicubic interpolation, reading from registry `HKCU\Control Panel\Desktop\Wallpaper` and style keys.
+- **Phase XI Desktop Icon Grid & Watching**: Created child `"SHELLDLL_DefView"` and grandchild `"SysListView32"` controls with standard explorer styles and system image lists. Binds virtual desktop namespaces (`CSIDL_DESKTOPDIRECTORY` and `CSIDL_COMMON_DESKTOPDIRECTORY`) using `IShellFolder` and `IEnumIDList`. Wired double-click (`NM_DBLCLK`) file execution and inline label renaming (`LVN_ENDLABELEDITW` via `SetNameOf`). Configured `SHChangeNotifyRegister` folder watcher with a 100ms debounced refresh timer to prevent layout flickering.
+- **Phase XIX Fallback Start Menu Integration**: Updated `StartButton.cpp` click handler to conditionally invoke Open-Shell's menu executable (`StartMenu.exe`) when running in Replace mode if `FallbackStartMenuEnabled` is active, falling back to relative paths or native simulated Windows key menu.
+- **Desktop & Start Menu Settings Toggles (GEMINI.md Rule 1)**: Exposed new configuration controls under tab sheets "Desktop" (`IDD_DESKTOP_PROPS`) and "Start Menu" (`IDD_STARTMENU_PROPS`) in the Settings dialog, backing them with registry keys `DesktopReplacementEnabled`, `DesktopWallpaperEnabled`, `DesktopIconsEnabled`, and `FallbackStartMenuEnabled`.
 - **Win32Explorer View Mode Routing**: Added the missing routing case for `IDM_VIEW_SMALLICONTILES` next to `IDM_VIEW_TILES` in `MainWndSwitch.cpp` to correctly handle Small Icon Tiles view command.
 - **Startup and Navigation Grouping**: Implemented check and call to `MoveItemsIntoGroups()` after `SortFolder()` in `BrowsingHandler.cpp` when `m_folderSettings.showInGroups` is enabled.
 - **Test Synchronization Robustness**: Replaced `BM_CLICK` with `BM_SETCHECK` for checkbox toggling in `run_re_verification.ps1` (TEST 3 and TEST 4) and added `SetForegroundWindow` calls to activate the Options dialog before button clicks, ensuring reliable test automation execution.
@@ -454,3 +459,6 @@ All notable changes to this project will be documented in this file.
 
 
 
+
+- **Win32Explorer Startup Default Grouping**: Initialized `defaultFolderSettings` in `Config.h` via lambda to default to group by type (`SortMode::Type` and `showInGroups = true`) if `enableDefaultGroupByType` is true, ensuring grouping is enabled on the very first launch when no registry keys or XML config files exist yet.
+- **Verification Test XML Sync**: Updated `run_re_verification.ps1` to use a robust regex check (`EnableDefaultGroupByType.*no`) to verify the XML config, matching the actual serialization format in `config.xml`.

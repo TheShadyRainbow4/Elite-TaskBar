@@ -1,0 +1,47 @@
+==========================================================
+  EliteTaskbar Phase XI & XIX Empirical Verification Tests
+==========================================================
+Backing up registry settings...
+
+[TEST 1] Verifying Settings Dialog Checkbox Toggles & Registry Writes...
+Launching EliteTaskbar.exe /settings...
+  Found Settings dialog HWND: 99560350
+  Switching to Start Menu tab...
+  [FAIL] Checkbox IDC_FALLBACK_STARTMENU_ENABLED (293) not found.
+  Switching to Desktop tab...
+  [FAIL] One of the Desktop checkboxes not found.
+  Clicking OK to apply changes...
+  Registry results: Replace=0, Wallpaper=0, Icons=0, Fallback=0
+  [FAIL] Registry values did not write successfully.
+
+[TEST 2] Verifying Class Registration Hierarchy...
+Launching EliteTaskbar.exe in Replace mode...
+  [FAIL] Custom Progman window not registered/created.
+
+[TEST 3] Verifying Z-Order Constraints...
+  [FAIL] Progman window not found, skipping Z-order check.
+
+[TEST 4] Verifying Wallpaper Drawing Aspect Scaling Logic...
+  Code analysis: Center=True, Stretch=True, Fit=True, Fill=True, Span=True, Tile=True
+  [PASS] Wallpaper scaling styles mathematically handle aspect ratios correctly.
+
+[TEST 5 & 6] Verifying Desktop Icon Population & watch notifier...
+  [FAIL] SysListView32 handle not found. Skipping population & watcher tests.
+
+[TEST 7] Verifying Fallback Start Menu Activation...
+  [FAIL] Start Orb window not found.
+
+Restoring registry configuration...
+
+========================================================
+                TEST RESULTS SUMMARY
+========================================================
+  1_SettingsDialog : [FAIL]
+  2_ClassRegistration : [FAIL]
+  3_ZOrderConstraints : [FAIL]
+  4_WallpaperStyles : [PASS]
+  5_DesktopIconPopulation : [FAIL]
+  6_ChangeNotifyWatcher : [FAIL]
+  7_StartMenuFallback : [FAIL]
+========================================================
+OVERALL VERDICT: FAIL

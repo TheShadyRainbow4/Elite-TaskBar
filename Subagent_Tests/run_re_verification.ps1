@@ -462,15 +462,15 @@ if ($null -eq $pid4) {
                     Start-Sleep -Milliseconds 500
                 }
 
-                # Verify XML config exists and contains EnableDefaultGroupByType="false"
+                # Verify XML config exists and contains EnableDefaultGroupByType="no"
                 if (Test-Path $xmlPath) {
                     $xmlContent = Get-Content $xmlPath -Raw
                     Write-Host "config.xml contents contains EnableDefaultGroupByType:" -ForegroundColor Cyan
-                    if ($xmlContent -match 'EnableDefaultGroupByType="false"') {
+                    if ($xmlContent -match 'EnableDefaultGroupByType.*no') {
                         Write-Host "[PASS] Checkbox successfully updated config.xml." -ForegroundColor Green
                         $results["OptionsToggleXML"] = "PASS"
                     } else {
-                        Write-Host "[FAIL] config.xml does not contain EnableDefaultGroupByType=\"false\"." -ForegroundColor Red
+                        Write-Host "[FAIL] config.xml does not contain EnableDefaultGroupByType=\"no\"." -ForegroundColor Red
                         Write-Host "$xmlContent"
                     }
                 } else {

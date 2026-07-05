@@ -31,8 +31,9 @@ Elite-Taskbar is designed from the ground up to seamlessly blend into the Window
 
 * **Complete Taskbar Overhaul**: Aero Glass rendering, Topmost Z-order, per-monitor DPI scaling.
 * **Win32Explorer Integration**: Deep integration with the Win32Explorer file manager, capable of completely hijacking native folder browsing.
-* **Fallback Start Menu**: Integrated custom Start Menu using assimilated Open-Shell rendering for perfect compatibility.
-* **Desktop Rendering**: Native `Progman` replacement capable of rendering registry-configured wallpapers and launching a `SysListView32` desktop icon grid.
+* **Fallback Start Menu (Open-Shell Integration)**: Integrated custom Start Menu using assimilated Open-Shell (`StartMenu.exe`) invocation hooks on Start Button click.
+* **Desktop Replacement (Progman & SysListView32)**: Native `Progman` replacement window with subclassed `SHELLDLL_DefView` and `SysListView32` controls, drawing high-quality GDI+ wallpapers and populating desktop icons via `IShellFolder` Namespace binding.
+
 
 </details>
 
@@ -77,7 +78,8 @@ Elite-Taskbar is designed from the ground up to seamlessly blend into the Window
 * **High-DPI Text Blurriness Fix (R7)**: Font crispness is preserved across mismatched high-DPI monitor configurations.
 * **Settings Import/Export**: Backup and restore all shell configurations, native settings, and Elite-Taskbar behaviors directly into a single `.reg` file.
 * **Aggressive Restart**: Immediate and full application restart upon applying settings to prevent hidden UI glitches or the "start orb top-left" bug.
-* **Desktop Rendering (Phase XI)**: Rendering of `Progman` desktop window with `SysListView32` to hijack the native desktop.
+* **Desktop Replacement (Phase XI)**: Native `Progman` replacement window with subclassed `SHELLDLL_DefView` and `SysListView32` icon grid, supporting double-click file execution, inline renaming, and folder watching via `SHChangeNotifyRegister` with a 100ms debounce timer.
+* **Fallback Start Menu (Phase XIX)**: Automatic Open-Shell integration that launches the Open-Shell Start Menu (`StartMenu.exe`) from standard, relative, or WinPE directories when clicking the Start button.
 * **About Dialog Layout Spacing Optimization**: Re-engineered dialog layouts to eliminate dead space, bringing collapsed height to 110 DUs and expanded to 195 DUs with dynamic button relocation.
 * **Property Sheet Sarcastic Tooltips**: Injected custom subclassing logic to dynamically set witty and sarcastic tooltips on standard Property Sheet buttons (Okay, Cancel, Apply).
 * **Settings Apply DLL Module Path Resolution**: Patched the folder fallback logic inside the DLL to use `g_hInstance` instead of `NULL` to avoid launching from the System32 directory.

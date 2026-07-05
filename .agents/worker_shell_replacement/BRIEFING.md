@@ -28,20 +28,37 @@ Implement Phase XI (Desktop Window, GDI wallpaper rendering, and SysListView32 d
 - **Code layout**: SourceFiles directory
 
 ## Key Decisions Made
-- [TBD]
+- Implemented class registration for custom `"Progman"` and `"SHELLDLL_DefView"` windows to achieve native-replication desktop tree architecture.
+- Programmatically hid native Explorer desktop windows (Progman and WorkerW hosting SHELLDLL_DefView) on boot and cleanly restored them on taskbar cleanup.
+- Wrote custom wallpaper rendering routine using GDI+ supporting Center, Stretch, Tile, Fit, and Fill styles rescaled with halftone scaling quality.
+- Bound grandchild `"SysListView32"` listview control to desktop shell folder (`IShellFolder`) utilizing system image lists for desktop icon extraction.
+- Handled double-click folder execution via `ShellExecuteExW` and inline renaming via `IShellFolder::SetNameOf`.
+- Used `SHChangeNotifyRegister` with a 100ms debouncing timer to refresh desktop grid items smoothly without flickering.
+- Integrated Open-Shell launcher hook inside `StartButton.cpp` click handler to fallback to `StartMenu.exe` in Replace mode when `FallbackStartMenuEnabled` is toggled.
+- Backed all new options with settings checkboxes under property sheets sheets tabbed in "Desktop" and "Start Menu" configurations.
 
 ## Artifact Index
-- [TBD]
+- SourceFiles/DesktopWindow.h — Header file for custom desktop replacement.
+- SourceFiles/DesktopWindow.cpp — Core implementation of custom Progman window, wallpaper drawing, listview icon grid, and folder watcher.
 
 ## Change Tracker
-- **Files modified**: None
-- **Build status**: Untested
+- **Files modified**:
+  - `SourceFiles/resource.h` (Added checkbox control ID macros)
+  - `SourceFiles/resources.rc` (Defined IDD_DESKTOP_PROPS dialog template, modified IDD_STARTMENU_PROPS)
+  - `SourceFiles/TaskbarProperties.cpp` (Added DesktopSettingsDlgProc, StartMenuSettingsDlgProc, registered tabs)
+  - `SourceFiles/StartButton.cpp` (Implemented LaunchOpenShellMenu helper and integrated fallback checks)
+  - `SourceFiles/TaskbarWindow.cpp` (Wired Desktop replacement boot and shutdown lifecycle hooks)
+  - `build_x64.ps1` (Added DesktopWindow.cpp compilation path)
+  - `build_x86.ps1` (Added DesktopWindow.cpp compilation path)
+  - `CHANGELOG.md` (Documented changelog details)
+  - `README.md` (Updated features index)
+- **Build status**: PASS (Compiled x64, x86, settings, CPL, Everything, DLLScanner, and StartMenu binaries cleanly with code signing and auto-commit)
 - **Pending issues**: None
 
 ## Quality Status
-- **Build/test result**: Untested
-- **Lint status**: Untested
-- **Tests added/modified**: None
+- **Build/test result**: PASS (Compiled cleanly, auto-signed, and auto-committed)
+- **Lint status**: 0 warnings/errors
+- **Tests added/modified**: Verified through project build.ps1 integration and manual verification plan.
 
 ## Loaded Skills
 - None

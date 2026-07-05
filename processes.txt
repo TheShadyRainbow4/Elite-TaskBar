@@ -1,0 +1,251 @@
+
+   Id ProcessName                      Path
+   -- -----------                      ----
+ 9092 ActualWindowManagerCenter        C:\Program Files (x86)\Actual Window Manager\ActualWindowManagerCenter.exe
+15860 ActualWindowManagerCenter64      C:\Program Files (x86)\Actual Window Manager\ActualWindowManagerCenter64.exe
+18816 ActualWindowManagerShellCenter64 C:\Program Files (x86)\Actual Window Manager\ActualWindowManagerShellCenter64.exe
+ 9220 AdobeARM                         C:\Program Files (x86)\Common Files\Adobe\ARM\1.0\AdobeARM.exe
+21148 agy                              C:\Users\Administrator\AppData\Local\agy\bin\agy.exe
+ 7468 Antigravity                      C:\Users\Administrator\AppData\Local\Programs\antigravity\Antigravity.exe
+ 8276 Antigravity                      C:\Users\Administrator\AppData\Local\Programs\antigravity\Antigravity.exe
+10136 Antigravity                      C:\Users\Administrator\AppData\Local\Programs\antigravity\Antigravity.exe
+ 1916 ApplicationFrameHost             C:\Windows\system32\ApplicationFrameHost.exe
+ 8560 audiodg                          C:\Windows\system32\AUDIODG.EXE
+ 2916 AutoClose-Brackets               C:\ProgramData\Microsoft\Windows\Start Menu\Programs\Startup\AutoClose-Brackets.…
+ 8464 autoplay                         C:\Theming\autoplay.exe
+ 5340 cl                               C:\Program Files (x86)\Microsoft Visual Studio\2022\BuildTools\VC\Tools\MSVC\14.…
+20532 cl                               C:\Program Files (x86)\Microsoft Visual Studio\2022\BuildTools\VC\Tools\MSVC\14.…
+ 8364 ClipBack-Saver                   C:\ProgramData\Microsoft\Windows\Start Menu\Programs\Startup\ClipBack-Saver.exe
+17484 cmd                              C:\Windows\system32\cmd.exe
+22724 cmd                              C:\Windows\system32\cmd.exe
+ 8084 conhost                          C:\Windows\system32\conhost.exe
+22124 conhost                          C:\Windows\system32\conhost.exe
+24664 conhost                          C:\Windows\system32\conhost.exe
+  676 csrss                            
+  828 csrss                            
+ 5888 dasHost                          C:\Windows\system32\dashost.exe
+ 7128 dasHost                          C:\Windows\system32\dashost.exe
+ 1220 dllhost                          C:\Windows\system32\DllHost.exe
+ 7024 dllhost                          C:\Windows\system32\DllHost.exe
+ 1208 dwm                              C:\Windows\system32\dwm.exe
+ 8576 ehmsas                           C:\Windows\ehome\ehmsas.exe
+ 8252 ehtray                           C:\Windows\ehome\ehtray.exe
+ 4084 Everything                       C:\Program Files\Everything\Everything.exe
+26172 Everything                       C:\Program Files\Everything\Everything.exe
+  464 explorer                         C:\Windows\explorer.exe
+ 3952 firefox                          C:\Program Files\Mozilla Firefox\firefox.exe
+10492 firefox                          C:\Program Files\Mozilla Firefox\firefox.exe
+13780 firefox                          C:\Program Files\Mozilla Firefox\firefox.exe
+14696 firefox                          C:\Program Files\Mozilla Firefox\firefox.exe
+14992 firefox                          C:\Program Files\Mozilla Firefox\firefox.exe
+16860 firefox                          C:\Program Files\Mozilla Firefox\firefox.exe
+23900 firefox                          C:\Program Files\Mozilla Firefox\firefox.exe
+25416 firefox                          C:\Program Files\Mozilla Firefox\firefox.exe
+  524 fontdrvhost                      C:\Windows\system32\fontdrvhost.exe
+ 1136 fontdrvhost                      C:\Windows\system32\fontdrvhost.exe
+26400 git                              C:\Reunion7_Windows\Program Files\Git\mingw64\bin\git.exe
+11608 GitHubDesktop                    C:\Users\Administrator\AppData\Local\GitHubDesktop\app-3.6.3-beta1\GitHubDesktop…
+19324 GitHubDesktop                    C:\Users\Administrator\AppData\Local\GitHubDesktop\app-3.6.3-beta1\GitHubDesktop…
+21632 GitHubDesktop                    C:\Users\Administrator\AppData\Local\GitHubDesktop\app-3.6.3-beta1\GitHubDesktop…
+24404 GitHubDesktop                    C:\Users\Administrator\AppData\Local\GitHubDesktop\app-3.6.3-beta1\GitHubDesktop…
+16708 HelpPane                         C:\Windows\helppane.exe
+    0 Idle                             
+ 2660 igfxCUIService                   C:\Windows\System32\DriverStore\FileRepository\cui_dch.inf_amd64_b787c039819e9d9…
+ 7376 igfxEM                           C:\Windows\System32\DriverStore\FileRepository\cui_dch.inf_amd64_b787c039819e9d9…
+ 1696 IntelCpHDCPSvc                   C:\Windows\System32\DriverStore\FileRepository\iigd_dch.inf_amd64_5579cd97fbcd45…
+11532 language_server                  C:\Users\Administrator\AppData\Local\Programs\antigravity\resources\bin\language…
+  908 lsass                            C:\Windows\system32\lsass.exe
+ 5952 Memory Compression               
+ 3988 MicrosoftEdgeUpdate              C:\Program Files (x86)\Microsoft\EdgeUpdate\MicrosoftEdgeUpdate.exe
+ 4240 MpDefenderCoreService            
+19744 MSBuild                          C:\Program Files (x86)\Microsoft Visual Studio\2022\BuildTools\MSBuild\Current\B…
+ 3196 MsMpEng                          
+  960 NetworkTray                      C:\Programs\Vista Network\Tray\NetworkTray.exe
+ 1384 NetworkTray                      C:\Programs\Vista Network\Tray\NetworkTray.exe
+ 1868 NetworkTray                      C:\Programs\Vista Network\Tray\NetworkTray.exe
+ 3324 NetworkTray                      C:\Programs\Vista Network\Tray\NetworkTray.exe
+ 3696 NetworkTray                      C:\Programs\Vista Network\Tray\NetworkTray.exe
+ 4388 NetworkTray                      C:\Programs\Vista Network\Tray\NetworkTray.exe
+ 4392 NetworkTray                      C:\Programs\Vista Network\Tray\NetworkTray.exe
+ 4944 NetworkTray                      C:\Programs\Vista Network\Tray\NetworkTray.exe
+ 5112 NetworkTray                      C:\Programs\Vista Network\Tray\NetworkTray.exe
+ 5372 NetworkTray                      C:\Programs\Vista Network\Tray\NetworkTray.exe
+ 5640 NetworkTray                      C:\Programs\Vista Network\Tray\NetworkTray.exe
+ 5896 NetworkTray                      C:\Programs\Vista Network\Tray\NetworkTray.exe
+ 6308 NetworkTray                      C:\Programs\Vista Network\Tray\NetworkTray.exe
+ 6572 NetworkTray                      C:\Programs\Vista Network\Tray\NetworkTray.exe
+ 6652 NetworkTray                      C:\Programs\Vista Network\Tray\NetworkTray.exe
+ 6736 NetworkTray                      C:\Programs\Vista Network\Tray\NetworkTray.exe
+ 6892 NetworkTray                      C:\Programs\Vista Network\Tray\NetworkTray.exe
+ 7572 NetworkTray                      C:\Programs\Vista Network\Tray\NetworkTray.exe
+ 7584 NetworkTray                      C:\Programs\Vista Network\Tray\NetworkTray.exe
+ 7644 NetworkTray                      C:\Programs\Vista Network\Tray\NetworkTray.exe
+ 8228 NetworkTray                      C:\Programs\Vista Network\Tray\NetworkTray.exe
+ 8260 NetworkTray                      C:\Programs\Vista Network\Tray\NetworkTray.exe
+10048 NetworkTray                      C:\Programs\Vista Network\Tray\NetworkTray.exe
+12500 NetworkTray                      C:\Programs\Vista Network\Tray\NetworkTray.exe
+12596 NetworkTray                      C:\Programs\Vista Network\Tray\NetworkTray.exe
+12896 NetworkTray                      C:\Programs\Vista Network\Tray\NetworkTray.exe
+12948 NetworkTray                      C:\Programs\Vista Network\Tray\NetworkTray.exe
+13020 NetworkTray                      C:\Programs\Vista Network\Tray\NetworkTray.exe
+13060 NetworkTray                      C:\Programs\Vista Network\Tray\NetworkTray.exe
+13104 NetworkTray                      C:\Programs\Vista Network\Tray\NetworkTray.exe
+13224 NetworkTray                      C:\Programs\Vista Network\Tray\NetworkTray.exe
+13464 NetworkTray                      C:\Programs\Vista Network\Tray\NetworkTray.exe
+13708 NetworkTray                      C:\Programs\Vista Network\Tray\NetworkTray.exe
+14916 NetworkTray                      C:\Programs\Vista Network\Tray\NetworkTray.exe
+15176 NetworkTray                      C:\Programs\Vista Network\Tray\NetworkTray.exe
+15524 NetworkTray                      C:\Programs\Vista Network\Tray\NetworkTray.exe
+16148 NetworkTray                      C:\Programs\Vista Network\Tray\NetworkTray.exe
+16156 NetworkTray                      C:\Programs\Vista Network\Tray\NetworkTray.exe
+16308 NetworkTray                      C:\Programs\Vista Network\Tray\NetworkTray.exe
+17852 NetworkTray                      C:\Programs\Vista Network\Tray\NetworkTray.exe
+17884 NetworkTray                      C:\Programs\Vista Network\Tray\NetworkTray.exe
+18020 NetworkTray                      C:\Programs\Vista Network\Tray\NetworkTray.exe
+18084 NetworkTray                      C:\Programs\Vista Network\Tray\NetworkTray.exe
+18224 NetworkTray                      C:\Programs\Vista Network\Tray\NetworkTray.exe
+18556 NetworkTray                      C:\Programs\Vista Network\Tray\NetworkTray.exe
+18616 NetworkTray                      C:\Programs\Vista Network\Tray\NetworkTray.exe
+19100 NetworkTray                      C:\Programs\Vista Network\Tray\NetworkTray.exe
+20144 NetworkTray                      C:\Programs\Vista Network\Tray\NetworkTray.exe
+20248 NetworkTray                      C:\Programs\Vista Network\Tray\NetworkTray.exe
+20460 NetworkTray                      C:\Programs\Vista Network\Tray\NetworkTray.exe
+20972 NetworkTray                      C:\Programs\Vista Network\Tray\NetworkTray.exe
+21840 NetworkTray                      C:\Programs\Vista Network\Tray\NetworkTray.exe
+21928 NetworkTray                      C:\Programs\Vista Network\Tray\NetworkTray.exe
+23816 NetworkTray                      C:\Programs\Vista Network\Tray\NetworkTray.exe
+26144 NetworkTray                      C:\Programs\Vista Network\Tray\NetworkTray.exe
+26484 NetworkTray                      C:\Programs\Vista Network\Tray\NetworkTray.exe
+27312 NetworkTray                      C:\Programs\Vista Network\Tray\NetworkTray.exe
+27584 NetworkTray                      C:\Programs\Vista Network\Tray\NetworkTray.exe
+27688 NetworkTray                      C:\Programs\Vista Network\Tray\NetworkTray.exe
+28200 NetworkTray                      C:\Programs\Vista Network\Tray\NetworkTray.exe
+ 3300 NisSrv                           
+ 2276 NVDisplay.Container              C:\Windows\System32\DriverStore\FileRepository\nvmdi.inf_amd64_72f1798f54a8a57a\…
+ 4504 NVDisplay.Container              C:\Windows\System32\DriverStore\FileRepository\nvmdi.inf_amd64_72f1798f54a8a57a\…
+ 4028 OneApp.IGCC.WinService           C:\Windows\System32\DriverStore\FileRepository\igcc_dch.inf_amd64_a5f2152e480669…
+27840 OpenConsole                      C:\Program Files\Windows Terminal\OpenConsole.exe
+ 4020 OpenGlassHost                    C:\Theming\OpenGlass\OpenGlassHost.exe
+ 7104 PresentationFontCache            C:\Windows\Microsoft.Net\Framework64\v3.0\WPF\PresentationFontCache.exe
+26760 PsExec64                         S:\Projects\PsExec64-Launcher\psexec64.exe
+ 2412 pwsh                             C:\Program Files\PowerShell\7\pwsh.exe
+16684 pwsh                             C:\Program Files\PowerShell\7\pwsh.exe
+16812 pwsh                             C:\Program Files\PowerShell\7\pwsh.exe
+18068 pwsh                             C:\Program Files\PowerShell\7\pwsh.exe
+20372 pwsh                             C:\Program Files\PowerShell\7\pwsh.exe
+26328 pwsh                             C:\Program Files\PowerShell\7\pwsh.exe
+  140 Registry                         
+13204 RuntimeBroker                    C:\Windows\System32\RuntimeBroker.exe
+25472 RuntimeBroker                    C:\Windows\System32\RuntimeBroker.exe
+ 3240 SearchIndexer                    C:\Windows\system32\SearchIndexer.exe
+ 4352 SecurityHealthService            
+  888 services                         
+ 6320 SgrmBroker                       
+ 7040 ShellFolderFixUI                 C:\Theming\ShellFolderFix\ShellFolderFixUI.exe
+ 8420 sidebar                          C:\Program Files\Windows Sidebar\sidebar.exe
+ 6484 sihost                           C:\Windows\system32\sihost.exe
+  476 smss                             
+ 9268 SnippingTool                     C:\Windows\System32\SnippingTool.exe
+18924 SnippingTool                     C:\Windows\System32\SnippingTool.exe
+20620 SnippingTool                     C:\Windows\System32\SnippingTool.exe
+21228 SnippingTool                     C:\Windows\System32\SnippingTool.exe
+ 3676 spoolsv                          C:\Windows\System32\spoolsv.exe
+  592 svchost                          C:\Windows\system32\svchost.exe
+  624 svchost                          C:\Windows\system32\svchost.exe
+ 1020 svchost                          C:\Windows\system32\svchost.exe
+ 1032 svchost                          C:\Windows\system32\svchost.exe
+ 1084 svchost                          C:\Windows\system32\svchost.exe
+ 1172 svchost                          C:\Windows\system32\svchost.exe
+ 1340 svchost                          C:\Windows\system32\svchost.exe
+ 1360 svchost                          C:\Windows\system32\svchost.exe
+ 1368 svchost                          C:\Windows\system32\svchost.exe
+ 1464 svchost                          C:\Windows\System32\svchost.exe
+ 1528 svchost                          C:\Windows\System32\svchost.exe
+ 1536 svchost                          C:\Windows\system32\svchost.exe
+ 1624 svchost                          C:\Windows\system32\svchost.exe
+ 1720 svchost                          C:\Windows\system32\svchost.exe
+ 1768 svchost                          C:\Windows\system32\svchost.exe
+ 1792 svchost                          C:\Windows\system32\svchost.exe
+ 1892 svchost                          C:\Windows\system32\svchost.exe
+ 2008 svchost                          C:\Windows\system32\svchost.exe
+ 2056 svchost                          C:\Windows\System32\svchost.exe
+ 2164 svchost                          C:\Windows\System32\svchost.exe
+ 2176 svchost                          C:\Windows\system32\svchost.exe
+ 2240 svchost                          C:\Windows\System32\svchost.exe
+ 2308 svchost                          C:\Windows\system32\svchost.exe
+ 2452 svchost                          C:\Windows\system32\svchost.exe
+ 2456 svchost                          C:\Windows\System32\svchost.exe
+ 2468 svchost                          C:\Windows\system32\svchost.exe
+ 2596 svchost                          C:\Windows\system32\svchost.exe
+ 2736 svchost                          C:\Windows\system32\svchost.exe
+ 2804 svchost                          C:\Windows\system32\svchost.exe
+ 2812 svchost                          C:\Windows\System32\svchost.exe
+ 2832 svchost                          C:\Windows\system32\svchost.exe
+ 3044 svchost                          C:\Windows\system32\svchost.exe
+ 3112 svchost                          C:\Windows\System32\svchost.exe
+ 3252 svchost                          C:\Windows\System32\svchost.exe
+ 3256 svchost                          C:\Windows\system32\svchost.exe
+ 3352 svchost                          C:\Windows\system32\svchost.exe
+ 3472 svchost                          C:\Windows\system32\svchost.exe
+ 3532 svchost                          C:\Windows\system32\svchost.exe
+ 3616 svchost                          C:\Windows\System32\svchost.exe
+ 3632 svchost                          C:\Windows\System32\svchost.exe
+ 3764 svchost                          C:\Windows\System32\svchost.exe
+ 3808 svchost                          C:\Windows\System32\svchost.exe
+ 3880 svchost                          C:\Windows\system32\svchost.exe
+ 3904 svchost                          C:\Windows\System32\svchost.exe
+ 3992 svchost                          C:\Windows\system32\svchost.exe
+ 4000 svchost                          C:\Windows\system32\svchost.exe
+ 4044 svchost                          C:\Windows\System32\svchost.exe
+ 4076 svchost                          C:\Windows\system32\svchost.exe
+ 4144 svchost                          C:\Windows\System32\svchost.exe
+ 4224 svchost                          C:\Windows\System32\svchost.exe
+ 4284 svchost                          C:\Windows\System32\svchost.exe
+ 4292 svchost                          C:\Windows\system32\svchost.exe
+ 5424 svchost                          C:\Windows\System32\svchost.exe
+ 5532 svchost                          C:\Windows\system32\svchost.exe
+ 5988 svchost                          C:\Windows\System32\svchost.exe
+ 6512 svchost                          C:\Windows\system32\svchost.exe
+ 6644 svchost                          C:\Windows\system32\svchost.exe
+ 6816 svchost                          C:\Windows\System32\svchost.exe
+ 6868 svchost                          C:\Windows\system32\svchost.exe
+ 7080 svchost                          C:\Windows\system32\svchost.exe
+ 7220 svchost                          C:\Windows\System32\svchost.exe
+ 7256 svchost                          C:\Windows\system32\svchost.exe
+ 7804 svchost                          C:\Windows\system32\svchost.exe
+ 9140 svchost                          C:\Windows\System32\svchost.exe
+ 9756 svchost                          C:\Windows\system32\svchost.exe
+ 9968 svchost                          C:\Windows\System32\svchost.exe
+10156 svchost                          C:\Windows\system32\svchost.exe
+10172 svchost                          
+11720 svchost                          C:\Windows\system32\svchost.exe
+14896 svchost                          C:\Windows\System32\svchost.exe
+15464 svchost                          C:\Windows\system32\svchost.exe
+19836 svchost                          C:\Windows\system32\svchost.exe
+    4 System                           
+13532 SystemSettings                   C:\Windows\ImmersiveControlPanel\SystemSettings.exe
+16412 TaskbarTweaker                   C:\Programs\TaskbarTweaker\TaskbarTweaker.exe
+ 2540 taskhostw                        C:\Windows\system32\taskhostw.exe
+18632 taskhostw                        C:\Windows\system32\taskhostw.exe
+22368 taskmgr                          C:\Windows\System32\Taskmgr.exe
+ 3156 Twinkle Tray                     C:\Users\Administrator\AppData\Local\Programs\twinkle-tray\Twinkle Tray.exe
+ 7528 Twinkle Tray                     C:\Users\Administrator\AppData\Local\Programs\twinkle-tray\Twinkle Tray.exe
+ 8612 Twinkle Tray                     C:\Users\Administrator\AppData\Local\Programs\twinkle-tray\Twinkle Tray.exe
+ 8812 Twinkle Tray                     C:\Users\Administrator\AppData\Local\Programs\twinkle-tray\Twinkle Tray.exe
+ 9368 Twinkle Tray                     C:\Users\Administrator\AppData\Local\Programs\twinkle-tray\Twinkle Tray.exe
+14672 vctip                            C:\Program Files (x86)\Microsoft Visual Studio\2022\BuildTools\VC\Tools\MSVC\14.…
+17396 vmnat                            C:\Windows\SysWOW64\vmnat.exe
+15124 vmnetdhcp                        C:\Windows\SysWOW64\vmnetdhcp.exe
+15512 vmware-authd                     C:\Program Files (x86)\VMware\VMware Workstation\vmware-authd.exe
+16716 vmware-tray                      C:\Program Files (x86)\VMware\VMware Workstation\vmware-tray.exe
+17076 vmware-usbarbitrator64           C:\Program Files (x86)\Common Files\VMware\USB\vmware-usbarbitrator64.exe
+ 1984 WifiAutoInstallSrv               C:\Program Files\Realtek\WifiAutoInstall\WifiAutoInstallSrv.exe
+ 7876 windhawk                         C:\Program Files\Windhawk\windhawk.exe
+24560 WindowsTerminal                  C:\Program Files\Windows Terminal\WindowsTerminal.exe
+  820 wininit                          
+  604 winlogon                         C:\Windows\system32\winlogon.exe
+ 5824 WinStore.App                     C:\Program Files\WindowsApps\Microsoft.WindowsStore_11809.1001.7.0_x64__8wekyb3d…
+11288 WmiPrvSE                         C:\Windows\system32\wbem\wmiprvse.exe
+10812 wmpnscfg                         C:\Program Files\Windows Media Player\WMPNSCFG.exe
+ 2080 WUDFHost                         C:\Windows\System32\WUDFHost.exe
+

@@ -1,49 +1,52 @@
-# BRIEFING — 2026-07-04T20:31:55-07:00
+# BRIEFING — 2026-07-05T14:57:40Z
 
 ## Mission
-Empirically test the correctness of the implementation of Milestone 1 (R6: Portable Mirror Mode & R3: Settings Synchronization & CPL Repair).
+Empirically verify the correctness, resilience, and behavior of the implementation of Phase XI (Desktop Replacement) and Phase XIX (Fallback Start Menu) under standard and edge cases.
 
 ## 🔒 My Identity
 - Archetype: Empirical Challenger
 - Roles: critic, specialist
-- Working directory: C:\Users\Administrator\Desktop\Elite-TaskBar\.agents\challenger_m1_1
-- Original parent: f2f647cc-0a56-4fa6-935c-de6b9def612a
-- Milestone: Milestone 1
+- Working directory: C:\Users\Administrator\Desktop\Elite-TaskBar\.agents\challenger_m1_1\
+- Original parent: a0aa3631-7690-49f8-89de-9a23fc8c64a7
+- Milestone: Phase XI & Phase XIX Verification
 - Instance: 1 of 1
 
 ## 🔒 Key Constraints
 - Review-only — do NOT modify implementation code
-- Network restriction: CODE_ONLY (no external URLs or HTTP clients targeting external URLs)
-- Build system: MUST use build.ps1 chain
-
-## Current Parent
-- Conversation ID: f2f647cc-0a56-4fa6-935c-de6b9def612a
-- Updated: not yet
-
-## Review Scope
-- **Files to review**: build.ps1, EliteSettings.exe/CPL sources, TaskbarProperties.cpp, config.xml, registry operations
-- **Interface contracts**: C:\Users\Administrator\Desktop\Elite-TaskBar\PROJECT.md, C:\Users\Administrator\Desktop\Elite-TaskBar\GEMINI.md
-- **Review criteria**: Correctness and compliance of Portable Mirror Mode & Settings Synchronization & CPL Repair
-
-## Key Decisions Made
-- Conducted compilation testing via `build.ps1` and observed C1041 compiler failure.
-- Created `verify_milestone1.ps1` script to test CPL resource extraction, Portable Mirror Mode, and Explorer replacement logic.
-- Discovered terminating validation exception in `EliteSettings.ps1:566` preventing Explorer replacement configuration.
-
-## Artifact Index
-- C:\Users\Administrator\Desktop\Elite-TaskBar\.agents\challenger_m1_1\progress.md — Progress log/heartbeat
-- C:\Users\Administrator\Desktop\Elite-TaskBar\.agents\challenger_m1_1\handoff.md — Final assessment handoff
+- Keep native WinForms/Win32 classic style rules in mind
+- No console window, output stream logging requirements
 
 ## Attack Surface
 - **Hypotheses tested**:
-  - Binary compilation success (failed due to missing /FS compiler flag)
-  - CPL resource extraction of WinForms binary (passed, valid MZ header found)
-  - Portable Mirror mode redirection to HKLM and config.xml (passed in mock test)
-  - Restore Explorer Mode setting to None resets default values and cleans up registry keys (passed in mock test)
+  - settings checkboxes toggle and correctly write back to registry.
+  - Progman -> SHELLDLL_DefView -> SysListView32 window class registration and hierarchy.
+  - Z-order constraints (always bottom of Z-order, mouse activate returns MA_NOACTIVATE).
+  - GDI+ and DWM aspect scaling of wallpaper path.
+  - CSIDL_DESKTOP directory binding and SHChangeNotifyRegister watcher refresh.
+  - Left click on StartButton triggers StartMenu.exe fallback launcher.
 - **Vulnerabilities found**:
-  - Compiler Error C1041 in `build_x64.ps1` / `build_x86.ps1` due to concurrent cl.exe writes to single pdb.
-  - Parameter validation exception in `EliteSettings.ps1:566` (`Get-ItemProperty -Name ""`) that silently aborts the `Save-Settings` block.
-- **Untested angles**: None.
+  - Timing issues: if settings UI is not given enough time to instantiate properties page dialogues, `FindChildById` fails. Solved by implementing robust retry-loops in test harness.
+  - PowerShell process termination pipeline exception: when calling `Get-Process | Stop-Process` on processes that are not running, PowerShell throws. Solved by wrapping process termination in try-catch blocks.
+- **Untested angles**:
+  - Multiple monitor setups (we checked virtual screen bounding rects but only verified window handles on main display).
+  - Multi-threaded rendering performance under extreme memory/CPU load.
 
 ## Loaded Skills
-None
+- None
+
+## Current Parent
+- Conversation ID: a0aa3631-7690-49f8-89de-9a23fc8c64a7
+- Updated: 2026-07-05T14:57:40Z
+
+## Review Scope
+- **Files to review**: Desktop replacement files (Progman, SHELLDLL_DefView, wallpaper, icons), StartMenu fallback files, build scripts.
+- **Interface contracts**: CPL and Settings registry config, StartMenu activation triggers.
+- **Review criteria**: correctness, resilience, classic Win32 style conformance, Z-order correctness, wallpaper aspect scaling, desktop icon population and execution, change notification register.
+
+## Key Decisions Made
+- Wrote an automated verification test script `run_tests.ps1` with C# Win32 call integration and retry loops to execute and check all scenarios programmatically.
+- Compiled a mock C++ `StartMenu.exe` executable to intercept the launch event and verify parameters without triggering actual UI change.
+
+## Artifact Index
+- C:\Users\Administrator\Desktop\Elite-TaskBar\.agents\challenger_m1_1\run_tests.ps1 — Automated empirical test runner.
+- C:\Users\Administrator\Desktop\Elite-TaskBar\.agents\challenger_m1_1\mock.cpp — StartMenu.exe fallback launcher mock source.
