@@ -1,12 +1,12 @@
 
 Name                           Value
 ----                           -----
-DirectoryChangeNotify          FAIL
-SettingsRegistryToggles        FAIL
-DesktopIconsLoading            FAIL
+StartButtonFallback            PASS
+DirectoryChangeNotify          PASS
+SettingsRegistryToggles        PASS
 ClassRegistration              PASS
-ZOrderConstraints              FAIL
+DesktopIconsLoading            PASS
 DesktopStartupDynamic          PASS
-StartButtonFallback            FAIL
+ZOrderConstraints              PASS
 
 

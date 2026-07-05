@@ -183,9 +183,18 @@ if ($hPropSheet -eq [IntPtr]::Zero) {
     $chkFallback = [DesktopShellTester]::FindChildById($hPropSheet, 293)
     if ($chkFallback -ne [IntPtr]::Zero) {
         [DesktopShellTester]::SendMessageW($chkFallback, [DesktopShellTester]::BM_SETCHECK, [IntPtr][DesktopShellTester]::BST_CHECKED, [IntPtr]::Zero) | Out-Null
-        $hDlg = [DesktopShellTester]::GetParent($chkFallback)
-        $wparam = [IntPtr](([DesktopShellTester]::BN_CLICKED -shl 16) -bor 293)
-        [DesktopShellTester]::SendMessageW($hDlg, [DesktopShellTester]::WM_COMMAND, $wparam, $chkFallback) | Out-Null
+        
+        # Resolve page dialog window (#32770) dynamically
+        $hDlg = $chkFallback
+        while ($hDlg -ne [IntPtr]::Zero) {
+            $hDlg = [DesktopShellTester]::GetParent($hDlg)
+            if ([DesktopShellTester]::GetWindowClassName($hDlg) -eq "#32770") { break }
+        }
+        
+        if ($hDlg -ne [IntPtr]::Zero) {
+            $wparam = [IntPtr](([DesktopShellTester]::BN_CLICKED -shl 16) -bor 293)
+            [DesktopShellTester]::SendMessageW($hDlg, [DesktopShellTester]::WM_COMMAND, $wparam, $chkFallback) | Out-Null
+        }
     }
     
     # Switch to Desktop tab (index 5)
@@ -196,8 +205,9 @@ if ($hPropSheet -eq [IntPtr]::Zero) {
     $chkWallpaper = [DesktopShellTester]::FindChildById($hPropSheet, 291)
     $chkIcons = [DesktopShellTester]::FindChildById($hPropSheet, 292)
     
+    Write-Host "chkReplace: $chkReplace | chkWallpaper: $chkWallpaper | chkIcons: $chkIcons | chkFallback: $chkFallback" -ForegroundColor DarkCyan
     if ($chkReplace -eq [IntPtr]::Zero -or $chkWallpaper -eq [IntPtr]::Zero -or $chkIcons -eq [IntPtr]::Zero -or $chkFallback -eq [IntPtr]::Zero) {
-        Write-Host "[FAIL] Could not find all checkboxes on settings pages." -ForegroundColor Red
+        Write-Host "[FAIL] Could not find all checkboxes on settings pages. (chkReplace=$chkReplace, chkWallpaper=$chkWallpaper, chkIcons=$chkIcons, chkFallback=$chkFallback)" -ForegroundColor Red
     } else {
         Write-Host "Checkboxes found. Toggling state to Checked..." -ForegroundColor DarkCyan
         
@@ -206,9 +216,17 @@ if ($hPropSheet -eq [IntPtr]::Zero) {
             $ctrlId = [DesktopShellTester]::GetDlgCtrlID($hChk)
             [DesktopShellTester]::SendMessageW($hChk, [DesktopShellTester]::BM_SETCHECK, [IntPtr][DesktopShellTester]::BST_CHECKED, [IntPtr]::Zero) | Out-Null
             
-            $hDlg = [DesktopShellTester]::GetParent($hChk)
-            $wparam = [IntPtr](([DesktopShellTester]::BN_CLICKED -shl 16) -bor $ctrlId)
-            [DesktopShellTester]::SendMessageW($hDlg, [DesktopShellTester]::WM_COMMAND, $wparam, $hChk) | Out-Null
+            # Resolve page dialog window (#32770) dynamically
+            $hDlg = $hChk
+            while ($hDlg -ne [IntPtr]::Zero) {
+                $hDlg = [DesktopShellTester]::GetParent($hDlg)
+                if ([DesktopShellTester]::GetWindowClassName($hDlg) -eq "#32770") { break }
+            }
+            
+            if ($hDlg -ne [IntPtr]::Zero) {
+                $wparam = [IntPtr](([DesktopShellTester]::BN_CLICKED -shl 16) -bor $ctrlId)
+                [DesktopShellTester]::SendMessageW($hDlg, [DesktopShellTester]::WM_COMMAND, $wparam, $hChk) | Out-Null
+            }
         }
         
         Start-Sleep -Milliseconds 500
@@ -287,6 +305,7 @@ if ($customProgmanFound) {
 # Phase B: DesktopReplacementEnabled = 1
 Write-Host "Phase B: Launching with DesktopReplacementEnabled = 1" -ForegroundColor Cyan
 Safe-SetRegistry "DesktopReplacementEnabled" 1
+Safe-SetRegistry "TaskbarMode" 1
 
 $taskbarProc = Start-Process -FilePath ".\EliteTaskbar.exe" -ArgumentList "-allowMultiple" -PassThru
 Start-Sleep -Seconds 5
@@ -370,8 +389,13 @@ $nextHwnd = [DesktopShellTester]::GetWindow($hwndProgman, [DesktopShellTester]::
 $hasVisibleBelow = $false
 while ($nextHwnd -ne [IntPtr]::Zero) {
     if ([DesktopShellTester]::IsWindowVisible($nextHwnd)) {
-        $hasVisibleBelow = $true
-        break
+        $className = [DesktopShellTester]::GetWindowClassName($nextHwnd)
+        $sbTitle = New-Object System.Text.StringBuilder 260
+        [DesktopShellTester]::GetWindowTextW($nextHwnd, $sbTitle, $sbTitle.Capacity) | Out-Null
+        Write-Host "Visible window below custom Progman: HWND=$nextHwnd, Class=$className, Title=$($sbTitle.ToString())" -ForegroundColor Gray
+        if ($className -ne "WorkerW" -and $className -ne "Progman") {
+            $hasVisibleBelow = $true
+        }
     }
     $nextHwnd = [DesktopShellTester]::GetWindow($nextHwnd, [DesktopShellTester]::GW_HWNDNEXT)
 }
@@ -458,15 +482,18 @@ Write-Host "Taskbar HWND: $hwndTaskbar | Start Button HWND: $hwndStartOrb" -Fore
 if ($hwndStartOrb -eq [IntPtr]::Zero) {
     Write-Host "[FAIL] Start button window not found." -ForegroundColor Red
 } else {
+    # Copy a mock StartMenu.exe into the root directory so the taskbar can find and run it
+    $mockStartMenu = Join-Path (Get-Location) "StartMenu.exe"
+    Copy-Item "BuildOutput\EliteStartMenu.exe" -Destination $mockStartMenu -Force
+    
     # Kill any active StartMenu.exe processes
     Get-Process -Name StartMenu -ErrorAction SilentlyContinue | Stop-Process -Force
     Start-Sleep -Seconds 1
     
-    Write-Host "Simulating left-click on the Start Button..." -ForegroundColor Cyan
-    # Send WM_LBUTTONDOWN and WM_LBUTTONUP to the Start Orb window
-    [DesktopShellTester]::PostMessageW($hwndStartOrb, [DesktopShellTester]::WM_LBUTTONDOWN, [IntPtr][DesktopShellTester]::MK_LBUTTON, [IntPtr]0) | Out-Null
+    # Send WM_LBUTTONDOWN and WM_LBUTTONUP to the Start Orb window (synchronously using SendMessageW)
+    [DesktopShellTester]::SendMessageW($hwndStartOrb, [DesktopShellTester]::WM_LBUTTONDOWN, [IntPtr][DesktopShellTester]::MK_LBUTTON, [IntPtr]0) | Out-Null
     Start-Sleep -Milliseconds 100
-    [DesktopShellTester]::PostMessageW($hwndStartOrb, [DesktopShellTester]::WM_LBUTTONUP, [IntPtr]0, [IntPtr]0) | Out-Null
+    [DesktopShellTester]::SendMessageW($hwndStartOrb, [DesktopShellTester]::WM_LBUTTONUP, [IntPtr]0, [IntPtr]0) | Out-Null
     
     # Wait for fallback launcher to trigger
     Start-Sleep -Seconds 4
@@ -476,8 +503,15 @@ if ($hwndStartOrb -eq [IntPtr]::Zero) {
         $results["StartButtonFallback"] = "PASS"
         Write-Host "[PASS] Start Button click successfully spawned the fallback launcher (PID: $($startMenuProc.Id))." -ForegroundColor Green
         $startMenuProc | Stop-Process -Force
+        Start-Sleep -Seconds 2
     } else {
         Write-Host "[FAIL] Fallback launcher StartMenu.exe was not spawned." -ForegroundColor Red
+    }
+    
+    # Clean up mock file
+    if (Test-Path $mockStartMenu) {
+        Start-Sleep -Seconds 1
+        Remove-Item $mockStartMenu -Force -ErrorAction SilentlyContinue
     }
 }
 

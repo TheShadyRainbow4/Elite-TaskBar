@@ -1,9 +1,9 @@
 
 Name                           Value
 ----                           -----
-OptionsToggleAndSave           FAIL
-EliteTaskbarIsolation          PASS
 SmallIconTilesView             PASS
+EliteTaskbarIsolation          PASS
+OptionsToggleAndSave           PASS
 DefaultGroupByType             PASS
 
 

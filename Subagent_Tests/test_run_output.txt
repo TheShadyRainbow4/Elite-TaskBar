@@ -8,9 +8,10 @@ Sysinternals - www.sysinternals.com
 
 Sending IDM_VIEW_SMALLICONTILES (60018) command...
 LVM_GETVIEW: 4 (Expected: 4 = LV_VIEW_TILE)
-LVSIL_NORMAL ImageList: 1461536943696
+LVSIL_NORMAL ImageList: 1642581823488
 [PASS] Small Icon Tiles runtime checks passed.
-ViewModeGlobal in registry: 12 (Expected: 12)
+ViewModeGlobal in registry: 1 (Expected: 12)
+[FAIL] ViewModeGlobal did not persist or runtime checks failed.
 
 [TEST 2] Verifying folders default to 'Group by Type' on first launch...
 
@@ -18,9 +19,7 @@ PsExec v2.34 - Execute processes remotely
 Copyright (C) 2001-2021 Mark Russinovich
 Sysinternals - www.sysinternals.com
 
-LVM_ISGROUPVIEWENABLED: 1 (Expected: 1)
-EnableDefaultGroupByType registry value: 1 (Expected: 1)
-[PASS] Default Group by Type on first run verified.
+[FAIL] Could not find SysListView32 child control.
 
 [TEST 3] Verifying Options dialog toggle and Registry synchronization...
 
@@ -28,8 +27,8 @@ PsExec v2.34 - Execute processes remotely
 Copyright (C) 2001-2021 Mark Russinovich
 Sysinternals - www.sysinternals.com
 
-Registry EnableDefaultGroupByType after change: 1 (Expected: 0)
-[FAIL] Registry setting did not update.
+Registry EnableDefaultGroupByType after change: 0 (Expected: 0)
+[PASS] Checkbox successfully updated registry setting.
 
 [TEST 4] Verifying Options dialog toggle and XML synchronization (Portable Mirror)...
 
@@ -37,12 +36,11 @@ PsExec v2.34 - Execute processes remotely
 Copyright (C) 2001-2021 Mark Russinovich
 Sysinternals - www.sysinternals.com
 
-config.xml contents contains EnableDefaultGroupByType:
-[PASS] Checkbox successfully updated config.xml.
+[FAIL] Could not find Options dialog.
 
 === Test Results Summary ===
-  SmallIconTilesView : [PASS]
-  OptionsToggleXML : [PASS]
-  DefaultGroupByType : [PASS]
-  OptionsToggleRegistry : [FAIL]
+  DefaultGroupByType : [FAIL]
+  OptionsToggleRegistry : [PASS]
+  OptionsToggleXML : [FAIL]
+  SmallIconTilesView : [FAIL]
 Overall Verdict: FAIL

@@ -5,22 +5,34 @@ $ScriptDir = Split-Path -Parent -Path $MyInvocation.MyCommand.Definition
 $ProjectRoot = Split-Path -Parent -Path $ScriptDir
 $explorerExe = Join-Path $ProjectRoot "Win32Explorer.exe"
 $xmlPath = Join-Path $ProjectRoot "config.xml"
-$regSettingsPath = "HKCU:\Software\Win32Explorer\Settings"
-$regAdvancedPath = "HKCU:\Software\EliteSoftware\Win32Explorer\Advanced"
+$userSid = "S-1-5-21-3033238256-2936349959-1177579691-500" # default fallback
+try {
+    $userAccount = New-Object System.Security.Principal.NTAccount("User")
+    $userSid = $userAccount.Translate([System.Security.Principal.SecurityIdentifier]).Value
+} catch {}
+
+$regExplorerPath = "Registry::HKEY_USERS\$userSid\Software\Win32Explorer"
+$regSettingsPath = "Registry::HKEY_USERS\$userSid\Software\Win32Explorer\Settings"
+$regAdvancedPath = "Registry::HKEY_USERS\$userSid\Software\EliteSoftware\Win32Explorer\Advanced"
 
 # Helpers for Registry Cleaning
 function Clear-RegistrySettings {
-    if (Test-Path HKCU:\Software\Win32Explorer) {
-        Remove-Item -Path HKCU:\Software\Win32Explorer -Recurse -Force -ErrorAction SilentlyContinue | Out-Null
+    if (Test-Path $regExplorerPath) {
+        Remove-Item -Path $regExplorerPath -Recurse -Force -ErrorAction SilentlyContinue | Out-Null
     }
-    if (Test-Path HKCU:\Software\EliteSoftware\Win32Explorer) {
-        Remove-Item -Path HKCU:\Software\EliteSoftware\Win32Explorer -Recurse -Force -ErrorAction SilentlyContinue | Out-Null
+    if (Test-Path "Registry::HKEY_USERS\$userSid\Software\EliteSoftware\Win32Explorer") {
+        Remove-Item -Path "Registry::HKEY_USERS\$userSid\Software\EliteSoftware\Win32Explorer" -Recurse -Force -ErrorAction SilentlyContinue | Out-Null
     }
 }
 
 function Stop-ExplorerProcesses {
     cmd /c "taskkill /F /IM Win32Explorer.exe >nul 2>nul"
-    Start-Sleep -Seconds 1
+    for ($i = 0; $i -lt 10; $i++) {
+        $procs = Get-Process -Name Win32Explorer -ErrorAction SilentlyContinue
+        if ($null -eq $procs) { break }
+        Stop-Process -Name Win32Explorer -Force -ErrorAction SilentlyContinue
+        Start-Sleep -Milliseconds 500
+    }
     if (Test-Path $xmlPath) { Remove-Item $xmlPath -Force | Out-Null }
 }
 
@@ -50,6 +62,9 @@ public class Win32Helper {
 
     [DllImport("user32.dll", CharSet = CharSet.Auto)]
     public static extern IntPtr SendMessage(IntPtr hWnd, uint Msg, IntPtr wParam, IntPtr lParam);
+
+    [DllImport("user32.dll", CharSet = CharSet.Auto)]
+    public static extern bool PostMessage(IntPtr hWnd, uint Msg, IntPtr wParam, IntPtr lParam);
 
     [DllImport("user32.dll")]
     public static extern bool SetForegroundWindow(IntPtr hWnd);
@@ -136,6 +151,7 @@ Clear-RegistrySettings
 if (!(Test-Path $regSettingsPath)) { New-Item -Path $regSettingsPath -Force | Out-Null }
 Set-ItemProperty -Path $regSettingsPath -Name "ViewModeGlobal" -Value 12 -Type DWord
 Set-ItemProperty -Path $regSettingsPath -Name "ConfirmCloseTabs" -Value 0 -Type DWord
+Set-ItemProperty -Path $regSettingsPath -Name "EnableNativeViewMode" -Value 0 -Type DWord
 
 & psexec64 -i 1 -d $explorerExe "C:\Windows"
 
@@ -162,7 +178,13 @@ if ($null -eq $pid1) {
         Write-Host "[FAIL] Could not find main window." -ForegroundColor Red
     } else {
         Start-Sleep -Seconds 2
-        $hwndLV1 = [Win32Helper]::FindChildByClass($hwndMain1, "SysListView32")
+        # Find ListView child control with polling
+        $hwndLV1 = [IntPtr]::Zero
+        for ($i = 0; $i -lt 15; $i++) {
+            $hwndLV1 = [Win32Helper]::FindChildByClass($hwndMain1, "SysListView32")
+            if ($hwndLV1 -ne [IntPtr]::Zero) { break }
+            Start-Sleep -Milliseconds 500
+        }
         if ($hwndLV1 -eq [IntPtr]::Zero) {
             Write-Host "[FAIL] Could not find SysListView32 child control." -ForegroundColor Red
         } else {
@@ -218,6 +240,8 @@ if ($null -eq $pid1) {
 Write-Host "`n[TEST 2] Verifying folders default to 'Group by Type' on first launch..." -ForegroundColor Yellow
 Stop-ExplorerProcesses
 Clear-RegistrySettings
+if (!(Test-Path $regSettingsPath)) { New-Item -Path $regSettingsPath -Force | Out-Null }
+Set-ItemProperty -Path $regSettingsPath -Name "EnableNativeViewMode" -Value 0 -Type DWord
 
 & psexec64 -i 1 -d $explorerExe "C:\Windows"
 
@@ -290,6 +314,7 @@ Clear-RegistrySettings
 if (!(Test-Path $regSettingsPath)) { New-Item -Path $regSettingsPath -Force | Out-Null }
 Set-ItemProperty -Path $regSettingsPath -Name "EnableDefaultGroupByType" -Value 1 -Type DWord
 Set-ItemProperty -Path $regSettingsPath -Name "ConfirmCloseTabs" -Value 0 -Type DWord
+Set-ItemProperty -Path $regSettingsPath -Name "EnableNativeViewMode" -Value 0 -Type DWord
 
 & psexec64 -i 1 -d $explorerExe "C:\Windows"
 
@@ -316,8 +341,8 @@ if ($null -eq $pid3) {
         Write-Host "[FAIL] Could not find main window." -ForegroundColor Red
     } else {
         Start-Sleep -Seconds 2
-        # Open Options dialog (command ID 40101 = IDM_TOOLS_OPTIONS)
-        [Win32Helper]::SendMessage($hwndMain3, 0x0111, [IntPtr]40101, [IntPtr]::Zero) | Out-Null
+        # Open Options dialog using PostMessage so it does not block the test script thread
+        [Win32Helper]::PostMessage($hwndMain3, 0x0111, [IntPtr]40101, [IntPtr]::Zero) | Out-Null
         Start-Sleep -Seconds 3
 
         # Find Options Dialog Window (Title: "Options")
@@ -331,8 +356,13 @@ if ($null -eq $pid3) {
         if ($hwndOptions3 -eq [IntPtr]::Zero) {
             Write-Host "[FAIL] Could not find Options dialog." -ForegroundColor Red
         } else {
-            # Find the "Default Group by Type" checkbox control (ID 1382, Class "Button")
-            $hwndCheckbox3 = [Win32Helper]::FindChildByClassAndId($hwndOptions3, "Button", 1382)
+            # Find the "Default Group by Type" checkbox control with polling
+            $hwndCheckbox3 = [IntPtr]::Zero
+            for ($i = 0; $i -lt 15; $i++) {
+                $hwndCheckbox3 = [Win32Helper]::FindChildByClassAndId($hwndOptions3, "Button", 1382)
+                if ($hwndCheckbox3 -ne [IntPtr]::Zero) { break }
+                Start-Sleep -Milliseconds 500
+            }
             if ($hwndCheckbox3 -eq [IntPtr]::Zero) {
                 Write-Host "[FAIL] Could not find Default Group by Type checkbox control (ID 1382)." -ForegroundColor Red
             } else {
@@ -342,15 +372,9 @@ if ($null -eq $pid3) {
                 Start-Sleep -Seconds 1
 
                 # Click "Okay" button to save and close the dialog (Okay Button ID is 1 = IDOK)
-                $hwndOkayBtn3 = [Win32Helper]::FindChildByClassAndId($hwndOptions3, "Button", 1)
                 [Win32Helper]::SetForegroundWindow($hwndOptions3) | Out-Null
                 Start-Sleep -Milliseconds 200
-                if ($hwndOkayBtn3 -ne [IntPtr]::Zero) {
-                    [Win32Helper]::SendMessage($hwndOkayBtn3, 0x00F5, [IntPtr]::Zero, [IntPtr]::Zero) | Out-Null
-                } else {
-                    Write-Host "[FAIL] Okay button not found, closing dialog via WM_CLOSE." -ForegroundColor Red
-                    [Win32Helper]::SendMessage($hwndOptions3, 0x0010, [IntPtr]::Zero, [IntPtr]::Zero) | Out-Null
-                }
+                [Win32Helper]::SendMessage($hwndOptions3, 0x0111, [IntPtr]1, [IntPtr]::Zero) | Out-Null
                 Start-Sleep -Seconds 2
 
                 # Close main window
@@ -417,8 +441,8 @@ if ($null -eq $pid4) {
         Write-Host "[FAIL] Could not find main window." -ForegroundColor Red
     } else {
         Start-Sleep -Seconds 2
-        # Open Options dialog (command ID 40101)
-        [Win32Helper]::SendMessage($hwndMain4, 0x0111, [IntPtr]40101, [IntPtr]::Zero) | Out-Null
+        # Open Options dialog using PostMessage so it does not block the test script thread
+        [Win32Helper]::PostMessage($hwndMain4, 0x0111, [IntPtr]40101, [IntPtr]::Zero) | Out-Null
         Start-Sleep -Seconds 3
 
         # Find Options Dialog Window
@@ -432,8 +456,13 @@ if ($null -eq $pid4) {
         if ($hwndOptions4 -eq [IntPtr]::Zero) {
             Write-Host "[FAIL] Could not find Options dialog." -ForegroundColor Red
         } else {
-            # Find checkbox
-            $hwndCheckbox4 = [Win32Helper]::FindChildByClassAndId($hwndOptions4, "Button", 1382)
+            # Find checkbox with polling
+            $hwndCheckbox4 = [IntPtr]::Zero
+            for ($i = 0; $i -lt 15; $i++) {
+                $hwndCheckbox4 = [Win32Helper]::FindChildByClassAndId($hwndOptions4, "Button", 1382)
+                if ($hwndCheckbox4 -ne [IntPtr]::Zero) { break }
+                Start-Sleep -Milliseconds 500
+            }
             if ($hwndCheckbox4 -eq [IntPtr]::Zero) {
                 Write-Host "[FAIL] Could not find Default Group by Type checkbox control." -ForegroundColor Red
             } else {
@@ -442,14 +471,9 @@ if ($null -eq $pid4) {
                 Start-Sleep -Seconds 1
 
                 # Click Okay
-                $hwndOkayBtn4 = [Win32Helper]::FindChildByClassAndId($hwndOptions4, "Button", 1)
                 [Win32Helper]::SetForegroundWindow($hwndOptions4) | Out-Null
                 Start-Sleep -Milliseconds 200
-                if ($hwndOkayBtn4 -ne [IntPtr]::Zero) {
-                    [Win32Helper]::SendMessage($hwndOkayBtn4, 0x00F5, [IntPtr]::Zero, [IntPtr]::Zero) | Out-Null
-                } else {
-                    [Win32Helper]::SendMessage($hwndOptions4, 0x0010, [IntPtr]::Zero, [IntPtr]::Zero) | Out-Null
-                }
+                [Win32Helper]::SendMessage($hwndOptions4, 0x0111, [IntPtr]1, [IntPtr]::Zero) | Out-Null
                 Start-Sleep -Seconds 2
 
                 # Close main window
