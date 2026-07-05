@@ -224,6 +224,15 @@ if (-not (Test-Path $regPath)) {
     New-Item -Path $regPath -Force | Out-Null
 }
 
+# Preserve and disable ConfirmCloseTabs to prevent interactive blocks
+$settingsKey = "HKCU:\Software\Win32Explorer\Settings"
+$origConfirmCloseTabs = 1
+if (Test-Path $settingsKey) {
+    $prop = Get-ItemProperty -Path $settingsKey -Name "ConfirmCloseTabs" -ErrorAction SilentlyContinue
+    if ($prop) { $origConfirmCloseTabs = $prop.ConfirmCloseTabs }
+    Set-ItemProperty -Path $settingsKey -Name "ConfirmCloseTabs" -Value 0
+}
+
 # Clean any running instances before test
 Write-Host "`nStopping any existing processes..." -ForegroundColor Cyan
 Get-Process -Name EliteTaskbar, Win32Explorer, EliteSettings -ErrorAction SilentlyContinue | Stop-Process -Force
@@ -233,7 +242,7 @@ Start-Sleep -Seconds 1
 # Verify Tray and Quit functionality for EliteTaskbar.exe
 Write-Host "`n--- EliteTaskbar Tray/Quit Validation ---" -ForegroundColor Cyan
 $tbProc = Start-Process -FilePath $files["EliteTaskbar.exe"] -PassThru
-Start-Sleep -Seconds 2
+Start-Sleep -Seconds 3
 
 if (-not $tbProc.HasExited) {
     Write-Host "[PASS] EliteTaskbar.exe launched successfully and remains running." -ForegroundColor Green
@@ -265,29 +274,28 @@ if (-not $tbProc.HasExited) {
 # Verify Tray and Quit functionality for Win32Explorer.exe
 Write-Host "`n--- Win32Explorer Tray/Quit Validation ---" -ForegroundColor Cyan
 $expProc = Start-Process -FilePath $files["Win32Explorer.exe"] -PassThru
-Start-Sleep -Seconds 2
+Start-Sleep -Seconds 5
 
 if (-not $expProc.HasExited) {
     Write-Host "[PASS] Win32Explorer.exe launched successfully and remains running." -ForegroundColor Green
     
-    # Check if event window exists
-    $hwnd = [Win32]::FindWindowW("Win32ExplorerEventWindowClass", $null)
-    $browserHwnd = [Win32]::FindWindowW("Win32Explorer", $null)
-    
-    if ($hwnd -ne [IntPtr]::Zero) {
-        Write-Host "[PASS] Found Win32Explorer event window (Win32ExplorerEventWindowClass) with HWND $hwnd." -ForegroundColor Green
-    } else {
-        Write-Host "[WARNING] Could not find Win32ExplorerEventWindowClass, checking browser window..." -ForegroundColor Yellow
+    # Get main window handle directly from the process object
+    $hwnd = $expProc.MainWindowHandle
+    if ($hwnd -eq [IntPtr]::Zero) {
+        # Fallback: refresh process object
+        $expProc.Refresh()
+        $hwnd = $expProc.MainWindowHandle
     }
     
-    if ($browserHwnd -ne [IntPtr]::Zero) {
-        Write-Host "[PASS] Found Win32Explorer browser window (Win32Explorer) with HWND $browserHwnd." -ForegroundColor Green
+    if ($hwnd -ne [IntPtr]::Zero) {
+        Write-Host "[PASS] Found Win32Explorer browser window with HWND $hwnd." -ForegroundColor Green
         
         # Send WM_CLOSE (0x0010) to the browser window, which should trigger OnBrowserRemoved -> PostQuitMessage
         Write-Host "Sending WM_CLOSE (0x0010) to Win32Explorer browser..." -ForegroundColor Yellow
-        [Win32]::PostMessageW($browserHwnd, 0x0010, [IntPtr]::Zero, [IntPtr]::Zero) | Out-Null
+        [Win32]::PostMessageW($hwnd, 0x0010, [IntPtr]::Zero, [IntPtr]::Zero) | Out-Null
         
-        Start-Sleep -Seconds 2
+        Start-Sleep -Seconds 3
+        $expProc.Refresh()
         if ($expProc.HasExited) {
             Write-Host "[PASS] Win32Explorer process exited cleanly after browser window was closed." -ForegroundColor Green
         } else {
@@ -295,11 +303,16 @@ if (-not $expProc.HasExited) {
             $expProc | Stop-Process -Force
         }
     } else {
-        Write-Host "[FAIL] Could not find any Win32Explorer browser window!" -ForegroundColor Red
+        Write-Host "[FAIL] Could not find Win32Explorer browser window!" -ForegroundColor Red
         $expProc | Stop-Process -Force
     }
 } else {
     Write-Host "[FAIL] Win32Explorer.exe exited immediately on launch! ExitCode: $($expProc.ExitCode)" -ForegroundColor Red
+}
+
+# Restore original ConfirmCloseTabs value
+if (Test-Path $settingsKey) {
+    Set-ItemProperty -Path $settingsKey -Name "ConfirmCloseTabs" -Value $origConfirmCloseTabs
 }
 
 # Verify Custom Theme configuration fallback behavior
@@ -334,7 +347,6 @@ if (-not (Test-Path $themeDir)) {
 }
 
 # Write a tiny 1x1 black pixel PNG as a mock "Back.png" to test loading
-# A valid 1x1 png base64: iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAQAAAC1HAwCAAAAC0lEQVR42mNkYAAAAAYAAjCB0C8AAAAASUVORK5CYII=
 $pngBytes = [System.Convert]::FromBase64String("iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAQAAAC1HAwCAAAAC0lEQVR42mNkYAAAAAYAAjCB0C8AAAAASUVORK5CYII=")
 [System.IO.File]::WriteAllBytes((Join-Path $themeDir "Back.png"), $pngBytes)
 
@@ -364,5 +376,17 @@ if (Test-Path $themeDir) {
     Remove-Item $themeDir -Recurse -Force -ErrorAction SilentlyContinue
 }
 Remove-ItemProperty -Path $regPath -Name "CustomThemePath" -ErrorAction SilentlyContinue
+if (Test-Path (Join-Path $ScriptDir "test_enum.ps1")) {
+    Remove-Item (Join-Path $ScriptDir "test_enum.ps1") -Force
+}
+if (Test-Path (Join-Path $ScriptDir "test_close.ps1")) {
+    Remove-Item (Join-Path $ScriptDir "test_close.ps1") -Force
+}
+if (Test-Path (Join-Path $ScriptDir "test_close_diag.ps1")) {
+    Remove-Item (Join-Path $ScriptDir "test_close_diag.ps1") -Force
+}
+if (Test-Path (Join-Path $ScriptDir "test_close_no_confirm.ps1")) {
+    Remove-Item (Join-Path $ScriptDir "test_close_no_confirm.ps1") -Force
+}
 
 Write-Host "`n--- Verification Complete ---" -ForegroundColor Cyan

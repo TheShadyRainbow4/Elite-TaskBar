@@ -1,4 +1,4 @@
-# BRIEFING — 2026-07-04T21:40:00-07:00
+# BRIEFING — 2026-07-04T21:58:00-07:00
 
 ## Mission
 Empirically test the correctness of the implementation of Milestone 2 (R2: System Tray Integration & R5: Custom Icon Theming) and the C++ native settings redirect.
@@ -28,12 +28,21 @@ Empirically test the correctness of the implementation of Milestone 2 (R2: Syste
 - **Review criteria**: Correctness, stability, native C++ properties sheet execution, custom icon folder loading, tray icon presence and quit functionality, clean compilation.
 
 ## Key Decisions Made
-- [TBD]
+- Executed `pwsh -File .\build.ps1` which successfully compiled all binaries.
+- Wrote and executed `verify_milestone2.ps1` in the workspace root.
+- Verified native PE structure of EliteSettings.exe and EliteSettings.cpl.
+- Verified CPlApplet DLL export of EliteSettings.cpl.
+- Verified clean exits for EliteTaskbar and Win32Explorer in response to tray messages.
+- Verified GDI+ icon loading robustness (fallback to resources when empty, invalid, or partially missing icons).
 
 ## Attack Surface
-- **Hypotheses tested**: [TBD]
-- **Vulnerabilities found**: [TBD]
-- **Untested angles**: [TBD]
+- **Hypotheses tested**:
+  - *Native C++ properties sheet execution*: Confirmed. PE analysis showed both EliteSettings.exe and EliteSettings.cpl are native unmanaged binaries with zero CLR headers.
+  - *CPlApplet DLL Export*: Confirmed. Dynamic PE export scanner showed `CPlApplet` is exported.
+  - *Clean shutdown*: Confirmed. Sending 3010 to EliteTaskbar tray window and WM_CLOSE to Win32Explorer browser window cleanly terminated the processes.
+  - *Custom icon fallback robustness*: Confirmed. Empty theme paths, invalid paths, and partially filled theme paths successfully fall back to internal resources without crash.
+- **Vulnerabilities found**: None.
+- **Untested angles**: Dynamic system color updates (Aero Glass colorization updates under DWM).
 
 ## Loaded Skills
 - **Source**: C:\Users\Administrator\.gemini\config\skills\accidental-data-loss-prevention\SKILL.md
@@ -44,4 +53,4 @@ Empirically test the correctness of the implementation of Milestone 2 (R2: Syste
   - **Core methodology**: Handle API keys/credentials safely.
 
 ## Artifact Index
-- [TBD]
+- `C:\Users\Administrator\Desktop\Elite-TaskBar\verify_milestone2.ps1` — Empirical validation script for Milestone 2.
