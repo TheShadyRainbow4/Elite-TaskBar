@@ -143,15 +143,17 @@ Expect the unexpected. Embrace the chaos. And have fun!
 
 <div align="center">
 
-<a href='https://github.com/TheShadyRainbow4/Elite-TaskBar/raw/refs/heads/master/Screenshots/Friday-07-2026-040652-Clip.BMP' target='_blank'>
-  <img src='https://github.com/TheShadyRainbow4/Elite-TaskBar/raw/refs/heads/master/Screenshots/Friday-07-2026-040652-Clip.BMP' border='0' alt='Elite-Software-LOGO' width="300">
-</a>
-<a href='https://github.com/TheShadyRainbow4/Elite-TaskBar/raw/refs/heads/master/Screenshots/Friday-07-2026-035358-Clip.BMP' target='_blank'>
-  <img src='https://github.com/TheShadyRainbow4/Elite-TaskBar/raw/refs/heads/master/Screenshots/Friday-07-2026-035358-Clip.BMP' border='0' alt='Elite-Software-Client' width="300">
-</a>
-<a href='https://github.com/TheShadyRainbow4/Elite-TaskBar/raw/refs/heads/master/Screenshots/Friday-07-2026-030438-Clip.BMP' target='_blank'>
-  <img src='https://github.com/TheShadyRainbow4/Elite-TaskBar/raw/refs/heads/master/Screenshots/Friday-07-2026-030438-Clip.BMP' border='0' alt='Elite-Software-Client' width="300">
-</a>
+<img width="489" height="269" alt="Friday-07-2026-035358-Clip - Copy" src="https://github.com/user-attachments/assets/ba5fb642-4e2b-4942-8b2d-0a8ba6050518" />
+<img width="447" height="531" alt="Sunday-07-2026-160914-Clip" src="https://github.com/user-attachments/assets/c9ba74b3-2d8a-4df3-8317-75cfb73d384a" />
+<img width="527" height="557" alt="Sunday-07-2026-160924-Clip" src="https://github.com/user-attachments/assets/debb8f12-aa84-41f1-834e-643906d73bc5" />
+<img width="458" height="539" alt="Sunday-07-2026-160929-Clip" src="https://github.com/user-attachments/assets/1adb71a5-cd39-4490-be83-1716021a9698" />
+<img width="461" height="520" alt="Sunday-07-2026-160934-Clip" src="https://github.com/user-attachments/assets/f75a505f-97cc-4562-bea6-29d33c4a4c8e" />
+<img width="448" height="521" alt="Sunday-07-2026-160938-Clip" src="https://github.com/user-attachments/assets/4991dc7f-3bf4-4e2b-b042-c4a59179c4e3" />
+<img width="475" height="555" alt="Sunday-07-2026-160945-Clip" src="https://github.com/user-attachments/assets/3b2a0293-2e33-4bfa-8b2c-bf3e3113fea9" />
+<img width="606" height="64" alt="Sunday-07-2026-160957-Clip" src="https://github.com/user-attachments/assets/eae336bb-485b-483c-9d17-afb0c471e28e" />
+<img width="1922" height="56" alt="Sunday-07-2026-161003-Clip" src="https://github.com/user-attachments/assets/51c1eab6-1192-4d35-b9ab-d26ca812fac2" />
+<img width="417" height="375" alt="Sunday-07-2026-161022-Clip" src="https://github.com/user-attachments/assets/8d2d17f6-6c30-47ac-bcae-4a96f2a4bf4f" />
+<img width="409" height="240" alt="Sunday-07-2026-161029-Clip" src="https://github.com/user-attachments/assets/ae59fc5b-b42d-4355-8d18-b0b94d60aaef" />
 
 </div>
 

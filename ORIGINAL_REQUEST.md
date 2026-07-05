@@ -155,3 +155,60 @@ Wire the EliteTaskbar Start Orb `HWND` to unconditionally invoke the integrated 
 - [ ] The custom `Progman` window spawns behind all other windows and correctly draws the system wallpaper on the desktop.
 - [ ] The desktop grid correctly displays shortcuts and files from the user's actual Desktop directory, and automatically updates when a new file is added/deleted.
 - [ ] Clicking the EliteTaskbar Start button successfully invokes the custom Open-Shell start menu UI.
+
+## Follow-up — 2026-07-05T23:30:09Z
+
+# Teamwork Project Prompt — Draft
+
+[NOTE from Parent: The user expects this project to be tackled using a robust multi-agent swarm to maximize parallelization and testing.]
+
+> Status: Launched
+> Goal: Teamwork preview running
+
+Implement a massive wave of UI fixes, multi-monitor display corrections, tray functionality enhancements, and advanced shell integration features for the EliteSoftware suite. Ensure all executables are signed using `elite-easysigner` after building.
+
+Working directory: C:\Users\Administrator\Desktop\Elite-TaskBar
+Integrity mode: development
+
+## Requirements
+
+### R1. Multi-Monitor & Tray/Flyout Fixes
+- Fix the Start Menu and Volume/Sound flyouts appearing on the wrong screen (or wrong side) when invoked from a secondary taskbar. Implement dynamic primary display spoofing to trick the invoked UI into rendering on the correct display.
+- Fix the large gap between the clock and tray area.
+- Ensure tray items pull correct icons (fix blank icons), remove white backgrounds above tray items, and add an option to display tray items in two rows by wrapping them within the standard taskbar height (using smaller icons).
+
+### R2. Settings UI, About Dialog, & Migration Cleanup
+- Fix the Start Menu settings tab (currently empty / hover-to-reveal bug).
+- Fix the About dialog so hide/close buttons are visible when expanded.
+- Fix the bug where reloading after applying settings opens several Win32Explorer windows.
+- Automatically clean up and delete all `*old*.exe` or `*Old*.exe` files after creation/migration.
+
+### R3. Advanced Desktop & Theme Configuration
+- Add a way to forcefully render the custom Desktop (Progman) on all connected displays without closing the native taskbar (useful for testing or partial replacement).
+- Add a "Desktop Background" configuration tab to Settings. It must support Span/Per-monitor modes, native theme path selection, wallpaper previews, and slideshow mode (with timings from 3 seconds upwards).
+- Add a theme tutorial, detect themes in the native theme path with a dropdown, and show previews of the first few icons in the tab.
+
+### R4. Global Keyboard Hooks & Shell Fallbacks
+- Intercept global keyboard hooks (e.g., `Win+R` Run dialog, custom shortcuts) so they function perfectly even when `explorer.exe` is completely killed. Implement this by prioritizing low-level hooks (`WH_KEYBOARD_LL`) and falling back to `RegisterHotKey`.
+- Mirror native Windows functionality and paths by heavily referencing the local open-source codebase directories (Explorer Patcher, Open-Shell, ReactOS, Everything Search).
+
+### R5. Tray Icon Actions & Taskbar Features
+- **Win32Explorer Tray**: Use correct Win32Explorer icon. Single-click = About window, Double-click = New window.
+- **Taskbar Tray**: Single-click = About window, Double-click = Settings CPL.
+- **Desktop Replacement Tray**: Create a dedicated tray item using the native desktop tree icon. Double-click = Show/hide desktop icons. Context menu = Toggle desktop on/off, Restart.
+- Add a "Show Seconds" mode to the taskbar clock.
+- Add a hover function to the "Show Desktop" button.
+- Add a resizable Quick Launch bar to the left side of the taskbar (before active programs). It must load shortcuts directly from the native `%APPDATA%\Microsoft\Internet Explorer\Quick Launch` folder.
+- Implement "Tiles with thumbnails" and "Small tiles with thumbnails" view modes in Win32Explorer.
+
+## Acceptance Criteria
+
+### Verification
+- [ ] Write a new automated PowerShell verification script (`verify_final_polish.ps1`) that programmatically validates the application of the new registry toggles (Desktop Background, Quick Launch, 2-Row Tray, Clock Seconds).
+- [ ] Code compiles successfully via `.\build.ps1` without errors and all resulting binaries are code-signed via `elite-easysigner`.
+- [ ] The Settings CPL launches, displaying the fully populated Start Menu and Desktop Background tabs (with working previews), without requiring mouse-hovering to reveal controls.
+- [ ] Invoking flyouts or menus from a secondary monitor correctly routes the UI to that specific display.
+- [ ] Global hotkeys (`Win+R`) successfully launch the run dialog when native Explorer is completely terminated.
+- [ ] The taskbar correctly renders the Quick Launch shortcuts on the left and wraps the system tray icons tightly on the right.
+- [ ] The Win32Explorer built-in view modes successfully apply "Tiles with thumbnails" and "Small tiles with thumbnails".
+- [ ] The workspace root is entirely free of leftover `*old*.exe` files after the build and apply process.

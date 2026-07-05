@@ -445,6 +445,16 @@
 3. Message Injection: Execute LoadIcon(hInstance, MAKEINTRESOURCE(IDI_SETTINGS)) and send WM_SETICON (ICON_BIG and ICON_SMALL) to the Property Sheet HWND to override the inherited process icon.
 
 ---
+# MILESTONE 5: ADVANCED SHELL INTEGRATION & TRAY FIXES
+---
+
+1. Start Menu & Flyout Spawning Fix (Display Spoofing): Implement dynamic primary display spoofing, g_IsSpoofingNativeTaskbar / g_SpoofStartTime flags, StartNativeTaskbarSpoof helper, and timer logic. Under subclassed start button click and tray subclassed uCallbackMessage, call StartNativeTaskbarSpoof.
+2. Clock Gap Fix: Adjust W_clock to MulDiv(85, dpi, 96) and update text alignment to center-aligned without offset.
+3. Tray Icons Fixes: Implement dynamic Windows 10 (offset 24) vs Windows 11 (offset 16) TRAYDATA probing using GetIconInfo. Fallback to GetWindowIconFix / GCLP_HICONSM. Subclass hSysPager to remove white background using DrawThemeParentBackground.
+4. Two-Row Tray Option: Define IDC_TWO_ROW_TRAY (294), add checkbox control in rc/Properties dialog (shift groupbox down by 15), config state EnableTwoRowTray, custom layout step spacing, wrapper toolbar, and draw / hit-test tray icons in two rows.
+5. Tray Actions: Define 3 callback messages, register 3 custom tray icons (Win32Explorer, Taskbar, Desktop) on primary taskbar, implement single/double-click callbacks and context menus.
+
+---
 # CHANGELOG & EXECUTION HISTORY
 ---
 
