@@ -157,6 +157,9 @@ if (-not $failed) {
     }
     Set-Location $origDir
     
+    # Relocate x64 artifact to root for developer execution
+    Copy-Item "$BuildDir\Win32Explorer.exe" "$ScriptDir\Win32Explorer.exe" -Force
+    
     Write-Host "Auto-committing submodule Win32Explorer_26.0.3.0..." -ForegroundColor Cyan
     $origDirGit = Get-Location
     $submoduleDir = "$ScriptDir\Win32Explorer_26.0.3.0"

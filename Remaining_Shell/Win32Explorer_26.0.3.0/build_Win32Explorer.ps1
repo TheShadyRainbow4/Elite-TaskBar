@@ -85,17 +85,13 @@ if (Test-Path $exePath) {
         Log-Message "WARNING: Elite-EasySigner not found at $signerTool, skipping sign."
     }
 
-    $targetExe = Join-Path $root "Win32Explorer.exe"
-    $targetOld = Join-Path $root "Win32Explorer.old.bak"
-    
-    if (Test-Path $targetExe) {
-        if (Test-Path $targetOld) {
-            Remove-Item -Path $targetOld -Force -ErrorAction SilentlyContinue
-        }
-        Rename-Item -Path $targetExe -NewName "Win32Explorer.old.bak" -Force -ErrorAction SilentlyContinue
+    if ($Platform -eq "x64") {
+        $targetExe = Join-Path $root "BuildOutput\Win32Explorer.exe"
+    } else {
+        $targetExe = Join-Path $root "BuildOutputx86\Win32Explorer_x86.exe"
     }
-
-    Log-Message "Copying $exePath to $root\Win32Explorer.exe"
+    
+    Log-Message "Copying $exePath to $targetExe"
     Copy-Item -Path $exePath -Destination $targetExe -Force
 } else {
     Log-Message "WARNING: EXE not found at $exePath"

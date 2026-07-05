@@ -28,3 +28,5 @@ x86/
 *.ipch
 *.lib
 *.exp
+BuildOutput/desktop.ini
+BuildOutputx86/desktop.ini
