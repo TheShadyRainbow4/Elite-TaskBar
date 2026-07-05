@@ -6,26 +6,9 @@ PsExec v2.34 - Execute processes remotely
 Copyright (C) 2001-2021 Mark Russinovich
 Sysinternals - www.sysinternals.com
 
-Connecting to local system...
-
-
-Starting PSEXESVC service on local system...
-
-
-Copying authentication key to USER-PC...
-
-
-Connecting with PsExec service on USER-PC...
-
-
-Starting C:\Users\Administrator\Desktop\Elite-TaskBar\Win32Explorer.exe on USER-PC...
-
-
-
-C:\Users\Administrator\Desktop\Elite-TaskBar\Win32Explorer.exe started on USER-PC with process ID 4760.
 Sending IDM_VIEW_SMALLICONTILES (60018) command...
 LVM_GETVIEW: 4 (Expected: 4 = LV_VIEW_TILE)
-LVSIL_NORMAL ImageList: 2736585571264
+LVSIL_NORMAL ImageList: 1461536943696
 [PASS] Small Icon Tiles runtime checks passed.
 ViewModeGlobal in registry: 12 (Expected: 12)
 
@@ -35,23 +18,6 @@ PsExec v2.34 - Execute processes remotely
 Copyright (C) 2001-2021 Mark Russinovich
 Sysinternals - www.sysinternals.com
 
-Connecting to local system...
-
-
-Starting PSEXESVC service on local system...
-
-
-Copying authentication key to USER-PC...
-
-
-Connecting with PsExec service on USER-PC...
-
-
-Starting C:\Users\Administrator\Desktop\Elite-TaskBar\Win32Explorer.exe on USER-PC...
-
-
-
-C:\Users\Administrator\Desktop\Elite-TaskBar\Win32Explorer.exe started on USER-PC with process ID 7796.
 LVM_ISGROUPVIEWENABLED: 1 (Expected: 1)
 EnableDefaultGroupByType registry value: 1 (Expected: 1)
 [PASS] Default Group by Type on first run verified.
@@ -62,25 +28,8 @@ PsExec v2.34 - Execute processes remotely
 Copyright (C) 2001-2021 Mark Russinovich
 Sysinternals - www.sysinternals.com
 
-Connecting to local system...
-
-
-Starting PSEXESVC service on local system...
-
-
-Copying authentication key to USER-PC...
-
-
-Connecting with PsExec service on USER-PC...
-
-
-Starting C:\Users\Administrator\Desktop\Elite-TaskBar\Win32Explorer.exe on USER-PC...
-
-
-
-C:\Users\Administrator\Desktop\Elite-TaskBar\Win32Explorer.exe started on USER-PC with process ID 29476.
-Registry EnableDefaultGroupByType after change: 0 (Expected: 0)
-[PASS] Checkbox successfully updated registry setting.
+Registry EnableDefaultGroupByType after change: 1 (Expected: 0)
+[FAIL] Registry setting did not update.
 
 [TEST 4] Verifying Options dialog toggle and XML synchronization (Portable Mirror)...
 
@@ -88,23 +37,6 @@ PsExec v2.34 - Execute processes remotely
 Copyright (C) 2001-2021 Mark Russinovich
 Sysinternals - www.sysinternals.com
 
-Connecting to local system...
-
-
-Starting PSEXESVC service on local system...
-
-
-Copying authentication key to USER-PC...
-
-
-Connecting with PsExec service on USER-PC...
-
-
-Starting C:\Users\Administrator\Desktop\Elite-TaskBar\Win32Explorer.exe on USER-PC...
-
-
-
-C:\Users\Administrator\Desktop\Elite-TaskBar\Win32Explorer.exe started on USER-PC with process ID 11812.
 config.xml contents contains EnableDefaultGroupByType:
 [PASS] Checkbox successfully updated config.xml.
 
@@ -112,5 +44,5 @@ config.xml contents contains EnableDefaultGroupByType:
   SmallIconTilesView : [PASS]
   OptionsToggleXML : [PASS]
   DefaultGroupByType : [PASS]
-  OptionsToggleRegistry : [PASS]
-Overall Verdict: PASS
+  OptionsToggleRegistry : [FAIL]
+Overall Verdict: FAIL

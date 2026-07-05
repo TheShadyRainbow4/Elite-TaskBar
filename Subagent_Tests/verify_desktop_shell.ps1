@@ -136,23 +136,41 @@ Write-Host "0. Cleaning environment..." -ForegroundColor Cyan
 Get-Process -Name EliteTaskbar, EliteSettings, Win32Explorer, StartMenu -ErrorAction SilentlyContinue | Stop-Process -Force
 Start-Sleep -Seconds 2
 
-# Registry Paths
-$regPath = "HKCU:\Software\EliteSoftware\Win32Explorer\Advanced"
-if (!(Test-Path $regPath)) { New-Item -Path $regPath -Force | Out-Null }
+# Registry Helpers using .NET for robustness
+function Safe-SetRegistry($name, $value) {
+    $key = [Microsoft.Win32.Registry]::CurrentUser.CreateSubKey("Software\EliteSoftware\Win32Explorer\Advanced")
+    $key.SetValue($name, $value, [Microsoft.Win32.RegistryValueKind]::DWord)
+    $key.Close()
+}
+
+function Safe-GetRegistry($name, $defaultValue = 0) {
+    $key = [Microsoft.Win32.Registry]::CurrentUser.OpenSubKey("Software\EliteSoftware\Win32Explorer\Advanced")
+    if ($null -eq $key) { return $defaultValue }
+    $val = $key.GetValue($name)
+    $key.Close()
+    if ($null -eq $val) { return $defaultValue }
+    return $val
+}
+
+# Initialize registry values to 0
+Safe-SetRegistry "DesktopReplacementEnabled" 0
+Safe-SetRegistry "DesktopWallpaperEnabled" 0
+Safe-SetRegistry "DesktopIconsEnabled" 0
+Safe-SetRegistry "FallbackStartMenuEnabled" 0
 
 # ----------------- TEST 1: Settings Checkbox Toggles & Registry writing -----------------
 Write-Host "`n[TEST 1] Testing Settings Dialog checkbox toggles..." -ForegroundColor Yellow
 
-# Initialize registry values to 0
-Set-ItemProperty -Path $regPath -Name "DesktopReplacementEnabled" -Value 0 -Type DWord
-Set-ItemProperty -Path $regPath -Name "DesktopWallpaperEnabled" -Value 0 -Type DWord
-Set-ItemProperty -Path $regPath -Name "DesktopIconsEnabled" -Value 0 -Type DWord
-Set-ItemProperty -Path $regPath -Name "FallbackStartMenuEnabled" -Value 0 -Type DWord
-
 $settingsProc = Start-Process -FilePath ".\EliteSettings.exe" -PassThru
-Start-Sleep -Seconds 3
 
-$hPropSheet = [DesktopShellTester]::FindPropSheetWindow($settingsProc.Id)
+# Wait for property sheet to appear (resilient polling up to 10 seconds)
+$hPropSheet = [IntPtr]::Zero
+for ($i = 0; $i -lt 10; $i++) {
+    $hPropSheet = [DesktopShellTester]::FindPropSheetWindow($settingsProc.Id)
+    if ($hPropSheet -ne [IntPtr]::Zero) { break }
+    Start-Sleep -Seconds 1
+}
+
 if ($hPropSheet -eq [IntPtr]::Zero) {
     Write-Host "[FAIL] Could not find EliteSettings properties sheet." -ForegroundColor Red
 } else {
@@ -205,10 +223,10 @@ if ($hPropSheet -eq [IntPtr]::Zero) {
         }
         
         # Check registry values
-        $vReplace = (Get-ItemProperty -Path $regPath -Name "DesktopReplacementEnabled").DesktopReplacementEnabled
-        $vWallpaper = (Get-ItemProperty -Path $regPath -Name "DesktopWallpaperEnabled").DesktopWallpaperEnabled
-        $vIcons = (Get-ItemProperty -Path $regPath -Name "DesktopIconsEnabled").DesktopIconsEnabled
-        $vFallback = (Get-ItemProperty -Path $regPath -Name "FallbackStartMenuEnabled").FallbackStartMenuEnabled
+        $vReplace = Safe-GetRegistry "DesktopReplacementEnabled"
+        $vWallpaper = Safe-GetRegistry "DesktopWallpaperEnabled"
+        $vIcons = Safe-GetRegistry "DesktopIconsEnabled"
+        $vFallback = Safe-GetRegistry "FallbackStartMenuEnabled"
         
         Write-Host "Registry values after dialog exit:" -ForegroundColor Cyan
         Write-Host "  DesktopReplacementEnabled: $vReplace" -ForegroundColor Cyan
@@ -231,8 +249,8 @@ Write-Host "`n[TEST 2] Verifying dynamic startup (DesktopReplacementEnabled togg
 
 # Phase A: DesktopReplacementEnabled = 0
 Write-Host "Phase A: Launching with DesktopReplacementEnabled = 0" -ForegroundColor Cyan
-Set-ItemProperty -Path $regPath -Name "DesktopReplacementEnabled" -Value 0 -Type DWord
-Set-ItemProperty -Path $regPath -Name "TaskbarMode" -Value 1 -Type DWord # Replace Mode
+Safe-SetRegistry "DesktopReplacementEnabled" 0
+Safe-SetRegistry "TaskbarMode" 1 # Replace Mode
 
 $taskbarProc = Start-Process -FilePath ".\EliteTaskbar.exe" -ArgumentList "-allowMultiple" -PassThru
 Start-Sleep -Seconds 4
@@ -268,7 +286,7 @@ if ($customProgmanFound) {
 
 # Phase B: DesktopReplacementEnabled = 1
 Write-Host "Phase B: Launching with DesktopReplacementEnabled = 1" -ForegroundColor Cyan
-Set-ItemProperty -Path $regPath -Name "DesktopReplacementEnabled" -Value 1 -Type DWord
+Safe-SetRegistry "DesktopReplacementEnabled" 1
 
 $taskbarProc = Start-Process -FilePath ".\EliteTaskbar.exe" -ArgumentList "-allowMultiple" -PassThru
 Start-Sleep -Seconds 5
