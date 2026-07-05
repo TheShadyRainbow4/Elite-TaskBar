@@ -6,6 +6,10 @@ This document serves as a high-level map and explanation for all files within th
 - **build.ps1**: The master MSVC build script. It locates Visual Studio, copies icons, compiles resources (`rc.exe`), and compiles the `SourceFiles` into `BuildOutput\x64` and `BuildOutput\x86`. It handles building both the main `EliteTaskbar.exe` and the `EliteSettings.exe` stub executable, auto-committing the repository on success.
 - **backup.ps1**: A utility script triggered by `build.ps1` to zip/cab the project into the `Backups` folder before compilation to prevent data loss.
 - **install_prereqs.ps1**: Installs necessary Windows SDK and MSVC components required to build the project.
+- **verify_final_polish.ps1**: Programmatically validates the application of Desktop Background, Quick Launch, 2-Row Tray, and Clock Seconds toggles across both normal (HKCU) and Portable Mirror (HKLM & XML) modes.
+
+## E2E Testing & Verification Scripts
+- **Subagent_Tests/run_comprehensive_e2e.ps1**: Executes E2E verification of 10 features across 4 tiers (Feature, Boundary, Pairwise, Scenario) utilizing non-disruptive, single-shell lifecycle dispatch.
 
 ## Core Application Logic
 - **main.cpp**: The application entry point (`WinMain`). Initializes COM, GDI+, creates the main `TaskbarWindow`, handles the `/settings` argument to launch the custom property sheet, parses command-line arguments (like `-allowMultiple`), and runs the primary message pump (Event Loop). It also manages single-instance mutexes and loads global configurations.

@@ -14,7 +14,7 @@
 #pragma comment(lib, "shell32.lib")
 #pragma comment(lib, "comctl32.lib")
 
-EliteTaskbarConfig g_Config = { L"", TaskbarMode::Independent, ButtonWidthMode::Auto, TrayOverflowMode::Win7Flyout, false, false, {} };
+EliteTaskbarConfig g_Config = { L"", TaskbarMode::Independent, ButtonWidthMode::Auto, TrayOverflowMode::Win7Flyout, 1, false, false, true, {} };
 HINSTANCE g_hInstance = NULL;
 
 void QueryOperationalMode() {
@@ -69,6 +69,14 @@ void QueryOperationalMode() {
         bufferSize = sizeof(DWORD);
         if (RegQueryValueExW(hKey, L"UseNativeTaskBand", NULL, NULL, (LPBYTE)&dwValue, &bufferSize) == ERROR_SUCCESS) {
             g_Config.UseNativeTaskBand = (dwValue == 1);
+        }
+        
+        dwValue = 1;
+        bufferSize = sizeof(DWORD);
+        if (RegQueryValueExW(hKey, L"EnableTwoRowTray", NULL, NULL, (LPBYTE)&dwValue, &bufferSize) == ERROR_SUCCESS) {
+            g_Config.EnableTwoRowTray = (dwValue == 1);
+        } else {
+            g_Config.EnableTwoRowTray = true;
         }
         
         RegCloseKey(hKey);

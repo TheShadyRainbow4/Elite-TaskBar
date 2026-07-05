@@ -313,8 +313,13 @@ LRESULT CALLBACK OrbWndProc(HWND hwnd, UINT uMsg, WPARAM wParam, LPARAM lParam) 
 
                 HWND hNativeTarget = NULL;
                 HMONITOR hMon = MonitorFromWindow(pThis->GetParentTaskbar(), MONITOR_DEFAULTTONULL);
+                bool isSecondary = false;
                 if (hMon) {
                     HWND hPrimary = FindWindowW(L"Shell_TrayWnd", NULL);
+                    HMONITOR hPrimaryMon = MonitorFromWindow(hPrimary, MONITOR_DEFAULTTOPRIMARY);
+                    if (hMon != hPrimaryMon) {
+                        isSecondary = true;
+                    }
                     if (MonitorFromWindow(hPrimary, MONITOR_DEFAULTTONULL) == hMon) {
                         hNativeTarget = hPrimary;
                     } else {
@@ -329,6 +334,11 @@ LRESULT CALLBACK OrbWndProc(HWND hwnd, UINT uMsg, WPARAM wParam, LPARAM lParam) 
                 }
                 if (!hNativeTarget) hNativeTarget = FindWindowW(L"Shell_TrayWnd", NULL);
                 if (!hNativeTarget) hNativeTarget = pThis->GetParentTaskbar(); // Fallback for PE without native shell
+
+                if (isSecondary) {
+                    extern void StartNativeTaskbarSpoof(HWND hClickedTaskbar);
+                    StartNativeTaskbarSpoof(pThis->GetParentTaskbar());
+                }
 
                 POINT pt;
                 GetCursorPos(&pt);

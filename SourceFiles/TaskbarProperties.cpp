@@ -517,6 +517,7 @@ INT_PTR CALLBACK TaskbarSettingsDlgProc(HWND hwndDlg, UINT uMsg, WPARAM wParam, 
         AddDlgTooltip(hwndDlg, IDC_THEME_FOLDER_PATH, L"Directory where your beautiful custom PNG/ICO icons reside. Make it pretty!");
         AddDlgTooltip(hwndDlg, IDC_THEME_FOLDER_BROWSE, L"Open folder selector to find your icon folder. Hope your folders are clean!");
         AddDlgTooltip(hwndDlg, IDC_ENABLE_DARK_MODE, L"Permanently disabled because dark mode is forbidden by our design guidelines!");
+        AddDlgTooltip(hwndDlg, IDC_TWO_ROW_TRAY, L"Display the notification area icons in two rows instead of one. Extra space for extra icons.");
         HKEY hKey;
         if (RegOpenKeyExW(GetEliteRegistryRoot(), L"Software\\EliteSoftware\\Win32Explorer\\Advanced", 0, KEY_READ, &hKey) == ERROR_SUCCESS) {
             DWORD dwValue = 0;
@@ -558,6 +559,13 @@ INT_PTR CALLBACK TaskbarSettingsDlgProc(HWND hwndDlg, UINT uMsg, WPARAM wParam, 
             if (RegQueryValueExW(hKey, L"EnablePortableMirror", NULL, NULL, (LPBYTE)&dwValue, &cbData) == ERROR_SUCCESS) {
                 SendDlgItemMessageW(hwndDlg, IDC_PORTABLE_MIRROR, BM_SETCHECK, dwValue ? BST_CHECKED : BST_UNCHECKED, 0);
             }
+
+            DWORD enableTwoRow = 1;
+            cbData = sizeof(DWORD);
+            if (RegQueryValueExW(hKey, L"EnableTwoRowTray", NULL, NULL, (LPBYTE)&dwValue, &cbData) == ERROR_SUCCESS) {
+                enableTwoRow = dwValue;
+            }
+            SendDlgItemMessageW(hwndDlg, IDC_TWO_ROW_TRAY, BM_SETCHECK, enableTwoRow ? BST_CHECKED : BST_UNCHECKED, 0);
 
             WCHAR szThemePath[MAX_PATH] = {0};
             DWORD cbThemePath = sizeof(szThemePath);
@@ -614,6 +622,9 @@ INT_PTR CALLBACK TaskbarSettingsDlgProc(HWND hwndDlg, UINT uMsg, WPARAM wParam, 
                 DWORD hoverPreview = (SendDlgItemMessageW(hwndDlg, IDC_HOVER_PREVIEW, BM_GETCHECK, 0, 0) == BST_CHECKED) ? 1 : 0;
                 RegSetValueExW(hKey, L"TaskbarHoverPreview", 0, REG_DWORD, (const BYTE*)&hoverPreview, sizeof(DWORD));
                 
+                DWORD twoRow = (SendDlgItemMessageW(hwndDlg, IDC_TWO_ROW_TRAY, BM_GETCHECK, 0, 0) == BST_CHECKED) ? 1 : 0;
+                RegSetValueExW(hKey, L"EnableTwoRowTray", 0, REG_DWORD, (const BYTE*)&twoRow, sizeof(DWORD));
+
                 WCHAR szThemePath[MAX_PATH] = {0};
                 GetDlgItemTextW(hwndDlg, IDC_THEME_FOLDER_PATH, szThemePath, MAX_PATH);
                 RegSetValueExW(hKey, L"CustomThemePath", 0, REG_SZ, (const BYTE*)szThemePath, (DWORD)(wcslen(szThemePath) + 1) * sizeof(WCHAR));

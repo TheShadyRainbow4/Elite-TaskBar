@@ -44,6 +44,7 @@ Implement Milestone 5 features: Dynamic Primary Display Spoofing, Tray-Clock Gap
 - Mirrored CPL and Settings EXE.
 - Build process managed only by build.ps1 chain.
 - Binary signing using elite-easysigner.
+- Do not perform continuous automated shell restarts that steal focus (LIFTED by parent).
 
 ## Current Parent
 - Conversation ID: 524a5ab5-f0bb-494c-a5f6-b5aa14c7e677

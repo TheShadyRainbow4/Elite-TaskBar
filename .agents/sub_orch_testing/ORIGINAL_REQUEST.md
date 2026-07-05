@@ -19,3 +19,12 @@ Your task is to:
 7. Write your handoff.md and send a completion message to your parent.
 
 Do NOT modify any application C++, C#, or RC files. You are strictly responsible for testing and validation.
+
+## Follow-up — 2026-07-05T23:33:20Z
+
+URGENT CONSTRAINT: The user has explicitly requested to stop restarting the shell over and over, as it is taking control away from active applications. Please ensure that E2E tests and verification scripts do not perform continuous automated shell restarts that steal focus.
+
+## Follow-up — 2026-07-05T23:39:23Z
+
+Update: The restriction on shell restarts has been lifted by the user. You may resume restarting the shell as needed for testing and validation.
+

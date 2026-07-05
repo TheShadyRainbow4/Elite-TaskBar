@@ -84,6 +84,8 @@ Elite-Taskbar is designed from the ground up to seamlessly blend into the Window
 * **Property Sheet Sarcastic Tooltips**: Injected custom subclassing logic to dynamically set witty and sarcastic tooltips on standard Property Sheet buttons (Okay, Cancel, Apply).
 * **Settings Apply DLL Module Path Resolution**: Patched the folder fallback logic inside the DLL to use `g_hInstance` instead of `NULL` to avoid launching from the System32 directory.
 * **DDF Compression Pipeline Acceleration**: Restructured the backup pipeline to ignore locked log/txt files and scan only active code folders, accelerating backups from a hang to under a second.
+* **Automated Verification Script (verify_final_polish.ps1)**: Programmatically validates the application of Desktop Background, Quick Launch, 2-Row Tray, and Clock Seconds toggles across both normal (HKCU) and Portable Mirror (HKLM & XML) modes.
+* **Comprehensive E2E Test Suite (Subagent_Tests/run_comprehensive_e2e.ps1)**: Runs E2E verification of 10 features across 4 tiers (Feature, Boundary, Pairwise, Scenario) utilizing non-disruptive, single-shell lifecycle dispatch.
 
 </details>
 

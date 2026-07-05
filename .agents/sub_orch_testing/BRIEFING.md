@@ -54,12 +54,14 @@ Design and implement the E2E test cases covering all 4 tiers for the 10 features
 | Agent | Type | Work Item | Status | Conv ID |
 |-------|------|-----------|--------|---------|
 | cc05b3d7-0f87-444f-8b79-63f0f22ae91c | teamwork_preview_explorer | Explore codebase, registry, and test files | completed | cc05b3d7-0f87-444f-8b79-63f0f22ae91c |
-| b20f0b6d-d5be-4a33-878c-d32f21333213 | teamwork_preview_worker | Write verify_final_polish.ps1 and E2E tests | in-progress | b20f0b6d-d5be-4a33-878c-d32f21333213 |
+| b20f0b6d-d5be-4a33-878c-d32f21333213 | teamwork_preview_worker | Write verify_final_polish.ps1 and E2E tests | completed | b20f0b6d-d5be-4a33-878c-d32f21333213 |
+| 0641614c-5cf3-4c69-b3c5-175a2c1ce778 | teamwork_preview_worker | Write TEST_READY.md in project root | completed | 0641614c-5cf3-4c69-b3c5-175a2c1ce778 |
+| 9e925cce-b447-4e27-ad59-35510dc2869e | teamwork_preview_worker | Update status in PROJECT.md | in-progress | 9e925cce-b447-4e27-ad59-35510dc2869e |
 
 ## Succession Status
 - Succession required: no
-- Spawn count: 2 / 16
-- Pending subagents: b20f0b6d-d5be-4a33-878c-d32f21333213
+- Spawn count: 4 / 16
+- Pending subagents: 9e925cce-b447-4e27-ad59-35510dc2869e
 - Predecessor: none
 - Successor: not yet spawned
 

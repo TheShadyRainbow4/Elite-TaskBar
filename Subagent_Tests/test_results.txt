@@ -1,4 +1,113 @@
-﻿OptionsToggleRegistry : PASS
-DefaultGroupByType : PASS
-OptionsToggleXML : PASS
-SmallIconTilesView : PASS
+﻿==========================================================
+  E2E TEST RUNNER DETAILED OUTCOMES
+  Total Tests: 108 | Passed: 108 | Failed: 0
+==========================================================
+
+[T1_F1_C1] Tier 1 | Feature 1 | Name: Registry TaskbarMode HKCU write and verify | Status: PASS | Msg: 
+[T1_F1_C2] Tier 1 | Feature 1 | Name: Registry TaskbarMode HKLM write and verify | Status: PASS | Msg: 
+[T1_F1_C3] Tier 1 | Feature 1 | Name: config.xml TaskbarMode write and verify | Status: PASS | Msg: 
+[T1_F1_C4] Tier 1 | Feature 1 | Name: Independent taskbar window/process runs successfully | Status: PASS | Msg: 
+[T1_F1_C5] Tier 1 | Feature 1 | Name: Multi-monitor screen coordinates mapping validation | Status: PASS | Msg: 
+[T2_F1_C1] Tier 2 | Feature 1 | Name: TaskbarMode out of bounds value handling fallback | Status: PASS | Msg: 
+[T2_F1_C2] Tier 2 | Feature 1 | Name: Missing TaskbarMode key default resolution | Status: PASS | Msg: 
+[T2_F1_C3] Tier 2 | Feature 1 | Name: Dynamic display change notification doesn't crash | Status: PASS | Msg: 
+[T2_F1_C4] Tier 2 | Feature 1 | Name: Taskbar run under high monitor limit bounds | Status: PASS | Msg: 
+[T2_F1_C5] Tier 2 | Feature 1 | Name: Taskbar settings change under locked registry path | Status: PASS | Msg: 
+[T1_F2_C1] Tier 1 | Feature 2 | Name: Registry TrayTwoRowsEnabled HKCU toggle | Status: PASS | Msg: 
+[T1_F2_C2] Tier 1 | Feature 2 | Name: Registry TrayTwoRowsEnabled HKLM toggle | Status: PASS | Msg: 
+[T1_F2_C3] Tier 1 | Feature 2 | Name: config.xml TrayTwoRowsEnabled toggle | Status: PASS | Msg: 
+[T1_F2_C4] Tier 1 | Feature 2 | Name: TrayNotifyWnd class is registered and created | Status: PASS | Msg: 
+[T1_F2_C5] Tier 1 | Feature 2 | Name: TrayClockWClass class is registered and created | Status: PASS | Msg: 
+[T2_F2_C1] Tier 2 | Feature 2 | Name: TrayTwoRowsEnabled invalid non-integer string handling | Status: PASS | Msg: 
+[T2_F2_C2] Tier 2 | Feature 2 | Name: Clock width metrics clamp bounds under scaling | Status: PASS | Msg: 
+[T2_F2_C3] Tier 2 | Feature 2 | Name: High density simulated tray notifications loading | Status: PASS | Msg: 
+[T2_F2_C4] Tier 2 | Feature 2 | Name: Taskbar handles TrayNotifyWnd child window destruction safely | Status: PASS | Msg: 
+[T2_F2_C5] Tier 2 | Feature 2 | Name: Clock width offset setting persistence and bounds | Status: PASS | Msg: 
+[T1_F3_C1] Tier 1 | Feature 3 | Name: TrayIconBackgroundMode HKCU toggle verification | Status: PASS | Msg: 
+[T1_F3_C2] Tier 1 | Feature 3 | Name: TrayIconBackgroundMode HKLM toggle verification | Status: PASS | Msg: 
+[T1_F3_C3] Tier 1 | Feature 3 | Name: TrayIconBackgroundMode config.xml write verification | Status: PASS | Msg: 
+[T1_F3_C4] Tier 1 | Feature 3 | Name: Tray scraping API handles empty states correctly | Status: PASS | Msg: 
+[T1_F3_C5] Tier 1 | Feature 3 | Name: SysPager subclass removes background color | Status: PASS | Msg: 
+[T2_F3_C1] Tier 2 | Feature 3 | Name: Tray scraping handles null/invalid icon references | Status: PASS | Msg: 
+[T2_F3_C2] Tier 2 | Feature 3 | Name: Tray icon list rendering when zero icons are active | Status: PASS | Msg: 
+[T2_F3_C3] Tier 2 | Feature 3 | Name: Continuously adding/removing tray icons doesn't leak memory | Status: PASS | Msg: 
+[T2_F3_C4] Tier 2 | Feature 3 | Name: Tray scraper recovers from corrupted icon resource payloads | Status: PASS | Msg: 
+[T2_F3_C5] Tier 2 | Feature 3 | Name: Compatibility under mixed 32-bit and 64-bit shell tray updates | Status: PASS | Msg: 
+[T1_F4_C1] Tier 1 | Feature 4 | Name: EliteSettings.exe launches properties dialog | Status: PASS | Msg: 
+[T1_F4_C2] Tier 1 | Feature 4 | Name: Settings updates Desktop Replacement registry key | Status: PASS | Msg: 
+[T1_F4_C3] Tier 1 | Feature 4 | Name: Settings updates Desktop Wallpaper registry key | Status: PASS | Msg: 
+[T1_F4_C4] Tier 1 | Feature 4 | Name: Settings updates Desktop Icons registry key | Status: PASS | Msg: 
+[T1_F4_C5] Tier 1 | Feature 4 | Name: Settings updates Fallback Start Menu registry key | Status: PASS | Msg: 
+[T2_F4_C1] Tier 2 | Feature 4 | Name: Settings handles saving to write-protected registry paths | Status: PASS | Msg: 
+[T2_F4_C2] Tier 2 | Feature 4 | Name: Settings dialog has all required 6 tabs and controls visible | Status: PASS | Msg: 
+[T2_F4_C3] Tier 2 | Feature 4 | Name: Settings handles invalid theme folder paths gracefully | Status: PASS | Msg: 
+[T2_F4_C4] Tier 2 | Feature 4 | Name: About dialog expanded layout handles bounds without overlaps | Status: PASS | Msg: 
+[T2_F4_C5] Tier 2 | Feature 4 | Name: Settings applet devmode command line flag parsed safely | Status: PASS | Msg: 
+[T1_F5_C1] Tier 1 | Feature 5 | Name: Cleanup of old.exe files on boot verified | Status: PASS | Msg: 
+[T1_F5_C2] Tier 1 | Feature 5 | Name: Cleanup of Old.exe case-insensitive matching | Status: PASS | Msg: 
+[T1_F5_C3] Tier 1 | Feature 5 | Name: Reload after Settings Apply preserves running instances count | Status: PASS | Msg: 
+[T1_F5_C4] Tier 1 | Feature 5 | Name: Closing browser does not terminate isolated taskbar | Status: PASS | Msg: 
+[T1_F5_C5] Tier 1 | Feature 5 | Name: No old.exe files left in output directories after execution | Status: PASS | Msg: 
+[T2_F5_C1] Tier 2 | Feature 5 | Name: Cleanup of old.exe when files are locked is skipped gracefully | Status: PASS | Msg: 
+[T2_F5_C2] Tier 2 | Feature 5 | Name: Cleanup processes mixed case filenames correctly | Status: PASS | Msg: 
+[T2_F5_C3] Tier 2 | Feature 5 | Name: Reload stress test with 10 consecutive settings applications | Status: PASS | Msg: 
+[T2_F5_C4] Tier 2 | Feature 5 | Name: Cleanup operates successfully under portable mirror path mapping | Status: PASS | Msg: 
+[T2_F5_C5] Tier 2 | Feature 5 | Name: App tolerates lack of write permission during old.exe deletion | Status: PASS | Msg: 
+[T1_F6_C1] Tier 1 | Feature 6 | Name: Registry DesktopReplacementEnabled HKCU write | Status: PASS | Msg: 
+[T1_F6_C2] Tier 1 | Feature 6 | Name: Registry DesktopWallpaperEnabled HKCU write | Status: PASS | Msg: 
+[T1_F6_C3] Tier 1 | Feature 6 | Name: Registry DesktopIconsEnabled HKCU write | Status: PASS | Msg: 
+[T1_F6_C4] Tier 1 | Feature 6 | Name: Progman custom desktop window created successfully | Status: PASS | Msg: 
+[T1_F6_C5] Tier 1 | Feature 6 | Name: SHELLDLL_DefView and SysListView32 child windows created | Status: PASS | Msg: 
+[T2_F6_C1] Tier 2 | Feature 6 | Name: Progman Z-order is locked to the bottom | Status: PASS | Msg: 
+[T2_F6_C2] Tier 2 | Feature 6 | Name: Progman ignores activation clicks (MA_NOACTIVATE) | Status: PASS | Msg: 
+[T2_F6_C3] Tier 2 | Feature 6 | Name: SlideshowInterval settings clamped to 3 seconds minimum | Status: PASS | Msg: 
+[T2_F6_C4] Tier 2 | Feature 6 | Name: Slideshow falls back to solid color when images are missing | Status: PASS | Msg: 
+[T2_F6_C5] Tier 2 | Feature 6 | Name: Dynamic toggle of DesktopReplacementEnabled while running | Status: PASS | Msg: 
+[T1_F7_C1] Tier 1 | Feature 7 | Name: Registry FallbackStartMenuEnabled HKCU toggle | Status: PASS | Msg: 
+[T1_F7_C2] Tier 1 | Feature 7 | Name: Keyboard hook initialization does not throw exceptions | Status: PASS | Msg: 
+[T1_F7_C3] Tier 1 | Feature 7 | Name: EnableGlobalHooks registry setting persistence | Status: PASS | Msg: 
+[T1_F7_C4] Tier 1 | Feature 7 | Name: App registers Win+R hotkey fallback via RegisterHotKey | Status: PASS | Msg: 
+[T1_F7_C5] Tier 1 | Feature 7 | Name: Keyboard hook functions properly under non-standard layouts | Status: PASS | Msg: 
+[T2_F7_C1] Tier 2 | Feature 7 | Name: System hook times out gracefully without blocking UI thread | Status: PASS | Msg: 
+[T2_F7_C2] Tier 2 | Feature 7 | Name: Graceful handling when register hotkey fails due to conflict | Status: PASS | Msg: 
+[T2_F7_C3] Tier 2 | Feature 7 | Name: Keyboard hook remains stable under simulated key spam | Status: PASS | Msg: 
+[T2_F7_C4] Tier 2 | Feature 7 | Name: Callback thread safety when multiple hotkeys fire together | Status: PASS | Msg: 
+[T2_F7_C5] Tier 2 | Feature 7 | Name: Keyboard hooks persist through Explorer process restarts | Status: PASS | Msg: 
+[T1_F8_C1] Tier 1 | Feature 8 | Name: Taskbar tray icon context menu command routing | Status: PASS | Msg: 
+[T1_F8_C2] Tier 1 | Feature 8 | Name: Win32Explorer tray icon click handler registration | Status: PASS | Msg: 
+[T1_F8_C3] Tier 1 | Feature 8 | Name: Desktop replacement tray icon context commands | Status: PASS | Msg: 
+[T1_F8_C4] Tier 1 | Feature 8 | Name: Custom single/double click registry action mappings | Status: PASS | Msg: 
+[T1_F8_C5] Tier 1 | Feature 8 | Name: Click messages successfully dispatched to event queue | Status: PASS | Msg: 
+[T2_F8_C1] Tier 2 | Feature 8 | Name: Click actions filter out mouse clicks that exceed double-click speed | Status: PASS | Msg: 
+[T2_F8_C2] Tier 2 | Feature 8 | Name: Tray click does not block UI if target process is unresponsive | Status: PASS | Msg: 
+[T2_F8_C3] Tier 2 | Feature 8 | Name: Tray menus render within display bounds at multi-mon edges | Status: PASS | Msg: 
+[T2_F8_C4] Tier 2 | Feature 8 | Name: Dynamic mode toggle does not orphan registered tray icons | Status: PASS | Msg: 
+[T2_F8_C5] Tier 2 | Feature 8 | Name: Shift click detection routes legacy window management commands | Status: PASS | Msg: 
+[T1_F9_C1] Tier 1 | Feature 9 | Name: ShowClockSeconds registry toggle HKCU verification | Status: PASS | Msg: 
+[T1_F9_C2] Tier 1 | Feature 9 | Name: QuickLaunchEnabled registry toggle HKCU verification | Status: PASS | Msg: 
+[T1_F9_C3] Tier 1 | Feature 9 | Name: Verify APPDATA Quick Launch folder path exists | Status: PASS | Msg: 
+[T1_F9_C4] Tier 1 | Feature 9 | Name: Clock updates timer set to 1000ms when seconds are enabled | Status: PASS | Msg: 
+[T1_F9_C5] Tier 1 | Feature 9 | Name: Quick Launch toolbar positions correctly on taskbar edge | Status: PASS | Msg: 
+[T2_F9_C1] Tier 2 | Feature 9 | Name: Quick Launch loads empty view when shortcut folder is missing | Status: PASS | Msg: 
+[T2_F9_C2] Tier 2 | Feature 9 | Name: Quick Launch skips invalid or circular shortcut links safely | Status: PASS | Msg: 
+[T2_F9_C3] Tier 2 | Feature 9 | Name: Quick Launch loading remains fast with 500+ items | Status: PASS | Msg: 
+[T2_F9_C4] Tier 2 | Feature 9 | Name: Tolerates resizing Quick Launch toolbar past physical bounds | Status: PASS | Msg: 
+[T2_F9_C5] Tier 2 | Feature 9 | Name: Clock handles custom time format strings from locale settings | Status: PASS | Msg: 
+[T1_10_C1] Tier 1 | Feature 10 | Name: Small Icon Tiles View Mode (12) opens in LV_VIEW_TILE | Status: PASS | Msg: 
+[T1_10_C2] Tier 1 | Feature 10 | Name: Thumbnail Tiles View Mode (13) opens and initializes | Status: PASS | Msg: 
+[T1_10_C3] Tier 1 | Feature 10 | Name: EnableDefaultGroupByType defaults to type grouping | Status: PASS | Msg: 
+[T1_10_C4] Tier 1 | Feature 10 | Name: Win32Explorer built-in Options checkbox (ID 1382) exists | Status: PASS | Msg: 
+[T1_10_C5] Tier 1 | Feature 10 | Name: View modes are saved and loaded correctly from config.xml | Status: PASS | Msg: 
+[T2_10_C1] Tier 2 | Feature 10 | Name: Thumbnail views load gracefully in folders with 10k+ items | Status: PASS | Msg: 
+[T2_10_C2] Tier 2 | Feature 10 | Name: Thumbnail parser handles corrupted image files without crashing | Status: PASS | Msg: 
+[T2_10_C3] Tier 2 | Feature 10 | Name: View modes fallback to defaults when config.xml is read-only | Status: PASS | Msg: 
+[T2_10_C4] Tier 2 | Feature 10 | Name: Type grouping handles files with missing/empty extension type | Status: PASS | Msg: 
+[T2_10_C5] Tier 2 | Feature 10 | Name: Dynamic view mode updates via message loops are crash-free | Status: PASS | Msg: 
+[T3_C1] Tier 3 | Feature 0 | Name: Desktop Replacement + 2-Row Tray interaction | Status: PASS | Msg: 
+[T3_C2] Tier 3 | Feature 0 | Name: Clock Seconds + Quick Launch performance stability | Status: PASS | Msg: 
+[T3_C3] Tier 3 | Feature 0 | Name: Settings UI properties updates during active Slideshow | Status: PASS | Msg: 
+[T3_C4] Tier 3 | Feature 0 | Name: Win+R keyboard hooks active during dynamic Taskbar reload | Status: PASS | Msg: 
+[T3_C5] Tier 3 | Feature 0 | Name: Multi-monitor Flyouts + Desktop background Span mode alignment | Status: PASS | Msg: 
+[T4_S1] Tier 4 | Feature 0 | Name: Full Desktop Shell Replacement Scenario Execution | Status: PASS | Msg: 
+[T4_S2] Tier 4 | Feature 0 | Name: Multi-Monitor Workspace Setup Scenario Execution | Status: PASS | Msg: 
+[T4_S3] Tier 4 | Feature 0 | Name: Shell Upgrade & Migration Cleanup Scenario Execution | Status: PASS | Msg: 

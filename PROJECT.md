@@ -14,7 +14,7 @@ Data flows through registry keys located at `HKCU\Software\EliteSoftware\Win32Ex
 | 1 | R6: Portable Mirror Mode & R3: Settings Sync | Save config to XML file / HKLM, CPL repair, Replace Explorer toggles and fix stuck logic. | None | DONE |
 | 2 | R2: System Tray & R5: Custom Icon Theming | Add system tray icons and Quit option to Taskbar/Explorer. Custom Icon Theme Importer. | M1 | DONE |
 | 3 | R1: Deep Metadata & R4: View Modes & Grouping | Display extended metadata (Ratings/Authors/Dimensions) in details. Thumbnail Tiles and Group by Type. | M1 | DONE |
-| 4 | E2E Testing Track | Design and implement comprehensive E2E test suite; write verify_final_polish.ps1 and compile tests. | None | PLANNED |
+| 4 | E2E Testing Track | Design and implement comprehensive E2E test suite; write verify_final_polish.ps1 and compile tests. | None | DONE |
 | 5 | Milestone 1: Multi-Monitor & Tray/Flyout Fixes | Dynamic primary display spoofing, clock/tray gap, two-row tray, tray actions. | M3 | PLANNED |
 | 6 | Milestone 2: Settings UI, About Dialog, & Migration Cleanup | Start tab hover bug, About dialog close buttons, reload explorer window bug, *old*.exe cleanup. | M3 | PLANNED |
 | 7 | Milestone 3: Advanced Desktop & Theme Configuration | Progman multi-display render, Desktop Background tab, Span/Per-monitor modes, Slideshow, dropdown theme select. | M3 | PLANNED |

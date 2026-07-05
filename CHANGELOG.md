@@ -5,6 +5,7 @@ All notable changes to this project will be documented in this file.
 
 ## [Unreleased]
 ### Added
+- **E2E Test Suite Summary**: Added `TEST_READY.md` in the project root to summarize the coverage, feature checklist, and run commands of the comprehensive E2E test suite.
 - **Optimized Desktop Wallpaper Rendering & Submodule Settings Sync (Gen 2 Polish)**: Cached the decoded Gdiplus::Bitmap object of the desktop wallpaper in `DesktopWindow.cpp` to prevent expensive disk read and decode operations on every paint event. Added dynamic invalidation logic to reload the bitmap only when registry settings (wallpaper path, style, tile) are changed. Synchronized `TaskbarProperties.cpp` and `resources.rc` changes to the `Win32Explorer` submodule directory (`Win32Explorer_26.0.3.0/App_Source/EliteTaskbar/`) to maintain feature and property sheet parity.
 - **Phase XI Custom Desktop Replacement Window (Progman)**: Implemented registration of custom class `"Progman"` and borderless window creation spanning virtual screen dimensions. Handled bottom Z-order positioning using `WM_WINDOWPOSCHANGING` and focus management on `WM_MOUSEACTIVATE`. Integrated programmatic hiding of native `Progman` and child hosting `WorkerW` windows during initialization, and clean restoration on cleanup.
 - **Phase XI GDI+ Wallpaper Rendering**: Added custom high-quality background rendering inside `"Progman"`'s `WM_PAINT` / `WM_ERASEBKGND` messages. Supports Center, Stretch, Tile, Fit, and Fill styles rescaled with GDI+ bicubic interpolation, reading from registry `HKCU\Control Panel\Desktop\Wallpaper` and style keys.
@@ -47,6 +48,7 @@ All notable changes to this project will be documented in this file.
 - **Offline Build Git Push Hang**: Commented out the `git push origin HEAD` command in `build.ps1` to prevent builds from stalling indefinitely in network-isolated CODE_ONLY environments.
 
 ### Changed
+- **Milestone Status Update**: Updated the status of Milestone 4 (E2E Testing Track) from `PLANNED` to `DONE` in the project roadmap (`PROJECT.md`).
 - **Typography Font Definitions**: Updated dialog templates in `resources.rc` to use `Segoe UI Semibold` with `600` weight.
 - **Dialog Icons & Spacing**: Configured Help and About dialogs with native titlebar icons (`WM_SETICON`) and reduced the dead space in the expanded About dialog to make it look clean.
 - **Property Sheet Renaming & Tooltips**: Renamed the standard Property Sheet OK button to "Okay" at runtime and added sarcastic, witty tooltips to all property sheet buttons and width settings.
@@ -387,6 +389,13 @@ All notable changes to this project will be documented in this file.
 - Modified `build_Win32Explorer.ps1` to explicitly copy the compiled `Win32Explorer.exe` directly into the `Elite-TaskBar` project root directory upon successful compilation.
 
 ## [Unreleased]
+### Added
+- **E2E Testing Track Implementation**: Designed and implemented the automated verification script `verify_final_polish.ps1` at the project root to programmatically validate the registry settings for Desktop Background (`DesktopWallpaperEnabled`), Quick Launch (`QuickLaunchEnabled`), 2-Row Tray (`TrayTwoRowsEnabled`), and Clock Seconds (`ShowClockSeconds`) under both normal mode (HKCU) and Portable Mirror mode (HKLM & `config.xml`).
+- **Comprehensive E2E Test Suite (`Subagent_Tests/run_comprehensive_e2e.ps1`)**: Implemented a comprehensive E2E test runner covering all 4 tiers (Feature Coverage, Boundary/Corner cases, Cross-Feature Combinations, and Real-world Application Scenarios) for the 10 features defined in `TEST_INFRA.md`.
+- **PowerShell / Win32 Integration Verification**: Query child and grandchild window hierarchy (`Progman -> SHELLDLL_DefView -> SysListView32` and `Taskbar -> TrayNotifyWnd -> TrayClockWClass`) via Win32 API calls compiled in-memory inside PowerShell.
+- **Dynamic Settings Invalidation & Survival**: Verified that settings update broadcasts via `WM_SETTINGCHANGE` (with `lParam` = `"TraySettings"`) trigger dynamic configuration re-queries without causing application crashes.
+- **Focus-Stealing and Shell Restarts Minimization**: Optimized the E2E test runner to dispatch a single long-lived replacement shell instance for all dynamic window checks rather than repeatedly starting and stopping the taskbar shell, preventing continuous window activation and focus stealing.
+
 ### Changed
 - **Registry Roots for Portable Mirror**: Added `useHKLM` parameter to `RegistryAppStorageFactory::MaybeCreate`, `OpenKeyForLoad`, and `CreateKeyForSave` function declarations and implementations to support dynamic registry roots (HKLM vs HKCU) based on Portable Mirror Mode. Added `enablePortableMirror` field to `Config` struct in `Config.h` and integrated registry load/save calls in `ConfigRegistryStorage.cpp` and XML load/save calls in `ConfigXmlStorage.cpp`. Updated `App::LoadSettings` and `App::SaveSettings` in `App.cpp` to dynamically load and save settings to HKLM and XML when Portable Mirror Mode is active. Added new control IDs (`IDC_PORTABLE_MIRROR`, etc.) to `resource.h`. Updated `resources.rc` to add Portable Mirror checkbox and Replace Explorer options to the settings UI templates. Added `GetEliteRegistryRoot()` inline function to `SourceFiles/Config.h`. Updated `main.cpp`, `StartButton.cpp`, and `TaskbarWindow.cpp` to dynamically load the Advanced key using `GetEliteRegistryRoot()`. Modified `TaskbarSettingsDlgProc`, `NativeSettingsDlgProc`, and other dialog procedures in `TaskbarProperties.cpp` to load/save Portable Mirror mode, Replace Explorer options, and multi-monitor/debug options using dynamic roots. Added `SetDefaultFileManagerCPP()` to `TaskbarProperties.cpp` for native Explorer replacement. Added Portable Mirror checkbox and Native Settings tab with Explorer Replacement options to `EliteSettings.ps1`. Updated `Load-Settings` and `Save-Settings` in `EliteSettings.ps1` to support XML/HKLM dual-saving and unconditional registry cleanup. Repaired CPL compilation in `build_settings.ps1` to compile `EliteSettingsCpl.cpp` and link `settings_cpl.res` instead of overwriting the PS2EXE compiled `EliteSettings.exe`. Included `Config.h` in `StartButton.cpp`. Updated the master architectural ledger (`BuildGuide-FeatureRequirement_CheckList.md`).
 
@@ -464,3 +473,27 @@ All notable changes to this project will be documented in this file.
 
 - **Win32Explorer Startup Default Grouping**: Initialized `defaultFolderSettings` in `Config.h` via lambda to default to group by type (`SortMode::Type` and `showInGroups = true`) if `enableDefaultGroupByType` is true, ensuring grouping is enabled on the very first launch when no registry keys or XML config files exist yet.
 - **Verification Test XML Sync**: Updated `run_re_verification.ps1` to use a robust regex check (`EnableDefaultGroupByType.*no`) to verify the XML config, matching the actual serialization format in `config.xml`.
+
+- **Milestone 5 Features - Resource ID Definition**: Defined `IDC_TWO_ROW_TRAY` as `294` in `SourceFiles/resource.h`.
+- **Milestone 5 Features - Taskbar Properties UI**: Added `Enable Two-Row Notification Tray` checkbox in `SourceFiles/resources.rc` and shifted the "Custom Icon Theme Folder" controls down by 15 units.
+- **Milestone 5 Features - Configuration Property**: Added `EnableTwoRowTray` boolean to `EliteTaskbarConfig` in `SourceFiles/Config.h`.
+- **Milestone 5 Features - Configuration Parsing**: Initialized `EnableTwoRowTray` to default `true` and parsed the registry key `EnableTwoRowTray` in `QueryOperationalMode` inside `SourceFiles/main.cpp`.
+- **Milestone 5 Features - Settings Checkbox Integration**: Added tooltip, load logic, and save logic for `EnableTwoRowTray` checkbox inside the Properties dialog in `SourceFiles/TaskbarProperties.cpp`.
+- **Milestone 5 Features - Tray Icon Scraping & Fallbacks**: Implemented dynamic Windows 10 vs Windows 11 `TRAYDATA` struct probing using `GetIconInfo` at offsets 24 and 16, and implemented a robust window icon retrieval fallback `GetWindowIconFix` (using `WM_GETICON` and class attributes) in `SourceFiles/TrayIconScraper.cpp`.
+- **Milestone 5 Features - Start Menu Secondary Spawning Fix**: Added `StartNativeTaskbarSpoof` invocation before simulating VK_LWIN or WM_SYSCOMMAND on secondary screens in `SourceFiles/StartButton.cpp`.
+- **Milestone 5 Features - Taskbar Core Features**:
+  - Declared primary taskbar display spoofing variables `g_IsSpoofingNativeTaskbar` and `g_SpoofStartTime` and helper `StartNativeTaskbarSpoof`.
+  - Updated timer 9999 to suspend taskbar resetting while spoofing.
+  - Subclassed the notification area SysPager controls using global `::SysPagerSubclassProc` to erase background and render parents.
+
+  - Adjusted the Clock widget `W_clock` and centered text rendering parameters.
+  - Implemented dynamic two-row rendering for 12x12 notification icons and added matching mouse hit-testing.
+  - Registered and processed system tray icon callback messages (`WM_TRAY_CALLBACK_WIN32EXPLORER`, `WM_TRAY_CALLBACK_TASKBAR`, `WM_TRAY_CALLBACK_DESKTOP`) to handle double-clicks, menu prompts, toggle desktop replace status, and invoke helper applications.
+
+
+
+
+
+
+
+

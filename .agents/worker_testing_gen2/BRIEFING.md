@@ -16,6 +16,8 @@ Design, implement, and verify verify_final_polish.ps1 and run_comprehensive_e2e.
 - Strictly responsible for testing and validation.
 - Do not cheat (no hardcoded verification strings or dummy test results).
 - The entire build process for all exe files must be managed by C:\Users\Administrator\Desktop\Elite-TaskBar\build.ps1.
+- Do not perform continuous automated shell restarts that steal focus. Minimize window activation.
+
 
 ## Current Parent
 - Conversation ID: c16d9899-5cf2-40e4-b513-71f54dd86ec8
@@ -28,14 +30,20 @@ Design, implement, and verify verify_final_polish.ps1 and run_comprehensive_e2e.
 - **Code layout**: C:\Users\Administrator\Desktop\Elite-TaskBar\PROJECT.md
 
 ## Change Tracker
-- **Files modified**: None yet
+- **Files modified**:
+  - `verify_final_polish.ps1` (Automated verification script)
+  - `Subagent_Tests/run_comprehensive_e2e.ps1` (Comprehensive E2E test runner)
+  - `CHANGELOG.md` (Documented changes)
+  - `README.md` (Updated features section)
+  - `Documentation/PROJECT_SOURCE_MAP.md` (Documented test scripts)
+  - `Documentation/BuildGuide-FeatureRequirement_CheckList.md` (Logged milestone)
 - **Build status**: PASS
 - **Pending issues**: None
 
 ## Quality Status
-- **Build/test result**: PASS
+- **Build/test result**: PASS (108/108 E2E tests passing, verdict: PASS)
 - **Lint status**: 0
-- **Tests added/modified**: None yet
+- **Tests added/modified**: 108 E2E test cases covering all 4 tiers of 10 features
 
 ## Loaded Skills
 - None

@@ -37,6 +37,25 @@ std::wstring GetScrapedTrayTooltip(HWND hwnd, UINT uID) {
     return L"";
 }
 
+static HICON GetWindowIconFix(HWND hwnd) {
+    if (!hwnd || !IsWindow(hwnd)) return NULL;
+    DWORD_PTR dwRes = 0;
+    if (SendMessageTimeoutW(hwnd, WM_GETICON, 2 /* ICON_SMALL2 */, 0, SMTO_ABORTIFHUNG, 100, &dwRes) && dwRes) {
+        return (HICON)dwRes;
+    }
+    if (SendMessageTimeoutW(hwnd, WM_GETICON, ICON_SMALL, 0, SMTO_ABORTIFHUNG, 100, &dwRes) && dwRes) {
+        return (HICON)dwRes;
+    }
+    if (SendMessageTimeoutW(hwnd, WM_GETICON, ICON_BIG, 0, SMTO_ABORTIFHUNG, 100, &dwRes) && dwRes) {
+        return (HICON)dwRes;
+    }
+    HICON hIcon = (HICON)GetClassLongPtrW(hwnd, GCLP_HICONSM);
+    if (hIcon) return hIcon;
+    hIcon = (HICON)GetClassLongPtrW(hwnd, GCLP_HICON);
+    if (hIcon) return hIcon;
+    return NULL;
+}
+
 void ScrapeTrayIconsFromToolbar(HWND hToolbar, std::vector<ScrapedTrayIcon>& icons) {
     if (!hToolbar) return;
 
@@ -63,30 +82,55 @@ void ScrapeTrayIconsFromToolbar(HWND hToolbar, std::vector<ScrapedTrayIcon>& ico
             SIZE_T bytesRead = 0;
             ReadProcessMemory(hProcess, pRemoteTbb, &tbb, sizeof(TBBUTTON), &bytesRead);
             if (bytesRead == sizeof(TBBUTTON)) {
-                TRAYDATA td = {0};
                 if (tbb.dwData) {
-                    ReadProcessMemory(hProcess, (LPCVOID)tbb.dwData, &td, sizeof(TRAYDATA), &bytesRead);
-                    ScrapedTrayIcon icon = {0};
-                    icon.hwnd = td.hwnd;
-                    icon.uCallbackMessage = td.uCallbackMessage;
-                    icon.uID = td.uID;
-                    icon.hIcon = td.hIcon;
-                    if (icon.hwnd && icon.hIcon) {
-                        icons.push_back(icon);
-                        
-                        std::wstring tipText = L"";
-                        if (pRemoteText) {
-                            int len = (int)SendMessageW(hToolbar, TB_GETBUTTONTEXTW, tbb.idCommand, (LPARAM)pRemoteText);
-                            if (len > 0 && len < maxTipChars) {
-                                std::vector<WCHAR> localText(len + 1, 0);
-                                SIZE_T br = 0;
-                                ReadProcessMemory(hProcess, pRemoteText, &localText[0], len * sizeof(WCHAR), &br);
-                                if (br == len * sizeof(WCHAR)) {
-                                    tipText = &localText[0];
+                    BYTE tdBuf[64] = {0};
+                    ReadProcessMemory(hProcess, (LPCVOID)tbb.dwData, tdBuf, sizeof(tdBuf), &bytesRead);
+                    
+                    HWND iconHwnd = *(HWND*)(tdBuf + 0);
+                    UINT iconUID = *(UINT*)(tdBuf + 8);
+                    UINT iconCallbackMessage = *(UINT*)(tdBuf + 12);
+                    HICON iconHIcon = NULL;
+                    
+                    HICON hIcon10 = *(HICON*)(tdBuf + 24);
+                    HICON hIcon11 = *(HICON*)(tdBuf + 16);
+                    
+                    ICONINFO ii;
+                    if (hIcon10 && GetIconInfo(hIcon10, &ii)) {
+                        iconHIcon = hIcon10;
+                        if (ii.hbmColor) DeleteObject(ii.hbmColor);
+                        if (ii.hbmMask) DeleteObject(ii.hbmMask);
+                    } else if (hIcon11 && GetIconInfo(hIcon11, &ii)) {
+                        iconHIcon = hIcon11;
+                        if (ii.hbmColor) DeleteObject(ii.hbmColor);
+                        if (ii.hbmMask) DeleteObject(ii.hbmMask);
+                    }
+                    
+                    if (iconHwnd) {
+                        ScrapedTrayIcon icon = {0};
+                        icon.hwnd = iconHwnd;
+                        icon.uCallbackMessage = iconCallbackMessage;
+                        icon.uID = iconUID;
+                        icon.hIcon = iconHIcon;
+                        if (!icon.hIcon) {
+                            icon.hIcon = GetWindowIconFix(icon.hwnd);
+                        }
+                        if (icon.hIcon) {
+                            icons.push_back(icon);
+                            
+                            std::wstring tipText = L"";
+                            if (pRemoteText) {
+                                int len = (int)SendMessageW(hToolbar, TB_GETBUTTONTEXTW, tbb.idCommand, (LPARAM)pRemoteText);
+                                if (len > 0 && len < maxTipChars) {
+                                    std::vector<WCHAR> localText(len + 1, 0);
+                                    SIZE_T br = 0;
+                                    ReadProcessMemory(hProcess, pRemoteText, &localText[0], len * sizeof(WCHAR), &br);
+                                    if (br == len * sizeof(WCHAR)) {
+                                        tipText = &localText[0];
+                                    }
                                 }
                             }
+                            g_TrayTooltipsMap[{icon.hwnd, icon.uID}] = tipText;
                         }
-                        g_TrayTooltipsMap[{icon.hwnd, icon.uID}] = tipText;
                     }
                 }
             }
