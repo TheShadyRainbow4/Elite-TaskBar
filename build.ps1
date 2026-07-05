@@ -94,23 +94,31 @@ if (Test-Path $rootScannerIconPath) {
     Copy-Item $rootScannerIconPath -Destination $targetScannerIcon -Force
 }
 
-$job1 = Start-Job -ScriptBlock { param($s, $b, $v) & "$s\..\build_x64.ps1" -SourceDir $s -BuildDir $b -VsDevCmd $v } -ArgumentList $SourceDir, $BuildDir, $vsDevCmd
-$job2 = Start-Job -ScriptBlock { param($s, $b, $v) & "$s\..\build_x86.ps1" -SourceDir $s -BuildDir $b -VsDevCmd $v } -ArgumentList $SourceDir, $BuildDirx86, $vsDevCmd
-$job3 = Start-Job -ScriptBlock { param($s, $b, $bx86, $v) & "$s\..\build_settings.ps1" -SourceDir $s -BuildDir $b -BuildDirx86 $bx86 -VsDevCmd $v } -ArgumentList $SourceDir, $BuildDir, $BuildDirx86, $vsDevCmd
-
-Write-Host "Waiting for concurrent builds to finish..." -ForegroundColor Cyan
-$jobs = @($job1, $job2, $job3)
-Wait-Job -Job $jobs | Out-Null
-
 $failed = $false
-foreach ($job in $jobs) {
-    try { Receive-Job -Job $job -ErrorAction Stop | Write-Host } catch { Write-Host $_.Exception.Message -ForegroundColor Yellow }
-    if ($job.State -ne 'Completed') {
-        Write-Error "Build job $($job.Id) failed!"
+try {
+    & "$ScriptDir\build_x64.ps1" -SourceDir $SourceDir -BuildDir $BuildDir -VsDevCmd $vsDevCmd
+} catch {
+    Write-Error "x64 Build failed: $_"
+    $failed = $true
+}
+
+if (-not $failed) {
+    try {
+        & "$ScriptDir\build_x86.ps1" -SourceDir $SourceDir -BuildDir $BuildDirx86 -VsDevCmd $vsDevCmd
+    } catch {
+        Write-Error "x86 Build failed: $_"
         $failed = $true
     }
 }
-Remove-Job -Job $jobs
+
+if (-not $failed) {
+    try {
+        & "$ScriptDir\build_settings.ps1" -SourceDir $SourceDir -BuildDir $BuildDir -BuildDirx86 $BuildDirx86 -VsDevCmd $vsDevCmd
+    } catch {
+        Write-Error "Settings Build failed: $_"
+        $failed = $true
+    }
+}
 
 if ($failed) {
     Write-Host "Build failed! Cleaning up recent backup..." -ForegroundColor Red
@@ -134,13 +142,7 @@ if (-not $failed) {
     & "$ScriptDir\build_sign.ps1" -BuildDir $BuildDir -BuildDirx86 $BuildDirx86
     
     Write-Host "Building Win32Explorer..." -ForegroundColor Cyan
-    Write-Host "Syncing Win32Explorer source changes from Remaining_Shell..." -ForegroundColor Cyan
     $origDir = Get-Location
-    # Sync files before build
-    & robocopy "$ScriptDir\Remaining_Shell\Win32Explorer_26.0.3.0" "$ScriptDir\Win32Explorer_26.0.3.0" /S /XD .git .vs vcpkg vcpkg_installed x64 Debug Release /XF *.obj *.pdb *.log *.txt *.lib *.recipe *.tlog *.iobj *.exp *.ipch *.ilk *.res *.bak *.old | Out-Null
-    if ($LASTEXITCODE -lt 8) {
-        $global:LASTEXITCODE = 0
-    }
     
     Set-Location "$ScriptDir\Win32Explorer_26.0.3.0"
     & ".\build_Win32Explorer.ps1" -Platform "x64"
@@ -159,17 +161,6 @@ if (-not $failed) {
     
     # Relocate x64 artifact to root for developer execution
     Copy-Item "$BuildDir\Win32Explorer.exe" "$ScriptDir\Win32Explorer.exe" -Force
-    
-    Write-Host "Auto-committing submodule Win32Explorer_26.0.3.0..." -ForegroundColor Cyan
-    $origDirGit = Get-Location
-    $submoduleDir = "$ScriptDir\Win32Explorer_26.0.3.0"
-    if (Test-Path $submoduleDir) {
-        Set-Location $submoduleDir
-        git add .
-        git commit -m "Auto-commit submodule after successful build"
-        git push origin HEAD
-        Set-Location $origDirGit
-    }
     
     Write-Host "Auto-committing and pushing to repository..." -ForegroundColor Cyan
     git add .

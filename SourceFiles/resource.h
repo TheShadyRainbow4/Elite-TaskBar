@@ -70,3 +70,10 @@
 #define IDC_THEME_FOLDER_PATH        260
 #define IDC_THEME_FOLDER_BROWSE      261
 #define IDC_ENABLE_DARK_MODE         262
+
+#define IDD_HELP_DIALOG              280
+#define IDD_ABOUT_DIALOG             281
+#define IDC_ABOUT_EXPAND             282
+#define IDC_ABOUT_MOREINFO           283
+#define IDC_HELP_TEXT                284
+#define IDC_BANNER                   285

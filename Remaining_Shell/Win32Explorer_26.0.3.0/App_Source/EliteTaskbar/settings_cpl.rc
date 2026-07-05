@@ -1,4 +1,0 @@
-#include <windows.h>
-
-101 ICON "..\\Resources\\PREFERENCES.ico"
-1 RCDATA "EliteSettings.exe"

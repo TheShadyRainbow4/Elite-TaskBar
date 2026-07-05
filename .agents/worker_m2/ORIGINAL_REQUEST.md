@@ -28,3 +28,32 @@ MANDATORY INTEGRITY WARNING:
 > work WILL be rejected.
 
 Once completed, run the build and verify the changes compile and run correctly, then write a detailed handoff.md report and notify me.
+
+## 2026-07-04T22:27:23Z
+
+You are a Win32 C++ and PowerShell Worker tasked with remediating the remaining issues in Milestone 2. 
+
+## Objectives:
+1. **PowerShell Build Script Error-Handling**: Fix the `build_settings.ps1` script to prevent standard error redirection from throwing `NativeCommandError` exceptions under `$ErrorActionPreference = 'Stop'`. Wrap the compilation cmd.exe calls by setting `$ErrorActionPreference = 'Continue'` before execution and restoring it to `'Stop'` after, exactly as is done in `build_x64.ps1`.
+2. **Easy Signer Target Naming**: Correct the path inside `build_sign.ps1` at line 8 to target `Elite-EasySigner_x64.exe` or fallback to `Elite-EasySigner_x86.exe` (whichever is present) instead of targeting `Elite-EasySigner.exe`.
+3. **Segoe UI Typography**: Change the font inside `SourceFiles/resources.rc` for all Dialog templates from `"MS Shell Dlg"` to `"Segoe UI"`. Specifically, change `FONT 8, "MS Shell Dlg", 0, 0, 0x1` to `FONT 8, "Segoe UI", 400, 0, 0x1` (and make sure to remove `DS_FIXEDSYS` from the STYLE list for those dialogs to ensure Segoe UI is actually used by Windows rather than falling back to system defaults). Synchronize these changes to `Remaining_Shell/Win32Explorer_26.0.3.0/App_Source/EliteTaskbar/resources.rc`.
+4. **Help and About Dialogs**:
+   - Define custom dialog templates for `IDD_HELP_DIALOG` and `IDD_ABOUT_DIALOG` in `SourceFiles/resources.rc` and synchronize them to `Remaining_Shell/Win32Explorer_26.0.3.0/App_Source/EliteTaskbar/resources.rc`. 
+   - Define the corresponding control IDs (`IDD_HELP_DIALOG`, `IDD_ABOUT_DIALOG`, `IDC_ABOUT_EXPAND`, `IDC_ABOUT_MOREINFO`, `IDC_HELP_TEXT`, `IDC_BANNER`) in `SourceFiles/resource.h` and synchronize to `Remaining_Shell/Win32Explorer_26.0.3.0/App_Source/EliteTaskbar/resource.h`.
+   - Implement `ShowHelpDialog` and `ShowAboutDialog` dialog procedures (`HelpDlgProc` and `AboutDlgProc`) in `SourceFiles/TaskbarProperties.cpp` (and sync to `Remaining_Shell/Win32Explorer_26.0.3.0/App_Source/EliteTaskbar/TaskbarProperties.cpp`).
+   - Draw a custom white background banner with the title and preferences icon (or system question mark icon for Help) in `WM_DRAWITEM` for `IDC_BANNER`.
+   - Paint a darker "Chin" gradient or background color (using GDI in `WM_PAINT`) at the bottom of these dialogs behind the buttons (using MapDialogRect for DPI safety).
+   - In `AboutDlgProc`, handle the `IDC_ABOUT_EXPAND` button to dynamically resize the dialog (using MapDialogRect) to show/hide `IDC_ABOUT_MOREINFO` and adjust the position of buttons.
+   - Inject a native Menu Bar on the Property Sheet: subclass the property sheet HWND in the `PSCB_INITIALIZED` callback (using `psh.pfnCallback = PropSheetProc` and subclassing the HWND to intercept WM_COMMAND). When Help (40001) or About (40002) is clicked, launch the respective modal dialog.
+5. **Missing Tooltips**:
+   - Implement native Win32 tooltips for all interactive controls across all properties pages (`TaskbarSettingsDlgProc`, `NativeSettingsDlgProc`, `ToolbarsSettingsDlgProc`, and dynamically generated controls in `MultiMonSettingsDlgProc`).
+   - Use `TOOLINFO` and standard `TTM_ADDTOOLW` subclassing method to attach witty, sarcastic, and accurate hover tooltips to each widget.
+   
+## Verification:
+- Run the build script `C:\Users\Administrator\Desktop\Elite-TaskBar\build.ps1` in the local terminal. Ensure it compiles and signs successfully with exit code 0.
+- Verify `EliteSettings.exe`, `EliteSettings.cpl` compile as fully native C++ applications and function correctly.
+- Test the About, Help, Tooltips, and Menu Bar features visually to ensure they match guidelines.
+
+## Crucial Guidelines:
+- Update `CHANGELOG.md` at the project root after EVERY single file edit, detailing what was changed and why.
+- DO NOT CHEAT. All implementations must be genuine. DO NOT hardcode test results, create dummy/facade implementations, or circumvent the intended task. A Forensic Auditor will independently verify your work. Integrity violations WILL be detected and your work WILL be rejected.

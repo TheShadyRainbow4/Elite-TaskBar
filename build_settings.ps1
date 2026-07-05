@@ -10,40 +10,53 @@ $ErrorActionPreference = 'Stop'
 $resH = Get-Content "$SourceDir\resource.h" -Raw
 $resH = $resH -replace '#define IDI_MAIN_PROGRAM 101', '#define IDI_MAIN_PROGRAM 102'
 $resH = $resH -replace '#define IDI_PREFERENCES  102', '#define IDI_PREFERENCES  101'
-Set-Content "$BuildDir\settings_resource.h" -Value $resH
-Set-Content "$BuildDirx86\settings_resource.h" -Value $resH
+
+New-Item -ItemType Directory -Path "$BuildDir\ObjectFiles" -Force | Out-Null
+New-Item -ItemType Directory -Path "$BuildDir\DebugFiles" -Force | Out-Null
+New-Item -ItemType Directory -Path "$BuildDir\ObjectLibraryFiles" -Force | Out-Null
+New-Item -ItemType Directory -Path "$BuildDir\ResourceFiles" -Force | Out-Null
+
+New-Item -ItemType Directory -Path "$BuildDirx86\ObjectFiles" -Force | Out-Null
+New-Item -ItemType Directory -Path "$BuildDirx86\DebugFiles" -Force | Out-Null
+New-Item -ItemType Directory -Path "$BuildDirx86\ObjectLibraryFiles" -Force | Out-Null
+New-Item -ItemType Directory -Path "$BuildDirx86\ResourceFiles" -Force | Out-Null
+
+Set-Content "$BuildDir\ResourceFiles\settings_resource.h" -Value $resH
+Set-Content "$BuildDirx86\ResourceFiles\settings_resource.h" -Value $resH
 
 $resRC = Get-Content "$SourceDir\resources.rc" -Raw
 $resRC = $resRC -replace '#include "resource.h"', '#include "settings_resource.h"'
-Set-Content "$BuildDir\settings_resources.rc" -Value $resRC
-Set-Content "$BuildDirx86\settings_resources.rc" -Value $resRC
+Set-Content "$BuildDir\ResourceFiles\settings_resources.rc" -Value $resRC
+Set-Content "$BuildDirx86\ResourceFiles\settings_resources.rc" -Value $resRC
+
+$cplRC = Get-Content "$SourceDir\settings_cpl.rc" -Raw
+$cplRCx86 = $cplRC -replace 'EliteSettings.exe', 'EliteSettings_x86.exe'
+Set-Content "$BuildDirx86\ResourceFiles\settings_cpl_x86.rc" -Value $cplRCx86
 
 $libs = "user32.lib shell32.lib shlwapi.lib comctl32.lib advapi32.lib uxtheme.lib gdi32.lib ole32.lib gdiplus.lib"
 $srcSettings = "`"$SourceDir\EliteSettingsStub.cpp`" `"$SourceDir\TaskbarProperties.cpp`""
 
-$stubCompileCmd64 = "cl.exe /EHsc /Zi /MTd /D_DEBUG /Fd`"$BuildDir\settings64.pdb`" /Fe`"$BuildDir\EliteSettings.exe`" /Fo`"$BuildDir\SettingsObj_exe_64_\\`" $srcSettings `"$BuildDir\settings_resources.res`" $libs /link /MANIFEST:EMBED /MANIFESTINPUT:`"$SourceDir\cpl.manifest`" /MANIFESTUAC:NO"
-$stubCompileCmd86 = "cl.exe /EHsc /Zi /MTd /D_DEBUG /Fd`"$BuildDirx86\settings86.pdb`" /Fe`"$BuildDirx86\EliteSettings_x86.exe`" /Fo`"$BuildDirx86\SettingsObj_exe_86_\\`" $srcSettings `"$BuildDirx86\settings_resources.res`" $libs /link /MANIFEST:EMBED /MANIFESTINPUT:`"$SourceDir\cpl.manifest`" /MANIFESTUAC:NO"
+$stubCompileCmd64 = "cl.exe /EHsc /Zi /MTd /D_DEBUG /Fd`"$BuildDir\DebugFiles\settings64.pdb`" /Fe`"$BuildDir\EliteSettings.exe`" /Fo`"$BuildDir\ObjectFiles\\`" $srcSettings `"$BuildDir\ResourceFiles\settings_resources.res`" $libs /link /PDB:`"$BuildDir\DebugFiles\EliteSettings.pdb`" /ILK:`"$BuildDir\DebugFiles\EliteSettings.ilk`" /MANIFEST:EMBED /MANIFESTINPUT:`"$SourceDir\cpl.manifest`" /MANIFESTUAC:NO"
+$stubCompileCmd86 = "cl.exe /EHsc /Zi /MTd /D_DEBUG /Fd`"$BuildDirx86\DebugFiles\settings86.pdb`" /Fe`"$BuildDirx86\EliteSettings_x86.exe`" /Fo`"$BuildDirx86\ObjectFiles\\`" $srcSettings `"$BuildDirx86\ResourceFiles\settings_resources.res`" $libs /link /PDB:`"$BuildDirx86\DebugFiles\EliteSettings_x86.pdb`" /ILK:`"$BuildDirx86\DebugFiles\EliteSettings_x86.ilk`" /MANIFEST:EMBED /MANIFESTINPUT:`"$SourceDir\cpl.manifest`" /MANIFESTUAC:NO"
 
-$stubCPLCompileCmd64 = "cl.exe /LD /EHsc /Zi /MTd /D_DEBUG /Fd`"$BuildDir\settings_cpl64.pdb`" /Fe`"$BuildDir\EliteSettings.cpl`" /Fo`"$BuildDir\SettingsObj_cpl_64_\\`" `"$SourceDir\EliteSettingsCpl.cpp`" `"$BuildDir\settings_cpl.res`" $libs /link /EXPORT:CPlApplet /MANIFEST:EMBED /MANIFESTINPUT:`"$SourceDir\cpl.manifest`" /MANIFESTUAC:NO"
-$stubCPLCompileCmd86 = "cl.exe /LD /EHsc /Zi /MTd /D_DEBUG /Fd`"$BuildDirx86\settings_cpl86.pdb`" /Fe`"$BuildDirx86\EliteSettings_x86.cpl`" /Fo`"$BuildDirx86\SettingsObj_cpl_86_\\`" `"$SourceDir\EliteSettingsCpl.cpp`" `"$BuildDirx86\settings_cpl.res`" $libs /link /EXPORT:CPlApplet /MANIFEST:EMBED /MANIFESTINPUT:`"$SourceDir\cpl.manifest`" /MANIFESTUAC:NO"
+$stubCPLCompileCmd64 = "cl.exe /LD /EHsc /Zi /MTd /D_DEBUG /Fd`"$BuildDir\DebugFiles\settings_cpl64.pdb`" /Fe`"$BuildDir\EliteSettings.cpl`" /Fo`"$BuildDir\ObjectFiles\\`" `"$SourceDir\EliteSettingsCpl.cpp`" `"$BuildDir\ResourceFiles\settings_cpl.res`" $libs /link /PDB:`"$BuildDir\DebugFiles\EliteSettings_cpl.pdb`" /ILK:`"$BuildDir\DebugFiles\EliteSettings_cpl.ilk`" /IMPLIB:`"$BuildDir\ObjectLibraryFiles\EliteSettings_cpl.lib`" /EXPORT:CPlApplet /MANIFEST:EMBED /MANIFESTINPUT:`"$SourceDir\cpl.manifest`" /MANIFESTUAC:NO"
+$stubCPLCompileCmd86 = "cl.exe /LD /EHsc /Zi /MTd /D_DEBUG /Fd`"$BuildDirx86\DebugFiles\settings_cpl86.pdb`" /Fe`"$BuildDirx86\EliteSettings_x86.cpl`" /Fo`"$BuildDirx86\ObjectFiles\\`" `"$SourceDir\EliteSettingsCpl.cpp`" `"$BuildDirx86\ResourceFiles\settings_cpl.res`" $libs /link /PDB:`"$BuildDirx86\DebugFiles\EliteSettings_x86_cpl.pdb`" /ILK:`"$BuildDirx86\DebugFiles\EliteSettings_x86_cpl.ilk`" /IMPLIB:`"$BuildDirx86\ObjectLibraryFiles\EliteSettings_x86_cpl.lib`" /EXPORT:CPlApplet /MANIFEST:EMBED /MANIFESTINPUT:`"$SourceDir\cpl.manifest`" /MANIFESTUAC:NO"
 
-$everyCompileCmd64 = "cl.exe /EHsc /Zi /MTd /D_DEBUG /Fd`"$BuildDir\everything64.pdb`" /Fe`"$BuildDir\EliteEverything.exe`" `"$SourceDir\EliteEverythingStub.cpp`" `"$BuildDir\everything_resources.res`" user32.lib shell32.lib shlwapi.lib /link /MANIFEST:EMBED /MANIFESTINPUT:`"$SourceDir\cpl.manifest`" /MANIFESTUAC:NO"
-$everyCompileCmd86 = "cl.exe /EHsc /Zi /MTd /D_DEBUG /Fd`"$BuildDirx86\everything86.pdb`" /Fe`"$BuildDirx86\EliteEverything_x86.exe`" `"$SourceDir\EliteEverythingStub.cpp`" `"$BuildDirx86\everything_resources.res`" user32.lib shell32.lib shlwapi.lib /link /MANIFEST:EMBED /MANIFESTINPUT:`"$SourceDir\cpl.manifest`" /MANIFESTUAC:NO"
+$everyCompileCmd64 = "cl.exe /EHsc /Zi /MTd /D_DEBUG /Fd`"$BuildDir\DebugFiles\everything64.pdb`" /Fe`"$BuildDir\EliteEverything.exe`" /Fo`"$BuildDir\ObjectFiles\\`" `"$SourceDir\EliteEverythingStub.cpp`" `"$BuildDir\ResourceFiles\everything_resources.res`" user32.lib shell32.lib shlwapi.lib /link /PDB:`"$BuildDir\DebugFiles\EliteEverything.pdb`" /ILK:`"$BuildDir\DebugFiles\EliteEverything.ilk`" /MANIFEST:EMBED /MANIFESTINPUT:`"$SourceDir\cpl.manifest`" /MANIFESTUAC:NO"
+$everyCompileCmd86 = "cl.exe /EHsc /Zi /MTd /D_DEBUG /Fd`"$BuildDirx86\DebugFiles\everything86.pdb`" /Fe`"$BuildDirx86\EliteEverything_x86.exe`" /Fo`"$BuildDirx86\ObjectFiles\\`" `"$SourceDir\EliteEverythingStub.cpp`" `"$BuildDirx86\ResourceFiles\everything_resources.res`" user32.lib shell32.lib shlwapi.lib /link /PDB:`"$BuildDirx86\DebugFiles\EliteEverything_x86.pdb`" /ILK:`"$BuildDirx86\DebugFiles\EliteEverything_x86.ilk`" /MANIFEST:EMBED /MANIFESTINPUT:`"$SourceDir\cpl.manifest`" /MANIFESTUAC:NO"
 
-$dllCompileCmd64 = "cl.exe /EHsc /Zi /MTd /D_DEBUG /Fd`"$BuildDir\dllscanner64.pdb`" /Fe`"$BuildDir\EliteDLLScanner.exe`" `"$SourceDir\EliteDLLScannerStub.cpp`" `"$BuildDir\dll_resources.res`" user32.lib shell32.lib shlwapi.lib /link /MANIFEST:EMBED /MANIFESTINPUT:`"$SourceDir\cpl.manifest`" /MANIFESTUAC:NO"
-$dllCompileCmd86 = "cl.exe /EHsc /Zi /MTd /D_DEBUG /Fd`"$BuildDirx86\dllscanner86.pdb`" /Fe`"$BuildDirx86\EliteDLLScanner_x86.exe`" `"$SourceDir\EliteDLLScannerStub.cpp`" `"$BuildDirx86\dll_resources.res`" user32.lib shell32.lib shlwapi.lib /link /MANIFEST:EMBED /MANIFESTINPUT:`"$SourceDir\cpl.manifest`" /MANIFESTUAC:NO"
-
-New-Item -ItemType Directory -Path "$BuildDir\SettingsObj_exe_64_" -Force | Out-Null
-New-Item -ItemType Directory -Path "$BuildDirx86\SettingsObj_exe_86_" -Force | Out-Null
-New-Item -ItemType Directory -Path "$BuildDir\SettingsObj_cpl_64_" -Force | Out-Null
-New-Item -ItemType Directory -Path "$BuildDirx86\SettingsObj_cpl_86_" -Force | Out-Null
+$dllCompileCmd64 = "cl.exe /EHsc /Zi /MTd /D_DEBUG /Fd`"$BuildDir\DebugFiles\dllscanner64.pdb`" /Fe`"$BuildDir\EliteDLLScanner.exe`" /Fo`"$BuildDir\ObjectFiles\\`" `"$SourceDir\EliteDLLScannerStub.cpp`" `"$BuildDir\ResourceFiles\dll_resources.res`" user32.lib shell32.lib shlwapi.lib /link /PDB:`"$BuildDir\DebugFiles\EliteDLLScanner.pdb`" /ILK:`"$BuildDir\DebugFiles\EliteDLLScanner.ilk`" /MANIFEST:EMBED /MANIFESTINPUT:`"$SourceDir\cpl.manifest`" /MANIFESTUAC:NO"
+$dllCompileCmd86 = "cl.exe /EHsc /Zi /MTd /D_DEBUG /Fd`"$BuildDirx86\DebugFiles\dllscanner86.pdb`" /Fe`"$BuildDirx86\EliteDLLScanner_x86.exe`" /Fo`"$BuildDirx86\ObjectFiles\\`" `"$SourceDir\EliteDLLScannerStub.cpp`" `"$BuildDirx86\ResourceFiles\dll_resources.res`" user32.lib shell32.lib shlwapi.lib /link /PDB:`"$BuildDirx86\DebugFiles\EliteDLLScanner_x86.pdb`" /ILK:`"$BuildDirx86\DebugFiles\EliteDLLScanner_x86.ilk`" /MANIFEST:EMBED /MANIFESTINPUT:`"$SourceDir\cpl.manifest`" /MANIFESTUAC:NO"
 
 Write-Host "Compiling Settings and CPL..."
-cmd.exe /c "cd /d `"$BuildDir`" && call `"$VsDevCmd`" -arch=x64 && rc.exe /fo `"$BuildDir\settings_resources.res`" `"$BuildDir\settings_resources.rc`" && $stubCompileCmd64 && rc.exe /fo `"$BuildDir\settings_cpl.res`" `"$SourceDir\settings_cpl.rc`" && $stubCPLCompileCmd64 && rc.exe /fo `"$BuildDir\everything_resources.res`" `"$SourceDir\EliteEverythingStub.rc`" && $everyCompileCmd64 && rc.exe /fo `"$BuildDir\dll_resources.res`" `"$SourceDir\EliteDLLScannerStub.rc`" && $dllCompileCmd64" 2>&1
+$ErrorActionPreference = 'Continue'
+cmd.exe /c "cd /d `"$BuildDir`" && call `"$VsDevCmd`" -arch=x64 && rc.exe /fo `"$BuildDir\ResourceFiles\settings_resources.res`" `"$BuildDir\ResourceFiles\settings_resources.rc`" && $stubCompileCmd64 && rc.exe /fo `"$BuildDir\ResourceFiles\settings_cpl.res`" `"$SourceDir\settings_cpl.rc`" && $stubCPLCompileCmd64 && rc.exe /fo `"$BuildDir\ResourceFiles\everything_resources.res`" `"$SourceDir\EliteEverythingStub.rc`" && $everyCompileCmd64 && rc.exe /fo `"$BuildDir\ResourceFiles\dll_resources.res`" `"$SourceDir\EliteDLLScannerStub.rc`" && $dllCompileCmd64" 2>&1
+$ErrorActionPreference = 'Stop'
 if ($LASTEXITCODE -ne 0) { throw "Stubs x64 Build failed" }
 
-cmd.exe /c "cd /d `"$BuildDirx86`" && call `"$VsDevCmd`" -arch=x86 && rc.exe /fo `"$BuildDirx86\settings_resources.res`" `"$BuildDirx86\settings_resources.rc`" && $stubCompileCmd86 && rc.exe /fo `"$BuildDirx86\settings_cpl.res`" `"$SourceDir\settings_cpl.rc`" && $stubCPLCompileCmd86 && rc.exe /fo `"$BuildDirx86\everything_resources.res`" `"$SourceDir\EliteEverythingStub.rc`" && $everyCompileCmd86 && rc.exe /fo `"$BuildDirx86\dll_resources.res`" `"$SourceDir\EliteDLLScannerStub.rc`" && $dllCompileCmd86" 2>&1
-if ($LASTEXITCODE -ne 0) { throw "Stubs x86 Build failed" }
+$ErrorActionPreference = 'Continue'
+cmd.exe /c "cd /d `"$BuildDirx86`" && call `"$VsDevCmd`" -arch=x86 && rc.exe /fo `"$BuildDirx86\ResourceFiles\settings_resources.res`" `"$BuildDirx86\ResourceFiles\settings_resources.rc`" && $stubCompileCmd86 && rc.exe /fo `"$BuildDirx86\ResourceFiles\settings_cpl.res`" `"$BuildDirx86\ResourceFiles\settings_cpl_x86.rc`" && $stubCPLCompileCmd86 && rc.exe /fo `"$BuildDirx86\ResourceFiles\everything_resources.res`" `"$SourceDir\EliteEverythingStub.rc`" && $everyCompileCmd86 && rc.exe /fo `"$BuildDirx86\ResourceFiles\dll_resources.res`" `"$SourceDir\EliteDLLScannerStub.rc`" && $dllCompileCmd86" 2>&1
 $ErrorActionPreference = 'Stop'
+if ($LASTEXITCODE -ne 0) { throw "Stubs x86 Build failed" }
 
 Write-Host "Settings Build finished successfully."

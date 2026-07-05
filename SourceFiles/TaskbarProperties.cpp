@@ -12,6 +12,280 @@ extern HINSTANCE g_hInstance;
 #include <shlwapi.h>
 #include <shlobj.h>
 
+static void AddTooltip(HWND hwndParent, HWND hwndControl, LPCWSTR text) {
+    if (!hwndControl) return;
+    HWND hwndTooltip = CreateWindowExW(WS_EX_TOPMOST, TOOLTIPS_CLASSW, NULL,
+        WS_POPUP | TTS_NOPREFIX | TTS_ALWAYSTIP,
+        CW_USEDEFAULT, CW_USEDEFAULT, CW_USEDEFAULT, CW_USEDEFAULT,
+        hwndParent, NULL, g_hInstance, NULL);
+    if (hwndTooltip) {
+        TOOLINFOW ti = { 0 };
+        ti.cbSize = sizeof(TOOLINFOW);
+        ti.uFlags = TTF_SUBCLASS | TTF_IDISHWND;
+        ti.hwnd = hwndParent;
+        ti.uId = (UINT_PTR)hwndControl;
+        ti.lpszText = const_cast<LPWSTR>(text);
+        SendMessageW(hwndTooltip, TTM_ADDTOOLW, 0, (LPARAM)&ti);
+    }
+}
+
+static void AddDlgTooltip(HWND hwndDlg, int id, LPCWSTR text) {
+    AddTooltip(hwndDlg, GetDlgItem(hwndDlg, id), text);
+}
+
+INT_PTR CALLBACK HelpDlgProc(HWND hwndDlg, UINT uMsg, WPARAM wParam, LPARAM lParam) {
+    switch (uMsg) {
+    case WM_INITDIALOG: {
+        AddDlgTooltip(hwndDlg, IDOK, L"Dismiss this help dialog. Go apply your new knowledge!");
+        SetDlgItemTextW(hwndDlg, IDC_HELP_TEXT, 
+            L"EliteTaskbar Help Documentation\r\n\r\n"
+            L"Welcome to EliteTaskbar, the premium legacy taskbar shell extension!\r\n\r\n"
+            L"To configure the taskbar, use the tabs on the main properties window:\r\n"
+            L"- Taskbar: Adjust the operational mode (Independent vs Replace) and set your custom theme directory path.\r\n"
+            L"- Multi-Monitor Components: Enable/disable components like Clock, System Tray, and Task Buttons per monitor.\r\n"
+            L"- Native Settings: Configure auto-hide, small icons, locked state, and explorer replacement modes.\r\n"
+            L"- Toolbars: Add deskbands and custom folder toolbars.\r\n\r\n"
+            L"Need dynamic icons? Just copy your .png/.ico files into the custom theme path and watch them load!\r\n\r\n"
+            L"Witty hover tooltips are enabled on every single control to keep you entertained and informed.");
+        return TRUE;
+    }
+    case WM_PAINT: {
+        PAINTSTRUCT ps;
+        HDC hdc = BeginPaint(hwndDlg, &ps);
+        RECT rcClient;
+        GetClientRect(hwndDlg, &rcClient);
+        
+        RECT rcChin = { 0, 150, 250, 180 };
+        MapDialogRect(hwndDlg, &rcChin);
+        
+        HBRUSH hBrush = CreateSolidBrush(RGB(225, 225, 225));
+        HPEN hPen = CreatePen(PS_SOLID, 1, RGB(160, 160, 160));
+        HPEN hOldPen = (HPEN)SelectObject(hdc, hPen);
+        MoveToEx(hdc, 0, rcChin.top, NULL);
+        LineTo(hdc, rcClient.right, rcChin.top);
+        SelectObject(hdc, hOldPen);
+        DeleteObject(hPen);
+        
+        rcChin.left = 0;
+        rcChin.right = rcClient.right;
+        rcChin.bottom = rcClient.bottom;
+        FillRect(hdc, &rcChin, hBrush);
+        DeleteObject(hBrush);
+        
+        EndPaint(hwndDlg, &ps);
+        return TRUE;
+    }
+    case WM_DRAWITEM: {
+        LPDRAWITEMSTRUCT pdis = (LPDRAWITEMSTRUCT)lParam;
+        if (pdis->CtlID == IDC_BANNER) {
+            FillRect(pdis->hDC, &pdis->rcItem, (HBRUSH)GetStockObject(WHITE_BRUSH));
+            
+            HPEN hPen = CreatePen(PS_SOLID, 1, RGB(180, 180, 180));
+            HPEN hOldPen = (HPEN)SelectObject(pdis->hDC, hPen);
+            MoveToEx(pdis->hDC, 0, pdis->rcItem.bottom - 1, NULL);
+            LineTo(pdis->hDC, pdis->rcItem.right, pdis->rcItem.bottom - 1);
+            SelectObject(pdis->hDC, hOldPen);
+            DeleteObject(hPen);
+            
+            HICON hIcon = LoadIconW(NULL, (LPCWSTR)IDI_QUESTION);
+            if (hIcon) {
+                DrawIconEx(pdis->hDC, 10, 5, hIcon, 24, 24, 0, NULL, DI_NORMAL);
+            }
+            
+            HFONT hFont = CreateFontW(-14, 0, 0, 0, FW_BOLD, FALSE, FALSE, FALSE, DEFAULT_CHARSET, OUT_DEFAULT_PRECIS, CLIP_DEFAULT_PRECIS, CLEARTYPE_QUALITY, DEFAULT_PITCH | FF_DONTCARE, L"Segoe UI");
+            HFONT hOldFont = (HFONT)SelectObject(pdis->hDC, hFont);
+            SetBkMode(pdis->hDC, TRANSPARENT);
+            SetTextColor(pdis->hDC, RGB(0, 51, 153));
+            
+            RECT rcText = pdis->rcItem;
+            rcText.left += 40;
+            rcText.top += 8;
+            DrawTextW(pdis->hDC, L"EliteTaskbar Help Topics", -1, &rcText, DT_SINGLELINE | DT_VCENTER);
+            
+            SelectObject(pdis->hDC, hOldFont);
+            DeleteObject(hFont);
+            return TRUE;
+        }
+        break;
+    }
+    case WM_COMMAND:
+        if (LOWORD(wParam) == IDOK || LOWORD(wParam) == IDCANCEL) {
+            EndDialog(hwndDlg, LOWORD(wParam));
+            return TRUE;
+        }
+        break;
+    }
+    return FALSE;
+}
+
+void ShowHelpDialog(HWND hwndOwner) {
+    DialogBoxW(g_hInstance, MAKEINTRESOURCEW(IDD_HELP_DIALOG), hwndOwner, HelpDlgProc);
+}
+
+INT_PTR CALLBACK AboutDlgProc(HWND hwndDlg, UINT uMsg, WPARAM wParam, LPARAM lParam) {
+    static bool bExpanded = false;
+    switch (uMsg) {
+    case WM_INITDIALOG: {
+        bExpanded = false;
+        AddDlgTooltip(hwndDlg, IDC_ABOUT_EXPAND, L"Reveal detailed version details, developer credits, and copyright licensing information.");
+        AddDlgTooltip(hwndDlg, IDOK, L"Acknowledge this about information dialog and close it.");
+        SetDlgItemTextW(hwndDlg, IDC_ABOUT_MOREINFO,
+            L"EliteTaskbar Premium Extension Pack\r\n"
+            L"Authors: Zachary Whiteman, Susan Gemm, TheShadyRainbow4\r\n"
+            L"Company: EliteSoftware / EliteSoftwareTech Co.\r\n"
+            L"Document Version: 1.2.0.0 (Four Place Values)\r\n"
+            L"Target Framework: .NET Framework 4.6 / Native Win32 C++\r\n"
+            L"Minimum OS Target: Windows Vista / Windows 7\r\n\r\n"
+            L"This software is protected by international copyright laws. Unauthorized reproduction or distribution is strictly prohibited.");
+        return TRUE;
+    }
+    case WM_PAINT: {
+        PAINTSTRUCT ps;
+        HDC hdc = BeginPaint(hwndDlg, &ps);
+        RECT rcClient;
+        GetClientRect(hwndDlg, &rcClient);
+        
+        RECT rcChin;
+        if (bExpanded) {
+            rcChin = { 0, 185, 250, 210 };
+        } else {
+            rcChin = { 0, 115, 250, 140 };
+        }
+        MapDialogRect(hwndDlg, &rcChin);
+        
+        HBRUSH hBrush = CreateSolidBrush(RGB(225, 225, 225));
+        HPEN hPen = CreatePen(PS_SOLID, 1, RGB(160, 160, 160));
+        HPEN hOldPen = (HPEN)SelectObject(hdc, hPen);
+        MoveToEx(hdc, 0, rcChin.top, NULL);
+        LineTo(hdc, rcClient.right, rcChin.top);
+        SelectObject(hdc, hOldPen);
+        DeleteObject(hPen);
+        
+        rcChin.left = 0;
+        rcChin.right = rcClient.right;
+        rcChin.bottom = rcClient.bottom;
+        FillRect(hdc, &rcChin, hBrush);
+        DeleteObject(hBrush);
+        
+        EndPaint(hwndDlg, &ps);
+        return TRUE;
+    }
+    case WM_DRAWITEM: {
+        LPDRAWITEMSTRUCT pdis = (LPDRAWITEMSTRUCT)lParam;
+        if (pdis->CtlID == IDC_BANNER) {
+            FillRect(pdis->hDC, &pdis->rcItem, (HBRUSH)GetStockObject(WHITE_BRUSH));
+            
+            HPEN hPen = CreatePen(PS_SOLID, 1, RGB(180, 180, 180));
+            HPEN hOldPen = (HPEN)SelectObject(pdis->hDC, hPen);
+            MoveToEx(pdis->hDC, 0, pdis->rcItem.bottom - 1, NULL);
+            LineTo(pdis->hDC, pdis->rcItem.right, pdis->rcItem.bottom - 1);
+            SelectObject(pdis->hDC, hOldPen);
+            DeleteObject(hPen);
+            
+            HICON hIcon = LoadIconW(g_hInstance, MAKEINTRESOURCEW(IDI_PREFERENCES));
+            if (!hIcon) {
+                hIcon = LoadIconW(NULL, (LPCWSTR)IDI_INFORMATION);
+            }
+            if (hIcon) {
+                DrawIconEx(pdis->hDC, 10, 5, hIcon, 24, 24, 0, NULL, DI_NORMAL);
+            }
+            
+            HFONT hFont = CreateFontW(-14, 0, 0, 0, FW_BOLD, FALSE, FALSE, FALSE, DEFAULT_CHARSET, OUT_DEFAULT_PRECIS, CLIP_DEFAULT_PRECIS, CLEARTYPE_QUALITY, DEFAULT_PITCH | FF_DONTCARE, L"Segoe UI");
+            HFONT hOldFont = (HFONT)SelectObject(pdis->hDC, hFont);
+            SetBkMode(pdis->hDC, TRANSPARENT);
+            SetTextColor(pdis->hDC, RGB(0, 51, 153));
+            
+            RECT rcText = pdis->rcItem;
+            rcText.left += 40;
+            rcText.top += 8;
+            DrawTextW(pdis->hDC, L"About EliteTaskbar", -1, &rcText, DT_SINGLELINE | DT_VCENTER);
+            
+            SelectObject(pdis->hDC, hOldFont);
+            DeleteObject(hFont);
+            return TRUE;
+        }
+        break;
+    }
+    case WM_COMMAND:
+        if (LOWORD(wParam) == IDOK || LOWORD(wParam) == IDCANCEL) {
+            EndDialog(hwndDlg, LOWORD(wParam));
+            return TRUE;
+        }
+        if (LOWORD(wParam) == IDC_ABOUT_EXPAND) {
+            bExpanded = !bExpanded;
+            if (bExpanded) {
+                SetDlgItemTextW(hwndDlg, IDC_ABOUT_EXPAND, L"Less Info <<");
+                
+                RECT rcDlg = { 0, 0, 250, 210 };
+                MapDialogRect(hwndDlg, &rcDlg);
+                SetWindowPos(hwndDlg, NULL, 0, 0, rcDlg.right, rcDlg.bottom, SWP_NOMOVE | SWP_NOZORDER | SWP_NOACTIVATE);
+                
+                ShowWindow(GetDlgItem(hwndDlg, IDC_ABOUT_MOREINFO), SW_SHOW);
+                
+                RECT rcExpand = { 10, 190, 70, 204 };
+                MapDialogRect(hwndDlg, &rcExpand);
+                SetWindowPos(GetDlgItem(hwndDlg, IDC_ABOUT_EXPAND), NULL, rcExpand.left, rcExpand.top, rcExpand.right - rcExpand.left, rcExpand.bottom - rcExpand.top, SWP_NOZORDER | SWP_NOACTIVATE);
+                
+                RECT rcOk = { 190, 190, 240, 204 };
+                MapDialogRect(hwndDlg, &rcOk);
+                SetWindowPos(GetDlgItem(hwndDlg, IDOK), NULL, rcOk.left, rcOk.top, rcOk.right - rcOk.left, rcOk.bottom - rcOk.top, SWP_NOZORDER | SWP_NOACTIVATE);
+            } else {
+                SetDlgItemTextW(hwndDlg, IDC_ABOUT_EXPAND, L"More Info >>");
+                
+                ShowWindow(GetDlgItem(hwndDlg, IDC_ABOUT_MOREINFO), SW_HIDE);
+                
+                RECT rcExpand = { 10, 120, 70, 134 };
+                MapDialogRect(hwndDlg, &rcExpand);
+                SetWindowPos(GetDlgItem(hwndDlg, IDC_ABOUT_EXPAND), NULL, rcExpand.left, rcExpand.top, rcExpand.right - rcExpand.left, rcExpand.bottom - rcExpand.top, SWP_NOZORDER | SWP_NOACTIVATE);
+                
+                RECT rcOk = { 190, 120, 240, 134 };
+                MapDialogRect(hwndDlg, &rcOk);
+                SetWindowPos(GetDlgItem(hwndDlg, IDOK), NULL, rcOk.left, rcOk.top, rcOk.right - rcOk.left, rcOk.bottom - rcOk.top, SWP_NOZORDER | SWP_NOACTIVATE);
+                
+                RECT rcDlg = { 0, 0, 250, 140 };
+                MapDialogRect(hwndDlg, &rcDlg);
+                SetWindowPos(hwndDlg, NULL, 0, 0, rcDlg.right, rcDlg.bottom, SWP_NOMOVE | SWP_NOZORDER | SWP_NOACTIVATE);
+            }
+            InvalidateRect(hwndDlg, NULL, TRUE);
+            return TRUE;
+        }
+        break;
+    }
+    return FALSE;
+}
+
+void ShowAboutDialog(HWND hwndOwner) {
+    DialogBoxW(g_hInstance, MAKEINTRESOURCEW(IDD_ABOUT_DIALOG), hwndOwner, AboutDlgProc);
+}
+
+LRESULT CALLBACK PropSheetSubclassProc(HWND hWnd, UINT uMsg, WPARAM wParam, LPARAM lParam, UINT_PTR uIdSubclass, DWORD_PTR dwRefData) {
+    if (uMsg == WM_COMMAND) {
+        int id = LOWORD(wParam);
+        if (id == 40001) {
+            ShowHelpDialog(hWnd);
+            return 0;
+        } else if (id == 40002) {
+            ShowAboutDialog(hWnd);
+            return 0;
+        }
+    }
+    return DefSubclassProc(hWnd, uMsg, wParam, lParam);
+}
+
+int CALLBACK PropSheetProc(HWND hwndDlg, UINT uMsg, LPARAM lParam) {
+    if (uMsg == PSCB_INITIALIZED) {
+        HMENU hMenu = CreateMenu();
+        HMENU hHelpMenu = CreatePopupMenu();
+        AppendMenuW(hHelpMenu, MF_STRING, 40001, L"&Help Topics");
+        AppendMenuW(hHelpMenu, MF_STRING, 40002, L"&About EliteTaskbar");
+        AppendMenuW(hMenu, MF_POPUP, (UINT_PTR)hHelpMenu, L"&Help");
+        SetMenu(hwndDlg, hMenu);
+        
+        SetWindowSubclass(hwndDlg, PropSheetSubclassProc, 999, 0);
+    }
+    return 0;
+}
+
 static void BrowseForFolder(HWND hwndOwner, HWND hwndEdit) {
     BROWSEINFOW bi = { 0 };
     bi.hwndOwner = hwndOwner;
@@ -169,6 +443,12 @@ INT_PTR CALLBACK TaskbarSettingsDlgProc(HWND hwndDlg, UINT uMsg, WPARAM wParam, 
     }
     case WM_INITDIALOG: {
         EnableThemeDialogTexture(hwndDlg, ETDT_ENABLETAB);
+        AddDlgTooltip(hwndDlg, IDC_MODE_INDEPENDENT, L"Run custom taskbars completely separately from Explorer. Twice the taskbars, twice the fun.");
+        AddDlgTooltip(hwndDlg, IDC_MODE_REPLACE, L"Replace the native Windows taskbar. Begone, modern Windows shell!");
+        AddDlgTooltip(hwndDlg, IDC_MODE_SECONDARY_ONLY, L"Only override secondary monitors. Explorer keeps the primary. Safe compromise?");
+        AddDlgTooltip(hwndDlg, IDC_THEME_FOLDER_PATH, L"Directory where your beautiful custom PNG/ICO icons reside. Make it pretty!");
+        AddDlgTooltip(hwndDlg, IDC_THEME_FOLDER_BROWSE, L"Open folder selector to find your icon folder. Hope your folders are clean!");
+        AddDlgTooltip(hwndDlg, IDC_ENABLE_DARK_MODE, L"Permanently disabled because dark mode is forbidden by our design guidelines!");
         HKEY hKey;
         if (RegOpenKeyExW(GetEliteRegistryRoot(), L"Software\\EliteSoftware\\Win32Explorer\\Advanced", 0, KEY_READ, &hKey) == ERROR_SUCCESS) {
             DWORD dwValue = 0;
@@ -259,6 +539,16 @@ INT_PTR CALLBACK NativeSettingsDlgProc(HWND hwndDlg, UINT uMsg, WPARAM wParam, L
     }
     case WM_INITDIALOG: {
         EnableThemeDialogTexture(hwndDlg, ETDT_ENABLETAB);
+        AddDlgTooltip(hwndDlg, IDC_NATIVE_REGISTRY_MODE, L"Sync settings with Windows Explorer. Keep the OS in the loop.");
+        AddDlgTooltip(hwndDlg, IDC_USE_NATIVE_TASKBAND, L"Reparent the native taskband for 100% native behaviour. If you dare.");
+        AddDlgTooltip(hwndDlg, IDC_TRAY_NATIVE, L"Native Windows 7 style system tray. Nostalgia in its purest form.");
+        AddDlgTooltip(hwndDlg, IDC_TRAY_LEGACY, L"Classic linear system tray. Simple, retro, and indestructible.");
+        AddDlgTooltip(hwndDlg, IDC_LOCK_TASKBAR, L"Lock the taskbar size and position. Keep it right where you put it.");
+        AddDlgTooltip(hwndDlg, IDC_AUTOHIDE_TASKBAR, L"Hide the taskbar when not in use. Out of sight, out of mind.");
+        AddDlgTooltip(hwndDlg, IDC_SMALL_ICONS, L"Use smaller taskbar buttons. Great for saving valuable screen real estate.");
+        AddDlgTooltip(hwndDlg, IDC_REPLACE_EXPLORER_NONE, L"Do not replace Windows Explorer. Borrrr-ing!");
+        AddDlgTooltip(hwndDlg, IDC_REPLACE_EXPLORER_FILESYS, L"Replace file manager for directory paths. Speed up your browsing!");
+        AddDlgTooltip(hwndDlg, IDC_REPLACE_EXPLORER_ALL, L"Completely hijack folder browsing. Let Win32Explorer do all the heavy lifting!");
         HKEY hKey;
         if (RegOpenKeyExW(GetEliteRegistryRoot(), L"Software\\EliteSoftware\\Win32Explorer\\Advanced", 0, KEY_READ, &hKey) == ERROR_SUCCESS) {
             DWORD dwValue = 0, cbData = sizeof(DWORD);
@@ -530,6 +820,14 @@ INT_PTR CALLBACK MultiMonSettingsDlgProc(HWND hwndDlg, UINT uMsg, WPARAM wParam,
             HWND hCmbOrb = CreateWindowExW(0, L"ComboBox", L"", WS_CHILD | WS_VISIBLE | CBS_DROPDOWNLIST | WS_VSCROLL | WS_TABSTOP, 140, y + 110, 100, 100, hScroll, (HMENU)(ID_BASE_SM_ORB + mon.index), g_hInstance, NULL);
             HWND hPreview = CreateWindowExW(0, L"Static", L"", WS_CHILD | WS_VISIBLE | SS_BITMAP | SS_CENTERIMAGE | WS_BORDER, 250, y + 100, 54, 54, hScroll, (HMENU)(ID_BASE_SM_PREV + mon.index), g_hInstance, NULL);
 
+            AddTooltip(hScroll, hChk1, L"Show system tray icons on this monitor. Notification overload!");
+            AddTooltip(hScroll, hChk2, L"Show clock widget on this monitor. Never lose track of time!");
+            AddTooltip(hScroll, hChk3, L"Show application task buttons on this monitor. Keep tabs on everything.");
+            AddTooltip(hScroll, hCmbMode, L"Choose which Start Menu to open on this monitor. Make it your own.");
+            AddTooltip(hScroll, hCmbTrig, L"Select mouse/keyboard trigger to summon the Start Menu.");
+            AddTooltip(hScroll, hCmbOrb, L"Pick the graphic theme for your Start Orb. Show some style!");
+            AddTooltip(hScroll, hPreview, L"A preview of your selected Start Orb theme. Looks sharp!");
+
             SetWindowSubclass(hCmbMode, NoMouseWheelSubclassProc, 1, 0);
             SetWindowSubclass(hCmbTrig, NoMouseWheelSubclassProc, 1, 0);
             SetWindowSubclass(hCmbOrb, NoMouseWheelSubclassProc, 1, 0);
@@ -713,6 +1011,8 @@ INT_PTR CALLBACK ToolbarsSettingsDlgProc(HWND hwndDlg, UINT uMsg, WPARAM wParam,
         SendDlgItemMessageW(hwndDlg, IDC_TOOLBAR_LIST, LB_ADDSTRING, 0, (LPARAM)L"Address");
         SendDlgItemMessageW(hwndDlg, IDC_TOOLBAR_LIST, LB_ADDSTRING, 0, (LPARAM)L"Links");
         SendDlgItemMessageW(hwndDlg, IDC_TOOLBAR_LIST, LB_ADDSTRING, 0, (LPARAM)L"Desktop");
+        AddDlgTooltip(hwndDlg, IDC_TOOLBAR_LIST, L"List of active deskband toolbars. Toggle them to clutter your taskbar.");
+        AddDlgTooltip(hwndDlg, IDC_TOOLBAR_NEW, L"Create a brand new custom folder toolbar. Show off your shortcut collection!");
         return TRUE;
     case WM_COMMAND:
         if (HIWORD(wParam) == BN_CLICKED || HIWORD(wParam) == LBN_SELCHANGE) SendMessageW(GetParent(hwndDlg), PSM_CHANGED, (WPARAM)hwndDlg, 0);
@@ -810,7 +1110,7 @@ void ShowTaskbarProperties(HWND hwndOwner) {
     if (pages.empty()) return;
 
     PROPSHEETHEADERW psh = { sizeof(PROPSHEETHEADERW) };
-    psh.dwFlags = PSH_PROPTITLE | PSH_USEICONID;
+    psh.dwFlags = PSH_PROPTITLE | PSH_USEICONID | PSH_USECALLBACK;
     psh.hwndParent = hwndOwner;
     psh.hInstance = g_hInstance;
     psh.pszIcon = MAKEINTRESOURCEW(IDI_PREFERENCES);
@@ -818,6 +1118,7 @@ void ShowTaskbarProperties(HWND hwndOwner) {
     psh.nPages = (UINT)pages.size();
     psh.nStartPage = 0;
     psh.phpage = pages.data();
+    psh.pfnCallback = PropSheetProc;
 
     PropertySheetW(&psh);
 }

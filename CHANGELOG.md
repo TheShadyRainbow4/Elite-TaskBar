@@ -193,3 +193,17 @@ All notable changes to this project will be documented in this file.
 - Implemented DisplayColorsDialog to restore missing Display Window Color Change UI, linked to config fields.
 - Restored padding logic in ToolbarHelper.cpp to fix tree exit icon shrinking, setting padding to 0 only for tab buttons.
 - Fixed C4060 compiler error in TaskbarProperties.cpp caused by empty switch statement.
+- Wrapped compilation cmd.exe calls in build_settings.ps1 by setting $ErrorActionPreference = 'Continue' before execution and restoring it to 'Stop' after to prevent NativeCommandError exceptions.
+- Corrected the signer tool target path inside build_sign.ps1 to look for Elite-EasySigner_x64.exe and fallback to Elite-EasySigner_x86.exe instead of hardcoded Elite-EasySigner.exe.
+- Added dialog templates and control IDs (IDD_HELP_DIALOG, IDD_ABOUT_DIALOG, IDC_ABOUT_EXPAND, IDC_ABOUT_MOREINFO, IDC_HELP_TEXT, IDC_BANNER) to resource.h (and synchronised to duplicate under Remaining_Shell).
+- Updated resources.rc to use Segoe UI 8pt (removing DS_FIXEDSYS) and added IDD_HELP_DIALOG and IDD_ABOUT_DIALOG definitions (and synchronised to duplicate resources.rc under Remaining_Shell).
+- Implemented ShowHelpDialog/ShowAboutDialog dialog procedures, owner-drawn white banner rendering, dynamic dialog resizing for more info, a GDI painted chin at the bottom, subclassed Property Sheet menu bar injection, and wittily sarcastic tooltips for all settings controls in TaskbarProperties.cpp (and synchronised to duplicate under Remaining_Shell).
+- Modified build.ps1 to execute compilation scripts sequentially instead of via background jobs (Start-Job) to resolve permission and folder-creation sandbox limits.
+- Fixed x86 settings CPL build failure by dynamically generating settings_cpl_x86.rc targeting EliteSettings_x86.exe in build_settings.ps1.
+
+
+
+
+
+
+

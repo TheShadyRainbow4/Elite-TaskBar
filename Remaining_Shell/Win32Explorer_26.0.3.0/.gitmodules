@@ -1,4 +1,0 @@
-﻿[submodule "Win32Explorer/ThirdParty/vcpkg"]
-	path = Win32Explorer/ThirdParty/vcpkg
-	url = https://github.com/microsoft/vcpkg.git
-
