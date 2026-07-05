@@ -491,9 +491,14 @@ All notable changes to this project will be documented in this file.
   - Registered and processed system tray icon callback messages (`WM_TRAY_CALLBACK_WIN32EXPLORER`, `WM_TRAY_CALLBACK_TASKBAR`, `WM_TRAY_CALLBACK_DESKTOP`) to handle double-clicks, menu prompts, toggle desktop replace status, and invoke helper applications.
 
 
-
-
-
-
-
-
+- **Milestone 5 Feedback Fixes - Tray Item Limit**:
+  - Defined `TRAY_LIMIT` macro as `48` at the top of `SourceFiles/TaskbarWindow.cpp`.
+  - Replaced the hardcoded limit of `4` with `TRAY_LIMIT` in all calculations, hit testing, tooltip checks, and visibility checks.
+  - In `TrayFlyoutProc`, updated visibility checks from `drawn < totalVisible - 4` to `drawn < totalVisible - TRAY_LIMIT` to draw overflowed icons correctly.
+- **Milestone 5 Feedback Fixes - Missing Icons (Scraping Fallback)**:
+  - Added helper function `GetProcessIcon(HWND hwnd)` to resolve the target window's process ID, query its full executable path using `QueryFullProcessImageNameW`, and extract its high-resolution application icon using `SHGetFileInfoW` with `SHGFI_ICON | SHGFI_SMALLICON` in `SourceFiles/TrayIconScraper.cpp`.
+  - Configured `GetWindowIconFix(HWND hwnd)` to fallback to `GetProcessIcon(hwnd)` as the final fallback if all other `WM_GETICON` and `GetClassLongPtrW` attempts return `NULL`.
+  - Added final fallback `LoadIconW(NULL, IDI_APPLICATION)` in `ScrapeTrayIconsFromToolbar` if `icon.hIcon` is NULL but `icon.hwnd` is valid, to prevent blank gaps in the tray area.
+- **Milestone 5 Feedback Fixes - White Background Bar**:
+  - In `SourceFiles/TaskbarWindow.cpp` `Initialize` function, stripped themed backgrounds by calling `SetWindowTheme(inst->hSysPager, L"", L"")` and `SetWindowTheme(inst->hToolbar, L"", L"")`.
+  - Added `WM_ERASEBKGND` handling in `TrayToolbarSubclassProc` to erase and draw the parent background, preventing the default toolbar theme background drawing.

@@ -1,6 +1,7 @@
 #include <windows.h>
 #include <commctrl.h>
 #include <vector>
+#include <shellapi.h>
 #include "TrayIconScraper.h"
 
 #ifdef _WIN64
@@ -37,6 +38,31 @@ std::wstring GetScrapedTrayTooltip(HWND hwnd, UINT uID) {
     return L"";
 }
 
+static HICON GetProcessIcon(HWND hwnd) {
+    if (!hwnd || !IsWindow(hwnd)) return NULL;
+    DWORD pid = 0;
+    GetWindowThreadProcessId(hwnd, &pid);
+    if (!pid) return NULL;
+
+    HANDLE hProc = OpenProcess(PROCESS_QUERY_LIMITED_INFORMATION, FALSE, pid);
+    if (!hProc) {
+        hProc = OpenProcess(PROCESS_QUERY_INFORMATION | PROCESS_VM_READ, FALSE, pid);
+    }
+    if (!hProc) return NULL;
+
+    WCHAR szPath[MAX_PATH] = {0};
+    DWORD dwSize = MAX_PATH;
+    HICON hIcon = NULL;
+    if (QueryFullProcessImageNameW(hProc, 0, szPath, &dwSize)) {
+        SHFILEINFOW sfi = {0};
+        if (SHGetFileInfoW(szPath, 0, &sfi, sizeof(sfi), SHGFI_ICON | SHGFI_SMALLICON)) {
+            hIcon = sfi.hIcon;
+        }
+    }
+    CloseHandle(hProc);
+    return hIcon;
+}
+
 static HICON GetWindowIconFix(HWND hwnd) {
     if (!hwnd || !IsWindow(hwnd)) return NULL;
     DWORD_PTR dwRes = 0;
@@ -53,7 +79,7 @@ static HICON GetWindowIconFix(HWND hwnd) {
     if (hIcon) return hIcon;
     hIcon = (HICON)GetClassLongPtrW(hwnd, GCLP_HICON);
     if (hIcon) return hIcon;
-    return NULL;
+    return GetProcessIcon(hwnd);
 }
 
 void ScrapeTrayIconsFromToolbar(HWND hToolbar, std::vector<ScrapedTrayIcon>& icons) {
@@ -113,6 +139,9 @@ void ScrapeTrayIconsFromToolbar(HWND hToolbar, std::vector<ScrapedTrayIcon>& ico
                         icon.hIcon = iconHIcon;
                         if (!icon.hIcon) {
                             icon.hIcon = GetWindowIconFix(icon.hwnd);
+                        }
+                        if (!icon.hIcon) {
+                            icon.hIcon = LoadIconW(NULL, MAKEINTRESOURCEW(32512));
                         }
                         if (icon.hIcon) {
                             icons.push_back(icon);

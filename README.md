@@ -86,6 +86,10 @@ Elite-Taskbar is designed from the ground up to seamlessly blend into the Window
 * **DDF Compression Pipeline Acceleration**: Restructured the backup pipeline to ignore locked log/txt files and scan only active code folders, accelerating backups from a hang to under a second.
 * **Automated Verification Script (verify_final_polish.ps1)**: Programmatically validates the application of Desktop Background, Quick Launch, 2-Row Tray, and Clock Seconds toggles across both normal (HKCU) and Portable Mirror (HKLM & XML) modes.
 * **Comprehensive E2E Test Suite (Subagent_Tests/run_comprehensive_e2e.ps1)**: Runs E2E verification of 10 features across 4 tiers (Feature, Boundary, Pairwise, Scenario) utilizing non-disruptive, single-shell lifecycle dispatch.
+* **Tray Item Limit Extension**: Replaced the hardcoded inline notification tray limit of 4 with a new maximum of 48 (`TRAY_LIMIT`), correctly handling overflow rendering and mouse interaction routing across primary and secondary screen taskbars.
+* **Missing Tray Icons Process Fallback**: Integrated process icon extraction (`GetProcessIcon`) using `QueryFullProcessImageNameW` and `SHGetFileInfoW` alongside a generic application icon fallback to eliminate blank gaps in the system tray.
+* **White Background Bar Theme Removal**: Stripped native visual style themed backgrounds from the notification area `SysPager` and `ToolbarWindow32` controls, and subclassed `WM_ERASEBKGND` to draw the transparent parent background.
+
 
 </details>
 
