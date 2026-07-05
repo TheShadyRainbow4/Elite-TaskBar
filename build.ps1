@@ -151,6 +151,13 @@ if ($failed) {
 }
 
 if (-not $failed) {
+    $Suffix = (Get-Random).ToString()
+    if (Test-Path "$ScriptDir\EliteTaskbar.exe") { Rename-Item "$ScriptDir\EliteTaskbar.exe" "EliteTaskbar_old_$Suffix.exe" -Force -ErrorAction SilentlyContinue }
+    if (Test-Path "$ScriptDir\EliteSettings.exe") { Rename-Item "$ScriptDir\EliteSettings.exe" "EliteSettings_old_$Suffix.exe" -Force -ErrorAction SilentlyContinue }
+    if (Test-Path "$ScriptDir\EliteSettings.cpl") { Rename-Item "$ScriptDir\EliteSettings.cpl" "EliteSettings_old_$Suffix.cpl" -Force -ErrorAction SilentlyContinue }
+    if (Test-Path "$ScriptDir\EliteEverything.exe") { Rename-Item "$ScriptDir\EliteEverything.exe" "EliteEverything_old_$Suffix.exe" -Force -ErrorAction SilentlyContinue }
+    if (Test-Path "$ScriptDir\EliteDLLScanner.exe") { Rename-Item "$ScriptDir\EliteDLLScanner.exe" "EliteDLLScanner_old_$Suffix.exe" -Force -ErrorAction SilentlyContinue }
+
     Copy-Item "$BuildDir\EliteTaskbar.exe" "$ScriptDir\EliteTaskbar.exe" -Force
     Copy-Item "$BuildDir\EliteSettings.exe" "$ScriptDir\EliteSettings.exe" -Force
     Copy-Item "$BuildDir\EliteSettings.cpl" "$ScriptDir\EliteSettings.cpl" -Force

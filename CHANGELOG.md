@@ -20,6 +20,9 @@ All notable changes to this project will be documented in this file.
 - **Features Documentation**: Added a comprehensive collapsible features list to `README.md` and instituted a new rule in `GEMINI.md` requiring all new features to be appended to it.
 
 ### Fixed
+- **Win32Explorer Build Deadlock**: Changed `build_Win32Explorer.ps1` to use a separate lock file (`elite_win32explorer_build.lock`) instead of sharing `elite_taskbar_build.lock` with its parent `build.ps1` script, eliminating the deadlock during multi-process parent-child compilation.
+- **Auditor Build Lock Isolation**: Implemented a check for `$env:ELITE_AUDITOR_RUN` inside `build.ps1` to prevent parallel, conflicting build jobs from other agents' scheduled background tasks from colliding with the auditor's build session.
+- **Empirical Test Script Robustness**: Patched `verify_milestone2.ps1` to send Exit All Taskbars (`3014`) instead of Exit Single Monitor (`3010`) to support clean process teardown in multi-monitor VM environments, and added process termination sleep delays to ensure the OS has fully released single-instance Mutexes before starting new instances.
 - **HICON Resource Leak**: Fixed HICON leaks in `TaskbarWindow.cpp` by calling `DestroyIcon` under `HSHELL_WINDOWDESTROYED` and `HSHELL_REDRAW`.
 - **GDI Resource Leak**: Patched `SyncTaskbarButtonsAcrossMonitors` in `TaskbarWindow.cpp` to only fetch new UWP icons when the task button is not already present in `g_TaskButtons`, avoiding resource leaks.
 - **Resource ID Collisions**: Resolved overlapping resource IDs in `resource.h` by changing `IDC_ORB_SELECTOR` to 232 and `IDC_START_MONITOR_LIST` to 233.

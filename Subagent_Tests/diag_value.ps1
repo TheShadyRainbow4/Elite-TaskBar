@@ -15,19 +15,17 @@ public class Win32Helper {
     public static extern uint GetWindowThreadProcessId(IntPtr hWnd, out uint lpdwProcessId);
     [DllImport("user32.dll", CharSet = CharSet.Auto)]
     public static extern int GetClassName(IntPtr hWnd, System.Text.StringBuilder lpClassName, int nMaxCount);
+    [DllImport("user32.dll")]
+    public static extern IntPtr SendMessage(IntPtr hWnd, uint Msg, IntPtr wParam, IntPtr lParam);
 
-    public static IntPtr FindProcessWindow(int processId, string className) {
+    public static IntPtr FindWindowGlobal(string className) {
         IntPtr found = IntPtr.Zero;
         EnumWindows((hWnd, lParam) => {
-            uint pid;
-            GetWindowThreadProcessId(hWnd, out pid);
-            if (pid == processId) {
-                System.Text.StringBuilder sbClass = new System.Text.StringBuilder(260);
-                GetClassName(hWnd, sbClass, sbClass.Capacity);
-                if (sbClass.ToString() == className) {
-                    found = hWnd;
-                    return false;
-                }
+            System.Text.StringBuilder sbClass = new System.Text.StringBuilder(260);
+            GetClassName(hWnd, sbClass, sbClass.Capacity);
+            if (sbClass.ToString() == className) {
+                found = hWnd;
+                return false;
             }
             return true;
         }, IntPtr.Zero);
@@ -36,38 +34,43 @@ public class Win32Helper {
 }
 "@
 
-$proc = Get-Process -Name Win32Explorer -ErrorAction SilentlyContinue
-if (!$proc) {
-    Write-Host "Win32Explorer is not running. Launching it..."
-    $proc = Start-Process -FilePath "C:\Users\Administrator\Desktop\Elite-TaskBar\Win32Explorer_26.0.3.0\Win32Explorer.exe" -ArgumentList "C:\Windows" -PassThru
-    Start-Sleep -Seconds 5
-} else {
-    $proc = $proc[0]
-}
+Stop-Process -Name Win32Explorer -Force -ErrorAction SilentlyContinue
+Start-Sleep -Seconds 3
 
-$hwndMain = [Win32Helper]::FindProcessWindow($proc.Id, "Win32Explorer")
+$regSettingsPath = 'HKCU:\Software\Win32Explorer\Settings'
+if (!(Test-Path $regSettingsPath)) { New-Item -Path $regSettingsPath -Force | Out-Null }
+Set-ItemProperty -Path $regSettingsPath -Name "ViewModeGlobal" -Value 12 -Type DWord
+Set-ItemProperty -Path $regSettingsPath -Name "ShowInGroupsGlobal" -Value 0 -Type DWord
+Set-ItemProperty -Path $regSettingsPath -Name "ConfirmCloseTabs" -Value 0 -Type DWord
+Set-ItemProperty -Path $regSettingsPath -Name "EnableShellBagsSupport" -Value 0 -Type DWord
+Set-ItemProperty -Path $regSettingsPath -Name "EnablePortableMirror" -Value 0 -Type DWord
+
+Write-Host "Starting Win32Explorer..."
+$proc = Start-Process -FilePath "C:\Users\Administrator\Desktop\Elite-TaskBar\Win32Explorer_26.0.3.0\Win32Explorer.exe" -ArgumentList "C:\Windows" -PassThru
+Start-Sleep -Seconds 7
+
+$hwndMain = [Win32Helper]::FindWindowGlobal("Win32Explorer")
 Write-Host "HWND: $hwndMain"
 
-# Get the Main Menu
-$hMenu = [Win32Helper]::GetMenu($hwndMain)
-Write-Host "hMenu: $hMenu"
+if ($hwndMain -ne [IntPtr]::Zero) {
+    # Get the Main Menu
+    $hMenu = [Win32Helper]::GetMenu($hwndMain)
+    Write-Host "hMenu: $hMenu"
 
-# View Menu is usually at index 1 (File=0, Edit=1, View=2 or similar)
-# Let's loop and find which submenu contains the View modes
-for ($i = 0; $i -lt 10; $i++) {
-    $hSub = [Win32Helper]::GetSubMenu($hMenu, $i)
+    # View sub-menus
+    $hSub = [Win32Helper]::GetSubMenu($hMenu, 3) # View is index 3
     if ($hSub -ne [IntPtr]::Zero) {
-        $stateSmallIconTiles = [Win32Helper]::GetMenuState($hSub, 60018, 0)
-        $stateTiles = [Win32Helper]::GetMenuState($hSub, 60016, 0)
-        $stateIcons = [Win32Helper]::GetMenuState($hSub, 60003, 0)
-        $stateDetails = [Win32Helper]::GetMenuState($hSub, 60006, 0)
-        
-        if ($stateSmallIconTiles -ne 0xFFFFFFFF) {
-            Write-Host "Submenu index $i is the View/Program menu!"
-            Write-Host "  SmallIconTiles (60018) state: $stateSmallIconTiles (MF_CHECKED is 0x8)"
-            Write-Host "  Tiles (60016) state: $stateTiles"
-            Write-Host "  Icons (60003) state: $stateIcons"
-            Write-Host "  Details (60006) state: $stateDetails"
+        $ids = @(60000, 60001, 60002, 60003, 60004, 60005, 60006, 60007, 60008, 60009, 60017, 60018)
+        foreach ($id in $ids) {
+            $state = [Win32Helper]::GetMenuState($hSub, $id, 0)
+            $checked = (($state -band 0x8) -eq 0x8)
+            $exists = ($state -ne 0xFFFFFFFF)
+            Write-Host "ID: $id, Exists: $exists, State: $state, Checked: $checked"
         }
+    } else {
+        Write-Host "Could not get submenu index 3."
     }
 }
+
+# Close it
+[Win32Helper]::SendMessage($hwndMain, 0x0010, [IntPtr]::Zero, [IntPtr]::Zero) | Out-Null

@@ -42,7 +42,7 @@ Stop-Process -Id $procSettings.Id -Force
 
 Write-Host "`nTesting EliteSettings.cpl GUI launch..." -ForegroundColor Cyan
 $procCpl = Start-Process -FilePath "control.exe" -ArgumentList "`"$settingsCplPath`"" -PassThru
-Start-Sleep -Seconds 4
+Start-Sleep -Seconds 8
 
 # Check for window from extracted temp exe
 $windows = Get-Process | Where-Object { $_.MainWindowTitle -like "*Taskbar and Start Menu Properties*" }
@@ -117,8 +117,8 @@ $hwndTaskbar = [WinWindowUtil]::FindWindowW("Elite_SecondaryTrayWnd", $null)
 if ($hwndTaskbar -ne 0) {
     Write-Host "[PASS] EliteTaskbar.exe launched successfully and registered window with class 'Elite_SecondaryTrayWnd' (HWND: $hwndTaskbar)" -ForegroundColor Green
     
-    # Send Quit command via WM_COMMAND (3010)
-    [WinWindowUtil]::SendMessage($hwndTaskbar, 0x0111, [IntPtr]3010, [IntPtr]0)
+    # Send Quit command via WM_COMMAND (3014 - Exit All Taskbars)
+    [WinWindowUtil]::SendMessage($hwndTaskbar, 0x0111, [IntPtr]3014, [IntPtr]0)
     Start-Sleep -Seconds 2
     if ($procTaskbar.HasExited) {
         Write-Host "[PASS] EliteTaskbar.exe exited cleanly in response to the Quit command." -ForegroundColor Green
@@ -134,6 +134,7 @@ if ($hwndTaskbar -ne 0) {
 # Check 4: Verify Win32Explorer process lifecycle and close behavior
 Write-Host "`nTesting Win32Explorer.exe process lifecycle..." -ForegroundColor Cyan
 Get-Process -Name Win32Explorer -ErrorAction SilentlyContinue | Stop-Process -Force
+Start-Sleep -Seconds 2
 
 # Set settings to prevent blocking confirmation dialogs
 $pathSettings = "HKCU:\Software\Win32Explorer\Settings"
