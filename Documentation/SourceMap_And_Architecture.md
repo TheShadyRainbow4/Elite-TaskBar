@@ -56,11 +56,19 @@ The application is structured into discrete components, each managing a specific
 - **Purpose**: Simple global configuration structure (`EliteTaskbarConfig`).
 - **Functionality**: Stores enum states (like `TaskbarMode::Independent` vs `TaskbarMode::Replace`) so that all source files can adapt their behavior dynamically.
 
-### 7. `resource.h` & `resources.rc`
+### 7. `TrayIconScraper.cpp` & `TrayIconScraper.h`
+- **Purpose**: Scrapes, maps, and repopulates notification area tray icons.
+- **Functionality**:
+  - Scrapes notification icons from both the visible taskbar tray (`Shell_TrayWnd`) and hidden overflow tray (`NotifyIconOverflowWindow`) toolbars.
+  - Utilizes remote process memory allocation (`VirtualAllocEx`, `ReadProcessMemory`) to copy `TBBUTTON` parameters and text buffers containing tooltip strings.
+  - Maintains `g_TrayTooltipsMap` and supplies scraped tooltips to `TaskbarWindow` subclassing handlers.
+  - Repopulates our custom taskbar tray toolbar using `UpdateTrayToolbar`.
+
+### 8. `resource.h` & `resources.rc`
 - **Purpose**: Windows Resource Compiler definitions.
 - **Functionality**: Embeds the application icon (`IDI_MAIN_PROGRAM`) and the raw bitmap for the Start Orb (`IDB_START_ORB`). Also ensures the compiled executable possesses the correct manifest properties.
 
-### 8. `app.manifest`
+### 9. `app.manifest`
 - **Purpose**: XML application manifest.
 - **Functionality**: Explicitly declares OS compatibility (Windows 7/8/10/11) and sets the process to `PerMonitorV2` DPI awareness. This prevents Windows from forcibly blurring or stretching the taskbar on high-resolution or multi-monitor setups.
 

@@ -41,6 +41,7 @@ Elite-Taskbar is designed from the ground up to seamlessly blend into the Window
 
 * **GDI & GDI+ Drawing**: Pixel-perfect UI elements, including 3-state animated Start Orbs (Normal, Hover, Pressed).
 * **High DPI Awareness**: `PerMonitorV2` compliance ensuring crisp text and imagery across multi-monitor setups.
+* **Multi-Monitor DPI Scaling (R7)**: Dynamic recalculation of taskbar sizing, window positions, and fonts upon receiving `WM_DPICHANGED` messages.
 * **Custom Start Orbs**: Included themes like Indigo, Sapphire, Uranus, Dunes, AquaBottom, and ViennaBottom.
 * **Legacy System Tray**: Options for a modern tray or a classic retro linear system tray.
 
@@ -61,6 +62,8 @@ Elite-Taskbar is designed from the ground up to seamlessly blend into the Window
 * **Intelligent Context Menus**: Routes raw undocumented Shell Command IDs (e.g., Cascade Windows, Show Desktop) for 100% native execution.
 * **Robust Tray Clock**: Hooks into the native `TrayClockWClass` and seamlessly summons the standard Windows calendar flyout.
 * **Graceful Degradation**: Fallback mechanisms (e.g., DWM buffer to raw GDI `DrawTextW`) ensure critical UI elements like the clock are always visible even if themes break.
+* **Double Notification Area Scraping (R4)**: Aggregates scraped icons from both the visible taskbar tray and the hidden `NotifyIconOverflowWindow` toolbar.
+* **UWP Application Icon Resolving (R5)**: Resolves and extracts high-resolution modern app icons directly from UWP layouts, replacing standard fallback icons.
 
 </details>
 

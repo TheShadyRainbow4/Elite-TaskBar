@@ -33,6 +33,12 @@ This document serves as a high-level map and explanation for all files within th
     - Subclasses `TrayClockWClass`.
     - Uses a 1-second `WM_TIMER` to pull `GetLocalTime()`.
     - Renders the time and date using GDI+ with `StringAlignmentCenter` to perfectly replicate the Windows 7/10 dual-line clock.
+- **TrayIconScraper.h / TrayIconScraper.cpp**: Implements system tray notification icon scraping and replication toolbar drawing.
+  - **Responsibilities**:
+    - Scrapes tray notification icons from both the visible tray (`Shell_TrayWnd`) and hidden overflow tray (`NotifyIconOverflowWindow`) toolbars.
+    - Allocates remote buffers and reads process memory to extract notification `TBBUTTON` parameters and tooltips directly from the explorer shell process.
+    - Exposes `g_TrayTooltipsMap` and `GetScrapedTrayTooltip()` to fetch tooltip texts.
+    - Re-populates and updates our taskbar system tray toolbar (`UpdateTrayToolbar`) with the scraped icons.
 
 ## Settings & Properties Dialogs
 - **EliteSettingsStub.cpp**: The source file for the `EliteSettings.exe` stub executable. It exists solely to call `ShellExecuteW` to launch `EliteTaskbar.exe /settings`, ensuring that launching the settings dialog from external sources correctly delegates to the main taskbar executable where the property sheet resources live.

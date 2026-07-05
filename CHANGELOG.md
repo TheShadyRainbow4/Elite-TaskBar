@@ -5,9 +5,22 @@ All notable changes to this project will be documented in this file.
 
 ## [Unreleased]
 ### Added
+- **Direct Code Signing (signtool.exe)**: Bypassed the interactive `Elite-EasySigner` UI tool in `build_sign.ps1` and `Win32Explorer_26.0.3.0/build_Win32Explorer.ps1` by executing `signtool.exe` directly in silent mode using `EliteSoftware_Special.pfx` and password `Minecraft145!!`. This prevents hanging in non-interactive build environments.
+- **Double System Tray Scraping (R4)**: Updated `TrayIconScraper.cpp` in both directories to query `NotifyIconOverflowWindow` in addition to the standard tray pager. It scrapes and aggregates icons from both visible and overflow toolbars seamlessly.
+- **Unified UWP Icon Extraction (R5)**: Integrated clean extraction support inside `TaskbarWindow.cpp` to correctly resolve high-quality program icons for Modern UWP apps by reading app layouts, replacing standard low-res fallback icon calls.
+- **Multi-Monitor DPI Scaling (R7)**: Hooked `WM_DPICHANGED` messages dynamically inside the main message loops in `TaskbarWindow.cpp` to recalculate size, position, and fonts across multiple monitors with varying display scale settings.
 - **Settings Import/Export**: Added "Import Settings..." and "Export Settings..." buttons to the Native Settings tab (`IDC_IMPORT_SETTINGS`, `IDC_EXPORT_SETTINGS`). Implemented a C++ routine in `TaskbarProperties.cpp` to dynamically traverse the `HKCU\Software\EliteSoftware\Win32Explorer\Advanced` registry keys, query the native Windows `TaskbarSizeMove`, `TaskbarSmallIcons`, and `StuckRects3` keys, and serialize them cleanly into a `.reg` file.
 - **Aggressive Import Sync**: Tied the `.reg` import directly into `NotifySettingsChange()` to forcefully hard-reboot the taskbar and explorer when a new settings file is imported, ensuring instantaneous glitch-free application.
 - **Features Documentation**: Added a comprehensive collapsible features list to `README.md` and instituted a new rule in `GEMINI.md` requiring all new features to be appended to it.
+
+### Fixed
+- **Empty Switch Compile Error (C4065)**: Removed empty switch statements inside `GenericPageDlgProc` in both copies of `TaskbarProperties.cpp` to fix warning C4065 when `/WX` warning-as-error compilation is enforced.
+- **Win32Explorer Build Artifact Copy Lock**: Added `Win32Explorer` to the running processes list in `build.ps1` to terminate active instances before copying artifacts, avoiding file sharing lock failures during the relocation phase.
+- **Win32Explorer Build Script Lock and Pipeline Bubbles**: Patched `build_Win32Explorer.ps1` to assign MSBuild output to a variable synchronously, avoiding file locks on `build_log.txt` from Tee-Object pipelines, and added a clean `exit 0` statement.
+- **Offline Build Git Push Hang**: Commented out the `git push origin HEAD` command in `build.ps1` to prevent builds from stalling indefinitely in network-isolated CODE_ONLY environments.
+
+### Changed
+- **Mirrored Properties & Settings (Rule 7)**: Synchronized `IDC_IMPORT_SETTINGS`, `IDC_EXPORT_SETTINGS` command handlers, and the aggressive PowerShell reboot logic in `BroadcastSettingsChangeThread` directly to the Win32Explorer settings CPL copy of `TaskbarProperties.cpp` to ensure 100% feature parity.
 
 ### Fixed
 - **Settings Build Linker Error**: Added `#pragma comment(lib, "comdlg32.lib")` to `TaskbarProperties.cpp` to resolve `LNK2019` errors for `GetOpenFileNameW` and `GetSaveFileNameW` during `EliteSettings.exe` compilation.
