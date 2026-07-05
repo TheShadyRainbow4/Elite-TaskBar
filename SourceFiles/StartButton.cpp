@@ -2,13 +2,61 @@
 #include "Config.h"
 #include "Logger.h"
 #include <Shlwapi.h>
+#include <shlobj.h>
+#include <vector>
+#include <string>
 #pragma comment(lib, "Shlwapi.lib")
+#pragma comment(lib, "shell32.lib")
 
 #pragma comment (lib,"Gdiplus.lib")
 
 using namespace Gdiplus;
 
+static bool LaunchOpenShellMenu() {
+    std::vector<std::wstring> paths;
+    
+    // 1. Current directory
+    wchar_t localPath[MAX_PATH];
+    GetModuleFileNameW(NULL, localPath, MAX_PATH);
+    PathRemoveFileSpecW(localPath);
+    std::wstring localStr = localPath;
+    paths.push_back(localStr + L"\\StartMenu.exe");
+    paths.push_back(localStr + L"\\StartMenu_PE\\StartMenu.exe");
+    
+    // 2. Program Files
+    wchar_t progFiles[MAX_PATH];
+    if (SHGetFolderPathW(NULL, CSIDL_PROGRAM_FILES, NULL, 0, progFiles) == S_OK) {
+        paths.push_back(std::wstring(progFiles) + L"\\Open-Shell\\StartMenu.exe");
+    }
+    
+    // 3. Program Files (x86)
+    if (GetEnvironmentVariableW(L"ProgramFiles(x86)", progFiles, MAX_PATH) > 0) {
+        paths.push_back(std::wstring(progFiles) + L"\\Open-Shell\\StartMenu.exe");
+    }
+    
+    // Try to launch
+    for (const auto& path : paths) {
+        if (PathFileExistsW(path.c_str())) {
+            Logger::Log((L"Found Open-Shell executable: " + path).c_str());
+            
+            STARTUPINFOW si = { sizeof(si) };
+            PROCESS_INFORMATION pi;
+            wchar_t cmdLine[MAX_PATH + 32];
+            swprintf_s(cmdLine, L"\"%s\" -toggle", path.c_str());
+            
+            if (CreateProcessW(NULL, cmdLine, NULL, NULL, FALSE, 0, NULL, NULL, &si, &pi)) {
+                CloseHandle(pi.hProcess);
+                CloseHandle(pi.hThread);
+                return true;
+            }
+        }
+    }
+    
+    return false;
+}
+
 LRESULT CALLBACK OrbWndProc(HWND hwnd, UINT uMsg, WPARAM wParam, LPARAM lParam);
+
 
 bool StartButton::GlobalInitialize(ULONG_PTR& token) {
     GdiplusStartupInput gdiplusStartupInput;
@@ -246,6 +294,22 @@ LRESULT CALLBACK OrbWndProc(HWND hwnd, UINT uMsg, WPARAM wParam, LPARAM lParam) 
                 }
 
                 bool isShiftDown = (GetAsyncKeyState(VK_SHIFT) & 0x8000) != 0;
+
+                DWORD fallbackEnabled = 1;
+                HKEY hKeyFallback;
+                if (RegOpenKeyExW(GetEliteRegistryRoot(), L"Software\\EliteSoftware\\Win32Explorer\\Advanced", 0, KEY_READ, &hKeyFallback) == ERROR_SUCCESS) {
+                    DWORD cbData = sizeof(DWORD);
+                    RegQueryValueExW(hKeyFallback, L"FallbackStartMenuEnabled", NULL, NULL, (LPBYTE)&fallbackEnabled, &cbData);
+                    RegCloseKey(hKeyFallback);
+                }
+
+                if (fallbackEnabled && g_Config.Mode == TaskbarMode::Replace) {
+                    if (LaunchOpenShellMenu()) {
+                        return 0;
+                    } else {
+                        Logger::Log(L"Warning: Fallback Start Menu enabled but StartMenu.exe was not found. Falling back to native simulation.");
+                    }
+                }
 
                 HWND hNativeTarget = NULL;
                 HMONITOR hMon = MonitorFromWindow(pThis->GetParentTaskbar(), MONITOR_DEFAULTTONULL);

@@ -25,7 +25,7 @@ public class Win32 {
 Add-Type -TypeDefinition $code -ErrorAction SilentlyContinue
 
 # Clean up
-Get-Process -Name EliteTaskbar, Win32Explorer -ErrorAction SilentlyContinue | Stop-Process -Force
+Get-Process -Name EliteTaskbar, Win32Explorer, powershell -ErrorAction SilentlyContinue | Where-Object { $_.Id -ne $PID } | Stop-Process -Force
 Start-Sleep -Seconds 1
 
 # Start initial taskbar from root
@@ -72,6 +72,20 @@ if ($hApply -eq 0) {
 # Click Apply
 Write-Host "Clicking Apply..." -ForegroundColor Cyan
 [Win32]::SendMessageW($hwndSettings, 0x0111, [IntPtr]0x3021, $hApply) | Out-Null
+
+# Capture powershell command line immediately
+Write-Host "Scanning for spawned powershell process..." -ForegroundColor Cyan
+$psCmdLine = "Not Found"
+for ($i = 0; $i -lt 50; $i++) {
+    $psProcs = Get-Process -Name powershell -ErrorAction SilentlyContinue | Where-Object { $_.Id -ne $PID }
+    if ($psProcs) {
+        $psCmdLine = (Get-CimInstance Win32_Process -Filter "ProcessId = $($psProcs[0].Id)").CommandLine
+        break
+    }
+    Start-Sleep -Milliseconds 50
+}
+
+Write-Host "Spawned PowerShell Command Line: $psCmdLine" -ForegroundColor Yellow
 
 # Wait for restart
 Write-Host "Waiting for restart..." -ForegroundColor Cyan

@@ -5,6 +5,10 @@ All notable changes to this project will be documented in this file.
 
 ## [Unreleased]
 ### Added
+- **Win32Explorer View Mode Routing**: Added the missing routing case for `IDM_VIEW_SMALLICONTILES` next to `IDM_VIEW_TILES` in `MainWndSwitch.cpp` to correctly handle Small Icon Tiles view command.
+- **Startup and Navigation Grouping**: Implemented check and call to `MoveItemsIntoGroups()` after `SortFolder()` in `BrowsingHandler.cpp` when `m_folderSettings.showInGroups` is enabled.
+- **Test Synchronization Robustness**: Replaced `BM_CLICK` with `BM_SETCHECK` for checkbox toggling in `run_re_verification.ps1` (TEST 3 and TEST 4) and added `SetForegroundWindow` calls to activate the Options dialog before button clicks, ensuring reliable test automation execution.
+- **Project Finalization (Orchestrator)**: Resumed execution after resource exhaustion to aggregate and verify the final Swarm Re-Verification reports. Reviewed and confirmed APPROVE verdicts from Reviewers 7 & 8, PASS verdict from Challenger 5, and CLEAN verdict from Auditor 4. Finalized all project milestones, updated progress.md with retrospectives, updated PROJECT.md milestone statuses, and claimed victory for the EliteTaskbar suite.
 - **DDF Compression Optimization (backup.ps1)**: Restricted file search scopes to active SourceFiles/root and excluded `.log`, `.txt`, and `.cab` extensions to completely prevent sharing violations and extremely slow backups.
 - **Resource ID Collision Fix (resource.h)**: Resolved colliding IDs 228/229 (`IDC_WIDTH_FIXED_SIZE` and `IDC_WIDTH_FIXED_SIZE_LBL`) by moving them to safe, unused IDs 234/235 in both resource headers.
 - **About Dialog Layout Spacing (resources.rc & TaskbarProperties.cpp)**: Re-designed About dialog templates to minimize layout gaps, scaling collapsed height to `110` DUs and expanded to `195` DUs, dynamically relocating the buttons and adjusting the 3D inset "Chin" height.

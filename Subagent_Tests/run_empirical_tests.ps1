@@ -109,14 +109,22 @@ $xmlPath = Join-Path $explorerExeDir "config.xml"
 
 
 # Registry paths
-$regParentPath = "HKCU:\Software"
-$regExplorerPath = "HKCU:\Software\Win32Explorer"
-$regSettingsPath = "HKCU:\Software\Win32Explorer\Settings"
-$regExplorerBackupPath = "HKCU:\Software\Win32Explorer_Backup"
+$userSid = "S-1-5-21-3033238256-2936349959-1177579691-500" # default fallback
+try {
+    $userAccount = New-Object System.Security.Principal.NTAccount("User")
+    $userSid = $userAccount.Translate([System.Security.Principal.SecurityIdentifier]).Value
+} catch {}
 
-# Utility to clean up running processes and files
+$regParentPath = "Registry::HKEY_USERS\$userSid\Software"
+$regExplorerPath = "Registry::HKEY_USERS\$userSid\Software\Win32Explorer"
+$regSettingsPath = "Registry::HKEY_USERS\$userSid\Software\Win32Explorer\Settings"
+$regExplorerBackupPath = "Registry::HKEY_USERS\$userSid\Software\Win32Explorer_Backup"
+$regAdvancedPath = "Registry::HKEY_USERS\$userSid\Software\EliteSoftware\Win32Explorer\Advanced"
+
 function Stop-EliteProcesses {
-    Get-Process -Name Win32Explorer, EliteTaskbar -ErrorAction SilentlyContinue | Stop-Process -Force
+    Get-Process -Name Win32Explorer, EliteTaskbar -ErrorAction SilentlyContinue | Stop-Process -Force -ErrorAction SilentlyContinue
+    cmd.exe /c "taskkill /F /T /IM Win32Explorer.exe 2>nul" | Out-Null
+    cmd.exe /c "taskkill /F /T /IM EliteTaskbar.exe 2>nul" | Out-Null
     for ($i = 0; $i -lt 10; $i++) {
         $procs = Get-Process -Name Win32Explorer, EliteTaskbar -ErrorAction SilentlyContinue
         if (!$procs) { break }
@@ -150,6 +158,42 @@ function Restore-RegistrySettings {
     }
 }
 
+function Start-ExplorerProcess {
+    param($arguments = "C:\Windows")
+    $oldEap = $ErrorActionPreference
+    $ErrorActionPreference = 'Continue'
+    
+    # Sleep 3 seconds at the start to let PSEXESVC clean up from any previous test
+    Start-Sleep -Seconds 3
+    
+    for ($attempt = 1; $attempt -le 4; $attempt++) {
+        try {
+            $psexecOut = & psexec64 -i 1 -w $explorerExeDir -d $explorerExe $arguments 2>&1
+            $psexecOutJoined = [string]::Join(" ", $psexecOut)
+            $pidMatch = [regex]::Match($psexecOutJoined, "process\s+ID\s+(\d+)", [System.Text.RegularExpressions.RegexOptions]::IgnoreCase)
+            if ($pidMatch.Success) {
+                $spawnedPid = [int]$pidMatch.Groups[1].Value
+                for ($i = 0; $i -lt 30; $i++) { # Wait up to 15 seconds
+                    $proc = Get-Process -Id $spawnedPid -ErrorAction SilentlyContinue
+                    if ($proc) {
+                        $ErrorActionPreference = $oldEap
+                        return $proc
+                    }
+                    Start-Sleep -Milliseconds 500
+                }
+            } else {
+                Write-Host "PsExec attempt $attempt did not get PID. Output was: $psexecOutJoined" -ForegroundColor DarkYellow
+            }
+        } catch {
+            Write-Host "PsExec attempt $attempt failed: $_" -ForegroundColor DarkYellow
+        }
+        Start-Sleep -Seconds 3 # Sleep between retries
+    }
+    
+    $ErrorActionPreference = $oldEap
+    throw "Win32Explorer process did not start."
+}
+
 $results = @{
     "SmallIconTilesView" = "FAIL"
     "DefaultGroupByType" = "FAIL"
@@ -161,11 +205,20 @@ $results = @{
 Stop-EliteProcesses
 Backup-RegistrySettings
 
+$origMirror = $null
+if (Test-Path $regAdvancedPath) {
+    $origProp = Get-ItemProperty -Path $regAdvancedPath -Name "EnablePortableMirror" -ErrorAction SilentlyContinue
+    if ($origProp) { $origMirror = $origProp.EnablePortableMirror }
+}
+
 try {
     # ----------------- TEST 1: Small Icon Tiles View Mode -----------------
     Write-Host "`n[TEST 1] Verifying 'Small Icon Tiles' View Mode..." -ForegroundColor Yellow
     Clear-RegistrySettings
     Stop-EliteProcesses
+
+    if (!(Test-Path $regAdvancedPath)) { New-Item -Path $regAdvancedPath -Force | Out-Null }
+    Set-ItemProperty -Path $regAdvancedPath -Name "EnablePortableMirror" -Value 0 -Type DWord
 
     # Setup clean registry for Small Icon Tiles view
     if (!(Test-Path $regSettingsPath)) { New-Item -Path $regSettingsPath -Force | Out-Null }
@@ -178,7 +231,7 @@ try {
     Set-ItemProperty -Path $regSettingsPath -Name "EnableNativeViewMode" -Value 0 -Type DWord
 
 
-    $proc1 = Start-Process -FilePath $explorerExe -ArgumentList "C:\Windows" -PassThru
+    $proc1 = Start-ExplorerProcess
 
     # Wait for main window with "Windows" title
     $hwndMain1 = [IntPtr]::Zero
@@ -231,14 +284,16 @@ try {
     Clear-RegistrySettings
     Stop-EliteProcesses
 
+    if (!(Test-Path $regAdvancedPath)) { New-Item -Path $regAdvancedPath -Force | Out-Null }
+    Set-ItemProperty -Path $regAdvancedPath -Name "EnablePortableMirror" -Value 0 -Type DWord
+
     if (!(Test-Path $regSettingsPath)) { New-Item -Path $regSettingsPath -Force | Out-Null }
     Set-ItemProperty -Path $regSettingsPath -Name "ConfirmCloseTabs" -Value 0 -Type DWord
     Set-ItemProperty -Path $regSettingsPath -Name "EnablePortableMirror" -Value 0 -Type DWord
     Set-ItemProperty -Path $regSettingsPath -Name "EnableNativeViewMode" -Value 0 -Type DWord
     Set-ItemProperty -Path $regSettingsPath -Name "EnableEliteTaskbar" -Value 0 -Type DWord
 
-    $proc2 = Start-Process -FilePath $explorerExe -ArgumentList "C:\Windows" -PassThru
-
+    $proc2 = Start-ExplorerProcess
 
     # Wait for main window with "Windows" title
     $hwndMain2 = [IntPtr]::Zero
@@ -270,7 +325,10 @@ try {
 
         # Close explorer window to trigger settings flush to registry
         [Win32Helper]::SendMessage($hwndMain2, 0x0010, [IntPtr]::Zero, [IntPtr]::Zero) | Out-Null
-        Start-Sleep -Seconds 5
+        Start-Sleep -Seconds 6
+
+        $proc2After = Get-Process -Id $proc2.Id -ErrorAction SilentlyContinue
+        Write-Host "Test 2 process running after close: $($null -ne $proc2After)" -ForegroundColor DarkCyan
 
         # Read registry to verify EnableDefaultGroupByType defaults to 1
         $val = (Get-ItemProperty -Path $regSettingsPath -Name "EnableDefaultGroupByType" -ErrorAction SilentlyContinue).EnableDefaultGroupByType
@@ -294,6 +352,9 @@ try {
     Clear-RegistrySettings
     Stop-EliteProcesses
 
+    if (!(Test-Path $regAdvancedPath)) { New-Item -Path $regAdvancedPath -Force | Out-Null }
+    Set-ItemProperty -Path $regAdvancedPath -Name "EnablePortableMirror" -Value 0 -Type DWord
+
     if (!(Test-Path $regSettingsPath)) { New-Item -Path $regSettingsPath -Force | Out-Null }
     Set-ItemProperty -Path $regSettingsPath -Name "EnableDefaultGroupByType" -Value 1 -Type DWord
     Set-ItemProperty -Path $regSettingsPath -Name "EnablePortableMirror" -Value 0 -Type DWord
@@ -301,7 +362,7 @@ try {
     Set-ItemProperty -Path $regSettingsPath -Name "EnableNativeViewMode" -Value 0 -Type DWord
     Set-ItemProperty -Path $regSettingsPath -Name "EnableEliteTaskbar" -Value 0 -Type DWord
 
-    $proc3A = Start-Process -FilePath $explorerExe -ArgumentList "C:\Windows" -PassThru
+    $proc3A = Start-ExplorerProcess
 
     # Wait for main window with "Windows" title
     $hwndMain3A = [IntPtr]::Zero
@@ -326,27 +387,38 @@ try {
             Start-Sleep -Milliseconds 500
         }
         if ($hwndOpt3A -eq [IntPtr]::Zero) { throw "Could not find Options dialog." }
+        Write-Host "Found Options dialog: $hwndOpt3A" -ForegroundColor DarkCyan
 
         # Find the checkbox (ID 1382)
         $hwndChk3A = [Win32Helper]::FindChildById($hwndOpt3A, 1382)
         if ($hwndChk3A -eq [IntPtr]::Zero) { throw "Could not find checkbox default group by type (ID 1382)." }
+        Write-Host "Found Checkbox: $hwndChk3A" -ForegroundColor DarkCyan
 
-        # Toggle checkbox via BM_CLICK (0x00F5) to properly register state transition
-        [Win32Helper]::SendMessage($hwndChk3A, 0x00F5, [IntPtr]::Zero, [IntPtr]::Zero) | Out-Null
+        $stateBefore = [Win32Helper]::SendMessage($hwndChk3A, 0x00F0, [IntPtr]::Zero, [IntPtr]::Zero)
+        Write-Host "Checkbox state before toggle: $stateBefore" -ForegroundColor DarkCyan
+
+        # Toggle checkbox via BM_SETCHECK (0x00F1) and WM_COMMAND (0x0111) to properly register state transition
+        [Win32Helper]::SendMessage($hwndChk3A, 0x00F1, [IntPtr]::Zero, [IntPtr]::Zero) | Out-Null
+        $hwndParent3A = [Win32Helper]::GetParent($hwndChk3A)
+        [Win32Helper]::SendMessage($hwndParent3A, 0x0111, [IntPtr]1382, $hwndChk3A) | Out-Null
         Start-Sleep -Milliseconds 200
 
-        # Find the OK button and click it to trigger SaveConfig and Commit
-        $hwndOkBtn3A = [Win32Helper]::FindChildById($hwndOpt3A, 1)
-        if ($hwndOkBtn3A -ne [IntPtr]::Zero) {
-            [Win32Helper]::SendMessage($hwndOkBtn3A, 0x00F5, [IntPtr]::Zero, [IntPtr]::Zero) | Out-Null
-        } else {
-            [Win32Helper]::SendMessage($hwndOpt3A, 0x0111, [IntPtr]1, [IntPtr]::Zero) | Out-Null
-        }
+        $stateAfter = [Win32Helper]::SendMessage($hwndChk3A, 0x00F0, [IntPtr]::Zero, [IntPtr]::Zero)
+        Write-Host "Checkbox state after toggle: $stateAfter" -ForegroundColor DarkCyan
+
+        # Send WM_COMMAND with IDOK (1) to Options dialog to trigger OK button handler
+        [Win32Helper]::SendMessage($hwndOpt3A, 0x0111, [IntPtr]1, [IntPtr]::Zero) | Out-Null
         Start-Sleep -Seconds 3
+
+        $hwndOptAfter = [Win32Helper]::FindProcessWindow($proc3A.Id, "#32770", "Options")
+        Write-Host "Options dialog handle after OK command: $hwndOptAfter" -ForegroundColor DarkCyan
 
         # Close explorer window to trigger flush
         [Win32Helper]::SendMessage($hwndMain3A, 0x0010, [IntPtr]::Zero, [IntPtr]::Zero) | Out-Null
         Start-Sleep -Seconds 6
+
+        $hwndMainAfter = [Win32Helper]::FindProcessWindow($proc3A.Id, "Win32Explorer", "Windows")
+        Write-Host "Main window handle after WM_CLOSE: $hwndMainAfter" -ForegroundColor DarkCyan
 
         # Verify registry updated to 0
         $regVal3A = (Get-ItemProperty -Path $regSettingsPath -Name "EnableDefaultGroupByType").EnableDefaultGroupByType
@@ -364,6 +436,9 @@ try {
     Clear-RegistrySettings
     Stop-EliteProcesses
 
+    if (!(Test-Path $regAdvancedPath)) { New-Item -Path $regAdvancedPath -Force | Out-Null }
+    Set-ItemProperty -Path $regAdvancedPath -Name "EnablePortableMirror" -Value 1 -Type DWord
+
     if (!(Test-Path $regSettingsPath)) { New-Item -Path $regSettingsPath -Force | Out-Null }
     Set-ItemProperty -Path $regSettingsPath -Name "EnableDefaultGroupByType" -Value 1 -Type DWord
     Set-ItemProperty -Path $regSettingsPath -Name "EnablePortableMirror" -Value 1 -Type DWord
@@ -371,7 +446,19 @@ try {
     Set-ItemProperty -Path $regSettingsPath -Name "EnableNativeViewMode" -Value 0 -Type DWord
     Set-ItemProperty -Path $regSettingsPath -Name "EnableEliteTaskbar" -Value 0 -Type DWord
 
-    $proc3B = Start-Process -FilePath $explorerExe -ArgumentList "C:\Windows" -PassThru
+    # Pre-create config.xml to force XML load mode
+    $xmlContent = @"
+<?xml version="1.0" encoding="utf-8"?>
+<ExplorerPlusPlus>
+    <Settings>
+        <Setting name="EnableDefaultGroupByType">yes</Setting>
+        <Setting name="EnablePortableMirror">yes</Setting>
+    </Settings>
+</ExplorerPlusPlus>
+"@
+    $xmlContent | Out-File -FilePath $xmlPath -Encoding utf8
+
+    $proc3B = Start-ExplorerProcess
 
     # Wait for main window with "Windows" title
     $hwndMain3B = [IntPtr]::Zero
@@ -396,27 +483,38 @@ try {
             Start-Sleep -Milliseconds 500
         }
         if ($hwndOpt3B -eq [IntPtr]::Zero) { throw "Could not find Options dialog." }
+        Write-Host "Found Options dialog (Phase B): $hwndOpt3B" -ForegroundColor DarkCyan
 
         # Find the checkbox (ID 1382)
         $hwndChk3B = [Win32Helper]::FindChildById($hwndOpt3B, 1382)
         if ($hwndChk3B -eq [IntPtr]::Zero) { throw "Could not find checkbox default group by type (ID 1382)." }
+        Write-Host "Found Checkbox (Phase B): $hwndChk3B" -ForegroundColor DarkCyan
 
-        # Toggle checkbox via BM_CLICK (0x00F5) to properly register state transition
-        [Win32Helper]::SendMessage($hwndChk3B, 0x00F5, [IntPtr]::Zero, [IntPtr]::Zero) | Out-Null
+        $stateBeforeB = [Win32Helper]::SendMessage($hwndChk3B, 0x00F0, [IntPtr]::Zero, [IntPtr]::Zero)
+        Write-Host "Checkbox state before toggle (Phase B): $stateBeforeB" -ForegroundColor DarkCyan
+
+        # Toggle checkbox via BM_SETCHECK (0x00F1) and WM_COMMAND (0x0111) to properly register state transition
+        [Win32Helper]::SendMessage($hwndChk3B, 0x00F1, [IntPtr]::Zero, [IntPtr]::Zero) | Out-Null
+        $hwndParent3B = [Win32Helper]::GetParent($hwndChk3B)
+        [Win32Helper]::SendMessage($hwndParent3B, 0x0111, [IntPtr]1382, $hwndChk3B) | Out-Null
         Start-Sleep -Milliseconds 200
 
-        # Find the OK button and click it to trigger SaveConfig and Commit
-        $hwndOkBtn3B = [Win32Helper]::FindChildById($hwndOpt3B, 1)
-        if ($hwndOkBtn3B -ne [IntPtr]::Zero) {
-            [Win32Helper]::SendMessage($hwndOkBtn3B, 0x00F5, [IntPtr]::Zero, [IntPtr]::Zero) | Out-Null
-        } else {
-            [Win32Helper]::SendMessage($hwndOpt3B, 0x0111, [IntPtr]1, [IntPtr]::Zero) | Out-Null
-        }
+        $stateAfterB = [Win32Helper]::SendMessage($hwndChk3B, 0x00F0, [IntPtr]::Zero, [IntPtr]::Zero)
+        Write-Host "Checkbox state after toggle (Phase B): $stateAfterB" -ForegroundColor DarkCyan
+
+        # Send WM_COMMAND with IDOK (1) to Options dialog to trigger OK button handler
+        [Win32Helper]::SendMessage($hwndOpt3B, 0x0111, [IntPtr]1, [IntPtr]::Zero) | Out-Null
         Start-Sleep -Seconds 3
+
+        $hwndOptAfterB = [Win32Helper]::FindProcessWindow($proc3B.Id, "#32770", "Options")
+        Write-Host "Options dialog handle after OK command (Phase B): $hwndOptAfterB" -ForegroundColor DarkCyan
 
         # Close explorer window to trigger flush
         [Win32Helper]::SendMessage($hwndMain3B, 0x0010, [IntPtr]::Zero, [IntPtr]::Zero) | Out-Null
         Start-Sleep -Seconds 6
+
+        $hwndMainAfterB = [Win32Helper]::FindProcessWindow($proc3B.Id, "Win32Explorer", "Windows")
+        Write-Host "Main window handle after WM_CLOSE (Phase B): $hwndMainAfterB" -ForegroundColor DarkCyan
 
         # Verify XML content contains the standard setting node set to no
         if (Test-Path $xmlPath) {
@@ -446,6 +544,8 @@ try {
     Write-Host "`n[TEST 4] Verifying EliteTaskbar process isolation with active integration..." -ForegroundColor Yellow
     Clear-RegistrySettings
     Stop-EliteProcesses
+    if (!(Test-Path $regAdvancedPath)) { New-Item -Path $regAdvancedPath -Force | Out-Null }
+    Set-ItemProperty -Path $regAdvancedPath -Name "EnablePortableMirror" -Value 0 -Type DWord
 
     # Enable integration in registry
     if (!(Test-Path $regSettingsPath)) { New-Item -Path $regSettingsPath -Force | Out-Null }
@@ -454,7 +554,7 @@ try {
     Set-ItemProperty -Path $regSettingsPath -Name "EnableNativeViewMode" -Value 0 -Type DWord
 
     Write-Host "Launching Win32Explorer.exe C:\Windows..." -ForegroundColor Cyan
-    $proc4 = Start-Process -FilePath $explorerExe -ArgumentList "C:\Windows" -PassThru
+    $proc4 = Start-ExplorerProcess
 
     # Wait for main window with "Windows" title
     $hwndMain4 = [IntPtr]::Zero
@@ -489,6 +589,9 @@ try {
             $taskbarRunning = ($null -ne $taskbarProcAfter)
 
             Write-Host "Win32Explorer process running after close: $(!$explorerExited)" -ForegroundColor Cyan
+            if (!$explorerExited) {
+                Write-Host "Active Win32Explorer PIDs: $(($explProcAfter | Select-Object -ExpandProperty Id) -join ', ')" -ForegroundColor DarkYellow
+            }
             Write-Host "EliteTaskbar process running after close: $taskbarRunning" -ForegroundColor Cyan
 
             if ($explorerExited -and $taskbarRunning) {
@@ -507,6 +610,16 @@ try {
     # Restore original user registry settings
     Stop-EliteProcesses
     Restore-RegistrySettings
+
+    # Restore original advanced value
+    if ($null -ne $origMirror) {
+        if (!(Test-Path $regAdvancedPath)) { New-Item -Path $regAdvancedPath -Force | Out-Null }
+        Set-ItemProperty -Path $regAdvancedPath -Name "EnablePortableMirror" -Value $origMirror -Type DWord
+    } else {
+        if (Test-Path $regAdvancedPath) {
+            Remove-ItemProperty -Path $regAdvancedPath -Name "EnablePortableMirror" -ErrorAction SilentlyContinue
+        }
+    }
 }
 
 # ----------------- FINAL REPORT -----------------

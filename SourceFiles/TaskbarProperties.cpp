@@ -1177,13 +1177,118 @@ INT_PTR CALLBACK ToolbarsSettingsDlgProc(HWND hwndDlg, UINT uMsg, WPARAM wParam,
     return FALSE;
 }
 
+INT_PTR CALLBACK StartMenuSettingsDlgProc(HWND hwndDlg, UINT uMsg, WPARAM wParam, LPARAM lParam) {
+    switch (uMsg) {
+    case WM_INITDIALOG: {
+        EnableThemeDialogTexture(hwndDlg, ETDT_ENABLETAB);
+        AddDlgTooltip(hwndDlg, IDC_FALLBACK_STARTMENU_ENABLED, L"Enable Open-Shell integration fallback when in replace mode. Classic Start Menu experience.");
+        
+        CreateDynScrollArea(hwndDlg, IDC_DYN_SCROLLAREA);
+        
+        HKEY hKey;
+        DWORD dwValue = 1; // Default to 1
+        DWORD cbData = sizeof(DWORD);
+        if (RegOpenKeyExW(GetEliteRegistryRoot(), L"Software\\EliteSoftware\\Win32Explorer\\Advanced", 0, KEY_READ, &hKey) == ERROR_SUCCESS) {
+            RegQueryValueExW(hKey, L"FallbackStartMenuEnabled", NULL, NULL, (LPBYTE)&dwValue, &cbData);
+            RegCloseKey(hKey);
+        }
+        SendDlgItemMessageW(hwndDlg, IDC_FALLBACK_STARTMENU_ENABLED, BM_SETCHECK, dwValue ? BST_CHECKED : BST_UNCHECKED, 0);
+        return TRUE;
+    }
+    case WM_COMMAND:
+        if (HIWORD(wParam) == BN_CLICKED || HIWORD(wParam) == CBN_SELCHANGE || HIWORD(wParam) == EN_CHANGE) {
+            SendMessageW(GetParent(hwndDlg), PSM_CHANGED, (WPARAM)hwndDlg, 0);
+        }
+        return TRUE;
+    case WM_NOTIFY: {
+        LPNMHDR lpnm = (LPNMHDR)lParam;
+        if (lpnm->code == PSN_APPLY) {
+            HKEY hKey;
+            HKEY hKeyRoot = GetEliteRegistryRoot();
+            if (RegCreateKeyExW(hKeyRoot, L"Software\\EliteSoftware\\Win32Explorer\\Advanced", 0, NULL, REG_OPTION_NON_VOLATILE, KEY_READ | KEY_WRITE, NULL, &hKey, NULL) == ERROR_SUCCESS) {
+                DWORD fallbackVal = (SendDlgItemMessageW(hwndDlg, IDC_FALLBACK_STARTMENU_ENABLED, BM_GETCHECK, 0, 0) == BST_CHECKED) ? 1 : 0;
+                RegSetValueExW(hKey, L"FallbackStartMenuEnabled", 0, REG_DWORD, (const BYTE*)&fallbackVal, sizeof(DWORD));
+                RegCloseKey(hKey);
+            }
+            NotifySettingsChange();
+            SendMessageW(GetParent(hwndDlg), PSM_UNCHANGED, (WPARAM)hwndDlg, 0);
+            SetWindowLongPtr(hwndDlg, DWLP_MSGRESULT, PSNRET_NOERROR);
+            return TRUE;
+        }
+        break;
+    }
+    }
+    return FALSE;
+}
+
+INT_PTR CALLBACK DesktopSettingsDlgProc(HWND hwndDlg, UINT uMsg, WPARAM wParam, LPARAM lParam) {
+    switch (uMsg) {
+    case WM_INITDIALOG: {
+        EnableThemeDialogTexture(hwndDlg, ETDT_ENABLETAB);
+        AddDlgTooltip(hwndDlg, IDC_DESKTOP_REPLACE_ENABLED, L"Enable custom desktop replacement window. Pure classic shell experience.");
+        AddDlgTooltip(hwndDlg, IDC_DESKTOP_WALLPAPER_ENABLED, L"Render desktop background wallpaper using custom styles.");
+        AddDlgTooltip(hwndDlg, IDC_DESKTOP_ICONS_ENABLED, L"Display folder items and files on the desktop grid.");
+        
+        HKEY hKey;
+        DWORD replaceVal = 1;
+        DWORD wallpaperVal = 1;
+        DWORD iconsVal = 1;
+        DWORD cbData = sizeof(DWORD);
+        
+        if (RegOpenKeyExW(GetEliteRegistryRoot(), L"Software\\EliteSoftware\\Win32Explorer\\Advanced", 0, KEY_READ, &hKey) == ERROR_SUCCESS) {
+            cbData = sizeof(DWORD);
+            RegQueryValueExW(hKey, L"DesktopReplacementEnabled", NULL, NULL, (LPBYTE)&replaceVal, &cbData);
+            cbData = sizeof(DWORD);
+            RegQueryValueExW(hKey, L"DesktopWallpaperEnabled", NULL, NULL, (LPBYTE)&wallpaperVal, &cbData);
+            cbData = sizeof(DWORD);
+            RegQueryValueExW(hKey, L"DesktopIconsEnabled", NULL, NULL, (LPBYTE)&iconsVal, &cbData);
+            RegCloseKey(hKey);
+        }
+        
+        SendDlgItemMessageW(hwndDlg, IDC_DESKTOP_REPLACE_ENABLED, BM_SETCHECK, replaceVal ? BST_CHECKED : BST_UNCHECKED, 0);
+        SendDlgItemMessageW(hwndDlg, IDC_DESKTOP_WALLPAPER_ENABLED, BM_SETCHECK, wallpaperVal ? BST_CHECKED : BST_UNCHECKED, 0);
+        SendDlgItemMessageW(hwndDlg, IDC_DESKTOP_ICONS_ENABLED, BM_SETCHECK, iconsVal ? BST_CHECKED : BST_UNCHECKED, 0);
+        return TRUE;
+    }
+    case WM_COMMAND:
+        if (HIWORD(wParam) == BN_CLICKED || HIWORD(wParam) == CBN_SELCHANGE || HIWORD(wParam) == EN_CHANGE) {
+            SendMessageW(GetParent(hwndDlg), PSM_CHANGED, (WPARAM)hwndDlg, 0);
+        }
+        return TRUE;
+    case WM_NOTIFY: {
+        LPNMHDR lpnm = (LPNMHDR)lParam;
+        if (lpnm->code == PSN_APPLY) {
+            HKEY hKey;
+            HKEY hKeyRoot = GetEliteRegistryRoot();
+            if (RegCreateKeyExW(hKeyRoot, L"Software\\EliteSoftware\\Win32Explorer\\Advanced", 0, NULL, REG_OPTION_NON_VOLATILE, KEY_READ | KEY_WRITE, NULL, &hKey, NULL) == ERROR_SUCCESS) {
+                DWORD replaceVal = (SendDlgItemMessageW(hwndDlg, IDC_DESKTOP_REPLACE_ENABLED, BM_GETCHECK, 0, 0) == BST_CHECKED) ? 1 : 0;
+                DWORD wallpaperVal = (SendDlgItemMessageW(hwndDlg, IDC_DESKTOP_WALLPAPER_ENABLED, BM_GETCHECK, 0, 0) == BST_CHECKED) ? 1 : 0;
+                DWORD iconsVal = (SendDlgItemMessageW(hwndDlg, IDC_DESKTOP_ICONS_ENABLED, BM_GETCHECK, 0, 0) == BST_CHECKED) ? 1 : 0;
+                
+                RegSetValueExW(hKey, L"DesktopReplacementEnabled", 0, REG_DWORD, (const BYTE*)&replaceVal, sizeof(DWORD));
+                RegSetValueExW(hKey, L"DesktopWallpaperEnabled", 0, REG_DWORD, (const BYTE*)&wallpaperVal, sizeof(DWORD));
+                RegSetValueExW(hKey, L"DesktopIconsEnabled", 0, REG_DWORD, (const BYTE*)&iconsVal, sizeof(DWORD));
+                
+                RegCloseKey(hKey);
+            }
+            NotifySettingsChange();
+            SendMessageW(GetParent(hwndDlg), PSM_UNCHANGED, (WPARAM)hwndDlg, 0);
+            SetWindowLongPtr(hwndDlg, DWLP_MSGRESULT, PSNRET_NOERROR);
+            return TRUE;
+        }
+        break;
+    }
+    }
+    return FALSE;
+}
+
 INT_PTR CALLBACK GenericPageDlgProc(HWND hwndDlg, UINT uMsg, WPARAM wParam, LPARAM lParam) {
     return FALSE;
 }
 
 void ShowTaskbarProperties(HWND hwndOwner) {
     std::vector<HPROPSHEETPAGE> pages;
-    PROPSHEETPAGEW psp[6] = {0};
+    PROPSHEETPAGEW psp[10] = {0};
     HPROPSHEETPAGE hPage;
     
     psp[0].dwSize = sizeof(PROPSHEETPAGEW);
@@ -1195,7 +1300,14 @@ void ShowTaskbarProperties(HWND hwndOwner) {
     hPage = CreatePropertySheetPageW(&psp[0]);
     if (hPage) pages.push_back(hPage);
 
-
+    psp[1].dwSize = sizeof(PROPSHEETPAGEW);
+    psp[1].dwFlags = PSP_USETITLE;
+    psp[1].hInstance = g_hInstance;
+    psp[1].pszTemplate = MAKEINTRESOURCEW(IDD_STARTMENU_PROPS);
+    psp[1].pfnDlgProc = StartMenuSettingsDlgProc;
+    psp[1].pszTitle = L"Start Menu";
+    hPage = CreatePropertySheetPageW(&psp[1]);
+    if (hPage) pages.push_back(hPage);
 
     psp[2].dwSize = sizeof(PROPSHEETPAGEW);
     psp[2].dwFlags = PSP_USETITLE;
@@ -1223,6 +1335,16 @@ void ShowTaskbarProperties(HWND hwndOwner) {
     psp[4].pszTitle = L"Toolbars";
     hPage = CreatePropertySheetPageW(&psp[4]);
     if (hPage) pages.push_back(hPage);
+
+    psp[6].dwSize = sizeof(PROPSHEETPAGEW);
+    psp[6].dwFlags = PSP_USETITLE;
+    psp[6].hInstance = g_hInstance;
+    psp[6].pszTemplate = MAKEINTRESOURCEW(IDD_DESKTOP_PROPS);
+    psp[6].pfnDlgProc = DesktopSettingsDlgProc;
+    psp[6].pszTitle = L"Desktop";
+    hPage = CreatePropertySheetPageW(&psp[6]);
+    if (hPage) pages.push_back(hPage);
+
 
     bool showDebugTabs = false;
     if (wcsstr(GetCommandLineW(), L"/devmode")) showDebugTabs = true;

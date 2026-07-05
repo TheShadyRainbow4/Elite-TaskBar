@@ -9,7 +9,7 @@
 ## Milestones
 | # | Name | Scope | Dependencies | Status |
 |---|------|-------|-------------|--------|
-| 1 | Milestone 1 (Phase XI) | Desktop Window, GDI Wallpaper, SysListView32 Desktop Icon Grid | None | PLANNED |
+| 1 | Milestone 1 (Phase XI) | Desktop Window, GDI Wallpaper, SysListView32 Desktop Icon Grid | None | IN_PROGRESS |
 | 2 | Milestone 2 (Phase XIX) | Fallback Start Menu, Open-Shell rendering integration | M1 | PLANNED |
 
 ## Interface Contracts

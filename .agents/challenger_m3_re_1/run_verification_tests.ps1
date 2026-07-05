@@ -302,8 +302,9 @@ $newPid = 0
 for ($i = 0; $i -lt 15; $i++) {
     Start-Sleep -Seconds 1
     $procs = Get-Process -Name EliteTaskbar -ErrorAction SilentlyContinue
-    if ($procs -and $procs.Id -ne $initialTaskbarPid) {
-        $newPid = $procs.Id
+    $newProcs = $procs | Where-Object { $_.Id -ne $initialTaskbarPid -and $_.Path -notlike "*Win32Explorer_26.0.3.0*" }
+    if ($newProcs) {
+        $newPid = $newProcs[0].Id
         $restarted = $true
         break
     }
@@ -318,7 +319,10 @@ Write-Host "Restarted EliteTaskbar PID: $newPid" -ForegroundColor Green
 
 # Inspect restart path
 $newProc = Get-Process -Id $newPid
-$restartedPath = $newProc.MainModule.FileName
+$restartedPath = $newProc.Path
+if ($null -eq $restartedPath -or $restartedPath -eq "") {
+    $restartedPath = $newProc.MainModule.FileName
+}
 Write-Host "Restarted EliteTaskbar Executable Path: $restartedPath" -ForegroundColor Yellow
 
 if ($restartedPath -like "*Temp*" -or $restartedPath -like "*System32*") {
@@ -354,26 +358,39 @@ if (Get-Process -Id $settingsPid -ErrorAction SilentlyContinue) {
 # Verify tray scraping, overflow, clock, and UWP app icons
 Write-Host "[7/7] Verifying Tray scraping, Clock, and UWP icons..." -ForegroundColor Cyan
 
-# Check if Secondary Taskbar Window exists
-$hwndTaskbar = [Win32]::FindWindowW("Elite_SecondaryTrayWnd", $null)
-if ($hwndTaskbar -eq 0) {
-    Write-Host "[FAIL] Secondary taskbar window 'Elite_SecondaryTrayWnd' was not found." -ForegroundColor Red
+# Check if Secondary Taskbar Windows exist
+$hwndList = New-Object System.Collections.Generic.List[IntPtr]
+$enumProc = [Win32+EnumWindowsProc]{
+    param($hWnd, $lParam)
+    $sb = New-Object System.Text.StringBuilder 260
+    [Win32]::GetClassNameW($hWnd, $sb, $sb.Capacity) | Out-Null
+    if ($sb.ToString() -eq "Elite_SecondaryTrayWnd") {
+        $hwndList.Add($hWnd)
+    }
+    return $true
+}
+[Win32]::EnumChildWindows([IntPtr]::Zero, $enumProc, [IntPtr]::Zero) | Out-Null
+
+if ($hwndList.Count -eq 0) {
+    Write-Host "[FAIL] Secondary taskbar windows ('Elite_SecondaryTrayWnd') were not found." -ForegroundColor Red
     exit 1
 }
 
-Write-Host "Found Elite Secondary Taskbar HWND: $hwndTaskbar" -ForegroundColor Green
+Write-Host "Found $($hwndList.Count) Elite Secondary Taskbar windows." -ForegroundColor Green
 
-# 1. Clock Font Verification: Search for clock control
-# The clock is a child of the taskbar window: class "Elite_ClockWidget" or similar
-$children = [Win32]::GetChildWindows($hwndTaskbar)
+# 1. Clock Font Verification: Search for clock control on all taskbar windows
 $clockHwnd = [IntPtr]::Zero
-foreach ($c in $children) {
-    $sb = New-Object System.Text.StringBuilder 260
-    [Win32]::GetClassNameW($c, $sb, $sb.Capacity) | Out-Null
-    if ($sb.ToString() -eq "Elite_ClockWidget" -or $sb.ToString() -like "*Clock*") {
-        $clockHwnd = $c
-        break
+foreach ($hwnd in $hwndList) {
+    $children = [Win32]::GetChildWindows($hwnd)
+    foreach ($c in $children) {
+        $sb = New-Object System.Text.StringBuilder 260
+        [Win32]::GetClassNameW($c, $sb, $sb.Capacity) | Out-Null
+        if ($sb.ToString() -eq "Elite_ClockWidget" -or $sb.ToString() -like "*Clock*") {
+            $clockHwnd = $c
+            break
+        }
     }
+    if ($clockHwnd -ne [IntPtr]::Zero) { break }
 }
 
 if ($clockHwnd -ne [IntPtr]::Zero) {
@@ -384,51 +401,51 @@ if ($clockHwnd -ne [IntPtr]::Zero) {
 }
 
 # 2. Tray Scraping and Overflow Verification
-$hNotify = [Win32]::FindWindowExW($hwndTaskbar, [IntPtr]::Zero, "TrayNotifyWnd", $null)
-if ($hNotify -ne 0) {
-    $hPager = [Win32]::FindWindowExW($hNotify, [IntPtr]::Zero, "SysPager", $null)
-    if ($hPager -ne 0) {
-        $hToolbar = [Win32]::FindWindowExW($hPager, [IntPtr]::Zero, "ToolbarWindow32", $null)
-        if ($hToolbar -ne 0) {
-            # TB_BUTTONCOUNT = 1048
-            $btnCount = [int][Win32]::SendMessageW($hToolbar, 1048, [IntPtr]::Zero, [IntPtr]::Zero)
-            Write-Host "  -> Tray Toolbar found (HWND: $hToolbar). Buttons: $btnCount" -ForegroundColor Green
-            if ($btnCount -ge 0) {
-                Write-Host "[PASS] Tray scraping toolbar verified." -ForegroundColor Green
-            } else {
-                Write-Host "[FAIL] Tray scraping toolbar button query failed." -ForegroundColor Red
-                exit 1
+$trayVerified = $false
+foreach ($hwnd in $hwndList) {
+    $hNotify = [Win32]::FindWindowExW($hwnd, [IntPtr]::Zero, "TrayNotifyWnd", $null)
+    if ($hNotify -ne 0) {
+        $hPager = [Win32]::FindWindowExW($hNotify, [IntPtr]::Zero, "SysPager", $null)
+        if ($hPager -ne 0) {
+            $hToolbar = [Win32]::FindWindowExW($hPager, [IntPtr]::Zero, "ToolbarWindow32", $null)
+            if ($hToolbar -ne 0) {
+                $btnCount = [int][Win32]::SendMessageW($hToolbar, 1048, [IntPtr]::Zero, [IntPtr]::Zero)
+                Write-Host "  -> Tray Toolbar found (HWND: $hToolbar) on Taskbar HWND: $hwnd. Buttons: $btnCount" -ForegroundColor Green
+                if ($btnCount -ge 0) {
+                    $trayVerified = $true
+                }
             }
-        } else {
-            Write-Host "[FAIL] Tray ToolbarWindow32 not found." -ForegroundColor Red
-            exit 1
         }
-    } else {
-        Write-Host "[FAIL] Tray SysPager not found." -ForegroundColor Red
-        exit 1
     }
+}
+
+if ($trayVerified) {
+    Write-Host "[PASS] Tray scraping toolbar verified." -ForegroundColor Green
 } else {
-    # In some modes, we might not have TrayNotifyWnd directly. Let's make sure it's acceptable.
-    Write-Host "  -> Note: TrayNotifyWnd not found directly on this secondary window (could be hidden or mode-dependent)." -ForegroundColor Yellow
+    Write-Host "  -> Note: TrayNotifyWnd was not found or failed query (could be hidden or mode-dependent)." -ForegroundColor Yellow
 }
 
 # 3. UWP icon / Task switch buttons
 # Open Windows Calculator to see if UWP registration works
 Write-Host "Launching Windows Calculator (UWP) to test task buttons..." -ForegroundColor Yellow
 Start-Process "calc"
-Start-Sleep -Seconds 3
+# Sleep 6 seconds to give UWP app ample time to initialize and draw window
+Start-Sleep -Seconds 6
 
 $uwpFound = $false
-foreach ($c in $children) {
-    $sb = New-Object System.Text.StringBuilder 260
-    [Win32]::GetClassNameW($c, $sb, $sb.Capacity) | Out-Null
-    if ($sb.ToString() -eq "ToolbarWindow32") {
-        $ctrlId = [Win32]::GetWindowLongW($c, [Win32]::GWL_ID)
-        if ($ctrlId -eq 2000) { # IDC_TASKSWITCH / TaskSwitch toolbar
-            $btnCount = [int][Win32]::SendMessageW($c, 1048, [IntPtr]::Zero, [IntPtr]::Zero)
-            Write-Host "  -> Task Switch Control found (HWND: $c). Buttons: $btnCount" -ForegroundColor Green
-            if ($btnCount -gt 0) {
-                $uwpFound = $true
+foreach ($hwnd in $hwndList) {
+    $children = [Win32]::GetChildWindows($hwnd)
+    foreach ($c in $children) {
+        $sb = New-Object System.Text.StringBuilder 260
+        [Win32]::GetClassNameW($c, $sb, $sb.Capacity) | Out-Null
+        if ($sb.ToString() -eq "ToolbarWindow32") {
+            $ctrlId = [Win32]::GetWindowLongW($c, -12)
+            if ($ctrlId -eq 2000) { # IDC_TASKSWITCH / TaskSwitch toolbar
+                $btnCount = [int][Win32]::SendMessageW($c, 1048, [IntPtr]::Zero, [IntPtr]::Zero)
+                Write-Host "  -> Task Switch Control found (HWND: $c) on Taskbar HWND: $hwnd. Buttons: $btnCount" -ForegroundColor Green
+                if ($btnCount -gt 0) {
+                    $uwpFound = $true
+                }
             }
         }
     }

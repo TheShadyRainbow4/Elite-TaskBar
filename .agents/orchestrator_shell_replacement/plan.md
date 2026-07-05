@@ -1,30 +1,31 @@
 # Plan: Phase XI (Desktop Replacement) & Phase XIX (Fallback Start Menu)
 
-## Implementation Plan
+## Milestone 1: Phase XI (Desktop Replacement)
+- [x] Research Progman, Wallpaper, and Desktop Grid child (Explorers 1, 2, 3 completed)
+- [ ] UI Resource Definition: define `IDC_DESKTOP_REPLACE_ENABLED`, etc. in `resource.h` and add `IDD_DESKTOP_PROPS` to `resources.rc`.
+- [ ] Property Sheet Integration: implement `DesktopSettingsDlgProc` in `TaskbarProperties.cpp` and insert the "Desktop" page into `ShowTaskbarProperties`.
+- [ ] DesktopWindow Core Development:
+  - Register `Progman` class, handle `WM_MOUSEACTIVATE` and `WM_WINDOWPOSCHANGING` Z-order defense.
+  - Integrate native desktop hide/restore logic for coexistence.
+  - Implement GDI+ wallpaper renderer supporting Stretch, Center, Tile, Fit, Fill.
+  - Create child `SHELLDLL_DefView` and grandchild `SysListView32` controls.
+  - Bind to desktop folders using `IShellFolder` and system image lists.
+  - Implement double-click execute and inline renaming.
+  - Set up `SHChangeNotifyRegister` folder watcher with a 100ms debounce timer.
+- [ ] Main Entry Point Integration: hook `DesktopWindow::Initialize` and `DesktopWindow::Cleanup` into `main.cpp` / `TaskbarWindow.cpp` lifecycle.
+- [ ] Build Configuration Update: add `DesktopWindow.cpp` to `build_x64.ps1` and `build_x86.ps1`.
 
-### Milestone 1: Phase XI (Desktop Replacement)
-- [ ] Create/Register `Progman` window class in `EliteTaskbar` (or helper class).
-- [ ] Implement `Progman` WindowProc:
-  - Read `HKCU\Control Panel\Desktop\Wallpaper` to get the current wallpaper path.
-  - Draw/Stretch wallpaper using GDI on `WM_PAINT` / `WM_ERASEBKGND`.
-- [ ] Create `SHELLDLL_DefView` child window inside `Progman`.
-- [ ] Initialize `SysListView32` child control inside `SHELLDLL_DefView`.
-- [ ] Populate desktop icons:
-  - Query `IShellFolder` for both user's Desktop directory (`CSIDL_DESKTOPDIRECTORY`) and common Desktop directory (`CSIDL_COMMON_DESKTOPDIRECTORY`).
-  - Add items (icons, labels, shortcut target information) to the list view.
-- [ ] Monitor folder changes:
-  - Register `SHChangeNotifyRegister` to listen for additions, deletions, and updates in Desktop directories.
-  - Dynamically refresh list view items when a change is detected.
-
-### Milestone 2: Phase XIX (Fallback Start Menu)
-- [ ] Open-Shell source exploration and extraction of Start Menu rendering and ItemList logic.
-- [ ] Wire the Start Orb `HWND` click event to:
-  - Unconditionally invoke the custom/assimilated Start Menu rendering class natively.
-  - If in Replace mode or if native start menu is unavailable/disabled.
-- [ ] Integrate configuration UI options (settings tab / dialog).
+## Milestone 2: Phase XIX (Fallback Start Menu)
+- [ ] Start Menu UI Toggle: Add `IDC_FALLBACK_STARTMENU_ENABLED` to Start Menu settings tab.
+- [ ] Invocation Wiring: Edit `StartButton.cpp` to conditionally invoke Open-Shell menu executable (`StartMenu.exe`) if enabled in Replace mode.
+- [ ] Portable Fallback: support relative `.\StartMenu_PE` paths for WinPE environments.
 
 ## Verification & Testing
-- Compile using `.\build.ps1`.
-- Verify `Progman` desktop window renders wallpaper behind all other windows.
-- Verify desktop icons display and are updated dynamically when files are added/removed.
-- Verify clicking the Start button invokes theFallback Start Menu.
+- [ ] Compile using `build.ps1` with `$env:ELITE_AUDITOR_RUN = "1"`.
+- [ ] Verify `Progman` class is registered, occupies virtual screen size, and is positioned at `HWND_BOTTOM`.
+- [ ] Verify wallpaper drawing handles different layout styles correctly (Center, Stretch, Tile, Fit, Fill).
+- [ ] Verify desktop folders are aggregated and items display correct system icons.
+- [ ] Verify adding/removing/renaming a file on the desktop updates the listview dynamically.
+- [ ] Verify clicking the Start Orb invokes Open-Shell fallback menu.
+- [ ] Verify toggling settings disables/enables custom desktop and start menu.
+- [ ] Confirm no memory leaks or crashes are logged in `EliteTaskbar.log`.

@@ -1,29 +1,30 @@
-# Handoff Report — Orchestrator Succession (Soft Handoff)
+# Handoff Report — Successor Orchestrator
 
 ## Milestone State
-- **Milestone 1**: DONE. Dual registry root routing, XML configuration saving, default file manager removal cleanup, and Native C++ settings redirection are implemented and verified.
-- **Milestone 2**: IN_PROGRESS (Remediation Required). Worker 3 completed the core C++ settings conversion, system tray icons, context menus, and custom icon theme loading. However, the verification gate failed due to a veto by Reviewer 4.
-- **Milestone 3**: PLANNED (Not Started). Display Window deep metadata (R1) and View Modes & Grouping logic (R4).
+- Milestone 1 (View Modes): DONE
+- Milestone 2 (Settings UI): DONE
+- Milestone 3 (Advanced Features): IN_PROGRESS
 
 ## Active Subagents
-- None. (All verification subagents completed).
+- None (All subagents completed)
 
 ## Pending Decisions
-- None.
+- Remediation of the three remaining issues identified by Challenger 6 in Milestone 3:
+  1. Missing case routing for `IDM_VIEW_SMALLICONTILES` (60018) in `MainWndSwitch.cpp`.
+  2. Startup ungrouping behavior in `BrowsingHandler.cpp`.
+  3. Options Dialog crash under Portable Mirror mode (EnablePortableMirror = 1) due to write access restrictions on HKLM.
 
 ## Remaining Work
-The successor must spawn a fresh worker (`Worker 4`) to remediate the Milestone 2 issues:
-1. **PowerShell Build Script Error-Handling**: Fix standard error redirection error in `build_settings.ps1` under `$ErrorActionPreference = 'Stop'`.
-2. **Missing Tooltips**: Implement hover tooltips for all interactive controls inside the native C++ properties sheet (`TaskbarProperties.cpp`) to comply with the mandatory guidelines.
-3. **Segoe UI Typography**: Ensure all properties page dialog templates in `resources.rc` use `"Segoe UI"` or `"Segoe UI Semibold"` instead of `"MS Shell Dlg"`.
-4. **Help and About Dialogs**: Implement the native C++ Help Dialog (with "?" icon) and About Dialog (with "i" icon, expander dropdown info) and link them from the UI.
-5. **Easy Signer Target Naming**: Correct the path inside `build_sign.ps1` to target `Elite-EasySigner_x64.exe` or `Elite-EasySigner_x86.exe` instead of `Elite-EasySigner.exe`.
-
-Once remediation is completed and compiled, spawn the verification suite (2 Reviewers, 2 Challengers, 1 Auditor) to pass the Milestone 2 gate.
+1. Spawn a fresh `Worker 7` (`teamwork_preview_worker`) to:
+   - Add `case IDM_VIEW_SMALLICONTILES:` to `MainWndSwitch.cpp` to route the command.
+   - Call `MoveItemsIntoGroups()` in `BrowsingHandler.cpp` when `m_folderSettings.showInGroups` is active.
+   - Wrap the HKLM registry save code in `App::SaveSettings` inside a `try/catch` block to handle access denied exceptions gracefully instead of crashing.
+   - Compile the solution.
+   - Run the test suite: `Subagent_Tests\run_re_verification.ps1` and `test_empirical_challenger.ps1`.
+2. Spawn Reviewers and Challengers to verify the fixes.
+3. Spawn Forensic Auditor to verify integrity.
 
 ## Key Artifacts
-- `C:\Users\Administrator\Desktop\Elite-TaskBar\PROJECT.md` — Scope ledger
-- `C:\Users\Administrator\Desktop\Elite-TaskBar\.agents\orchestrator\progress.md` — Heartbeat and status
-- `C:\Users\Administrator\Desktop\Elite-TaskBar\.agents\orchestrator\BRIEFING.md` — Roster and workflow state
-- `C:\Users\Administrator\Desktop\Elite-TaskBar\.agents\worker_m2\handoff.md` — Worker 3 implementation report
-- `C:\Users\Administrator\Desktop\Elite-TaskBar\.agents\reviewer_m2_2\handoff.md` — Reviewer 4 veto details
+- `.agents/orchestrator/progress.md` — Progress tracker
+- `.agents/orchestrator/BRIEFING.md` — Briefing state
+- `Subagent_Tests\run_re_verification.ps1` — Test script

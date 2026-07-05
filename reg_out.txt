@@ -1,0 +1,1234 @@
+
+PsExec v2.34 - Execute processes remotely
+Copyright (C) 2001-2021 Mark Russinovich
+Sysinternals - www.sysinternals.com
+
+Connecting to local system...
+
+
+Starting PSEXESVC service on local system...
+
+
+Copying authentication key to USER-PC...
+
+
+Connecting with PsExec service on USER-PC...
+
+
+Starting cmd.exe on USER-PC...
+
+
+
+cmd.exe exited on USER-PC with error code 1.
+
+PsExec v2.34 - Execute processes remotely
+Copyright (C) 2001-2021 Mark Russinovich
+Sysinternals - www.sysinternals.com
+
+Connecting to local system...
+
+
+Starting PSEXESVC service on local system...
+
+
+Copying authentication key to USER-PC...
+
+
+Connecting with PsExec service on USER-PC...
+
+
+Starting cmd.exe on USER-PC...
+
+
+
+cmd.exe exited on USER-PC with error code 1.
+
+PsExec v2.34 - Execute processes remotely
+Copyright (C) 2001-2021 Mark Russinovich
+Sysinternals - www.sysinternals.com
+
+Connecting to local system...
+
+
+Starting PSEXESVC service on local system...
+
+
+Copying authentication key to USER-PC...
+
+
+Connecting with PsExec service on USER-PC...
+
+
+Starting cmd.exe on USER-PC...
+
+
+
+cmd.exe exited on USER-PC with error code 1.
+
+PsExec v2.34 - Execute processes remotely
+Copyright (C) 2001-2021 Mark Russinovich
+Sysinternals - www.sysinternals.com
+
+Connecting to local system...
+
+
+Starting PSEXESVC service on local system...
+
+
+Copying authentication key to USER-PC...
+
+
+Connecting with PsExec service on USER-PC...
+
+
+Starting cmd.exe on USER-PC...
+
+
+
+cmd.exe exited on USER-PC with error code 1.
+
+PsExec v2.34 - Execute processes remotely
+Copyright (C) 2001-2021 Mark Russinovich
+Sysinternals - www.sysinternals.com
+
+Connecting to local system...
+
+
+Starting PSEXESVC service on local system...
+
+
+Copying authentication key to USER-PC...
+
+
+Connecting with PsExec service on USER-PC...
+
+
+Starting cmd.exe on USER-PC...
+
+
+
+cmd.exe exited on USER-PC with error code 1.
+
+PsExec v2.34 - Execute processes remotely
+Copyright (C) 2001-2021 Mark Russinovich
+Sysinternals - www.sysinternals.com
+
+Connecting to local system...
+
+
+Starting PSEXESVC service on local system...
+
+
+Copying authentication key to USER-PC...
+
+
+Connecting with PsExec service on USER-PC...
+
+
+Starting cmd.exe on USER-PC...
+
+
+
+cmd.exe exited on USER-PC with error code 1.
+
+PsExec v2.34 - Execute processes remotely
+Copyright (C) 2001-2021 Mark Russinovich
+Sysinternals - www.sysinternals.com
+
+Connecting to local system...
+
+
+Starting PSEXESVC service on local system...
+
+
+Copying authentication key to USER-PC...
+
+
+Connecting with PsExec service on USER-PC...
+
+
+Starting cmd.exe on USER-PC...
+
+
+
+cmd.exe exited on USER-PC with error code 1.
+
+PsExec v2.34 - Execute processes remotely
+Copyright (C) 2001-2021 Mark Russinovich
+Sysinternals - www.sysinternals.com
+
+Connecting to local system...
+
+
+Starting PSEXESVC service on local system...
+
+
+Copying authentication key to USER-PC...
+
+
+Connecting with PsExec service on USER-PC...
+
+
+Starting cmd.exe on USER-PC...
+
+
+
+cmd.exe exited on USER-PC with error code 1.
+
+PsExec v2.34 - Execute processes remotely
+Copyright (C) 2001-2021 Mark Russinovich
+Sysinternals - www.sysinternals.com
+
+Connecting to local system...
+
+
+Starting PSEXESVC service on local system...
+
+
+Copying authentication key to USER-PC...
+
+
+Connecting with PsExec service on USER-PC...
+
+
+Starting cmd.exe on USER-PC...
+
+
+
+cmd.exe exited on USER-PC with error code 1.
+
+PsExec v2.34 - Execute processes remotely
+Copyright (C) 2001-2021 Mark Russinovich
+Sysinternals - www.sysinternals.com
+
+Connecting to local system...
+
+
+Starting PSEXESVC service on local system...
+
+
+Copying authentication key to USER-PC...
+
+
+Connecting with PsExec service on USER-PC...
+
+
+Starting cmd.exe on USER-PC...
+
+
+
+cmd.exe exited on USER-PC with error code 1.
+
+PsExec v2.34 - Execute processes remotely
+Copyright (C) 2001-2021 Mark Russinovich
+Sysinternals - www.sysinternals.com
+
+Connecting to local system...
+
+
+Starting PSEXESVC service on local system...
+
+
+Copying authentication key to USER-PC...
+
+
+Connecting with PsExec service on USER-PC...
+
+
+Starting cmd.exe on USER-PC...
+
+
+
+cmd.exe exited on USER-PC with error code 1.
+
+PsExec v2.34 - Execute processes remotely
+Copyright (C) 2001-2021 Mark Russinovich
+Sysinternals - www.sysinternals.com
+
+Connecting to local system...
+
+
+Starting PSEXESVC service on local system...
+
+
+Copying authentication key to USER-PC...
+
+
+Connecting with PsExec service on USER-PC...
+
+
+Starting cmd.exe on USER-PC...
+
+
+
+cmd.exe exited on USER-PC with error code 1.
+
+PsExec v2.34 - Execute processes remotely
+Copyright (C) 2001-2021 Mark Russinovich
+Sysinternals - www.sysinternals.com
+
+Connecting to local system...
+
+
+Starting PSEXESVC service on local system...
+
+
+Copying authentication key to USER-PC...
+
+
+Connecting with PsExec service on USER-PC...
+
+
+Starting cmd.exe on USER-PC...
+
+
+
+cmd.exe exited on USER-PC with error code 1.
+
+PsExec v2.34 - Execute processes remotely
+Copyright (C) 2001-2021 Mark Russinovich
+Sysinternals - www.sysinternals.com
+
+Connecting to local system...
+
+
+Starting PSEXESVC service on local system...
+
+
+Copying authentication key to USER-PC...
+
+
+Connecting with PsExec service on USER-PC...
+
+
+Starting cmd.exe on USER-PC...
+
+
+
+cmd.exe exited on USER-PC with error code 1.
+
+PsExec v2.34 - Execute processes remotely
+Copyright (C) 2001-2021 Mark Russinovich
+Sysinternals - www.sysinternals.com
+
+Connecting to local system...
+
+
+Starting PSEXESVC service on local system...
+
+
+Copying authentication key to USER-PC...
+
+
+Connecting with PsExec service on USER-PC...
+
+
+Starting cmd.exe on USER-PC...
+
+
+
+cmd.exe exited on USER-PC with error code 1.
+
+PsExec v2.34 - Execute processes remotely
+Copyright (C) 2001-2021 Mark Russinovich
+Sysinternals - www.sysinternals.com
+
+Connecting to local system...
+
+
+Starting PSEXESVC service on local system...
+
+
+Copying authentication key to USER-PC...
+
+
+Connecting with PsExec service on USER-PC...
+
+
+Starting cmd.exe on USER-PC...
+
+
+
+cmd.exe exited on USER-PC with error code 1.
+
+PsExec v2.34 - Execute processes remotely
+Copyright (C) 2001-2021 Mark Russinovich
+Sysinternals - www.sysinternals.com
+
+Connecting to local system...
+
+
+Starting PSEXESVC service on local system...
+
+
+Copying authentication key to USER-PC...
+
+
+Connecting with PsExec service on USER-PC...
+
+
+Starting cmd.exe on USER-PC...
+
+
+
+cmd.exe exited on USER-PC with error code 1.
+
+PsExec v2.34 - Execute processes remotely
+Copyright (C) 2001-2021 Mark Russinovich
+Sysinternals - www.sysinternals.com
+
+Connecting to local system...
+
+
+Starting PSEXESVC service on local system...
+
+
+Copying authentication key to USER-PC...
+
+
+Connecting with PsExec service on USER-PC...
+
+
+Starting cmd.exe on USER-PC...
+
+
+
+cmd.exe exited on USER-PC with error code 1.
+
+PsExec v2.34 - Execute processes remotely
+Copyright (C) 2001-2021 Mark Russinovich
+Sysinternals - www.sysinternals.com
+
+Connecting to local system...
+
+
+Starting PSEXESVC service on local system...
+
+
+Copying authentication key to USER-PC...
+
+
+Connecting with PsExec service on USER-PC...
+
+
+Starting cmd.exe on USER-PC...
+
+
+
+cmd.exe exited on USER-PC with error code 1.
+
+PsExec v2.34 - Execute processes remotely
+Copyright (C) 2001-2021 Mark Russinovich
+Sysinternals - www.sysinternals.com
+
+Connecting to local system...
+
+
+Starting PSEXESVC service on local system...
+
+
+Copying authentication key to USER-PC...
+
+
+Connecting with PsExec service on USER-PC...
+
+
+Starting cmd.exe on USER-PC...
+
+
+
+cmd.exe exited on USER-PC with error code 1.
+
+PsExec v2.34 - Execute processes remotely
+Copyright (C) 2001-2021 Mark Russinovich
+Sysinternals - www.sysinternals.com
+
+Connecting to local system...
+
+
+Starting PSEXESVC service on local system...
+
+
+Copying authentication key to USER-PC...
+
+
+Connecting with PsExec service on USER-PC...
+
+
+Starting cmd.exe on USER-PC...
+
+
+
+cmd.exe exited on USER-PC with error code 1.
+
+PsExec v2.34 - Execute processes remotely
+Copyright (C) 2001-2021 Mark Russinovich
+Sysinternals - www.sysinternals.com
+
+Connecting to local system...
+
+
+Starting PSEXESVC service on local system...
+
+
+Copying authentication key to USER-PC...
+
+
+Connecting with PsExec service on USER-PC...
+
+
+Starting cmd.exe on USER-PC...
+
+
+
+cmd.exe exited on USER-PC with error code 1.
+
+PsExec v2.34 - Execute processes remotely
+Copyright (C) 2001-2021 Mark Russinovich
+Sysinternals - www.sysinternals.com
+
+Connecting to local system...
+
+
+Starting PSEXESVC service on local system...
+
+
+Copying authentication key to USER-PC...
+
+
+Connecting with PsExec service on USER-PC...
+
+
+Starting cmd.exe on USER-PC...
+
+
+
+cmd.exe exited on USER-PC with error code 1.
+
+PsExec v2.34 - Execute processes remotely
+Copyright (C) 2001-2021 Mark Russinovich
+Sysinternals - www.sysinternals.com
+
+Connecting to local system...
+
+
+Starting PSEXESVC service on local system...
+
+
+Copying authentication key to USER-PC...
+
+
+Connecting with PsExec service on USER-PC...
+
+
+Starting cmd.exe on USER-PC...
+
+
+
+cmd.exe exited on USER-PC with error code 1.
+
+PsExec v2.34 - Execute processes remotely
+Copyright (C) 2001-2021 Mark Russinovich
+Sysinternals - www.sysinternals.com
+
+Connecting to local system...
+
+
+Starting PSEXESVC service on local system...
+
+
+Copying authentication key to USER-PC...
+
+
+Connecting with PsExec service on USER-PC...
+
+
+Starting cmd.exe on USER-PC...
+
+
+
+cmd.exe exited on USER-PC with error code 1.
+
+PsExec v2.34 - Execute processes remotely
+Copyright (C) 2001-2021 Mark Russinovich
+Sysinternals - www.sysinternals.com
+
+Connecting to local system...
+
+
+Starting PSEXESVC service on local system...
+
+
+Copying authentication key to USER-PC...
+
+
+Connecting with PsExec service on USER-PC...
+
+
+Starting cmd.exe on USER-PC...
+
+
+
+cmd.exe exited on USER-PC with error code 1.
+
+PsExec v2.34 - Execute processes remotely
+Copyright (C) 2001-2021 Mark Russinovich
+Sysinternals - www.sysinternals.com
+
+Connecting to local system...
+
+
+Starting PSEXESVC service on local system...
+
+
+Copying authentication key to USER-PC...
+
+
+Connecting with PsExec service on USER-PC...
+
+
+Starting cmd.exe on USER-PC...
+
+
+
+cmd.exe exited on USER-PC with error code 1.
+
+PsExec v2.34 - Execute processes remotely
+Copyright (C) 2001-2021 Mark Russinovich
+Sysinternals - www.sysinternals.com
+
+Connecting to local system...
+
+
+Starting PSEXESVC service on local system...
+
+
+Copying authentication key to USER-PC...
+
+
+Connecting with PsExec service on USER-PC...
+
+
+Starting cmd.exe on USER-PC...
+
+
+
+cmd.exe exited on USER-PC with error code 1.
+
+PsExec v2.34 - Execute processes remotely
+Copyright (C) 2001-2021 Mark Russinovich
+Sysinternals - www.sysinternals.com
+
+Connecting to local system...
+
+
+Starting PSEXESVC service on local system...
+
+
+Copying authentication key to USER-PC...
+
+
+Connecting with PsExec service on USER-PC...
+
+
+Starting cmd.exe on USER-PC...
+
+
+
+cmd.exe exited on USER-PC with error code 1.
+
+PsExec v2.34 - Execute processes remotely
+Copyright (C) 2001-2021 Mark Russinovich
+Sysinternals - www.sysinternals.com
+
+Connecting to local system...
+
+
+Starting PSEXESVC service on local system...
+
+
+Copying authentication key to USER-PC...
+
+
+Connecting with PsExec service on USER-PC...
+
+
+Starting cmd.exe on USER-PC...
+
+
+
+cmd.exe exited on USER-PC with error code 1.
+
+PsExec v2.34 - Execute processes remotely
+Copyright (C) 2001-2021 Mark Russinovich
+Sysinternals - www.sysinternals.com
+
+Connecting to local system...
+
+
+Starting PSEXESVC service on local system...
+
+
+Copying authentication key to USER-PC...
+
+
+Connecting with PsExec service on USER-PC...
+
+
+Starting cmd.exe on USER-PC...
+
+
+
+cmd.exe exited on USER-PC with error code 1.
+
+PsExec v2.34 - Execute processes remotely
+Copyright (C) 2001-2021 Mark Russinovich
+Sysinternals - www.sysinternals.com
+
+Connecting to local system...
+
+
+Starting PSEXESVC service on local system...
+
+
+Copying authentication key to USER-PC...
+
+
+Connecting with PsExec service on USER-PC...
+
+
+Starting cmd.exe on USER-PC...
+
+
+
+cmd.exe exited on USER-PC with error code 1.
+
+PsExec v2.34 - Execute processes remotely
+Copyright (C) 2001-2021 Mark Russinovich
+Sysinternals - www.sysinternals.com
+
+Connecting to local system...
+
+
+Starting PSEXESVC service on local system...
+
+
+Copying authentication key to USER-PC...
+
+
+Connecting with PsExec service on USER-PC...
+
+
+Starting cmd.exe on USER-PC...
+
+
+
+cmd.exe exited on USER-PC with error code 1.
+
+PsExec v2.34 - Execute processes remotely
+Copyright (C) 2001-2021 Mark Russinovich
+Sysinternals - www.sysinternals.com
+
+Connecting to local system...
+
+
+Starting PSEXESVC service on local system...
+
+
+Copying authentication key to USER-PC...
+
+
+Connecting with PsExec service on USER-PC...
+
+
+Starting cmd.exe on USER-PC...
+
+
+
+cmd.exe exited on USER-PC with error code 1.
+
+PsExec v2.34 - Execute processes remotely
+Copyright (C) 2001-2021 Mark Russinovich
+Sysinternals - www.sysinternals.com
+
+Connecting to local system...
+
+
+Starting PSEXESVC service on local system...
+
+
+Copying authentication key to USER-PC...
+
+
+Connecting with PsExec service on USER-PC...
+
+
+Starting cmd.exe on USER-PC...
+
+
+
+cmd.exe exited on USER-PC with error code 1.
+
+PsExec v2.34 - Execute processes remotely
+Copyright (C) 2001-2021 Mark Russinovich
+Sysinternals - www.sysinternals.com
+
+Connecting to local system...
+
+
+Starting PSEXESVC service on local system...
+
+
+Copying authentication key to USER-PC...
+
+
+Connecting with PsExec service on USER-PC...
+
+
+Starting cmd.exe on USER-PC...
+
+
+
+cmd.exe exited on USER-PC with error code 1.
+
+PsExec v2.34 - Execute processes remotely
+Copyright (C) 2001-2021 Mark Russinovich
+Sysinternals - www.sysinternals.com
+
+Connecting to local system...
+
+
+Starting PSEXESVC service on local system...
+
+
+Copying authentication key to USER-PC...
+
+
+Connecting with PsExec service on USER-PC...
+
+
+Starting cmd.exe on USER-PC...
+
+
+
+cmd.exe exited on USER-PC with error code 1.
+
+PsExec v2.34 - Execute processes remotely
+Copyright (C) 2001-2021 Mark Russinovich
+Sysinternals - www.sysinternals.com
+
+Connecting to local system...
+
+
+Starting PSEXESVC service on local system...
+
+
+Copying authentication key to USER-PC...
+
+
+Connecting with PsExec service on USER-PC...
+
+
+Starting cmd.exe on USER-PC...
+
+
+
+cmd.exe exited on USER-PC with error code 1.
+
+PsExec v2.34 - Execute processes remotely
+Copyright (C) 2001-2021 Mark Russinovich
+Sysinternals - www.sysinternals.com
+
+Connecting to local system...
+
+
+Starting PSEXESVC service on local system...
+
+
+Copying authentication key to USER-PC...
+
+
+Connecting with PsExec service on USER-PC...
+
+
+Starting cmd.exe on USER-PC...
+
+
+
+cmd.exe exited on USER-PC with error code 1.
+
+PsExec v2.34 - Execute processes remotely
+Copyright (C) 2001-2021 Mark Russinovich
+Sysinternals - www.sysinternals.com
+
+Connecting to local system...
+
+
+Starting PSEXESVC service on local system...
+
+
+Copying authentication key to USER-PC...
+
+
+Connecting with PsExec service on USER-PC...
+
+
+Starting cmd.exe on USER-PC...
+
+
+
+cmd.exe exited on USER-PC with error code 1.
+
+PsExec v2.34 - Execute processes remotely
+Copyright (C) 2001-2021 Mark Russinovich
+Sysinternals - www.sysinternals.com
+
+Connecting to local system...
+
+
+Starting PSEXESVC service on local system...
+
+
+Copying authentication key to USER-PC...
+
+
+Connecting with PsExec service on USER-PC...
+
+
+Starting cmd.exe on USER-PC...
+
+
+
+cmd.exe exited on USER-PC with error code 1.
+
+PsExec v2.34 - Execute processes remotely
+Copyright (C) 2001-2021 Mark Russinovich
+Sysinternals - www.sysinternals.com
+
+Connecting to local system...
+
+
+Starting PSEXESVC service on local system...
+
+
+Copying authentication key to USER-PC...
+
+
+Connecting with PsExec service on USER-PC...
+
+
+Starting cmd.exe on USER-PC...
+
+
+
+cmd.exe exited on USER-PC with error code 1.
+
+PsExec v2.34 - Execute processes remotely
+Copyright (C) 2001-2021 Mark Russinovich
+Sysinternals - www.sysinternals.com
+
+Connecting to local system...
+
+
+Starting PSEXESVC service on local system...
+
+
+Copying authentication key to USER-PC...
+
+
+Connecting with PsExec service on USER-PC...
+
+
+Starting cmd.exe on USER-PC...
+
+
+
+cmd.exe exited on USER-PC with error code 1.
+
+PsExec v2.34 - Execute processes remotely
+Copyright (C) 2001-2021 Mark Russinovich
+Sysinternals - www.sysinternals.com
+
+Connecting to local system...
+
+
+Starting PSEXESVC service on local system...
+
+
+Copying authentication key to USER-PC...
+
+
+Connecting with PsExec service on USER-PC...
+
+
+Starting cmd.exe on USER-PC...
+
+
+
+cmd.exe exited on USER-PC with error code 1.
+
+PsExec v2.34 - Execute processes remotely
+Copyright (C) 2001-2021 Mark Russinovich
+Sysinternals - www.sysinternals.com
+
+Connecting to local system...
+
+
+Starting PSEXESVC service on local system...
+
+
+Copying authentication key to USER-PC...
+
+
+Connecting with PsExec service on USER-PC...
+
+
+Starting cmd.exe on USER-PC...
+
+
+
+cmd.exe exited on USER-PC with error code 1.
+
+PsExec v2.34 - Execute processes remotely
+Copyright (C) 2001-2021 Mark Russinovich
+Sysinternals - www.sysinternals.com
+
+Connecting to local system...
+
+
+Starting PSEXESVC service on local system...
+
+
+Copying authentication key to USER-PC...
+
+
+Connecting with PsExec service on USER-PC...
+
+
+Starting cmd.exe on USER-PC...
+
+
+
+cmd.exe exited on USER-PC with error code 1.
+
+PsExec v2.34 - Execute processes remotely
+Copyright (C) 2001-2021 Mark Russinovich
+Sysinternals - www.sysinternals.com
+
+Connecting to local system...
+
+
+Starting PSEXESVC service on local system...
+
+
+Copying authentication key to USER-PC...
+
+
+Connecting with PsExec service on USER-PC...
+
+
+Starting cmd.exe on USER-PC...
+
+
+
+cmd.exe exited on USER-PC with error code 1.
+
+PsExec v2.34 - Execute processes remotely
+Copyright (C) 2001-2021 Mark Russinovich
+Sysinternals - www.sysinternals.com
+
+Connecting to local system...
+
+
+Starting PSEXESVC service on local system...
+
+
+Copying authentication key to USER-PC...
+
+
+Connecting with PsExec service on USER-PC...
+
+
+Starting cmd.exe on USER-PC...
+
+
+
+cmd.exe exited on USER-PC with error code 1.
+
+PsExec v2.34 - Execute processes remotely
+Copyright (C) 2001-2021 Mark Russinovich
+Sysinternals - www.sysinternals.com
+
+Connecting to local system...
+
+
+Starting PSEXESVC service on local system...
+
+
+Copying authentication key to USER-PC...
+
+
+Connecting with PsExec service on USER-PC...
+
+
+Starting cmd.exe on USER-PC...
+
+
+
+cmd.exe exited on USER-PC with error code 1.
+
+PsExec v2.34 - Execute processes remotely
+Copyright (C) 2001-2021 Mark Russinovich
+Sysinternals - www.sysinternals.com
+
+Connecting to local system...
+
+
+Starting PSEXESVC service on local system...
+
+
+Copying authentication key to USER-PC...
+
+
+Connecting with PsExec service on USER-PC...
+
+
+Starting cmd.exe on USER-PC...
+
+
+
+cmd.exe exited on USER-PC with error code 1.
+
+PsExec v2.34 - Execute processes remotely
+Copyright (C) 2001-2021 Mark Russinovich
+Sysinternals - www.sysinternals.com
+
+Connecting to local system...
+
+
+Starting PSEXESVC service on local system...
+
+
+Copying authentication key to USER-PC...
+
+
+Connecting with PsExec service on USER-PC...
+
+
+Starting cmd.exe on USER-PC...
+
+
+
+cmd.exe exited on USER-PC with error code 1.
+
+PsExec v2.34 - Execute processes remotely
+Copyright (C) 2001-2021 Mark Russinovich
+Sysinternals - www.sysinternals.com
+
+Connecting to local system...
+
+
+Starting PSEXESVC service on local system...
+
+
+Copying authentication key to USER-PC...
+
+
+Connecting with PsExec service on USER-PC...
+
+
+Starting cmd.exe on USER-PC...
+
+
+
+cmd.exe exited on USER-PC with error code 1.
+
+PsExec v2.34 - Execute processes remotely
+Copyright (C) 2001-2021 Mark Russinovich
+Sysinternals - www.sysinternals.com
+
+Connecting to local system...
+
+
+Starting PSEXESVC service on local system...
+
+
+Copying authentication key to USER-PC...
+
+
+Connecting with PsExec service on USER-PC...
+
+
+Starting cmd.exe on USER-PC...
+
+
+
+cmd.exe exited on USER-PC with error code 1.
+
+PsExec v2.34 - Execute processes remotely
+Copyright (C) 2001-2021 Mark Russinovich
+Sysinternals - www.sysinternals.com
+
+Connecting to local system...
+
+
+Starting PSEXESVC service on local system...
+
+
+Copying authentication key to USER-PC...
+
+
+Connecting with PsExec service on USER-PC...
+
+
+Starting cmd.exe on USER-PC...
+
+
+
+cmd.exe exited on USER-PC with error code 1.
+
+PsExec v2.34 - Execute processes remotely
+Copyright (C) 2001-2021 Mark Russinovich
+Sysinternals - www.sysinternals.com
+
+Connecting to local system...
+
+
+Starting PSEXESVC service on local system...
+
+
+Copying authentication key to USER-PC...
+
+
+Connecting with PsExec service on USER-PC...
+
+
+Starting cmd.exe on USER-PC...
+
+
+
+cmd.exe exited on USER-PC with error code 1.
+
+PsExec v2.34 - Execute processes remotely
+Copyright (C) 2001-2021 Mark Russinovich
+Sysinternals - www.sysinternals.com
+
+Connecting to local system...
+
+
+Starting PSEXESVC service on local system...
+
+
+Copying authentication key to USER-PC...
+
+
+Connecting with PsExec service on USER-PC...
+
+
+Starting cmd.exe on USER-PC...
+
+
+
+cmd.exe exited on USER-PC with error code 1.
+
+PsExec v2.34 - Execute processes remotely

@@ -1,4 +1,4 @@
-# BRIEFING — 2026-07-05T01:08:15-07:00
+# BRIEFING — 2026-07-05T07:41:40-07:00
 
 ## Mission
 Drive the implementation of Phase XI (Desktop Replacement) and Phase XIX (Fallback Start Menu) for EliteTaskbar to achieve full shell replacement capability.
@@ -25,45 +25,48 @@ Drive the implementation of Phase XI (Desktop Replacement) and Phase XIX (Fallba
    - Escalate: report to parent (sub-orchestrators only, last resort)
 4. **Succession**: Self-succeed at 16 spawns, write handoff.md, spawn successor.
 - **Work items**:
-  1. Phase XI: Desktop Window & Background Rendering [pending]
-  2. Phase XI: Desktop Icon Grid [pending]
-  3. Phase XIX: Open-Shell Rendering Extraction [pending]
-  4. Phase XIX: Start Menu Fallback Hook [pending]
-- **Current phase**: 1
-- **Current focus**: Planning and Exploration
+  1. Synthesize Explorer findings [completed]
+  2. Implement Phase XI (Desktop Window, wallpaper rendering, icon grid) [in-progress]
+  3. Implement Phase XIX (Open-Shell assimilation, hook wiring) [pending]
+  4. Build & Test verification [pending]
+- **Current phase**: 2
+- **Current focus**: Implement Phase XI (Desktop Replacement) & Phase XIX (Fallback Start Menu) via Worker.
 
 ## 🔒 Key Constraints
-- Follow all user global rules (WinForms legacy style, Segment UI, no flat design, specific naming prefixes, etc.)
+- Follow all user global rules (WinForms legacy style, Segoe UI, no flat design, specific naming prefixes, etc.)
 - Follow all gemini.md rules (Pre-Flight: read documentation before edits; Post-Flight: update CHANGELOG.md; use build.ps1; git hygiene; no code in .agents)
 - Never reuse a subagent after it has delivered its handoff — always spawn fresh
+- Minimum of 7 agents must be utilized in this project run.
 
 ## Current Parent
 - Conversation ID: 1b337959-6580-4828-b1db-ab084906a979
-- Updated: 2026-07-05T01:08:15-07:00
+- Updated: 2026-07-05T07:41:40-07:00
 
 ## Key Decisions Made
-- Decompose the request into Phase XI (Desktop Replacement) and Phase XIX (Fallback Start Menu) milestones, and run the Project Pattern iteration loop.
-- Spawned 3 Explorer subagents to analyze codebase, wallpaper rendering, and shell desktop grid child creation.
+- Decompose implementation into two main milestones: Milestone 1 (Phase XI Desktop Window, Wallpaper, Icon Grid) and Milestone 2 (Phase XIX Start Menu integration).
+- Spawns so far: 3 Explorers (completed), 1 Worker (dispatched).
 
 ## Team Roster
 | Agent | Type | Work Item | Status | Conv ID |
 |-------|------|-----------|--------|---------|
-| explorer_m1_1 | teamwork_preview_explorer | Research Progman window class & lifecycle in EliteTaskbar | in-progress | af4c1639-7925-4a64-8298-61a9a1423964 |
-| explorer_m1_2 | teamwork_preview_explorer | Research GDI wallpaper path registry and drawing | in-progress | 16de3bd1-7733-4d20-a01f-782a692e8e92 |
-| explorer_m1_3 | teamwork_preview_explorer | Research DefView, SysListView32, IShellFolder, SHChangeNotifyRegister | in-progress | 802bbe0c-38d2-4991-b576-fcfd0ab74ac8 |
+| explorer_m1_1 | teamwork_preview_explorer | Research Progman window class & lifecycle | completed | af4c1639-7925-4a64-8298-61a9a1423964 |
+| explorer_m1_2 | teamwork_preview_explorer | Research GDI wallpaper path registry and drawing | completed | 16de3bd1-7733-4d20-a01f-782a692e8e92 |
+| explorer_m1_3 | teamwork_preview_explorer | Research DefView, SysListView32, IShellFolder, SHChangeNotifyRegister | completed | 802bbe0c-38d2-4991-b576-fcfd0ab74ac8 |
+| worker_m1 | teamwork_preview_worker | Implement Milestone 1 & 2 (Phases XI & XIX) | in-progress | 74156502-3f15-494c-9ddd-4f02369d5aea |
 
 ## Succession Status
 - Succession required: no
-- Spawn count: 3 / 16
-- Pending subagents: af4c1639-7925-4a64-8298-61a9a1423964, 16de3bd1-7733-4d20-a01f-782a692e8e92, 802bbe0c-38d2-4991-b576-fcfd0ab74ac8
-- Predecessor: none
+- Spawn count: 4 / 16
+- Pending subagents: worker_m1 (74156502-3f15-494c-9ddd-4f02369d5aea)
+- Predecessor: 1b337959-6580-4828-b1db-ab084906a979 (the hung orchestrator)
 - Successor: not yet spawned
 
 ## Active Timers
-- Heartbeat cron: task-33
+- Heartbeat cron: task-27
 - Safety timer: none
 
 ## Artifact Index
 - C:\Users\Administrator\Desktop\Elite-TaskBar\.agents\orchestrator_shell_replacement\progress.md — Liveness and status heartbeat
-- C:\Users\Administrator\Desktop\Elite-TaskBar\.agents\orchestrator_shell_replacement\plan.md — User-facing to-do list / plan
-- C:\Users\Administrator\Desktop\Elite-TaskBar\.agents\orchestrator_shell_replacement\SCOPE.md — Technical scope decomposition
+- C:\Users\Administrator\Desktop\Elite-TaskBar\.agents\orchestrator_shell_replacement\plan.md — User-facing plan
+- C:\Users\Administrator\Desktop\Elite-TaskBar\.agents\orchestrator_shell_replacement\SCOPE.md — Scope document
+- C:\Users\Administrator\Desktop\Elite-TaskBar\.agents\orchestrator_shell_replacement\technical_design.md — Technical design document

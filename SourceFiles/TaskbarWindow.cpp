@@ -7,6 +7,7 @@
 #include "Logger.h"
 #include "resource.h"
 #include "Config.h"
+#include "DesktopWindow.h"
 #include <dwmapi.h>
 #include <windowsx.h>
 #include <uxtheme.h>
@@ -2592,12 +2593,28 @@ bool TaskbarWindow::Initialize(HINSTANCE hInstance) {
         return TRUE;
     }, 0);
 
+    bool desktopReplaceEnabled = true;
+    HKEY hKeyDesktop;
+    if (RegOpenKeyExW(GetEliteRegistryRoot(), L"Software\\EliteSoftware\\Win32Explorer\\Advanced", 0, KEY_READ, &hKeyDesktop) == ERROR_SUCCESS) {
+        DWORD dwVal = 1;
+        DWORD cbData = sizeof(DWORD);
+        if (RegQueryValueExW(hKeyDesktop, L"DesktopReplacementEnabled", NULL, NULL, (LPBYTE)&dwVal, &cbData) == ERROR_SUCCESS) {
+            desktopReplaceEnabled = (dwVal == 1);
+        }
+        RegCloseKey(hKeyDesktop);
+    }
+
+    if (g_Config.Mode == TaskbarMode::Replace && desktopReplaceEnabled) {
+        DesktopWindow::Initialize();
+    }
+
     if (g_uTaskbarCreatedMsg != 0) {
         PostMessageW(HWND_BROADCAST, g_uTaskbarCreatedMsg, 0, 0);
     }
 
     return true;
 }
+
 
 void TaskbarWindow::RunMessageLoop() {
     MSG msg = {0};
@@ -2608,6 +2625,7 @@ void TaskbarWindow::RunMessageLoop() {
 }
 
 void TaskbarWindow::Cleanup() {
+    DesktopWindow::Cleanup();
     for (auto* inst : g_Taskbars) {
         APPBARDATA abd = {0};
         abd.cbSize = sizeof(APPBARDATA);
