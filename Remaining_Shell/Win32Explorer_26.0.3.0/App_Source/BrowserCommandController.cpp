@@ -605,7 +605,7 @@ void BrowserCommandController::OnChangeDisplayColors()
 	auto *displayColorsDialog = DisplayColorsDialog::Create(m_resourceLoader, m_browser->GetHWND(), m_config);
 	if (displayColorsDialog->ShowModalDialog() == BaseDialog::RETURN_OK)
 	{
-		GetActiveShellBrowser()->Refresh();
+		InvalidateRect(m_browser->GetHWND(), nullptr, TRUE);
 	}
 }
 

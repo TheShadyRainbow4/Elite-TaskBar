@@ -7,7 +7,7 @@
 #include "BaseDialog.h"
 #include <wil/resource.h>
 
-class Config;
+struct Config;
 
 class DisplayColorsDialog : public BaseDialog
 {
