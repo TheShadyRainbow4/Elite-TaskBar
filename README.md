@@ -67,6 +67,20 @@ Elite-Taskbar is designed from the ground up to seamlessly blend into the Window
 
 </details>
 
+<details>
+<summary><b>5. Added Features (Teamwork Update)</b></summary>
+
+* **Small Icon Tiles View Mode (R1)**: A brand new view mode in Win32Explorer that displays small icons with right-aligned labels.
+* **Group by Type Default (R2)**: A new toggle in the Win32Explorer Options window setting the default grouping logic to Type.
+* **Independent Taskbar Mode (R3)**: Taskbar now defaults to co-existing with the native explorer taskbar rather than attempting to replace it on first launch.
+* **UWP App Icons Fix (R5)**: Accurate rendering of UWP app icons on the taskbar.
+* **High-DPI Text Blurriness Fix (R7)**: Font crispness is preserved across mismatched high-DPI monitor configurations.
+* **Settings Import/Export**: Backup and restore all shell configurations, native settings, and Elite-Taskbar behaviors directly into a single `.reg` file.
+* **Aggressive Restart**: Immediate and full application restart upon applying settings to prevent hidden UI glitches or the "start orb top-left" bug.
+* **Desktop Rendering (Phase XI)**: Rendering of `Progman` desktop window with `SysListView32` to hijack the native desktop.
+
+</details>
+
 ---
 
 ## 🏗️ Building the Project

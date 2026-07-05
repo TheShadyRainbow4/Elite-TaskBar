@@ -347,6 +347,18 @@ $pnl_Chin.Size = New-Object System.Drawing.Size(550, 50)
 $pnl_Chin.Location = New-Object System.Drawing.Point(0, 400)
 $pnl_Chin.BackColor = $colorChin
 
+$btn_Import = New-Object System.Windows.Forms.Button
+$btn_Import.Text = "Import..."
+$btn_Import.Location = New-Object System.Drawing.Point(15, 12)
+$btn_Import.Size = New-Object System.Drawing.Size(75, 23)
+$pnl_Chin.Controls.Add($btn_Import)
+
+$btn_Export = New-Object System.Windows.Forms.Button
+$btn_Export.Text = "Export..."
+$btn_Export.Location = New-Object System.Drawing.Point(95, 12)
+$btn_Export.Size = New-Object System.Drawing.Size(75, 23)
+$pnl_Chin.Controls.Add($btn_Export)
+
 $btn_Apply = New-Object System.Windows.Forms.Button
 $btn_Apply.Text = "Apply"
 $btn_Apply.Location = New-Object System.Drawing.Point(450, 12)
@@ -600,15 +612,73 @@ function Save-Settings {
             Set-ItemProperty -Path $targetShell -Name "" -Value "openinWin32Explorer" -Force | Out-Null
         }
 
-        # Broadcast change
+        # Broadcast change (keep just in case other things need it)
         $result = [UIntPtr]::Zero
         [Win32]::SendMessageTimeout($HWND_BROADCAST, $WM_SETTINGCHANGE, [UIntPtr]::Zero, [IntPtr]::Zero, 2, 1000, [ref]$result) | Out-Null
         
-        $ELITE_UPDATE = [Win32]::RegisterWindowMessage("EliteTaskbarSettingsUpdate")
-        [Win32]::SendMessageTimeout($HWND_BROADCAST, $ELITE_UPDATE, [UIntPtr]::Zero, [IntPtr]::Zero, 2, 1000, [ref]$result) | Out-Null
+        # Aggressive Restart of Taskbar and Explorer to fix glitches
+        $taskbarPath = Join-Path $AppDir "EliteTaskbar.exe"
+        $win32ExpPath = Join-Path $AppDir "Win32Explorer.exe"
+        
+        $taskbarRunning = Get-Process -Name "EliteTaskbar" -ErrorAction SilentlyContinue
+        $win32ExpRunning = Get-Process -Name "Win32Explorer" -ErrorAction SilentlyContinue
+        
+        if ($taskbarRunning) {
+            Stop-Process -Name "EliteTaskbar" -Force -ErrorAction SilentlyContinue
+            Start-Sleep -Milliseconds 200
+            Start-Process -FilePath $taskbarPath
+        }
+        
+        if ($win32ExpRunning) {
+            Stop-Process -Name "Win32Explorer" -Force -ErrorAction SilentlyContinue
+            Start-Sleep -Milliseconds 200
+            Start-Process -FilePath $win32ExpPath
+        }
+        
+        # Also restart Explorer if Replace mode was modified
+        if ($rdo_ModeReplace.Checked) {
+            Stop-Process -Name "explorer" -Force -ErrorAction SilentlyContinue
+            Start-Sleep -Milliseconds 500
+            Start-Process "explorer.exe"
+        }
 
     } catch {}
 }
+
+$btn_Export.Add_Click({
+    $dlg = New-Object System.Windows.Forms.SaveFileDialog
+    $dlg.Filter = "Registry Files (*.reg)|*.reg"
+    $dlg.Title = "Export Settings"
+    if ($dlg.ShowDialog() -eq [System.Windows.Forms.DialogResult]::OK) {
+        $temp1 = Join-Path $env:TEMP "elite1.reg"
+        $temp2 = Join-Path $env:TEMP "elite2.reg"
+        
+        # Suppress output and redirect to temp files
+        Start-Process -FilePath "reg.exe" -ArgumentList "export HKCU\Software\EliteSoftware ""$temp1"" /y" -Wait -WindowStyle Hidden
+        Start-Process -FilePath "reg.exe" -ArgumentList "export HKCU\Software\Microsoft\Windows\CurrentVersion\Explorer\Advanced ""$temp2"" /y" -Wait -WindowStyle Hidden
+        
+        $outFile = $dlg.FileName
+        if (Test-Path $temp1) { Get-Content $temp1 | Set-Content $outFile -Encoding Unicode }
+        if (Test-Path $temp2) { Get-Content $temp2 | Select-Object -Skip 1 | Add-Content $outFile -Encoding Unicode }
+        
+        Remove-Item $temp1 -ErrorAction SilentlyContinue
+        Remove-Item $temp2 -ErrorAction SilentlyContinue
+        
+        [System.Windows.Forms.MessageBox]::Show("Settings exported successfully!", "Export Complete", [System.Windows.Forms.MessageBoxButtons]::OK, [System.Windows.Forms.MessageBoxIcon]::Information)
+    }
+})
+
+$btn_Import.Add_Click({
+    $dlg = New-Object System.Windows.Forms.OpenFileDialog
+    $dlg.Filter = "Registry Files (*.reg)|*.reg"
+    $dlg.Title = "Import Settings"
+    if ($dlg.ShowDialog() -eq [System.Windows.Forms.DialogResult]::OK) {
+        Start-Process -FilePath "reg.exe" -ArgumentList "import ""$($dlg.FileName)""" -Wait -WindowStyle Hidden
+        [System.Windows.Forms.MessageBox]::Show("Settings imported! The UI and Taskbar will now reload.", "Import Complete", [System.Windows.Forms.MessageBoxButtons]::OK, [System.Windows.Forms.MessageBoxIcon]::Information)
+        Load-Settings
+        Save-Settings
+    }
+})
 
 $btn_Apply.Add_Click({ Save-Settings })
 $btn_Okay.Add_Click({ Save-Settings; $frm_Main.Close() })
