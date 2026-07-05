@@ -1,40 +1,35 @@
-# BRIEFING — 2026-07-05T02:27:35-07:00
+# BRIEFING — 2026-07-05T02:33:30-07:00
 
 ## Mission
-Empirically verify EliteTaskbar advanced features: tray overflow, UWP icons, high-DPI scaling, and exit command termination.
+Perform empirical and runtime tests on the compiled EliteTaskbar.exe and EliteSettings.exe/CPL to verify tray, UWP icons, High-DPI support, and settings behavior.
 
 ## 🔒 My Identity
-- Archetype: Empirical Challenger
+- Archetype: Challenger / Critic / Specialist
 - Roles: critic, specialist
 - Working directory: C:\Users\Administrator\Desktop\Elite-TaskBar\.agents\challenger_m3_1
-- Original parent: 491aaa04-e12b-4181-a682-1b0d4b4527f9
+- Original parent: 56c49f71-824d-4231-b976-720d6718b2ae
 - Milestone: Milestone 3
 - Instance: 1 of 1
 
 ## 🔒 Key Constraints
 - Review-only — do NOT modify implementation code.
-- Verify compiled binaries only (DO NOT compile or run build.ps1 to avoid file locks).
-- Target system: Windows (using powershell/pwsh).
+- No compile or running of build.ps1. Verify existing compiled binaries.
 
 ## Current Parent
-- Conversation ID: 491aaa04-e12b-4181-a682-1b0d4b4527f9
-- Updated: not yet
+- Conversation ID: 56c49f71-824d-4231-b976-720d6718b2ae
+- Updated: 2026-07-05T02:33:30-07:00
 
 ## Review Scope
-- **Files to review**: compiled EliteTaskbar.exe, verify_milestone2.ps1
-- **Interface contracts**: C:\Users\Administrator\Desktop\Elite-TaskBar\PROJECT.md
-- **Review criteria**: functionality, reliability, correctness under load and DPI change
+- **Files to review**: EliteTaskbar.exe, EliteSettings.exe, EliteSettings.cpl, verify_milestone2.ps1
+- **Interface contracts**: C:\Users\Administrator\Desktop\Elite-TaskBar\Documentation
+- **Review criteria**: Empirical verification of 6 runtime behaviors: Tray overflow scraping, Tray interactions routing, Tray tooltips, UWP app icons, High-DPI scaling (WM_DPICHANGED), and Apply settings button stability.
 
 ## Key Decisions Made
-- [TBD]
+- Executed customized runtime verification script `verify_m3_runtime.ps1` to empirically inspect window styles, subclassing, message routing, tooltips, and settings apply behaviour.
+- Identified that CPL / Settings EXE extracts to a temporary executable `EST*.exe` in the `Temp` folder.
+- Discovered a critical path resolution bug: `NotifySettingsChange` uses `GetModuleFileNameW(NULL, ...)` to find the restart path, which points to `Temp` rather than the actual installation directory, causing the taskbar restart to fail silently.
 
 ## Artifact Index
-- [TBD]
-
-## Attack Surface
-- **Hypotheses tested**: [TBD]
-- **Vulnerabilities found**: [TBD]
-- **Untested angles**: [TBD]
-
-## Loaded Skills
-- None loaded.
+- C:\Users\Administrator\Desktop\Elite-TaskBar\.agents\challenger_m3_1\verify_m3_runtime.ps1 — Customized runtime verification test script
+- C:\Users\Administrator\Desktop\Elite-TaskBar\.agents\challenger_m3_1\diagnose.ps1 — C# compilation diagnostic script
+- C:\Users\Administrator\Desktop\Elite-TaskBar\.agents\challenger_m3_1\handoff.md — Handoff report with findings and verdict

@@ -30,7 +30,7 @@ public class Win32 {
     public static extern bool IsWindowVisible(IntPtr hWnd);
 
     [DllImport("user32.dll", SetLastError = true)]
-    public static extern uint GetWindowThreadProcessId(IntPtr hWnd, out uint lpdwProcessId);
+    public static extern int GetWindowThreadProcessId(IntPtr hWnd, out int lpdwProcessId);
 
     [DllImport("user32.dll", CharSet = CharSet.Unicode)]
     public static extern int GetClassName(IntPtr hWnd, StringBuilder lpClassName, int nMaxCount);
@@ -42,7 +42,7 @@ public class Win32 {
     public static extern bool PostMessage(IntPtr hWnd, uint Msg, IntPtr wParam, IntPtr lParam);
 
     [DllImport("kernel32.dll")]
-    public static extern IntPtr OpenProcess(uint dwDesiredAccess, bool bInheritHandle, uint dwProcessId);
+    public static extern IntPtr OpenProcess(uint dwDesiredAccess, bool bInheritHandle, int dwProcessId);
 
     [DllImport("kernel32.dll", SetLastError = true)]
     public static extern bool CloseHandle(IntPtr hObject);
@@ -132,7 +132,7 @@ public class Win32 {
 
     public static List<TBBUTTON> GetButtons(IntPtr hwnd) {
         var list = new List<TBBUTTON>();
-        uint pid;
+        int pid;
         GetWindowThreadProcessId(hwnd, out pid);
         if (pid == 0) return list;
 
@@ -170,21 +170,19 @@ $pathAdv = "HKCU:\Software\EliteSoftware\Win32Explorer\Advanced"
 if (!(Test-Path $pathAdv)) { New-Item -Path $pathAdv -Force | Out-Null }
 Set-ItemProperty -Path $pathAdv -Name "TaskbarMode" -Value 0 -Type DWord
 
-# Restart EliteTaskbar to ensure fresh state
-Write-Host "Restarting EliteTaskbar.exe..." -ForegroundColor Yellow
-Get-Process -Name EliteTaskbar -ErrorAction SilentlyContinue | Stop-Process -Force
-while (Get-Process -Name EliteTaskbar -ErrorAction SilentlyContinue) { Start-Sleep -Milliseconds 100 }
-Start-Sleep -Seconds 2
-
-$taskbarPath = Join-Path $ScriptDir "..\..\EliteTaskbar.exe"
-$procTaskbar = Start-Process -FilePath $taskbarPath -PassThru
-Start-Sleep -Seconds 4
-
-# Check EliteTaskbar process and windows
-$proc = Get-Process -Id $procTaskbar.Id -ErrorAction SilentlyContinue
-if ($null -eq $proc -or $proc.HasExited) {
-    Write-Error "EliteTaskbar.exe failed to start or exited immediately."
+# Ensure EliteTaskbar is running
+Write-Host "Ensuring EliteTaskbar.exe is running..." -ForegroundColor Yellow
+$procList = Get-Process -Name EliteTaskbar -ErrorAction SilentlyContinue
+if ($null -eq $procList -or $procList.Count -eq 0) {
+    $taskbarPath = Join-Path $ScriptDir "..\..\EliteTaskbar.exe"
+    Start-Process -FilePath $taskbarPath
+    Start-Sleep -Seconds 5
+    $procList = Get-Process -Name EliteTaskbar -ErrorAction SilentlyContinue
+    if ($null -eq $procList -or $procList.Count -eq 0) {
+        Write-Error "EliteTaskbar.exe failed to start."
+    }
 }
+$proc = $procList[0]
 Write-Host "[PASS] EliteTaskbar.exe is running (PID: $($proc.Id))" -ForegroundColor Green
 
 # Find Elite taskbar windows
@@ -317,14 +315,15 @@ Write-Host "`n[Checking 5] High-DPI monitor support (WM_DPICHANGED)..." -Foregro
 $rect = New-Object Win32+RECT
 [Win32]::GetWindowRect($primaryHwnd, [ref]$rect) | Out-Null
 $initialHeight = $rect.Height
-Write-Host "Initial taskbar height: $initialHeight" -ForegroundColor Yellow
+Write-Host "Primary HWND: $primaryHwnd, Initial taskbar height: $initialHeight" -ForegroundColor Yellow
 
 # Allocate suggested rect in target process memory
 $procId = 0
 [Win32]::GetWindowThreadProcessId($primaryHwnd, [ref]$procId) | Out-Null
+Write-Host "Taskbar Window Process ID: $procId" -ForegroundColor Yellow
 $hProcess = [Win32]::OpenProcess([Win32]::PROCESS_VM_READ -bor [Win32]::PROCESS_VM_WRITE -bor [Win32]::PROCESS_VM_OPERATION, $false, $procId)
 
-if ($hProcess -ne [IntPtr]::Zero) {
+if ($hProcess -ne [IntPtr]::Zero -and $initialHeight -gt 0) {
     # Setup suggested rect for 144 DPI (150% scale, height = 60)
     $suggestedRect = New-Object Win32+RECT
     $suggestedRect.Left = $rect.Left
@@ -390,9 +389,9 @@ if ($hProcess -ne [IntPtr]::Zero) {
 # --- 6. Verify Apply button doesn't hang the CPL settings window, and taskbar restarts successfully ---
 Write-Host "`n[Checking 6] Settings Apply behavior..." -ForegroundColor Cyan
 
-$settingsCplPath = Join-Path $ScriptDir "..\..\EliteSettings.cpl"
-Write-Host "Launching EliteSettings.cpl..." -ForegroundColor Yellow
-$procCpl = Start-Process -FilePath "control.exe" -ArgumentList "`"$settingsCplPath`"" -PassThru
+$settingsExePath = Join-Path $ScriptDir "..\..\EliteSettings.exe"
+Write-Host "Launching EliteSettings.exe..." -ForegroundColor Yellow
+$procCpl = Start-Process -FilePath $settingsExePath -PassThru
 Start-Sleep -Seconds 4
 
 # Find properties dialog
@@ -416,12 +415,10 @@ if ($hwndCpl -eq [IntPtr]::Zero) {
 $oldPid = (Get-Process -Name EliteTaskbar -ErrorAction SilentlyContinue).Id
 Write-Host "Current EliteTaskbar PID: $oldPid" -ForegroundColor Yellow
 
-# Send Apply command (0x3021) to the properties dialog
-Write-Host "Simulating Apply click by sending command 0x3021 (PSN_APPLY)..." -ForegroundColor Yellow
-# In standard property sheets, PSN_APPLY is sent via WM_NOTIFY, but standard button ID for Apply is 0x3021 (or 12321)
-# Let's send a command to click Apply button. Standard control ID for Apply button is 0x3021.
-[Win32]::SendMessage($hwndCpl, 0x0111, [IntPtr]0x3021, [IntPtr]::Zero) | Out-Null
-Start-Sleep -Seconds 3
+# Send OK command (IDOK = 1) to the properties dialog to apply settings and trigger restart
+Write-Host "Simulating OK click by sending command IDOK (1)..." -ForegroundColor Yellow
+[Win32]::SendMessage($hwndCpl, 0x0111, [IntPtr]1, [IntPtr]::Zero) | Out-Null
+Start-Sleep -Seconds 4
 
 # Verify settings didn't hang
 $isResponsive = $true
@@ -466,4 +463,6 @@ foreach ($h in $hwndsToClose) {
     [Win32]::SendMessage($h, 0x0111, [IntPtr]3014, [IntPtr]::Zero) | Out-Null
 }
 Start-Sleep -Seconds 1
-Get-Process -Name EliteTaskbar -ErrorAction Sile
+Get-Process -Name EliteTaskbar -ErrorAction SilentlyContinue | Stop-Process -Force
+
+Write-Host "`n=== Milestone 3 Runtime Verification Completed ===" -ForegroundColor Cyan

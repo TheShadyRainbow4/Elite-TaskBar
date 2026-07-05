@@ -1,0 +1,44 @@
+﻿
+
+    Directory: C:\Users\Administrator\Desktop\Elite-TaskBar\Win32Explorer_26.0.3.0\App_Source\x64\Release\Bookmarks\UI
+
+
+Mode                 LastWriteTime         Length Name                                                                 
+----                 -------------         ------ ----                                                                 
+d-----          7/5/2026   3:14 AM                Views                                                                
+
+
+    Directory: C:\Users\Administrator\Desktop\Elite-TaskBar\Win32Explorer_26.0.3.0\App_Source\x64\Release
+
+
+Mode                 LastWriteTime         Length Name                                                                 
+----                 -------------         ------ ----                                                                 
+d-----          7/5/2026   3:14 AM                DisplayWindow                                                        
+d-----          7/5/2026   3:14 AM                EliteTaskbar                                                         
+
+
+    Directory: 
+    C:\Users\Administrator\Desktop\Elite-TaskBar\Win32Explorer_26.0.3.0\App_Source\x64\Release\Plugins\CommandApi
+
+
+Mode                 LastWriteTime         Length Name                                                                 
+----                 -------------         ------ ----                                                                 
+d-----          7/5/2026   3:14 AM                Events                                                               
+
+
+    Directory: 
+    C:\Users\Administrator\Desktop\Elite-TaskBar\Win32Explorer_26.0.3.0\App_Source\x64\Release\Plugins\TabsApi
+
+
+Mode                 LastWriteTime         Length Name                                                                 
+----                 -------------         ------ ----                                                                 
+d-----          7/5/2026   3:14 AM                Events                                                               
+
+
+    Directory: C:\Users\Administrator\Desktop\Elite-TaskBar\Win32Explorer_26.0.3.0\App_Source\x64\Release
+
+
+Mode                 LastWriteTime         Length Name                                                                 
+----                 -------------         ------ ----                                                                 
+d-----          7/5/2026   3:14 AM                ShellBrowser                                                         
+d-----          7/5/2026   3:14 AM                ShellTreeView                                                        

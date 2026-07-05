@@ -1,0 +1,21 @@
+=== Win32Explorer and EliteTaskbar View Modes & Integration Empirical Tests ===
+
+[TEST 1] Verifying 'Small Icon Tiles' View Mode...
+[FAIL] Error in Test 1: Could not find Win32Explorer main window with 'Windows' title.
+
+[TEST 2] Verifying folders default to 'Group by Type' on first launch...
+Group view enabled state (LVM_ISGROUPVIEWENABLED): 1 (Expected: 1)
+EnableDefaultGroupByType registry value: 1 (Expected: 1)
+[PASS] Folders default to Group View on first launch, and EnableDefaultGroupByType defaults to 1.
+
+[TEST 3] Verifying Options dialog toggle and Registry/XML synchronization...
+--- Phase A: Registry Storage Mode (EnablePortableMirror = 0) ---
+Registry EnableDefaultGroupByType after exit: 1 (Expected: 0)
+--- Phase B: XML Portable Mirror Mode (EnablePortableMirror = 1) ---
+Start-Process : This command cannot be run due to the error: The system cannot find the file specified.
+At C:\Users\Administrator\Desktop\Elite-TaskBar\Subagent_Tests\run_empirical_tests.ps1:351 char:15
++ ...   $proc3B = Start-Process -FilePath $explorerExe -ArgumentList "C:\Wi ...
++                 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+    + CategoryInfo          : InvalidOperation: (:) [Start-Process], InvalidOperationException
+    + FullyQualifiedErrorId : InvalidOperationException,Microsoft.PowerShell.Commands.StartProcessCommand
+ 

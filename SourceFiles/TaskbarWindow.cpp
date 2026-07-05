@@ -339,7 +339,7 @@ void UpdateTaskbarLayout(TaskbarInstance* inst) {
                     }
                 }
             }
-            W_tray = iconOffset + numDrawn * 24;
+            W_tray = MulDiv(iconOffset + numDrawn * 24, dpi, 96);
             if (!enableTray) W_tray = 0;
         } else {
             if (inst->hToolbar && enableTray) {
@@ -821,18 +821,16 @@ void SyncTaskbarButtonsAcrossMonitors() {
                     info.hwnd = hwnd;
                     info.cmdId = tbb.idCommand;
                     info.isActive = (tbb.fsState & TBSTATE_CHECKED) != 0;
+                    info.hIcon = NULL;
                     
                     WCHAR szTitle[256] = {0};
                     GetWindowTextW(hwnd, szTitle, 256);
                     info.title = szTitle;
                     
-                    info.hIcon = GetWindowIconFix(hwnd);
-                    
                     bool found = false;
                     for (auto& tb : g_TaskButtons) {
                         if (tb.hwnd == hwnd) {
                             tb.title = szTitle;
-                            tb.hIcon = info.hIcon;
                             tb.isActive = info.isActive;
                             AddTaskButton(tb);
                             found = true;
@@ -840,6 +838,7 @@ void SyncTaskbarButtonsAcrossMonitors() {
                         }
                     }
                     if (!found) {
+                        info.hIcon = GetWindowIconFix(hwnd);
                         g_TaskButtons.push_back(info);
                         AddTaskButton(g_TaskButtons.back());
                     }
@@ -1680,6 +1679,9 @@ LRESULT CALLBACK WindowProc(HWND hwnd, UINT uMsg, WPARAM wParam, LPARAM lParam) 
         else if (nCode == HSHELL_WINDOWDESTROYED) {
             for (auto it = g_TaskButtons.begin(); it != g_TaskButtons.end(); ++it) {
                 if (it->hwnd == hwndShell) {
+                    if (it->hIcon) {
+                        DestroyIcon(it->hIcon);
+                    }
                     g_TaskButtons.erase(it);
                     RemoveTaskButton(hwndShell);
                     break;
@@ -1699,6 +1701,9 @@ LRESULT CALLBACK WindowProc(HWND hwnd, UINT uMsg, WPARAM wParam, LPARAM lParam) 
                     GetWindowTextW(hwndShell, szTitle, 256);
                     btn.title = szTitle;
                     
+                    if (btn.hIcon) {
+                        DestroyIcon(btn.hIcon);
+                    }
                     btn.hIcon = GetWindowIconFix(hwndShell);
                     RemoveTaskButton(hwndShell);
                     AddTaskButton(btn);

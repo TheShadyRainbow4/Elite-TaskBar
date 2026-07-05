@@ -25,9 +25,8 @@ $ddfContent = @(
     ".Set Compress=on"
 )
 
-# Get all files excluding Backups and .git
-$filesToBackup = Get-ChildItem -Path $ScriptDir -Recurse -File | Where-Object {
-    $_.FullName -notmatch "\\Backups\\" -and $_.FullName -notmatch "\\\.git\\" -and $_.FullName -notmatch "\\vcpkg" -and $_.FullName -notmatch "\\BuildOutput" -and $_.FullName -notmatch "\\\.vs\\" -and $_.Extension -notmatch "^\.(obj|pdb|ilk|tlog|idb|iobj|ipch|sdf|res)$"
+$filesToBackup = (Get-ChildItem -Path (Join-Path $ScriptDir "SourceFiles") -Recurse -File) + (Get-ChildItem -Path $ScriptDir -File) | Where-Object {
+    $_.Extension -notmatch "^\.(obj|pdb|ilk|tlog|idb|iobj|ipch|sdf|res|pch|lib|zip|pdf|exe|cpl|txt|log|cab)$" -and $_.Name -notmatch "_old"
 }
 
 foreach ($file in $filesToBackup) {

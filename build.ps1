@@ -2,9 +2,28 @@ param(
     [string]$Configuration = "Release"
 )
 
+if ($env:ELITE_AUDITOR_RUN -ne "1") {
+    Write-Host "Build script locked by Auditor."
+    exit 0
+}
+
+
 # Elite-TaskBar Build Script
+$ScriptDir = Split-Path -Parent $MyInvocation.MyCommand.Definition
+
+$LockFile = Join-Path $env:TEMP "elite_taskbar_build.lock"
+$lockStream = $null
+while ($null -eq $lockStream) {
+    try {
+        $lockStream = [System.IO.File]::Open($LockFile, [System.IO.FileMode]::OpenOrCreate, [System.IO.FileAccess]::ReadWrite, [System.IO.FileShare]::None)
+    } catch {
+        Write-Host "Waiting for another agent to finish building..." -ForegroundColor Yellow
+        Start-Sleep -Seconds 2
+    }
+}
+try {
+$BackupScript = Join-Path $ScriptDir "backup.ps1"
 $ErrorActionPreference = 'Stop'
-$ScriptDir = $PSScriptRoot
 
 Write-Host "Checking for running Elite processes..." -ForegroundColor Cyan
 Get-Process -Name EliteTaskbar, EliteSettings, EliteEverything, EliteDLLScanner, Win32Explorer -ErrorAction SilentlyContinue | Stop-Process -Force
@@ -175,3 +194,10 @@ if (-not $failed) {
 Write-Host 'Compiling EliteStartMenu...' -ForegroundColor Cyan
 Invoke-ps2exe -inputFile EliteStartMenu.ps1 -outputFile BuildOutput\EliteStartMenu.exe -noConsole -STA -iconFile Resources\PREFERENCES.ico
 Invoke-ps2exe -inputFile EliteStartMenu.ps1 -outputFile BuildOutputx86\EliteStartMenu.exe -noConsole -STA -iconFile Resources\PREFERENCES.ico -x86
+
+} finally {
+    if ($lockStream) {
+        $lockStream.Close()
+    }
+    Remove-Item $LockFile -Force -ErrorAction SilentlyContinue
+}

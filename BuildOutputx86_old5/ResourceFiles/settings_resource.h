@@ -1,0 +1,83 @@
+#pragma once
+#pragma warning(disable: 4715)
+
+#define IDI_MAIN_PROGRAM 102
+#define IDI_PREFERENCES  101
+#define IDB_START_ORB    103
+
+#define IDD_TASKBAR_PROPS     201
+#define IDC_LOCK_TASKBAR      202
+#define IDC_AUTOHIDE_TASKBAR  203
+#define IDC_SMALL_ICONS       204
+#define IDC_STATIC            -1
+
+#define IDD_STARTMENU_PROPS   205
+#define IDD_DESKTOP_PROPS     206
+#define IDD_TOOLBARS_PROPS    207
+#define IDD_SECRET_EVERYTHING 208
+#define IDD_SECRET_DLLSCANNER 209
+
+#define IDC_MODE_INDEPENDENT  210
+#define IDC_MODE_REPLACE      211
+#define IDC_MODE_SECONDARY_ONLY 223
+#define IDC_WIDTH_AUTO        224
+#define IDC_WIDTH_FIXED       225
+#define IDC_WIDTH_ICONS       226
+#define IDC_HOVER_PREVIEW     227
+#define IDC_WIDTH_FIXED_SIZE  228
+#define IDC_WIDTH_FIXED_SIZE_LBL 229
+#define IDC_USE_NATIVE_TASKBAND 231
+
+// Taskbar UI
+#define IDC_TRAY_NATIVE       212
+#define IDC_TRAY_LEGACY       213
+#define IDC_MONITOR_LIST      214
+#define IDC_COMPONENTS_LIST   215
+
+// Start Menu UI
+#define IDC_START_OPENSHELL   216
+#define IDC_START_NATIVE      217
+#define IDC_START_COMBO       218
+#define IDC_START_TRIGGER     219
+#define IDC_START_MONITOR_LIST 233
+#define IDC_ORB_PREVIEW 230
+
+// Toolbars UI
+#define IDC_TOOLBAR_LIST      220
+#define IDC_TOOLBAR_NEW       221
+
+#define IDC_NATIVE_REGISTRY_MODE 222
+
+// Orbs
+#define IDB_START_ORB_1ORB          301
+#define IDB_START_ORB_AQUABOTTOM    302
+#define IDB_START_ORB_DUNES         303
+#define IDB_START_ORB_INDIGO        304
+#define IDB_START_ORB_SAPPHIRE      305
+#define IDB_START_ORB_URANUS        306
+#define IDB_START_ORB_VIENNABOTTOM  307
+
+// Orb UI combo box
+#define IDC_ORB_SELECTOR      232
+
+#define IDD_NATIVE_PROPS 240
+#define IDD_MULTIMON_PROPS 241
+#define IDC_DYN_SCROLLAREA 242
+
+#define IDC_PORTABLE_MIRROR          250
+#define IDC_REPLACE_EXPLORER_NONE    251
+#define IDC_REPLACE_EXPLORER_FILESYS 252
+#define IDC_REPLACE_EXPLORER_ALL     253
+#define IDC_THEME_FOLDER_PATH        260
+#define IDC_THEME_FOLDER_BROWSE      261
+#define IDC_ENABLE_DARK_MODE         262
+#define IDC_IMPORT_SETTINGS          270
+#define IDC_EXPORT_SETTINGS          271
+
+#define IDD_HELP_DIALOG              280
+#define IDD_ABOUT_DIALOG             281
+#define IDC_ABOUT_EXPAND             282
+#define IDC_ABOUT_MOREINFO           283
+#define IDC_HELP_TEXT                284
+#define IDC_BANNER                   285
+

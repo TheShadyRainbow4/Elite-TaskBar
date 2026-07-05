@@ -1,10 +1,10 @@
 # progress.md
 
-Last visited: 2026-07-05T09:29:40Z
+Last visited: 2026-07-05T09:40:55Z
 
 ## Current Status
 - [x] Initialized workspace and briefing
 - [x] Read build and source map documentation
-- [x] Write empirical testing script / oracle
-- [/] Execute view mode tests on Win32Explorer.exe [IN_PROGRESS]
+- [x] Write empirical testing script / oracle in `Subagent_Tests/run_empirical_tests.ps1`
+- [/] Execute updated view mode and integration tests on Win32Explorer.exe [IN_PROGRESS]
 - [ ] Analyze results and generate handoff report

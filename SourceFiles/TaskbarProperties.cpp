@@ -38,6 +38,11 @@ static void AddDlgTooltip(HWND hwndDlg, int id, LPCWSTR text) {
 INT_PTR CALLBACK HelpDlgProc(HWND hwndDlg, UINT uMsg, WPARAM wParam, LPARAM lParam) {
     switch (uMsg) {
     case WM_INITDIALOG: {
+        HICON hIcon = LoadIconW(NULL, (LPCWSTR)IDI_QUESTION);
+        if (hIcon) {
+            SendMessageW(hwndDlg, WM_SETICON, ICON_BIG, (LPARAM)hIcon);
+            SendMessageW(hwndDlg, WM_SETICON, ICON_SMALL, (LPARAM)hIcon);
+        }
         AddDlgTooltip(hwndDlg, IDOK, L"Dismiss this help dialog. Go apply your new knowledge!");
         SetDlgItemTextW(hwndDlg, IDC_HELP_TEXT, 
             L"EliteTaskbar Help Documentation\r\n\r\n"
@@ -94,7 +99,7 @@ INT_PTR CALLBACK HelpDlgProc(HWND hwndDlg, UINT uMsg, WPARAM wParam, LPARAM lPar
                 DrawIconEx(pdis->hDC, 10, 5, hIcon, 24, 24, 0, NULL, DI_NORMAL);
             }
             
-            HFONT hFont = CreateFontW(-14, 0, 0, 0, FW_BOLD, FALSE, FALSE, FALSE, DEFAULT_CHARSET, OUT_DEFAULT_PRECIS, CLIP_DEFAULT_PRECIS, CLEARTYPE_QUALITY, DEFAULT_PITCH | FF_DONTCARE, L"Segoe UI");
+            HFONT hFont = CreateFontW(-14, 0, 0, 0, FW_SEMIBOLD, FALSE, FALSE, FALSE, DEFAULT_CHARSET, OUT_DEFAULT_PRECIS, CLIP_DEFAULT_PRECIS, CLEARTYPE_QUALITY, DEFAULT_PITCH | FF_DONTCARE, L"Segoe UI Semibold");
             HFONT hOldFont = (HFONT)SelectObject(pdis->hDC, hFont);
             SetBkMode(pdis->hDC, TRANSPARENT);
             SetTextColor(pdis->hDC, RGB(0, 51, 153));
@@ -128,6 +133,11 @@ INT_PTR CALLBACK AboutDlgProc(HWND hwndDlg, UINT uMsg, WPARAM wParam, LPARAM lPa
     static bool bExpanded = false;
     switch (uMsg) {
     case WM_INITDIALOG: {
+        HICON hIcon = LoadIconW(NULL, (LPCWSTR)IDI_INFORMATION);
+        if (hIcon) {
+            SendMessageW(hwndDlg, WM_SETICON, ICON_BIG, (LPARAM)hIcon);
+            SendMessageW(hwndDlg, WM_SETICON, ICON_SMALL, (LPARAM)hIcon);
+        }
         bExpanded = false;
         AddDlgTooltip(hwndDlg, IDC_ABOUT_EXPAND, L"Reveal detailed version details, developer credits, and copyright licensing information.");
         AddDlgTooltip(hwndDlg, IDOK, L"Acknowledge this about information dialog and close it.");
@@ -149,9 +159,9 @@ INT_PTR CALLBACK AboutDlgProc(HWND hwndDlg, UINT uMsg, WPARAM wParam, LPARAM lPa
         
         RECT rcChin;
         if (bExpanded) {
-            rcChin = { 0, 215, 250, 245 };
+            rcChin = { 0, 168, 250, 195 };
         } else {
-            rcChin = { 0, 110, 250, 140 };
+            rcChin = { 0, 86, 250, 110 };
         }
         MapDialogRect(hwndDlg, &rcChin);
         
@@ -184,15 +194,12 @@ INT_PTR CALLBACK AboutDlgProc(HWND hwndDlg, UINT uMsg, WPARAM wParam, LPARAM lPa
             SelectObject(pdis->hDC, hOldPen);
             DeleteObject(hPen);
             
-            HICON hIcon = LoadIconW(g_hInstance, MAKEINTRESOURCEW(IDI_PREFERENCES));
-            if (!hIcon) {
-                hIcon = LoadIconW(NULL, (LPCWSTR)IDI_INFORMATION);
-            }
+            HICON hIcon = LoadIconW(NULL, (LPCWSTR)IDI_INFORMATION);
             if (hIcon) {
                 DrawIconEx(pdis->hDC, 10, 5, hIcon, 24, 24, 0, NULL, DI_NORMAL);
             }
             
-            HFONT hFont = CreateFontW(-14, 0, 0, 0, FW_BOLD, FALSE, FALSE, FALSE, DEFAULT_CHARSET, OUT_DEFAULT_PRECIS, CLIP_DEFAULT_PRECIS, CLEARTYPE_QUALITY, DEFAULT_PITCH | FF_DONTCARE, L"Segoe UI");
+            HFONT hFont = CreateFontW(-14, 0, 0, 0, FW_SEMIBOLD, FALSE, FALSE, FALSE, DEFAULT_CHARSET, OUT_DEFAULT_PRECIS, CLIP_DEFAULT_PRECIS, CLEARTYPE_QUALITY, DEFAULT_PITCH | FF_DONTCARE, L"Segoe UI Semibold");
             HFONT hOldFont = (HFONT)SelectObject(pdis->hDC, hFont);
             SetBkMode(pdis->hDC, TRANSPARENT);
             SetTextColor(pdis->hDC, RGB(0, 51, 153));
@@ -218,17 +225,17 @@ INT_PTR CALLBACK AboutDlgProc(HWND hwndDlg, UINT uMsg, WPARAM wParam, LPARAM lPa
             if (bExpanded) {
                 SetDlgItemTextW(hwndDlg, IDC_ABOUT_EXPAND, L"Less Info <<");
                 
-                RECT rcDlg = { 0, 0, 250, 245 };
+                RECT rcDlg = { 0, 0, 250, 195 };
                 MapDialogRect(hwndDlg, &rcDlg);
                 SetWindowPos(hwndDlg, NULL, 0, 0, rcDlg.right, rcDlg.bottom, SWP_NOMOVE | SWP_NOZORDER | SWP_NOACTIVATE);
                 
                 ShowWindow(GetDlgItem(hwndDlg, IDC_ABOUT_MOREINFO), SW_SHOW);
                 
-                RECT rcExpand = { 10, 223, 70, 237 };
+                RECT rcExpand = { 10, 172, 70, 186 };
                 MapDialogRect(hwndDlg, &rcExpand);
                 SetWindowPos(GetDlgItem(hwndDlg, IDC_ABOUT_EXPAND), NULL, rcExpand.left, rcExpand.top, rcExpand.right - rcExpand.left, rcExpand.bottom - rcExpand.top, SWP_NOZORDER | SWP_NOACTIVATE);
                 
-                RECT rcOk = { 190, 223, 240, 237 };
+                RECT rcOk = { 190, 172, 240, 186 };
                 MapDialogRect(hwndDlg, &rcOk);
                 SetWindowPos(GetDlgItem(hwndDlg, IDOK), NULL, rcOk.left, rcOk.top, rcOk.right - rcOk.left, rcOk.bottom - rcOk.top, SWP_NOZORDER | SWP_NOACTIVATE);
             } else {
@@ -236,15 +243,15 @@ INT_PTR CALLBACK AboutDlgProc(HWND hwndDlg, UINT uMsg, WPARAM wParam, LPARAM lPa
                 
                 ShowWindow(GetDlgItem(hwndDlg, IDC_ABOUT_MOREINFO), SW_HIDE);
                 
-                RECT rcExpand = { 10, 118, 70, 132 };
+                RECT rcExpand = { 10, 90, 70, 104 };
                 MapDialogRect(hwndDlg, &rcExpand);
                 SetWindowPos(GetDlgItem(hwndDlg, IDC_ABOUT_EXPAND), NULL, rcExpand.left, rcExpand.top, rcExpand.right - rcExpand.left, rcExpand.bottom - rcExpand.top, SWP_NOZORDER | SWP_NOACTIVATE);
                 
-                RECT rcOk = { 190, 118, 240, 132 };
+                RECT rcOk = { 190, 90, 240, 104 };
                 MapDialogRect(hwndDlg, &rcOk);
                 SetWindowPos(GetDlgItem(hwndDlg, IDOK), NULL, rcOk.left, rcOk.top, rcOk.right - rcOk.left, rcOk.bottom - rcOk.top, SWP_NOZORDER | SWP_NOACTIVATE);
                 
-                RECT rcDlg = { 0, 0, 250, 140 };
+                RECT rcDlg = { 0, 0, 250, 110 };
                 MapDialogRect(hwndDlg, &rcDlg);
                 SetWindowPos(hwndDlg, NULL, 0, 0, rcDlg.right, rcDlg.bottom, SWP_NOMOVE | SWP_NOZORDER | SWP_NOACTIVATE);
             }
@@ -261,6 +268,25 @@ void ShowAboutDialog(HWND hwndOwner) {
 }
 
 LRESULT CALLBACK PropSheetSubclassProc(HWND hWnd, UINT uMsg, WPARAM wParam, LPARAM lParam, UINT_PTR uIdSubclass, DWORD_PTR dwRefData) {
+    if (uMsg == WM_SHOWWINDOW) {
+        static bool bTooltipsAdded = false;
+        if (!bTooltipsAdded) {
+            bTooltipsAdded = true;
+            HWND hOk = GetDlgItem(hWnd, IDOK);
+            if (hOk) {
+                SetWindowTextW(hOk, L"Okay");
+                AddTooltip(hWnd, hOk, L"Commit your preferences, close this window, and hope nothing crashes.");
+            }
+            HWND hCancel = GetDlgItem(hWnd, IDCANCEL);
+            if (hCancel) {
+                AddTooltip(hWnd, hCancel, L"Abandon all changes you just made and pretend nothing happened.");
+            }
+            HWND hApply = GetDlgItem(hWnd, 0x3021);
+            if (hApply) {
+                AddTooltip(hWnd, hApply, L"Save settings immediately to see if you actually improved anything.");
+            }
+        }
+    }
     if (uMsg == WM_COMMAND) {
         int id = LOWORD(wParam);
         if (id == 40001) {
@@ -286,6 +312,20 @@ int CALLBACK PropSheetProc(HWND hwndDlg, UINT uMsg, LPARAM lParam) {
         GetWindowRect(hwndDlg, &rc);
         SetWindowPos(hwndDlg, NULL, 0, 0, rc.right - rc.left, (rc.bottom - rc.top) + GetSystemMetrics(SM_CYMENU), SWP_NOMOVE | SWP_NOZORDER | SWP_NOACTIVATE);
         SetWindowSubclass(hwndDlg, PropSheetSubclassProc, 999, 0);
+        
+        HWND hOk = GetDlgItem(hwndDlg, IDOK);
+        if (hOk) {
+            SetWindowTextW(hOk, L"Okay");
+            AddTooltip(hwndDlg, hOk, L"Commit your preferences, close this window, and hope nothing crashes.");
+        }
+        HWND hCancel = GetDlgItem(hwndDlg, IDCANCEL);
+        if (hCancel) {
+            AddTooltip(hwndDlg, hCancel, L"Abandon all changes you just made and pretend nothing happened.");
+        }
+        HWND hApply = GetDlgItem(hwndDlg, 0x3021);
+        if (hApply) {
+            AddTooltip(hwndDlg, hApply, L"Save settings immediately to see if you actually improved anything.");
+        }
     }
     return 0;
 }
@@ -433,8 +473,18 @@ DWORD WINAPI BroadcastSettingsChangeThread(LPVOID lpParam) {
     
     // Aggressively restart the apps to ensure all settings are applied safely and cleanly
     WCHAR exePath[MAX_PATH] = {0};
-    GetModuleFileNameW(NULL, exePath, MAX_PATH);
-    PathRemoveFileSpecW(exePath); // Get directory of the current settings CPL/EXE
+    bool pathResolved = false;
+    if (__argc > 1 && __wargv[1] != NULL) {
+        DWORD dwAttrs = GetFileAttributesW(__wargv[1]);
+        if (dwAttrs != INVALID_FILE_ATTRIBUTES && (dwAttrs & FILE_ATTRIBUTE_DIRECTORY)) {
+            wcscpy_s(exePath, MAX_PATH, __wargv[1]);
+            pathResolved = true;
+        }
+    }
+    if (!pathResolved) {
+        GetModuleFileNameW(g_hInstance, exePath, MAX_PATH);
+        PathRemoveFileSpecW(exePath); // Get directory of the current settings CPL/EXE
+    }
 
     wchar_t psCmd[2048];
     swprintf_s(psCmd, L"-NoProfile -WindowStyle Hidden -Command \"Stop-Process -Name EliteTaskbar -Force; Stop-Process -Name Win32Explorer -Force; Start-Sleep -Milliseconds 500; Start-Process -FilePath '%s\\EliteTaskbar.exe' -ErrorAction SilentlyContinue; Start-Process -FilePath '%s\\Win32Explorer.exe' -ErrorAction SilentlyContinue\"", exePath, exePath);
@@ -458,6 +508,9 @@ INT_PTR CALLBACK TaskbarSettingsDlgProc(HWND hwndDlg, UINT uMsg, WPARAM wParam, 
         AddDlgTooltip(hwndDlg, IDC_MODE_INDEPENDENT, L"Run custom taskbars completely separately from Explorer. Twice the taskbars, twice the fun.");
         AddDlgTooltip(hwndDlg, IDC_MODE_REPLACE, L"Replace the native Windows taskbar. Begone, modern Windows shell!");
         AddDlgTooltip(hwndDlg, IDC_MODE_SECONDARY_ONLY, L"Only override secondary monitors. Explorer keeps the primary. Safe compromise?");
+        AddDlgTooltip(hwndDlg, IDC_WIDTH_AUTO, L"Automatically adjust button widths based on title length. Enjoy the layout roller coaster.");
+        AddDlgTooltip(hwndDlg, IDC_WIDTH_FIXED, L"Enforce a uniform width for all buttons because symmetry is sanity.");
+        AddDlgTooltip(hwndDlg, IDC_WIDTH_ICONS, L"Strip the titles entirely. Let's guess what window is what by its icon.");
         AddDlgTooltip(hwndDlg, IDC_WIDTH_FIXED_SIZE, L"Size of taskbar buttons when Fixed width is selected.");
         AddDlgTooltip(hwndDlg, IDC_HOVER_PREVIEW, L"Show window preview thumbnails on hover.");
         AddDlgTooltip(hwndDlg, IDC_PORTABLE_MIRROR, L"Keep settings in a local XML file and HKLM. Portable, like your bad choices.");
@@ -592,6 +645,8 @@ INT_PTR CALLBACK NativeSettingsDlgProc(HWND hwndDlg, UINT uMsg, WPARAM wParam, L
         AddDlgTooltip(hwndDlg, IDC_REPLACE_EXPLORER_NONE, L"Do not replace Windows Explorer. Borrrr-ing!");
         AddDlgTooltip(hwndDlg, IDC_REPLACE_EXPLORER_FILESYS, L"Replace file manager for directory paths. Speed up your browsing!");
         AddDlgTooltip(hwndDlg, IDC_REPLACE_EXPLORER_ALL, L"Completely hijack folder browsing. Let Win32Explorer do all the heavy lifting!");
+        AddDlgTooltip(hwndDlg, IDC_IMPORT_SETTINGS, L"Import settings from an external registry file. Hopefully from a trusted source...");
+        AddDlgTooltip(hwndDlg, IDC_EXPORT_SETTINGS, L"Export settings to a registry file so you can share your questionable design choices.");
         HKEY hKey;
         if (RegOpenKeyExW(GetEliteRegistryRoot(), L"Software\\EliteSoftware\\Win32Explorer\\Advanced", 0, KEY_READ, &hKey) == ERROR_SUCCESS) {
             DWORD dwValue = 0, cbData = sizeof(DWORD);

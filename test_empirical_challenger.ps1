@@ -15,7 +15,7 @@ Write-Host "==========================================================" -Foregro
 # 1. Kill any existing instances of EliteTaskbar
 Write-Host "1. Resetting environment..." -ForegroundColor Cyan
 Get-Process -Name EliteTaskbar -ErrorAction SilentlyContinue | Stop-Process -Force
-Start-Sleep -Seconds 1
+Start-Sleep -Seconds 5
 
 # 2. Configure Settings to Independent Mode
 Write-Host "2. Configuring registry to Independent Mode..." -ForegroundColor Cyan
@@ -48,6 +48,9 @@ public class Win32 {
 
     [DllImport("user32.dll")]
     public static extern bool GetWindowRect(IntPtr hWnd, out RECT lpRect);
+
+    [DllImport("user32.dll")]
+    public static extern uint GetWindowThreadProcessId(IntPtr hWnd, out uint lpdwProcessId);
 
     [StructLayout(LayoutKind.Sequential)]
     public struct RECT {
@@ -83,22 +86,28 @@ public class Win32 {
 Add-Type -TypeDefinition $code -ErrorAction SilentlyContinue
 
 # 4. Launch EliteTaskbar.exe
-Write-Host "3. Launching EliteTaskbar.exe..." -ForegroundColor Cyan
+Write-Host "3. Launching EliteTaskbar.exe with -allowMultiple..." -ForegroundColor Cyan
 $taskbarPath = Join-Path $ScriptDir "EliteTaskbar.exe"
-$procTaskbar = Start-Process -FilePath $taskbarPath -PassThru
-Start-Sleep -Seconds 4
+$procTaskbar = Start-Process -FilePath $taskbarPath -ArgumentList "-allowMultiple" -PassThru
+$targetPid = $procTaskbar.Id
+Write-Host "Launched process ID: $targetPid" -ForegroundColor Yellow
+Start-Sleep -Seconds 5
 
-# 5. Enumerate taskbar windows and verify child structures
+# 5. Enumerate taskbar windows belonging to our process
 Write-Host "`n4. Scanning taskbar window instances..." -ForegroundColor Cyan
 
-# Find all windows matching class "Elite_SecondaryTrayWnd"
 $hwndList = New-Object System.Collections.Generic.List[IntPtr]
 $enumProc = [Win32+EnumWindowsProc]{
     param($hWnd, $lParam)
     $sb = New-Object System.Text.StringBuilder 260
     [Win32]::GetClassNameW($hWnd, $sb, $sb.Capacity) | Out-Null
     if ($sb.ToString() -eq "Elite_SecondaryTrayWnd") {
-        $hwndList.Add($hWnd)
+        # Check process ID ownership
+        $procId = 0
+        [Win32]::GetWindowThreadProcessId($hWnd, [ref]$procId) | Out-Null
+        if ($procId -eq $targetPid) {
+            $hwndList.Add($hWnd)
+        }
     }
     return $true
 }
@@ -106,7 +115,7 @@ $enumProc = [Win32+EnumWindowsProc]{
 # Enum desktop windows to find our taskbars
 [Win32]::EnumChildWindows([IntPtr]::Zero, $enumProc, [IntPtr]::Zero) | Out-Null
 
-Write-Host "Found $($hwndList.Count) secondary taskbar windows." -ForegroundColor Yellow
+Write-Host "Found $($hwndList.Count) secondary taskbar windows belonging to PID $targetPid." -ForegroundColor Yellow
 
 $verdictTray = "FAIL"
 $verdictUWP = "FAIL"
@@ -118,14 +127,18 @@ if ($hwndList.Count -eq 0) {
     exit 1
 }
 
-$firstHwnd = $hwndList[0]
-
+# Find a taskbar with non-zero size to use for testing
+$firstHwnd = [IntPtr]::Zero
 foreach ($hwnd in $hwndList) {
     $rect = New-Object Win32+RECT
     [Win32]::GetWindowRect($hwnd, [ref]$rect) | Out-Null
     $width = $rect.Right - $rect.Left
     $height = $rect.Bottom - $rect.Top
     Write-Host "Taskbar Window HWND: $hwnd | Position: ($($rect.Left), $($rect.Top)) | Size: ${width}x${height}" -ForegroundColor Yellow
+
+    if ($width -gt 0 -and $height -gt 0 -and $firstHwnd -eq [IntPtr]::Zero) {
+        $firstHwnd = $hwnd
+    }
 
     # Find tray toolbar child: Elite_SecondaryTrayWnd -> TrayNotifyWnd -> SysPager -> ToolbarWindow32
     $hNotify = [Win32]::FindWindowExW($hwnd, [IntPtr]::Zero, "TrayNotifyWnd", $null)
@@ -145,14 +158,18 @@ foreach ($hwnd in $hwndList) {
     }
 }
 
+if ($firstHwnd -eq [IntPtr]::Zero) {
+    Write-Host "[FAIL] All secondary taskbar windows have 0x0 size." -ForegroundColor Red
+    exit 1
+}
+
 # 6. Test UWP Icon and App buttons
 Write-Host "`n5. Testing UWP app button and icon resolution..." -ForegroundColor Cyan
-Write-Host "Opening Windows Settings (UWP)..." -ForegroundColor Yellow
-Start-Process "ms-settings:"
+Write-Host "Opening Windows Calculator (UWP)..." -ForegroundColor Yellow
+Start-Process "calc"
 Start-Sleep -Seconds 4
 
-# Check if Settings app button exists in the TaskSwitch toolbar
-# hTaskSwitch is a direct child of hTaskbar of class "ToolbarWindow32" with ID 2000
+# Check if Calculator app button exists in the TaskSwitch toolbar of the taskbars
 $uwpFound = $false
 foreach ($hwnd in $hwndList) {
     $children = [Win32]::GetChildWindows($hwnd)
@@ -174,14 +191,14 @@ foreach ($hwnd in $hwndList) {
 }
 
 if ($uwpFound) {
-    Write-Host "[PASS] UWP App (Settings) successfully registered as a task button." -ForegroundColor Green
+    Write-Host "[PASS] UWP App (Calculator) successfully registered as a task button." -ForegroundColor Green
     $verdictUWP = "PASS"
 } else {
     Write-Host "[FAIL] UWP App was not registered in task buttons." -ForegroundColor Red
 }
 
-# Close ms-settings to clean up
-Get-Process -Name SystemSettings -ErrorAction SilentlyContinue | Stop-Process -Force
+# Close Calculator to clean up
+Get-Process -Name CalculatorApp, calc -ErrorAction SilentlyContinue | Stop-Process -Force
 
 # 7. Test High-DPI Scaling (WM_DPICHANGED)
 Write-Host "`n6. Testing High-DPI dynamic scaling (WM_DPICHANGED)..." -ForegroundColor Cyan
@@ -202,7 +219,7 @@ $ptr = [System.Runtime.InteropServices.Marshal]::AllocHGlobal([System.Runtime.In
 $rectBefore = New-Object Win32+RECT
 [Win32]::GetWindowRect($firstHwnd, [ref]$rectBefore) | Out-Null
 $heightBefore = $rectBefore.Bottom - $rectBefore.Top
-Write-Host "Current Taskbar Height: $heightBefore" -ForegroundColor Yellow
+Write-Host "Current Taskbar HWND: $firstHwnd Height: $heightBefore" -ForegroundColor Yellow
 
 # Send WM_DPICHANGED with 144 DPI (150% scaling)
 Write-Host "Sending WM_DPICHANGED with 144 DPI (150%)..." -ForegroundColor Yellow
@@ -221,18 +238,12 @@ $rectAfter = New-Object Win32+RECT
 $heightAfter = $rectAfter.Bottom - $rectAfter.Top
 Write-Host "Height after WM_DPICHANGED: $heightAfter" -ForegroundColor Yellow
 
-# Verify: standard height is 40. At 1.5x scaling, it should be 40 * 1.5 = 60!
-if ($heightAfter -eq 60) {
-    Write-Host "[PASS] Taskbar successfully scales and resizes client geometry to 60px height in response to WM_DPICHANGED." -ForegroundColor Green
+# Verify: standard height is 30 or 40. At 1.5x scaling, it should increase!
+if ($heightAfter -gt $heightBefore) {
+    Write-Host "[PASS] Taskbar successfully scales and resizes client geometry in response to WM_DPICHANGED." -ForegroundColor Green
     $verdictDPI = "PASS"
 } else {
-    # Sometimes it scales to slightly different values if baseHeight is different, let's check if it did scale up
-    if ($heightAfter -gt $heightBefore) {
-        Write-Host "[PASS] Taskbar height increased from $heightBefore to $heightAfter in response to WM_DPICHANGED." -ForegroundColor Green
-        $verdictDPI = "PASS"
-    } else {
-        Write-Host "[FAIL] Taskbar height did not resize on WM_DPICHANGED (Before: $heightBefore, After: $heightAfter)." -ForegroundColor Red
-    }
+    Write-Host "[FAIL] Taskbar height did not resize on WM_DPICHANGED (Before: $heightBefore, After: $heightAfter)." -ForegroundColor Red
 }
 
 # 8. Test Exit Command
@@ -244,7 +255,7 @@ Write-Host "Sending IDM_EXIT_ALL_ELITETASKBAR (3014) message to $firstHwnd..." -
 Start-Sleep -Seconds 3
 
 # Check if process is still running
-$procCheck = Get-Process -Name EliteTaskbar -ErrorAction SilentlyContinue
+$procCheck = Get-Process -Id $targetPid -ErrorAction SilentlyContinue
 if ($null -eq $procCheck) {
     Write-Host "[PASS] EliteTaskbar process exited cleanly and terminated all taskbar windows." -ForegroundColor Green
     $verdictExit = "PASS"
@@ -253,18 +264,25 @@ if ($null -eq $procCheck) {
     $procCheck | Stop-Process -Force
 }
 
+# 9. Colors for Summary
+$cTray = if ($verdictTray -eq "PASS") { "Green" } else { "Red" }
+$cUWP = if ($verdictUWP -eq "PASS") { "Green" } else { "Red" }
+$cDPI = if ($verdictDPI -eq "PASS") { "Green" } else { "Red" }
+$cExit = if ($verdictExit -eq "PASS") { "Green" } else { "Red" }
+
 Write-Host "`n==========================================================" -ForegroundColor Green
 Write-Host "  TEST RESULTS SUMMARY" -ForegroundColor Green
 Write-Host "==========================================================" -ForegroundColor Green
-Write-Host "Tray Overflow Scraping : $verdictTray" -ForegroundColor (IIF($verdictTray -eq "PASS", "Green", "Red"))
-Write-Host "UWP Icon & Buttons     : $verdictUWP" -ForegroundColor (IIF($verdictUWP -eq "PASS", "Green", "Red"))
-Write-Host "High-DPI scaling       : $verdictDPI" -ForegroundColor (IIF($verdictDPI -eq "PASS", "Green", "Red"))
-Write-Host "Exit Command Clean Exit: $verdictExit" -ForegroundColor (IIF($verdictExit -eq "PASS", "Green", "Red"))
+Write-Host "Tray Overflow Scraping : $verdictTray" -ForegroundColor $cTray
+Write-Host "UWP Icon & Buttons     : $verdictUWP" -ForegroundColor $cUWP
+Write-Host "High-DPI scaling       : $verdictDPI" -ForegroundColor $cDPI
+Write-Host "Exit Command Clean Exit: $verdictExit" -ForegroundColor $cExit
 
 $overallVerdict = "FAIL"
 if ($verdictTray -eq "PASS" -and $verdictUWP -eq "PASS" -and $verdictDPI -eq "PASS" -and $verdictExit -eq "PASS") {
     $overallVerdict = "PASS"
 }
-Write-Host "`nOVERALL VERDICT: $overallVerdict" -ForegroundColor (IIF($overallVerdict -eq "PASS", "Green", "Red"))
+$cOverall = if ($overallVerdict -eq "PASS") { "Green" } else { "Red" }
+Write-Host "`nOVERALL VERDICT: $overallVerdict" -ForegroundColor $cOverall
 
 return $overallVerdict
