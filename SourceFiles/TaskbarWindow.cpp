@@ -947,7 +947,7 @@ LRESULT CALLBACK TrayClockProc(HWND hwnd, UINT uMsg, WPARAM wParam, LPARAM lPara
     case WM_LBUTTONDOWN: {
         DWORD trayMode = 0;
         HKEY hKey;
-        if (RegOpenKeyExW(HKEY_CURRENT_USER, L"Software\\EliteSoftware\\Win32Explorer\\Advanced", 0, KEY_READ, &hKey) == ERROR_SUCCESS) {
+        if (RegOpenKeyExW(GetEliteRegistryRoot(), L"Software\\EliteSoftware\\Win32Explorer\\Advanced", 0, KEY_READ, &hKey) == ERROR_SUCCESS) {
             DWORD cbData = sizeof(DWORD);
             RegQueryValueExW(hKey, L"TrayMode", NULL, NULL, (LPBYTE)&trayMode, &cbData);
             RegCloseKey(hKey);
@@ -1585,7 +1585,7 @@ LRESULT CALLBACK WindowProc(HWND hwnd, UINT uMsg, WPARAM wParam, LPARAM lParam) 
         if (lParam && wcscmp((LPCWSTR)lParam, L"TraySettings") == 0) {
             bool requiresRestart = false;
             HKEY hKey;
-            if (RegOpenKeyExW(HKEY_CURRENT_USER, L"Software\\EliteSoftware\\Win32Explorer\\Advanced", 0, KEY_READ, &hKey) == ERROR_SUCCESS) {
+            if (RegOpenKeyExW(GetEliteRegistryRoot(), L"Software\\EliteSoftware\\Win32Explorer\\Advanced", 0, KEY_READ, &hKey) == ERROR_SUCCESS) {
                 DWORD dwValue = 0;
                 DWORD cbData = sizeof(DWORD);
                 if (RegQueryValueExW(hKey, L"TaskbarMode", NULL, NULL, (LPBYTE)&dwValue, &cbData) == ERROR_SUCCESS) {
@@ -1811,7 +1811,7 @@ bool TaskbarWindow::Initialize(HINSTANCE hInstance) {
         DWORD enableClock = 1;
         DWORD enableTaskBtns = 1;
         HKEY hKeyAdv;
-        if (RegOpenKeyExW(HKEY_CURRENT_USER, L"Software\\EliteSoftware\\Win32Explorer\\Advanced", 0, KEY_READ, &hKeyAdv) == ERROR_SUCCESS) {
+        if (RegOpenKeyExW(GetEliteRegistryRoot(), L"Software\\EliteSoftware\\Win32Explorer\\Advanced", 0, KEY_READ, &hKeyAdv) == ERROR_SUCCESS) {
             DWORD cbData = sizeof(DWORD);
             WCHAR valName[64];
             wsprintfW(valName, L"EnableTray_Mon%d", (int)i);

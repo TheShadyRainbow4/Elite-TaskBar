@@ -146,7 +146,7 @@ $grp_Mode.Controls.Add($rdo_ModeSecond)
 $grp_App = New-Object System.Windows.Forms.GroupBox
 $grp_App.Text = "Taskbar Appearance"
 $grp_App.Location = New-Object System.Drawing.Point(15, 90)
-$grp_App.Size = New-Object System.Drawing.Size(490, 80)
+$grp_App.Size = New-Object System.Drawing.Size(490, 110)
 $tp_Taskbar.Controls.Add($grp_App)
 
 $lbl_BtnWidth = New-Object System.Windows.Forms.Label
@@ -178,6 +178,12 @@ $chk_Previews.Text = "Show window previews"
 $chk_Previews.Location = New-Object System.Drawing.Point(15, 50)
 $chk_Previews.AutoSize = $true
 $grp_App.Controls.Add($chk_Previews)
+
+$chk_PortableMirror = New-Object System.Windows.Forms.CheckBox
+$chk_PortableMirror.Text = "Enable Portable Mirror Mode"
+$chk_PortableMirror.Location = New-Object System.Drawing.Point(15, 75)
+$chk_PortableMirror.AutoSize = $true
+$grp_App.Controls.Add($chk_PortableMirror)
 
 # Tab: Multi-Monitor
 $tp_MultiMon = New-Object System.Windows.Forms.TabPage
@@ -298,6 +304,43 @@ for ($i=0; $i -lt $monitors.Count; $i++) {
     $y += 195
 }
 
+# Tab: Native Settings
+$tp_Native = New-Object System.Windows.Forms.TabPage
+$tp_Native.Text = "Native Settings"
+$tp_Native.UseVisualStyleBackColor = $true
+$tab_Main.Controls.Add($tp_Native)
+
+$grp_Explorer = New-Object System.Windows.Forms.GroupBox
+$grp_Explorer.Text = "Explorer Replacement"
+$grp_Explorer.Location = New-Object System.Drawing.Point(15, 15)
+$grp_Explorer.Size = New-Object System.Drawing.Size(490, 110)
+$tp_Native.Controls.Add($grp_Explorer)
+
+$rdo_ReplNone = New-Object System.Windows.Forms.RadioButton
+$rdo_ReplNone.Text = "None"
+$rdo_ReplNone.Location = New-Object System.Drawing.Point(15, 25)
+$rdo_ReplNone.AutoSize = $true
+$grp_Explorer.Controls.Add($rdo_ReplNone)
+
+$rdo_ReplFileSys = New-Object System.Windows.Forms.RadioButton
+$rdo_ReplFileSys.Text = "FileSystem Only"
+$rdo_ReplFileSys.Location = New-Object System.Drawing.Point(15, 50)
+$rdo_ReplFileSys.AutoSize = $true
+$grp_Explorer.Controls.Add($rdo_ReplFileSys)
+
+$rdo_ReplAll = New-Object System.Windows.Forms.RadioButton
+$rdo_ReplAll.Text = "All Folders"
+$rdo_ReplAll.Location = New-Object System.Drawing.Point(15, 75)
+$rdo_ReplAll.AutoSize = $true
+$grp_Explorer.Controls.Add($rdo_ReplAll)
+
+# Tooltips
+$toolTip = New-Object System.Windows.Forms.ToolTip
+$toolTip.SetToolTip($chk_PortableMirror, "Keep settings in a local XML file and HKLM. Portable, like your bad choices.")
+$toolTip.SetToolTip($rdo_ReplNone, "Do not replace Windows Explorer. Default shell behavior, if you're boring.")
+$toolTip.SetToolTip($rdo_ReplFileSys, "Replace Windows Explorer only for standard file system folders. A mild upgrade.")
+$toolTip.SetToolTip($rdo_ReplAll, "Replace Windows Explorer for all folders, including virtual ones. Maximum power, minimal sanity.")
+
 # Chin
 $pnl_Chin = New-Object System.Windows.Forms.Panel
 $pnl_Chin.Size = New-Object System.Drawing.Size(550, 50)
@@ -328,6 +371,46 @@ $frm_Main.Controls.Add($pnl_Chin)
 #region Logic
 function Load-Settings {
     try {
+        # Check HKLM first for EnablePortableMirror:
+        $pMirrorVal = 0
+        if (Test-Path "HKLM:\Software\EliteSoftware\Win32Explorer\Advanced") {
+            $pMirrorVal = (Get-ItemProperty -Path "HKLM:\Software\EliteSoftware\Win32Explorer\Advanced" -Name "EnablePortableMirror" -ErrorAction SilentlyContinue).EnablePortableMirror
+        }
+        if ($pMirrorVal -ne 1 -and (Test-Path "HKCU:\Software\EliteSoftware\Win32Explorer\Advanced")) {
+            $pMirrorVal = (Get-ItemProperty -Path "HKCU:\Software\EliteSoftware\Win32Explorer\Advanced" -Name "EnablePortableMirror" -ErrorAction SilentlyContinue).EnablePortableMirror
+        }
+
+        # Check config.xml in script directory:
+        $xmlPath = Join-Path $AppDir "config.xml"
+        if (Test-Path $xmlPath) {
+            try {
+                [xml]$xml = Get-Content $xmlPath -ErrorAction SilentlyContinue
+                $settingsNode = $xml.SelectSingleNode("//Settings")
+                if ($settingsNode) {
+                    $enablePM = $settingsNode.SelectSingleNode("Setting[@name='EnablePortableMirror']")
+                    if ($enablePM -and $enablePM.InnerText -eq "yes") {
+                        $pMirrorVal = 1
+                    }
+                }
+            } catch {}
+        }
+
+        if ($pMirrorVal -eq 1) {
+            $chk_PortableMirror.Checked = $true
+            $global:regPathElite = "HKLM:\Software\EliteSoftware\Win32Explorer\Advanced"
+        } else {
+            $chk_PortableMirror.Checked = $false
+            $global:regPathElite = "HKCU:\Software\EliteSoftware\Win32Explorer\Advanced"
+        }
+
+        # Ensure the active path exists (HKCU side is guaranteed, HKLM side try-catch)
+        if (!(Test-Path $global:regPathElite)) {
+            try {
+                New-Item -Path $global:regPathElite -Force -ErrorAction SilentlyContinue | Out-Null
+            } catch {}
+        }
+
+        # Load values
         $val = (Get-ItemProperty -Path $global:regPathElite -Name "TaskbarMode" -ErrorAction SilentlyContinue).TaskbarMode
         if ($val -eq 0) { $rdo_ModeIndep.Checked = $true }
         elseif ($val -eq 1) { $rdo_ModeReplace.Checked = $true }
@@ -340,6 +423,24 @@ function Load-Settings {
 
         $val = (Get-ItemProperty -Path $global:regPathElite -Name "TaskbarPreviews" -ErrorAction SilentlyContinue).TaskbarPreviews
         if ($val -eq 0) { $chk_Previews.Checked = $false } else { $chk_Previews.Checked = $true }
+
+        # Load ReplaceExplorerMode
+        $val = (Get-ItemProperty -Path $global:regPathElite -Name "ReplaceExplorerMode" -ErrorAction SilentlyContinue).ReplaceExplorerMode
+        if (Test-Path $xmlPath) {
+            try {
+                [xml]$xml = Get-Content $xmlPath -ErrorAction SilentlyContinue
+                $settingsNode = $xml.SelectSingleNode("//Settings")
+                if ($settingsNode) {
+                    $remode = $settingsNode.SelectSingleNode("Setting[@name='ReplaceExplorerMode']")
+                    if ($remode) {
+                        $val = [int]$remode.InnerText
+                    }
+                }
+            } catch {}
+        }
+        if ($val -eq 2) { $rdo_ReplFileSys.Checked = $true }
+        elseif ($val -eq 3) { $rdo_ReplAll.Checked = $true }
+        else { $rdo_ReplNone.Checked = $true }
 
         foreach ($mc in $global:monControls) {
             $idx = $mc.Index
@@ -361,6 +462,33 @@ function Load-Settings {
 
 function Save-Settings {
     try {
+        $portable = if ($chk_PortableMirror.Checked) { 1 } else { 0 }
+        
+        # Ensure registry keys exist for both roots
+        if (!(Test-Path "HKCU:\Software\EliteSoftware\Win32Explorer\Advanced")) {
+            New-Item -Path "HKCU:\Software\EliteSoftware\Win32Explorer\Advanced" -Force | Out-Null
+        }
+        Set-ItemProperty -Path "HKCU:\Software\EliteSoftware\Win32Explorer\Advanced" -Name "EnablePortableMirror" -Value $portable -Type DWord
+        
+        try {
+            if (!(Test-Path "HKLM:\Software\EliteSoftware\Win32Explorer\Advanced")) {
+                New-Item -Path "HKLM:\Software\EliteSoftware\Win32Explorer\Advanced" -Force -ErrorAction SilentlyContinue | Out-Null
+            }
+            Set-ItemProperty -Path "HKLM:\Software\EliteSoftware\Win32Explorer\Advanced" -Name "EnablePortableMirror" -Value $portable -Type DWord -ErrorAction SilentlyContinue
+        } catch {}
+
+        if ($chk_PortableMirror.Checked) {
+            $global:regPathElite = "HKLM:\Software\EliteSoftware\Win32Explorer\Advanced"
+        } else {
+            $global:regPathElite = "HKCU:\Software\EliteSoftware\Win32Explorer\Advanced"
+        }
+
+        if (!(Test-Path $global:regPathElite)) {
+            try {
+                New-Item -Path $global:regPathElite -Force -ErrorAction SilentlyContinue | Out-Null
+            } catch {}
+        }
+
         $mode = if ($rdo_ModeIndep.Checked) { 0 } elseif ($rdo_ModeReplace.Checked) { 1 } else { 2 }
         Set-ItemProperty -Path $global:regPathElite -Name "TaskbarMode" -Value $mode -Type DWord
 
@@ -370,6 +498,9 @@ function Save-Settings {
         $prev = if ($chk_Previews.Checked) { 1 } else { 0 }
         Set-ItemProperty -Path $global:regPathElite -Name "TaskbarPreviews" -Value $prev -Type DWord
 
+        $replaceMode = if ($rdo_ReplFileSys.Checked) { 2 } elseif ($rdo_ReplAll.Checked) { 3 } else { 1 }
+        Set-ItemProperty -Path $global:regPathElite -Name "ReplaceExplorerMode" -Value $replaceMode -Type DWord
+
         foreach ($mc in $global:monControls) {
             $idx = $mc.Index
             Set-ItemProperty -Path $global:regPathElite -Name "ShowTray_$idx" -Value $(if ($mc.ChkTray.Checked) {1} else {0}) -Type DWord
@@ -378,6 +509,95 @@ function Save-Settings {
             Set-ItemProperty -Path $global:regPathElite -Name "StartMenuMode_$idx" -Value $($mc.CmbMode.SelectedIndex) -Type DWord
             Set-ItemProperty -Path $global:regPathElite -Name "StartMenuTrigger_$idx" -Value $($mc.CmbTrig.SelectedIndex) -Type DWord
             Set-ItemProperty -Path $global:regPathElite -Name "StartMenuOrb_$idx" -Value $($mc.CmbOrb.SelectedIndex) -Type DWord
+        }
+
+        # XML Dual Save:
+        $xmlPath = Join-Path $AppDir "config.xml"
+        if ($chk_PortableMirror.Checked) {
+            [xml]$xml = $null
+            if (Test-Path $xmlPath) {
+                try {
+                    $xml = Get-Content $xmlPath -ErrorAction SilentlyContinue
+                } catch {
+                    $xml = New-Object System.Xml.XmlDocument
+                }
+            } else {
+                $xml = New-Object System.Xml.XmlDocument
+            }
+            
+            $root = $xml.SelectSingleNode("ExplorerPlusPlus")
+            if (!$root) {
+                $root = $xml.CreateElement("ExplorerPlusPlus")
+                $xml.AppendChild($root) | Out-Null
+            }
+            $settings = $root.SelectSingleNode("Settings")
+            if (!$settings) {
+                $settings = $xml.CreateElement("Settings")
+                $root.AppendChild($settings) | Out-Null
+            }
+
+            function Set-XmlSetting($name, $value) {
+                $node = $settings.SelectSingleNode("Setting[@name='$name']")
+                if (!$node) {
+                    $node = $xml.CreateElement("Setting")
+                    $node.SetAttribute("name", $name) | Out-Null
+                    $settings.AppendChild($node) | Out-Null
+                }
+                $node.InnerText = $value
+            }
+
+            Set-XmlSetting "EnablePortableMirror" "yes"
+            Set-XmlSetting "ReplaceExplorerMode" $replaceMode
+            Set-XmlSetting "EnableEliteTaskbar" $(if ($rdo_ModeIndep.Checked -or $rdo_ModeReplace.Checked) {"yes"} else {"no"})
+            $xml.Save($xmlPath)
+        } else {
+            if (Test-Path $xmlPath) {
+                Remove-Item $xmlPath -Force -ErrorAction SilentlyContinue
+            }
+        }
+
+        # Clean up explorer replacement keys in HKCU
+        $classesPath = "HKCU:\Software\Classes"
+        $dirShellPath = "$classesPath\Directory\shell"
+        if (Test-Path "$dirShellPath\openinWin32Explorer") {
+            Remove-Item -Path "$dirShellPath\openinWin32Explorer" -Recurse -Force -ErrorAction SilentlyContinue
+        }
+        if (Test-Path $dirShellPath) {
+            $defVal = (Get-ItemProperty -Path $dirShellPath -Name "" -ErrorAction SilentlyContinue).""
+            if ($defVal -eq "openinWin32Explorer") {
+                Set-ItemProperty -Path $dirShellPath -Name "" -Value "none" -Force -ErrorAction SilentlyContinue
+            }
+        }
+
+        $folderShellPath = "$classesPath\Folder\shell"
+        if (Test-Path "$folderShellPath\openinWin32Explorer") {
+            Remove-Item -Path "$folderShellPath\openinWin32Explorer" -Recurse -Force -ErrorAction SilentlyContinue
+        }
+        if (Test-Path $folderShellPath) {
+            $defVal = (Get-ItemProperty -Path $folderShellPath -Name "" -ErrorAction SilentlyContinue).""
+            if ($defVal -eq "openinWin32Explorer") {
+                Set-ItemProperty -Path $folderShellPath -Name "" -Value "" -Force -ErrorAction SilentlyContinue
+            }
+        }
+
+        # Create shell associations if replacement mode is FileSystem (2) or All (3)
+        if ($replaceMode -eq 2 -or $replaceMode -eq 3) {
+            $targetShell = if ($replaceMode -eq 2) { $dirShellPath } else { $folderShellPath }
+            $appKey = "$targetShell\openinWin32Explorer"
+            if (!(Test-Path $appKey)) {
+                New-Item -Path $appKey -Force | Out-Null
+            }
+            Set-ItemProperty -Path $appKey -Name "" -Value "Open in Win32Explorer" -Force | Out-Null
+            
+            $cmdKey = "$appKey\command"
+            if (!(Test-Path $cmdKey)) {
+                New-Item -Path $cmdKey -Force | Out-Null
+            }
+            
+            $win32ExpPath = Join-Path $AppDir "Win32Explorer.exe"
+            Set-ItemProperty -Path $cmdKey -Name "" -Value "`"$win32ExpPath`" `"%1`"" -Force | Out-Null
+            
+            Set-ItemProperty -Path $targetShell -Name "" -Value "openinWin32Explorer" -Force | Out-Null
         }
 
         # Broadcast change

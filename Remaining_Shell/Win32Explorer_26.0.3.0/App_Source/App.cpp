@@ -155,8 +155,31 @@ void App::LoadSettings(std::vector<WindowStorageData> &windows)
 	}
 	else
 	{
+		bool useHKLM = false;
+		HKEY hKey = nullptr;
+		DWORD dwValue = 0;
+		DWORD cbData = sizeof(DWORD);
+		if (RegOpenKeyExW(HKEY_LOCAL_MACHINE, L"Software\\EliteSoftware\\Win32Explorer\\Advanced", 0, KEY_READ, &hKey) == ERROR_SUCCESS)
+		{
+			if (RegQueryValueExW(hKey, L"EnablePortableMirror", NULL, NULL, (LPBYTE)&dwValue, &cbData) == ERROR_SUCCESS && dwValue == 1)
+			{
+				useHKLM = true;
+			}
+			RegCloseKey(hKey);
+		}
+		if (!useHKLM)
+		{
+			if (RegOpenKeyExW(HKEY_CURRENT_USER, L"Software\\EliteSoftware\\Win32Explorer\\Advanced", 0, KEY_READ, &hKey) == ERROR_SUCCESS)
+			{
+				if (RegQueryValueExW(hKey, L"EnablePortableMirror", NULL, NULL, (LPBYTE)&dwValue, &cbData) == ERROR_SUCCESS && dwValue == 1)
+				{
+					useHKLM = true;
+				}
+				RegCloseKey(hKey);
+			}
+		}
 		appStorage = RegistryAppStorageFactory::MaybeCreate(Storage::REGISTRY_APPLICATION_KEY_PATH,
-			Storage::OperationType::Load);
+			Storage::OperationType::Load, useHKLM);
 	}
 
 	if (!appStorage)
@@ -182,24 +205,6 @@ void App::SaveSettings()
 	// already been closed.
 	CHECK(!m_exitStarted);
 
-	std::unique_ptr<AppStorage> appStorage;
-
-	if (m_savePreferencesToXmlFile)
-	{
-		appStorage = XmlAppStorageFactory::MaybeCreate(Storage::GetConfigFilePath(),
-			Storage::OperationType::Save);
-	}
-	else
-	{
-		appStorage = RegistryAppStorageFactory::MaybeCreate(Storage::REGISTRY_APPLICATION_KEY_PATH,
-			Storage::OperationType::Save);
-	}
-
-	if (!appStorage)
-	{
-		return;
-	}
-
 	std::vector<WindowStorageData> windows;
 
 	for (const auto *browser : m_browserList.GetList())
@@ -209,15 +214,63 @@ void App::SaveSettings()
 
 	DCHECK_GE(windows.size(), 1u);
 
-	appStorage->SaveConfig(m_config);
-	appStorage->SaveWindows(windows);
-	appStorage->SaveBookmarks(&m_bookmarkTree);
-	appStorage->SaveApplications(&m_applicationModel);
-	appStorage->SaveDialogStates();
-	appStorage->SaveDefaultColumns(m_config.globalFolderSettings.folderColumns);
-	appStorage->SaveFrequentLocations(&m_frequentLocationsModel);
+	if (m_config.enablePortableMirror.get())
+	{
+		m_savePreferencesToXmlFile = true; // Make sure it persists in future loads
 
-	appStorage->Commit();
+		// Save simultaneously to XML (config.xml)
+		auto xmlStorage = XmlAppStorageFactory::MaybeCreate(Storage::GetConfigFilePath(), Storage::OperationType::Save);
+		if (xmlStorage)
+		{
+			xmlStorage->SaveConfig(m_config);
+			xmlStorage->SaveWindows(windows);
+			xmlStorage->SaveBookmarks(&m_bookmarkTree);
+			xmlStorage->SaveApplications(&m_applicationModel);
+			xmlStorage->SaveDialogStates();
+			xmlStorage->SaveDefaultColumns(m_config.globalFolderSettings.folderColumns);
+			xmlStorage->SaveFrequentLocations(&m_frequentLocationsModel);
+			xmlStorage->Commit();
+		}
+		// Save simultaneously to Registry (HKLM)
+		auto regStorage = RegistryAppStorageFactory::MaybeCreate(Storage::REGISTRY_APPLICATION_KEY_PATH, Storage::OperationType::Save, true);
+		if (regStorage)
+		{
+			regStorage->SaveConfig(m_config);
+			regStorage->SaveWindows(windows);
+			regStorage->SaveBookmarks(&m_bookmarkTree);
+			regStorage->SaveApplications(&m_applicationModel);
+			regStorage->SaveDialogStates();
+			regStorage->SaveDefaultColumns(m_config.globalFolderSettings.folderColumns);
+			regStorage->SaveFrequentLocations(&m_frequentLocationsModel);
+			regStorage->Commit();
+		}
+	}
+	else
+	{
+		std::unique_ptr<AppStorage> appStorage;
+		if (m_savePreferencesToXmlFile)
+		{
+			appStorage = XmlAppStorageFactory::MaybeCreate(Storage::GetConfigFilePath(),
+				Storage::OperationType::Save);
+		}
+		else
+		{
+			appStorage = RegistryAppStorageFactory::MaybeCreate(Storage::REGISTRY_APPLICATION_KEY_PATH,
+				Storage::OperationType::Save, false);
+		}
+
+		if (appStorage)
+		{
+			appStorage->SaveConfig(m_config);
+			appStorage->SaveWindows(windows);
+			appStorage->SaveBookmarks(&m_bookmarkTree);
+			appStorage->SaveApplications(&m_applicationModel);
+			appStorage->SaveDialogStates();
+			appStorage->SaveDefaultColumns(m_config.globalFolderSettings.folderColumns);
+			appStorage->SaveFrequentLocations(&m_frequentLocationsModel);
+			appStorage->Commit();
+		}
+	}
 }
 
 void App::SetUpLanguageResourceInstance()

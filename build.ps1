@@ -135,8 +135,9 @@ if (-not $failed) {
     
     Write-Host "Building Win32Explorer..." -ForegroundColor Cyan
     $origDir = Get-Location
-    Set-Location "$ScriptDir\Remaining_Shell\Win32Explorer_26.0.3.0"
-    & ".\build_Win32Explorer.ps1"
+    Set-Location "$ScriptDir\Win32Explorer_26.0.3.0"
+    & ".\build_Win32Explorer.ps1" -Platform "x64"
+    & ".\build_Win32Explorer.ps1" -Platform "Win32"
     Set-Location $origDir
     
     Write-Host "Auto-committing submodule Win32Explorer_26.0.3.0..." -ForegroundColor Cyan
@@ -146,16 +147,17 @@ if (-not $failed) {
         Set-Location $submoduleDir
         git add .
         git commit -m "Auto-commit submodule after successful build"
-        git push origin master
+        git push origin HEAD
         Set-Location $origDirGit
     }
     
     Write-Host "Auto-committing and pushing to repository..." -ForegroundColor Cyan
     git add .
     git commit -m "Auto-commit after successful build (build.ps1)"
-    git push origin master
+    git push origin HEAD
     Write-Host "Done!" -ForegroundColor Green
 }
 
 Write-Host 'Compiling EliteStartMenu...' -ForegroundColor Cyan
 Invoke-ps2exe -inputFile EliteStartMenu.ps1 -outputFile BuildOutput\EliteStartMenu.exe -noConsole -STA -iconFile Resources\PREFERENCES.ico
+Invoke-ps2exe -inputFile EliteStartMenu.ps1 -outputFile BuildOutputx86\EliteStartMenu.exe -noConsole -STA -iconFile Resources\PREFERENCES.ico -x86

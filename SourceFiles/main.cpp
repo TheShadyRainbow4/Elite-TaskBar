@@ -19,7 +19,7 @@ HINSTANCE g_hInstance = NULL;
 
 void QueryOperationalMode() {
     HKEY hKey;
-    LSTATUS status = RegOpenKeyExW(HKEY_CURRENT_USER, L"Software\\EliteSoftware\\Win32Explorer\\Advanced", 0, KEY_READ, &hKey);
+    LSTATUS status = RegOpenKeyExW(GetEliteRegistryRoot(), L"Software\\EliteSoftware\\Win32Explorer\\Advanced", 0, KEY_READ, &hKey);
     g_Config.Mode = TaskbarMode::Independent; // Default
     if (status == ERROR_SUCCESS) {
         DWORD dwValue = 0;

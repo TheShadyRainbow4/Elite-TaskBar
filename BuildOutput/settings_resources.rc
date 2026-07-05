@@ -22,14 +22,15 @@ BEGIN
     CONTROL         "Replace", IDC_MODE_REPLACE, "Button", BS_AUTORADIOBUTTON, 80, 20, 50, 10
     CONTROL         "Secondary Only", IDC_MODE_SECONDARY_ONLY, "Button", BS_AUTORADIOBUTTON, 140, 20, 70, 10
     
-    GROUPBOX        "Taskbar Appearance", IDC_STATIC, 7, 58, 238, 70
+    GROUPBOX        "Taskbar Appearance", IDC_STATIC, 7, 58, 238, 77
     LTEXT           "Button Width:", IDC_STATIC, 14, 73, 50, 8
     CONTROL         "Auto", IDC_WIDTH_AUTO, "Button", BS_AUTORADIOBUTTON | WS_GROUP | WS_TABSTOP, 65, 72, 35, 10
     CONTROL         "Fixed", IDC_WIDTH_FIXED, "Button", BS_AUTORADIOBUTTON, 105, 72, 35, 10
     CONTROL         "Icons Only", IDC_WIDTH_ICONS, "Button", BS_AUTORADIOBUTTON, 145, 72, 45, 10
     LTEXT           "Fixed Size:", IDC_WIDTH_FIXED_SIZE_LBL, 65, 87, 40, 8
     COMBOBOX        IDC_WIDTH_FIXED_SIZE, 105, 85, 80, 50, CBS_DROPDOWNLIST | WS_VSCROLL | WS_TABSTOP
-    CONTROL         "Show window previews", IDC_HOVER_PREVIEW, "Button", BS_AUTOCHECKBOX | WS_TABSTOP, 14, 105, 114, 10
+    CONTROL         "Show window previews", IDC_HOVER_PREVIEW, "Button", BS_AUTOCHECKBOX | WS_TABSTOP, 14, 103, 114, 10
+    CONTROL         "Enable Portable Mirror Mode", IDC_PORTABLE_MIRROR, "Button", BS_AUTOCHECKBOX | WS_TABSTOP, 14, 118, 200, 10
 END
 
 IDD_NATIVE_PROPS DIALOGEX 0, 0, 252, 218
@@ -47,6 +48,11 @@ BEGIN
     CONTROL         "Lock the taskbar", IDC_LOCK_TASKBAR, "Button", BS_AUTOCHECKBOX | WS_TABSTOP, 14, 96, 220, 10
     CONTROL         "Auto-hide the taskbar", IDC_AUTOHIDE_TASKBAR, "Button", BS_AUTOCHECKBOX | WS_TABSTOP, 14, 110, 220, 10
     CONTROL         "Use small icons", IDC_SMALL_ICONS, "Button", BS_AUTOCHECKBOX | WS_TABSTOP, 14, 124, 100, 10
+
+    GROUPBOX        "Explorer Replacement", IDC_STATIC, 7, 143, 238, 45
+    CONTROL         "None", IDC_REPLACE_EXPLORER_NONE, "Button", BS_AUTORADIOBUTTON | WS_GROUP | WS_TABSTOP, 14, 156, 50, 10
+    CONTROL         "FileSystem Only", IDC_REPLACE_EXPLORER_FILESYS, "Button", BS_AUTORADIOBUTTON, 80, 156, 70, 10
+    CONTROL         "All Folders", IDC_REPLACE_EXPLORER_ALL, "Button", BS_AUTORADIOBUTTON, 160, 156, 60, 10
 END
 
 IDD_MULTIMON_PROPS DIALOGEX 0, 0, 252, 218

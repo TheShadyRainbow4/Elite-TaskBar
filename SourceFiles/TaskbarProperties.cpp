@@ -74,6 +74,64 @@ void SaveToNativeRegistry(LPCWSTR valueName, DWORD value) {
     }
 }
 
+void SetDefaultFileManagerCPP(DWORD mode) {
+    HKEY hKey;
+    WCHAR exePath[MAX_PATH];
+    GetModuleFileNameW(NULL, exePath, MAX_PATH);
+    WCHAR* lastSlash = wcsrchr(exePath, L'\\');
+    if (lastSlash) {
+        wcscpy_s(lastSlash + 1, MAX_PATH - (lastSlash + 1 - exePath), L"Win32Explorer.exe");
+    }
+
+    // Unconditional cleanup to fix being stuck
+    SHDeleteKeyW(HKEY_CURRENT_USER, L"Software\\Classes\\Directory\\shell\\openinWin32Explorer");
+    if (RegOpenKeyExW(HKEY_CURRENT_USER, L"Software\\Classes\\Directory\\shell", 0, KEY_READ | KEY_WRITE, &hKey) == ERROR_SUCCESS) {
+        DWORD cbData = sizeof(WCHAR) * 40;
+        WCHAR val[40] = {0};
+        if (RegQueryValueExW(hKey, L"", NULL, NULL, (LPBYTE)val, &cbData) == ERROR_SUCCESS) {
+            if (wcscmp(val, L"openinWin32Explorer") == 0) {
+                RegSetValueExW(hKey, L"", 0, REG_SZ, (const BYTE*)L"none", sizeof(L"none"));
+            }
+        }
+        RegCloseKey(hKey);
+    }
+
+    SHDeleteKeyW(HKEY_CURRENT_USER, L"Software\\Classes\\Folder\\shell\\openinWin32Explorer");
+    if (RegOpenKeyExW(HKEY_CURRENT_USER, L"Software\\Classes\\Folder\\shell", 0, KEY_READ | KEY_WRITE, &hKey) == ERROR_SUCCESS) {
+        DWORD cbData = sizeof(WCHAR) * 40;
+        WCHAR val[40] = {0};
+        if (RegQueryValueExW(hKey, L"", NULL, NULL, (LPBYTE)val, &cbData) == ERROR_SUCCESS) {
+            if (wcscmp(val, L"openinWin32Explorer") == 0) {
+                RegDeleteValueW(hKey, L"");
+            }
+        }
+        RegCloseKey(hKey);
+    }
+
+    // Write file manager registry associations based on mode (2=FileSystem, 3=All)
+    if (mode == 2 || mode == 3) {
+        LPCWSTR rootSubKey = (mode == 2) ? L"Software\\Classes\\Directory\\shell" : L"Software\\Classes\\Folder\\shell";
+        WCHAR commandKeyPath[256];
+        wsprintfW(commandKeyPath, L"%s\\openinWin32Explorer", rootSubKey);
+        
+        if (RegCreateKeyExW(HKEY_CURRENT_USER, commandKeyPath, 0, NULL, REG_OPTION_NON_VOLATILE, KEY_WRITE, NULL, &hKey, NULL) == ERROR_SUCCESS) {
+            RegSetValueExW(hKey, L"", 0, REG_SZ, (const BYTE*)L"Open in Win32Explorer", sizeof(L"Open in Win32Explorer"));
+            HKEY hCmdKey;
+            if (RegCreateKeyExW(hKey, L"command", 0, NULL, REG_OPTION_NON_VOLATILE, KEY_WRITE, NULL, &hCmdKey, NULL) == ERROR_SUCCESS) {
+                WCHAR cmd[MAX_PATH + 10];
+                wsprintfW(cmd, L"\"%s\" \"%%1\"", exePath);
+                RegSetValueExW(hCmdKey, L"", 0, REG_SZ, (const BYTE*)cmd, (wcslen(cmd) + 1) * sizeof(WCHAR));
+                RegCloseKey(hCmdKey);
+            }
+            RegCloseKey(hKey);
+        }
+        if (RegOpenKeyExW(HKEY_CURRENT_USER, rootSubKey, 0, KEY_WRITE, &hKey) == ERROR_SUCCESS) {
+            RegSetValueExW(hKey, L"", 0, REG_SZ, (const BYTE*)L"openinWin32Explorer", sizeof(L"openinWin32Explorer"));
+            RegCloseKey(hKey);
+        }
+    }
+}
+
 void NotifySettingsChange() {
     SendMessageTimeoutW(HWND_BROADCAST, WM_SETTINGCHANGE, 0, (LPARAM)L"TraySettings", SMTO_ABORTIFHUNG, 5000, NULL);
     SendMessageTimeoutW(HWND_BROADCAST, WM_SETTINGCHANGE, 0, (LPARAM)L"EliteTaskbarSettings", SMTO_ABORTIFHUNG, 500, NULL);
@@ -95,7 +153,7 @@ INT_PTR CALLBACK TaskbarSettingsDlgProc(HWND hwndDlg, UINT uMsg, WPARAM wParam, 
     case WM_INITDIALOG: {
         EnableThemeDialogTexture(hwndDlg, ETDT_ENABLETAB);
         HKEY hKey;
-        if (RegOpenKeyExW(HKEY_CURRENT_USER, L"Software\\EliteSoftware\\Win32Explorer\\Advanced", 0, KEY_READ, &hKey) == ERROR_SUCCESS) {
+        if (RegOpenKeyExW(GetEliteRegistryRoot(), L"Software\\EliteSoftware\\Win32Explorer\\Advanced", 0, KEY_READ, &hKey) == ERROR_SUCCESS) {
             DWORD dwValue = 0;
             DWORD cbData = sizeof(DWORD);
             
@@ -130,6 +188,11 @@ INT_PTR CALLBACK TaskbarSettingsDlgProc(HWND hwndDlg, UINT uMsg, WPARAM wParam, 
             if (RegQueryValueExW(hKey, L"TaskbarHoverPreview", NULL, NULL, (LPBYTE)&dwValue, &cbData) == ERROR_SUCCESS) {
                 SendDlgItemMessageW(hwndDlg, IDC_HOVER_PREVIEW, BM_SETCHECK, dwValue ? BST_CHECKED : BST_UNCHECKED, 0);
             }
+
+            cbData = sizeof(DWORD);
+            if (RegQueryValueExW(hKey, L"EnablePortableMirror", NULL, NULL, (LPBYTE)&dwValue, &cbData) == ERROR_SUCCESS) {
+                SendDlgItemMessageW(hwndDlg, IDC_PORTABLE_MIRROR, BM_SETCHECK, dwValue ? BST_CHECKED : BST_UNCHECKED, 0);
+            }
             RegCloseKey(hKey);
         }
         return TRUE;
@@ -142,8 +205,21 @@ INT_PTR CALLBACK TaskbarSettingsDlgProc(HWND hwndDlg, UINT uMsg, WPARAM wParam, 
     case WM_NOTIFY: {
         LPNMHDR lpnm = (LPNMHDR)lParam;
         if (lpnm->code == PSN_APPLY) {
+            DWORD portable = (SendDlgItemMessageW(hwndDlg, IDC_PORTABLE_MIRROR, BM_GETCHECK, 0, 0) == BST_CHECKED) ? 1 : 0;
+            HKEY hKeyBoth;
+            // Write EnablePortableMirror to HKLM and HKCU
+            if (RegCreateKeyExW(HKEY_LOCAL_MACHINE, L"Software\\EliteSoftware\\Win32Explorer\\Advanced", 0, NULL, REG_OPTION_NON_VOLATILE, KEY_READ | KEY_WRITE, NULL, &hKeyBoth, NULL) == ERROR_SUCCESS) {
+                RegSetValueExW(hKeyBoth, L"EnablePortableMirror", 0, REG_DWORD, (const BYTE*)&portable, sizeof(DWORD));
+                RegCloseKey(hKeyBoth);
+            }
+            if (RegCreateKeyExW(HKEY_CURRENT_USER, L"Software\\EliteSoftware\\Win32Explorer\\Advanced", 0, NULL, REG_OPTION_NON_VOLATILE, KEY_READ | KEY_WRITE, NULL, &hKeyBoth, NULL) == ERROR_SUCCESS) {
+                RegSetValueExW(hKeyBoth, L"EnablePortableMirror", 0, REG_DWORD, (const BYTE*)&portable, sizeof(DWORD));
+                RegCloseKey(hKeyBoth);
+            }
+
             HKEY hKey;
-            if (RegCreateKeyExW(HKEY_CURRENT_USER, L"Software\\EliteSoftware\\Win32Explorer\\Advanced", 0, NULL, REG_OPTION_NON_VOLATILE, KEY_READ | KEY_WRITE, NULL, &hKey, NULL) == ERROR_SUCCESS) {
+            HKEY hKeyRoot = (portable == 1) ? HKEY_LOCAL_MACHINE : HKEY_CURRENT_USER;
+            if (RegCreateKeyExW(hKeyRoot, L"Software\\EliteSoftware\\Win32Explorer\\Advanced", 0, NULL, REG_OPTION_NON_VOLATILE, KEY_READ | KEY_WRITE, NULL, &hKey, NULL) == ERROR_SUCCESS) {
                 DWORD mode = 0;
                 if (SendDlgItemMessageW(hwndDlg, IDC_MODE_REPLACE, BM_GETCHECK, 0, 0) == BST_CHECKED) mode = 1;
                 else if (SendDlgItemMessageW(hwndDlg, IDC_MODE_SECONDARY_ONLY, BM_GETCHECK, 0, 0) == BST_CHECKED) mode = 2;
@@ -191,7 +267,7 @@ INT_PTR CALLBACK NativeSettingsDlgProc(HWND hwndDlg, UINT uMsg, WPARAM wParam, L
     case WM_INITDIALOG: {
         EnableThemeDialogTexture(hwndDlg, ETDT_ENABLETAB);
         HKEY hKey;
-        if (RegOpenKeyExW(HKEY_CURRENT_USER, L"Software\\EliteSoftware\\Win32Explorer\\Advanced", 0, KEY_READ, &hKey) == ERROR_SUCCESS) {
+        if (RegOpenKeyExW(GetEliteRegistryRoot(), L"Software\\EliteSoftware\\Win32Explorer\\Advanced", 0, KEY_READ, &hKey) == ERROR_SUCCESS) {
             DWORD dwValue = 0, cbData = sizeof(DWORD);
             if (RegQueryValueExW(hKey, L"NativeRegistryMode", NULL, NULL, (LPBYTE)&dwValue, &cbData) == ERROR_SUCCESS)
                 SendDlgItemMessageW(hwndDlg, IDC_NATIVE_REGISTRY_MODE, BM_SETCHECK, dwValue ? BST_CHECKED : BST_UNCHECKED, 0);
@@ -206,6 +282,15 @@ INT_PTR CALLBACK NativeSettingsDlgProc(HWND hwndDlg, UINT uMsg, WPARAM wParam, L
                 else SendDlgItemMessageW(hwndDlg, IDC_TRAY_NATIVE, BM_SETCHECK, BST_CHECKED, 0);
             } else {
                 SendDlgItemMessageW(hwndDlg, IDC_TRAY_NATIVE, BM_SETCHECK, BST_CHECKED, 0);
+            }
+
+            cbData = sizeof(DWORD);
+            if (RegQueryValueExW(hKey, L"ReplaceExplorerMode", NULL, NULL, (LPBYTE)&dwValue, &cbData) == ERROR_SUCCESS) {
+                if (dwValue == 2) SendDlgItemMessageW(hwndDlg, IDC_REPLACE_EXPLORER_FILESYS, BM_SETCHECK, BST_CHECKED, 0);
+                else if (dwValue == 3) SendDlgItemMessageW(hwndDlg, IDC_REPLACE_EXPLORER_ALL, BM_SETCHECK, BST_CHECKED, 0);
+                else SendDlgItemMessageW(hwndDlg, IDC_REPLACE_EXPLORER_NONE, BM_SETCHECK, BST_CHECKED, 0);
+            } else {
+                SendDlgItemMessageW(hwndDlg, IDC_REPLACE_EXPLORER_NONE, BM_SETCHECK, BST_CHECKED, 0);
             }
             RegCloseKey(hKey);
         }
@@ -237,7 +322,7 @@ INT_PTR CALLBACK NativeSettingsDlgProc(HWND hwndDlg, UINT uMsg, WPARAM wParam, L
         LPNMHDR lpnm = (LPNMHDR)lParam;
         if (lpnm->code == PSN_APPLY) {
             HKEY hKey;
-            if (RegCreateKeyExW(HKEY_CURRENT_USER, L"Software\\EliteSoftware\\Win32Explorer\\Advanced", 0, NULL, REG_OPTION_NON_VOLATILE, KEY_READ | KEY_WRITE, NULL, &hKey, NULL) == ERROR_SUCCESS) {
+            if (RegCreateKeyExW(GetEliteRegistryRoot(), L"Software\\EliteSoftware\\Win32Explorer\\Advanced", 0, NULL, REG_OPTION_NON_VOLATILE, KEY_READ | KEY_WRITE, NULL, &hKey, NULL) == ERROR_SUCCESS) {
                 DWORD nativeSync = (SendDlgItemMessageW(hwndDlg, IDC_NATIVE_REGISTRY_MODE, BM_GETCHECK, 0, 0) == BST_CHECKED) ? 1 : 0;
                 RegSetValueExW(hKey, L"NativeRegistryMode", 0, REG_DWORD, (const BYTE*)&nativeSync, sizeof(DWORD));
                 
@@ -246,7 +331,14 @@ INT_PTR CALLBACK NativeSettingsDlgProc(HWND hwndDlg, UINT uMsg, WPARAM wParam, L
                 
                 DWORD trayMode = (SendDlgItemMessageW(hwndDlg, IDC_TRAY_LEGACY, BM_GETCHECK, 0, 0) == BST_CHECKED) ? 1 : 0;
                 RegSetValueExW(hKey, L"TrayMode", 0, REG_DWORD, (const BYTE*)&trayMode, sizeof(DWORD));
+
+                DWORD replaceMode = 1;
+                if (SendDlgItemMessageW(hwndDlg, IDC_REPLACE_EXPLORER_FILESYS, BM_GETCHECK, 0, 0) == BST_CHECKED) replaceMode = 2;
+                else if (SendDlgItemMessageW(hwndDlg, IDC_REPLACE_EXPLORER_ALL, BM_GETCHECK, 0, 0) == BST_CHECKED) replaceMode = 3;
+                RegSetValueExW(hKey, L"ReplaceExplorerMode", 0, REG_DWORD, (const BYTE*)&replaceMode, sizeof(DWORD));
                 RegCloseKey(hKey);
+
+                SetDefaultFileManagerCPP(replaceMode);
             }
             
             DWORD locked = (SendDlgItemMessageW(hwndDlg, IDC_LOCK_TASKBAR, BM_GETCHECK, 0, 0) == BST_CHECKED) ? 0 : 1;
@@ -416,7 +508,7 @@ INT_PTR CALLBACK MultiMonSettingsDlgProc(HWND hwndDlg, UINT uMsg, WPARAM wParam,
         HFONT hFont = (HFONT)SendMessageW(hwndDlg, WM_GETFONT, 0, 0);
         
         HKEY hKey;
-        RegOpenKeyExW(HKEY_CURRENT_USER, L"Software\\EliteSoftware\\Win32Explorer\\Advanced", 0, KEY_READ, &hKey);
+        RegOpenKeyExW(GetEliteRegistryRoot(), L"Software\\EliteSoftware\\Win32Explorer\\Advanced", 0, KEY_READ, &hKey);
         
         for (const auto& mon : g_Monitors) {
             WCHAR title[64];
@@ -547,7 +639,7 @@ INT_PTR CALLBACK MultiMonSettingsDlgProc(HWND hwndDlg, UINT uMsg, WPARAM wParam,
         LPNMHDR lpnm = (LPNMHDR)lParam;
         if (lpnm->code == PSN_APPLY) {
             HKEY hKey;
-            if (RegCreateKeyExW(HKEY_CURRENT_USER, L"Software\\EliteSoftware\\Win32Explorer\\Advanced", 0, NULL, REG_OPTION_NON_VOLATILE, KEY_READ | KEY_WRITE, NULL, &hKey, NULL) == ERROR_SUCCESS) {
+            if (RegCreateKeyExW(GetEliteRegistryRoot(), L"Software\\EliteSoftware\\Win32Explorer\\Advanced", 0, NULL, REG_OPTION_NON_VOLATILE, KEY_READ | KEY_WRITE, NULL, &hKey, NULL) == ERROR_SUCCESS) {
                 for (const auto& mon : g_Monitors) {
                     DWORD v1 = (SendMessageW(GetDlgItem(hScroll, ID_BASE_MM_TRAY + mon.index), BM_GETCHECK, 0, 0) == BST_CHECKED) ? 1 : 0;
                     DWORD v2 = (SendMessageW(GetDlgItem(hScroll, ID_BASE_MM_CLOCK + mon.index), BM_GETCHECK, 0, 0) == BST_CHECKED) ? 1 : 0;
@@ -705,7 +797,7 @@ void ShowTaskbarProperties(HWND hwndOwner) {
     if (wcsstr(GetCommandLineW(), L"/devmode")) showDebugTabs = true;
     
     HKEY hKey;
-    if (RegOpenKeyExW(HKEY_CURRENT_USER, L"Software\\EliteSoftware\\Win32Explorer\\Advanced", 0, KEY_READ, &hKey) == ERROR_SUCCESS) {
+    if (RegOpenKeyExW(GetEliteRegistryRoot(), L"Software\\EliteSoftware\\Win32Explorer\\Advanced", 0, KEY_READ, &hKey) == ERROR_SUCCESS) {
         DWORD dwValue = 0, cbData = sizeof(DWORD);
         if (RegQueryValueExW(hKey, L"EnableDebugTabs", NULL, NULL, (LPBYTE)&dwValue, &cbData) == ERROR_SUCCESS && dwValue == 1) showDebugTabs = true;
         RegCloseKey(hKey);
