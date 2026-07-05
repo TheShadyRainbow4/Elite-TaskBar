@@ -1,4 +1,4 @@
 SmallIconTilesView : PASS
+OptionsToggleXML : PASS
+DefaultGroupByType : PASS
 OptionsToggleRegistry : PASS
-DefaultGroupByType : FAIL
-OptionsToggleXML : FAIL

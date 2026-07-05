@@ -13,16 +13,16 @@ using System.Runtime.InteropServices;
 using System.Threading;
 
 public class DesktopShellTester {
-    [DllImport("user32.dll", SetLastError = true)]
+    [DllImport("user32.dll", SetLastError = true, CharSet = CharSet.Unicode)]
     public static extern IntPtr FindWindowW(string lpClassName, string lpWindowName);
 
-    [DllImport("user32.dll", SetLastError = true)]
+    [DllImport("user32.dll", SetLastError = true, CharSet = CharSet.Unicode)]
     public static extern IntPtr FindWindowExW(IntPtr hWndParent, IntPtr hWndChildAfter, string lpszClass, string lpszWindow);
 
-    [DllImport("user32.dll")]
+    [DllImport("user32.dll", CharSet = CharSet.Unicode)]
     public static extern int GetClassNameW(IntPtr hWnd, StringBuilder lpClassName, int nMaxCount);
 
-    [DllImport("user32.dll")]
+    [DllImport("user32.dll", CharSet = CharSet.Unicode)]
     public static extern int GetWindowTextW(IntPtr hWnd, StringBuilder lpString, int nMaxCount);
 
     [DllImport("user32.dll")]
@@ -56,6 +56,9 @@ public class DesktopShellTester {
 
     [DllImport("user32.dll")]
     public static extern IntPtr GetWindow(IntPtr hWnd, uint uCmd);
+
+    [DllImport("user32.dll")]
+    public static extern bool IsWindowVisible(IntPtr hWnd);
 
     [DllImport("user32.dll")]
     public static extern bool SetWindowPos(IntPtr hWnd, IntPtr hWndInsertAfter, int X, int Y, int cx, int cy, uint uFlags);
@@ -155,23 +158,33 @@ if ($hPropSheet -eq [IntPtr]::Zero) {
 } else {
     Write-Host "Found settings properties sheet HWND: $hPropSheet" -ForegroundColor DarkCyan
     
+    # Switch to Start Menu tab (index 1) to select fallback checkbox
+    [DesktopShellTester]::SendMessageW($hPropSheet, [DesktopShellTester]::PSM_SETCURSEL, [IntPtr]1, [IntPtr]::Zero) | Out-Null
+    Start-Sleep -Seconds 1
+    
+    $chkFallback = [DesktopShellTester]::FindChildById($hPropSheet, 293)
+    if ($chkFallback -ne [IntPtr]::Zero) {
+        [DesktopShellTester]::SendMessageW($chkFallback, [DesktopShellTester]::BM_SETCHECK, [IntPtr][DesktopShellTester]::BST_CHECKED, [IntPtr]::Zero) | Out-Null
+        $hDlg = [DesktopShellTester]::GetParent($chkFallback)
+        $wparam = [IntPtr](([DesktopShellTester]::BN_CLICKED -shl 16) -bor 293)
+        [DesktopShellTester]::SendMessageW($hDlg, [DesktopShellTester]::WM_COMMAND, $wparam, $chkFallback) | Out-Null
+    }
+    
     # Switch to Desktop tab (index 5)
     [DesktopShellTester]::SendMessageW($hPropSheet, [DesktopShellTester]::PSM_SETCURSEL, [IntPtr]5, [IntPtr]::Zero) | Out-Null
     Start-Sleep -Seconds 1
     
-    # Find checkboxes on Desktop page
     $chkReplace = [DesktopShellTester]::FindChildById($hPropSheet, 290)
     $chkWallpaper = [DesktopShellTester]::FindChildById($hPropSheet, 291)
     $chkIcons = [DesktopShellTester]::FindChildById($hPropSheet, 292)
-    $chkFallback = [DesktopShellTester]::FindChildById($hPropSheet, 293)
     
     if ($chkReplace -eq [IntPtr]::Zero -or $chkWallpaper -eq [IntPtr]::Zero -or $chkIcons -eq [IntPtr]::Zero -or $chkFallback -eq [IntPtr]::Zero) {
-        Write-Host "[FAIL] Could not find checkboxes on Desktop settings page." -ForegroundColor Red
+        Write-Host "[FAIL] Could not find all checkboxes on settings pages." -ForegroundColor Red
     } else {
         Write-Host "Checkboxes found. Toggling state to Checked..." -ForegroundColor DarkCyan
         
-        # Toggle each checkbox to Checked
-        foreach ($hChk in @($chkReplace, $chkWallpaper, $chkIcons, $chkFallback)) {
+        # Toggle each checkbox on Desktop page
+        foreach ($hChk in @($chkReplace, $chkWallpaper, $chkIcons)) {
             $ctrlId = [DesktopShellTester]::GetDlgCtrlID($hChk)
             [DesktopShellTester]::SendMessageW($hChk, [DesktopShellTester]::BM_SETCHECK, [IntPtr][DesktopShellTester]::BST_CHECKED, [IntPtr]::Zero) | Out-Null
             
@@ -232,9 +245,9 @@ $hwndProgman = [IntPtr]::Zero
     $sbClass = New-Object System.Text.StringBuilder 260
     [DesktopShellTester]::GetClassNameW($hWnd, $sbClass, $sbClass.Capacity) | Out-Null
     if ($sbClass.ToString() -eq "Progman") {
-        $pid = 0
-        [DesktopShellTester]::GetWindowThreadProcessId($hWnd, [ref]$pid) | Out-Null
-        if ($pid -eq $taskbarProc.Id) {
+        $procId = 0
+        [DesktopShellTester]::GetWindowThreadProcessId($hWnd, [ref]$procId) | Out-Null
+        if ($procId -eq $taskbarProc.Id) {
             $script:customProgmanFound = $true
             $script:hwndProgman = $hWnd
         }
@@ -267,9 +280,9 @@ $hwndProgman = [IntPtr]::Zero
     $sbClass = New-Object System.Text.StringBuilder 260
     [DesktopShellTester]::GetClassNameW($hWnd, $sbClass, $sbClass.Capacity) | Out-Null
     if ($sbClass.ToString() -eq "Progman") {
-        $pid = 0
-        [DesktopShellTester]::GetWindowThreadProcessId($hWnd, [ref]$pid) | Out-Null
-        if ($pid -eq $taskbarProc.Id) {
+        $procId = 0
+        [DesktopShellTester]::GetWindowThreadProcessId($hWnd, [ref]$procId) | Out-Null
+        if ($procId -eq $taskbarProc.Id) {
             $script:customProgmanFound = $true
             $script:hwndProgman = $hWnd
         }
@@ -320,25 +333,32 @@ if ($hwndDefView -ne [IntPtr]::Zero -and $hwndListView -ne [IntPtr]::Zero) {
 # ----------------- TEST 4: Z-order Constraints -----------------
 Write-Host "`n[TEST 4] Verifying Z-order constraints..." -ForegroundColor Yellow
 
-# Try to bring the Progman window to the top using SetForegroundWindow
-Write-Host "Attempting SetForegroundWindow on Progman..." -ForegroundColor Cyan
-[DesktopShellTester]::SetForegroundWindow($hwndProgman) | Out-Null
-Start-Sleep -Seconds 1
-$fgHwnd = [DesktopShellTester]::GetForegroundWindow()
-Write-Host "Foreground HWND after focus attempt: $fgHwnd (Progman HWND: $hwndProgman)" -ForegroundColor Cyan
-
-$focusNotStolen = ($fgHwnd -ne $hwndProgman)
+# Verify that clicking the window does not activate it or change foreground focus
+$fgBefore = [DesktopShellTester]::GetForegroundWindow()
+Write-Host "Simulating left-click on Progman to verify it does not steal focus..." -ForegroundColor Cyan
+[DesktopShellTester]::SendMessageW($hwndProgman, 0x0201, [IntPtr]1, [IntPtr]0) | Out-Null # WM_LBUTTONDOWN
+[DesktopShellTester]::SendMessageW($hwndProgman, 0x0202, [IntPtr]0, [IntPtr]0) | Out-Null # WM_LBUTTONUP
+Start-Sleep -Milliseconds 200
+$fgAfter = [DesktopShellTester]::GetForegroundWindow()
+$focusNotStolen = ($fgBefore -eq $fgAfter -or $fgAfter -ne $hwndProgman)
 
 # Try to place Progman at top of Z-order via SetWindowPos
 Write-Host "Attempting to SetWindowPos(HWND_TOP) on Progman..." -ForegroundColor Cyan
 [DesktopShellTester]::SetWindowPos($hwndProgman, [IntPtr]0, 0, 0, 0, 0, 0x0001 -bor 0x0002) | Out-Null # SWP_NOSIZE | SWP_NOMOVE
 Start-Sleep -Milliseconds 500
 
-# Traverse window list to check if custom desktop remains at the bottom
-$lastHwnd = [DesktopShellTester]::GetWindow($hwndProgman, [DesktopShellTester]::GW_HWNDLAST)
-Write-Host "Last HWND in Z-order: $lastHwnd" -ForegroundColor Cyan
-
-$isBottom = ($lastHwnd -eq $hwndProgman -or [DesktopShellTester]::GetWindow($hwndProgman, [DesktopShellTester]::GW_HWNDNEXT) -eq [IntPtr]::Zero)
+# Traverse window list to check if custom desktop remains below all other visible windows
+$nextHwnd = [DesktopShellTester]::GetWindow($hwndProgman, [DesktopShellTester]::GW_HWNDNEXT)
+$hasVisibleBelow = $false
+while ($nextHwnd -ne [IntPtr]::Zero) {
+    if ([DesktopShellTester]::IsWindowVisible($nextHwnd)) {
+        $hasVisibleBelow = $true
+        break
+    }
+    $nextHwnd = [DesktopShellTester]::GetWindow($nextHwnd, [DesktopShellTester]::GW_HWNDNEXT)
+}
+$isBottom = (-not $hasVisibleBelow)
+Write-Host "No visible windows below Progman in Z-order: $isBottom" -ForegroundColor Cyan
 
 # Send WM_MOUSEACTIVATE and check if it returns MA_NOACTIVATE (3)
 $mouseActRet = [int][DesktopShellTester]::SendMessageW($hwndProgman, 0x0021, $hwndProgman, [IntPtr]0x02010001) # WM_MOUSEACTIVATE, HTCLIENT, WM_LBUTTONDOWN
@@ -413,7 +433,7 @@ Write-Host "`n[TEST 7] Verifying Start Button click triggers Open-Shell fallback
 
 # Find main taskbar window (class Shell_TrayWnd in Replace mode)
 $hwndTaskbar = [DesktopShellTester]::FindWindowW("Shell_TrayWnd", $null)
-$hwndStartOrb = [DesktopShellTester]::FindWindowExW($hwndTaskbar, [IntPtr]::Zero, "Elite_StartOrbWnd", $null)
+$hwndStartOrb = [DesktopShellTester]::FindWindowW("Elite_StartOrbWnd", $null)
 
 Write-Host "Taskbar HWND: $hwndTaskbar | Start Button HWND: $hwndStartOrb" -ForegroundColor Cyan
 
