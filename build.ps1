@@ -151,6 +151,7 @@ if (-not $failed) {
         Set-Location $origDir
         exit 1
     }
+    Start-Sleep -Seconds 2
     & ".\build_Win32Explorer.ps1" -Platform "Win32"
     if ($LASTEXITCODE -ne 0) {
         Write-Error "Win32Explorer Win32 build failed!"
@@ -163,9 +164,11 @@ if (-not $failed) {
     Copy-Item "$BuildDir\Win32Explorer.exe" "$ScriptDir\Win32Explorer.exe" -Force
     
     Write-Host "Auto-committing and pushing to repository..." -ForegroundColor Cyan
+    $ErrorActionPreference = 'Continue'
     git add .
     git commit -m "Auto-commit after successful build (build.ps1)"
     git push origin HEAD
+    $ErrorActionPreference = 'Stop'
     Write-Host "Done!" -ForegroundColor Green
 }
 

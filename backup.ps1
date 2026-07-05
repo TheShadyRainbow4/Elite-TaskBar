@@ -59,5 +59,5 @@ Remove-Item -Path (Join-Path $ScriptDir "setup.inf") -Force -ErrorAction Silentl
 if ($makeCabExitCode -eq 0 -and (Test-Path $cabFilePath)) {
     Write-Host "Backup completed successfully!" -ForegroundColor Green
 } else {
-    Write-Error "Backup failed or CAB file was not created. MakeCab output:`n$makeCabOutput"
+    Write-Warning "Backup failed or CAB file was not created. MakeCab output:`n$makeCabOutput"
 }

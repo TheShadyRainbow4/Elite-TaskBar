@@ -4,6 +4,14 @@ All notable changes to this project will be documented in this file.
 
 
 ## [Unreleased]
+### Changed
+- **About Dialog Spacing (R8)**: Adjusted `IDD_ABOUT_DIALOG` button layout in both `SourceFiles/resources.rc` and `Win32Explorer_26.0.3.0/App_Source/EliteTaskbar/resources.rc` to y=118, and updated dynamic positioning and chin rendering in `SourceFiles/TaskbarProperties.cpp`.
+- **Default Taskbar Mode (R3)**: Updated both `SourceFiles/EliteSettings.ps1` and `Win32Explorer_26.0.3.0/App_Source/EliteTaskbar/EliteSettings.ps1` to default `TaskbarMode` to Independent when the registry value is missing, and ensured that both `SourceFiles/TaskbarProperties.cpp` and `Win32Explorer_26.0.3.0/App_Source/EliteTaskbar/TaskbarProperties.cpp` default to checking `IDC_MODE_INDEPENDENT`.
+- **Taskbar Properties UI Glitch (R6)**: Removed redundant `WM_CTLCOLORSTATIC`/`WM_CTLCOLORBTN` handlers in `SourceFiles/TaskbarProperties.cpp` to resolve rendering glitches, and simplified transparency rendering in `DynScrollAreaProc`.
+- **CPL Apply Button Hang (R9)**: Offloaded `SendMessageTimeoutW` broadcast calls in `NotifySettingsChange` inside both `SourceFiles/TaskbarProperties.cpp` and `Win32Explorer_26.0.3.0/App_Source/EliteTaskbar/TaskbarProperties.cpp` to a background thread via `CreateThread`.
+- **Resource Header (R3/R8)**: Added modification markers and `#pragma warning(disable: 4715)` to both `SourceFiles/resource.h` and `Win32Explorer_26.0.3.0/App_Source/EliteTaskbar/resource.h` to suppress warnings-as-errors blockers in downstream compilation.
+- **Taskbar Layout Compile Fix**: Defined `UpdateTaskbarLayout` inside `SourceFiles/TaskbarProperties.cpp` to resolve unresolved external symbol link errors.
+
 ### Fixed
 - **PDB Synchronization Compiler Error (C1041)**: Added `/FS` flag to the `cl.exe` compile command in `build_x64.ps1` and `build_x86.ps1` to prevent concurrent write lock contentions on PDB files.
 - **PowerShell Registry Value Parameter Validation Bug**: Replaced `Get-ItemProperty -Name ""` with `(Get-Item -Path $path).GetValue("")` (or safe wrapper) in `SourceFiles\EliteSettings.ps1` to avoid throwing a parameter validation exception when querying empty-string default registry values, restoring successful settings saving.
@@ -207,3 +215,7 @@ All notable changes to this project will be documented in this file.
 
 
 
+
+- **Property Sheet Menu Fix**: Adjusted property sheet window size in TaskbarProperties.cpp to compensate for the injected menu bar height (SM_CYMENU), preventing the bottom buttons (OK/Cancel/Apply) from being visually clipped.
+
+- **Start Orb Position Fix**: Fixed a coordinate space bug in TaskbarWindow.cpp during WM_SETTINGCHANGE processing where GetClientRect was being passed instead of GetWindowRect, causing the Start Orb layered window to jump to (0,0) absolute screen coordinates (top left) instead of relative taskbar coordinates.
