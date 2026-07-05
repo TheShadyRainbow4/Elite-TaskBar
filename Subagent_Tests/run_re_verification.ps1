@@ -110,6 +110,8 @@ $regSettingsPath = "HKCU:\Software\Win32Explorer\Settings"
 $regSettingsBackupName = "Settings_Backup_Re"
 $regSettingsBackupPath = "HKCU:\Software\Win32Explorer\Settings_Backup_Re"
 
+$regAdvancedPath = "HKCU:\Software\EliteSoftware\Win32Explorer\Advanced"
+
 function Stop-ExplorerProcesses {
     Get-Process -Name Win32Explorer -ErrorAction SilentlyContinue | Stop-Process -Force
     Start-Sleep -Seconds 1
@@ -147,19 +149,24 @@ $results = @{
 Stop-ExplorerProcesses
 Backup-RegistrySettings
 
+# Save original Advanced value for EnablePortableMirror if it exists
+$origMirror = $null
+if (Test-Path $regAdvancedPath) {
+    $origMirror = (Get-ItemProperty -Path $regAdvancedPath -Name "EnablePortableMirror" -ErrorAction SilentlyContinue).EnablePortableMirror
+}
+
 try {
     # ----------------- TEST 1: Small Icon Tiles View Mode -----------------
     Write-Host "`n[TEST 1] Verifying 'Small Icon Tiles' View Mode (ViewMode 12)..." -ForegroundColor Yellow
     Clear-RegistrySettings
     Stop-ExplorerProcesses
 
-    # Setup registry for Small Icon Tiles view
+    # Setup registry with default/empty, set confirm close tabs to 0
     if (!(Test-Path $regSettingsPath)) { New-Item -Path $regSettingsPath -Force | Out-Null }
-    Set-ItemProperty -Path $regSettingsPath -Name "ViewModeGlobal" -Value 12 -Type DWord
-    Set-ItemProperty -Path $regSettingsPath -Name "ShowInGroupsGlobal" -Value 0 -Type DWord
     Set-ItemProperty -Path $regSettingsPath -Name "ConfirmCloseTabs" -Value 0 -Type DWord
-    Set-ItemProperty -Path $regSettingsPath -Name "EnablePortableMirror" -Value 0 -Type DWord
-    Set-ItemProperty -Path $regSettingsPath -Name "EnableShellBagsSupport" -Value 0 -Type DWord
+    if (Test-Path $regAdvancedPath) {
+        Set-ItemProperty -Path $regAdvancedPath -Name "EnablePortableMirror" -Value 0 -Type DWord
+    }
 
     # Launch using PsExec in session 1
     & psexec64 -i 1 -d $explorerExe "C:\Windows"
@@ -191,6 +198,11 @@ try {
         throw "Could not find SysListView32 child control."
     }
 
+    # Programmatically switch view mode to Small Icon Tiles using command 60018 (IDM_VIEW_SMALLICONTILES)
+    Write-Host "Sending IDM_VIEW_SMALLICONTILES (60018) command..." -ForegroundColor Cyan
+    [Win32Helper]::SendMessage($hwndMain1, 0x0111, [IntPtr]60018, [IntPtr]::Zero) | Out-Null
+    Start-Sleep -Seconds 2
+
     # Wait for view mode to settle to LV_VIEW_TILE (4)
     $view = 0
     for ($i = 0; $i -lt 20; $i++) {
@@ -214,11 +226,17 @@ try {
 
     # Close main window
     [Win32Helper]::SendMessage($hwndMain1, 0x0010, [IntPtr]::Zero, [IntPtr]::Zero) | Out-Null
-    Start-Sleep -Seconds 4
+    
+    # Wait for exit
+    for ($i = 0; $i -lt 20; $i++) {
+        $p = Get-Process -Id $pid1 -ErrorAction SilentlyContinue
+        if ($null -eq $p) { break }
+        Start-Sleep -Milliseconds 500
+    }
 
     # Check persistence
     if (Test-Path $regSettingsPath) {
-        $viewPersist = (Get-ItemProperty -Path $regSettingsPath -Name "ViewModeGlobal").ViewModeGlobal
+        $viewPersist = (Get-ItemProperty -Path $regSettingsPath -Name "ViewModeGlobal" -ErrorAction SilentlyContinue).ViewModeGlobal
         Write-Host "ViewModeGlobal in registry: $viewPersist (Expected: 12)" -ForegroundColor Cyan
         if ($viewPersist -eq 12) {
             Write-Host "[PASS] ViewModeGlobal persistence verified." -ForegroundColor Green
@@ -237,7 +255,6 @@ try {
 
     if (!(Test-Path $regSettingsPath)) { New-Item -Path $regSettingsPath -Force | Out-Null }
     Set-ItemProperty -Path $regSettingsPath -Name "ConfirmCloseTabs" -Value 0 -Type DWord
-    Set-ItemProperty -Path $regSettingsPath -Name "EnablePortableMirror" -Value 0 -Type DWord
 
     # Launch using PsExec in session 1
     & psexec64 -i 1 -d $explorerExe "C:\Windows"
@@ -280,7 +297,13 @@ try {
 
     # Close window to flush settings
     [Win32Helper]::SendMessage($hwndMain2, 0x0010, [IntPtr]::Zero, [IntPtr]::Zero) | Out-Null
-    Start-Sleep -Seconds 4
+    
+    # Wait for exit
+    for ($i = 0; $i -lt 20; $i++) {
+        $p = Get-Process -Id $pid2 -ErrorAction SilentlyContinue
+        if ($null -eq $p) { break }
+        Start-Sleep -Milliseconds 500
+    }
 
     # Check registry default Group by Type
     if (Test-Path $regSettingsPath) {
@@ -305,7 +328,6 @@ try {
     if (!(Test-Path $regSettingsPath)) { New-Item -Path $regSettingsPath -Force | Out-Null }
     Set-ItemProperty -Path $regSettingsPath -Name "EnableDefaultGroupByType" -Value 1 -Type DWord
     Set-ItemProperty -Path $regSettingsPath -Name "ConfirmCloseTabs" -Value 0 -Type DWord
-    Set-ItemProperty -Path $regSettingsPath -Name "EnablePortableMirror" -Value 0 -Type DWord
 
     # Launch using PsExec in session 1
     & psexec64 -i 1 -d $explorerExe "C:\Windows"
@@ -357,11 +379,17 @@ try {
 
     # Close main window
     [Win32Helper]::SendMessage($hwndMain3, 0x0010, [IntPtr]::Zero, [IntPtr]::Zero) | Out-Null
-    Start-Sleep -Seconds 4
+    
+    # Wait for exit
+    for ($i = 0; $i -lt 20; $i++) {
+        $p = Get-Process -Id $pid3 -ErrorAction SilentlyContinue
+        if ($null -eq $p) { break }
+        Start-Sleep -Milliseconds 500
+    }
 
     # Check registry value updated to 0
     if (Test-Path $regSettingsPath) {
-        $valGroup3 = (Get-ItemProperty -Path $regSettingsPath -Name "EnableDefaultGroupByType").EnableDefaultGroupByType
+        $valGroup3 = (Get-ItemProperty -Path $regSettingsPath -Name "EnableDefaultGroupByType" -ErrorAction SilentlyContinue).EnableDefaultGroupByType
         Write-Host "Registry EnableDefaultGroupByType after change: $valGroup3 (Expected: 0)" -ForegroundColor Cyan
 
         if ($valGroup3 -eq 0) {
@@ -379,10 +407,13 @@ try {
     Clear-RegistrySettings
     Stop-ExplorerProcesses
 
+    # Enable Portable Mirror in Advanced key
+    if (!(Test-Path $regAdvancedPath)) { New-Item -Path $regAdvancedPath -Force | Out-Null }
+    Set-ItemProperty -Path $regAdvancedPath -Name "EnablePortableMirror" -Value 1 -Type DWord
+
     if (!(Test-Path $regSettingsPath)) { New-Item -Path $regSettingsPath -Force | Out-Null }
     Set-ItemProperty -Path $regSettingsPath -Name "EnableDefaultGroupByType" -Value 1 -Type DWord
     Set-ItemProperty -Path $regSettingsPath -Name "ConfirmCloseTabs" -Value 0 -Type DWord
-    Set-ItemProperty -Path $regSettingsPath -Name "EnablePortableMirror" -Value 1 -Type DWord
 
     # Launch using PsExec in session 1
     & psexec64 -i 1 -d $explorerExe "C:\Windows"
@@ -434,7 +465,13 @@ try {
 
     # Close main window
     [Win32Helper]::SendMessage($hwndMain4, 0x0010, [IntPtr]::Zero, [IntPtr]::Zero) | Out-Null
-    Start-Sleep -Seconds 4
+    
+    # Wait for exit
+    for ($i = 0; $i -lt 20; $i++) {
+        $p = Get-Process -Id $pid4 -ErrorAction SilentlyContinue
+        if ($null -eq $p) { break }
+        Start-Sleep -Milliseconds 500
+    }
 
     # Check XML content
     if (Test-Path $xmlPath) {
@@ -456,6 +493,15 @@ try {
 } finally {
     Stop-ExplorerProcesses
     Restore-RegistrySettings
+    
+    # Restore original advanced value
+    if ($null -ne $origMirror) {
+        Set-ItemProperty -Path $regAdvancedPath -Name "EnablePortableMirror" -Value $origMirror -Type DWord
+    } else {
+        if (Test-Path $regAdvancedPath) {
+            Remove-ItemProperty -Path $regAdvancedPath -Name "EnablePortableMirror" -ErrorAction SilentlyContinue
+        }
+    }
 }
 
 # Print Results
@@ -477,4 +523,5 @@ Write-Host "Overall Verdict: $overall" -ForegroundColor $color
 $overall | Out-File -FilePath (Join-Path $MyDir "verdict.txt") -Force
 $results | Out-String | Out-File -FilePath (Join-Path $MyDir "test_results.txt") -Force
 
-exit (if ($overall -eq "PASS") { 0 } else { 1 })
+$exitVal = if ($overall -eq "PASS") { 0 } else { 1 }
+exit $exitVal

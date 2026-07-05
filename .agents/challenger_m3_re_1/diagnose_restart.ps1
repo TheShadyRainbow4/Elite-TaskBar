@@ -33,17 +33,35 @@ Write-Host "Starting EliteTaskbar from root..." -ForegroundColor Cyan
 $procTaskbar = Start-Process -FilePath "$ScriptDir\EliteTaskbar.exe" -PassThru
 Start-Sleep -Seconds 2
 
+$initialPid = $procTaskbar.Id
+Write-Host "Initial EliteTaskbar PID: $initialPid" -ForegroundColor Yellow
+
 # Launch settings CPL
 Write-Host "Launching settings CPL..." -ForegroundColor Cyan
 $procCpl = Start-Process -FilePath "control.exe" -ArgumentList "`"$ScriptDir\EliteSettings.cpl`"" -PassThru
 
 # Find settings properties window
-Start-Sleep -Seconds 3
-$hwndSettings = [Win32]::FindWindowW("#32770", "Taskbar and Start Menu Properties")
-if ($hwndSettings -eq 0) {
+$hwndSettings = [IntPtr]::Zero
+$settingsPid = 0
+for ($i = 0; $i -lt 15; $i++) {
+    Start-Sleep -Seconds 1
+    $windows = Get-Process | Where-Object { $_.MainWindowTitle -like "*Properties*" }
+    foreach ($w in $windows) {
+        if ($w.Name -like "EST*") {
+            $hwndSettings = $w.MainWindowHandle
+            $settingsPid = $w.Id
+            break
+        }
+    }
+    if ($hwndSettings -ne [IntPtr]::Zero) { break }
+}
+
+if ($hwndSettings -eq [IntPtr]::Zero) {
     Write-Host "Settings window not found!" -ForegroundColor Red
     exit 1
 }
+
+Write-Host "Found settings window HWND: $hwndSettings" -ForegroundColor Green
 
 $hApply = [Win32]::GetDlgItem($hwndSettings, 0x3021)
 if ($hApply -eq 0) {
@@ -57,15 +75,27 @@ Write-Host "Clicking Apply..." -ForegroundColor Cyan
 
 # Wait for restart
 Write-Host "Waiting for restart..." -ForegroundColor Cyan
-Start-Sleep -Seconds 4
+$restarted = $false
+$newPid = 0
+for ($i = 0; $i -lt 15; $i++) {
+    Start-Sleep -Seconds 1
+    $procs = Get-Process -Name EliteTaskbar -ErrorAction SilentlyContinue
+    if ($procs -and $procs.Id -ne $initialPid) {
+        $newPid = $procs.Id
+        $restarted = $true
+        break
+    }
+}
 
-# Check active EliteTaskbar processes
-$procs = Get-Process -Name EliteTaskbar -ErrorAction SilentlyContinue
-foreach ($p in $procs) {
-    $cmd = (Get-CimInstance Win32_Process -Filter "ProcessId = $($p.Id)").CommandLine
-    $parent = (Get-CimInstance Win32_Process -Filter "ProcessId = $($p.Id)").ParentProcessId
+if (-not $restarted) {
+    Write-Host "EliteTaskbar did not restart!" -ForegroundColor Red
+} else {
+    Write-Host "EliteTaskbar successfully restarted!" -ForegroundColor Green
+    $p = Get-Process -Id $newPid
+    $cmd = (Get-CimInstance Win32_Process -Filter "ProcessId = $newPid").CommandLine
+    $parent = (Get-CimInstance Win32_Process -Filter "ProcessId = $newPid").ParentProcessId
     $parentName = (Get-Process -Id $parent -ErrorAction SilentlyContinue).Name
-    Write-Host "Active EliteTaskbar process PID: $($p.Id)" -ForegroundColor Yellow
+    Write-Host "Active EliteTaskbar process PID: $newPid" -ForegroundColor Yellow
     Write-Host "  Path: $($p.Path)" -ForegroundColor Yellow
     Write-Host "  Command Line: $cmd" -ForegroundColor Yellow
     Write-Host "  Parent: $parentName (PID $parent)" -ForegroundColor Yellow
