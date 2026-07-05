@@ -162,3 +162,5 @@ All notable changes to this project will be documented in this file.
 
 - Made the application selectively stay alive if 'Win32Explorer' browser windows are still open when the Elite Taskbar is manually exited, instead of closing the entire process.
 
+- Fixed an issue where the file manager exiting would forcibly close the taskbar even if nableEliteTaskbar was explicitly toggled off but the taskbar was running.
+

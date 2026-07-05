@@ -86,7 +86,7 @@ App::~App() = default;
 
 void App::OnBrowserRemoved()
 {
-	if (m_browserList.IsEmpty() && !(m_config.enableEliteTaskbar.get() && IsEliteTaskbarRunning()))
+	if (m_browserList.IsEmpty() && !IsEliteTaskbarRunning())
 	{
 		// The last top-level browser window has been closed, so exit the application.
 		PostQuitMessage(EXIT_CODE_NORMAL);
@@ -464,7 +464,7 @@ DriveModel *App::GetDriveModel()
 
 void App::OnWillRemoveBrowser()
 {
-	if (m_browserList.GetSize() == 1 && !m_exitStarted && !(m_config.enableEliteTaskbar.get() && IsEliteTaskbarRunning()))
+	if (m_browserList.GetSize() == 1 && !m_exitStarted && !IsEliteTaskbarRunning())
 	{
 		// The last browser window is about to be closed, which indicates that the application is
 		// going to exit. Note that the exit may have already started (e.g. if there were multiple
