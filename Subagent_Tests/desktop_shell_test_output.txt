@@ -2,11 +2,11 @@
 Name                           Value
 ----                           -----
 DirectoryChangeNotify          PASS
-ClassRegistration              PASS
 ZOrderConstraints              PASS
-DesktopStartupDynamic          PASS
-SettingsRegistryToggles        PASS
 StartButtonFallback            PASS
 DesktopIconsLoading            PASS
+SettingsRegistryToggles        PASS
+DesktopStartupDynamic          PASS
+ClassRegistration              PASS
 
 
