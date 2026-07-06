@@ -2775,13 +2775,19 @@ bool TaskbarWindow::Initialize(HINSTANCE hInstance) {
             DWORD cbData = sizeof(DWORD);
             WCHAR valName[64];
             wsprintfW(valName, L"EnableTray_Mon%d", (int)i);
-            RegQueryValueExW(hKeyAdv, valName, NULL, NULL, (LPBYTE)&enableTray, &cbData);
+            if (RegQueryValueExW(hKeyAdv, valName, NULL, NULL, (LPBYTE)&enableTray, &cbData) != ERROR_SUCCESS) {
+                enableTray = 1;
+            }
             cbData = sizeof(DWORD);
             wsprintfW(valName, L"EnableClock_Mon%d", (int)i);
-            RegQueryValueExW(hKeyAdv, valName, NULL, NULL, (LPBYTE)&enableClock, &cbData);
+            if (RegQueryValueExW(hKeyAdv, valName, NULL, NULL, (LPBYTE)&enableClock, &cbData) != ERROR_SUCCESS) {
+                enableClock = 1;
+            }
             cbData = sizeof(DWORD);
             wsprintfW(valName, L"EnableTaskBtns_Mon%d", (int)i);
-            RegQueryValueExW(hKeyAdv, valName, NULL, NULL, (LPBYTE)&enableTaskBtns, &cbData);
+            if (RegQueryValueExW(hKeyAdv, valName, NULL, NULL, (LPBYTE)&enableTaskBtns, &cbData) != ERROR_SUCCESS) {
+                enableTaskBtns = 1;
+            }
             RegCloseKey(hKeyAdv);
         }
 

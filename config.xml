@@ -25,7 +25,7 @@
 		<Setting name="Language">3081</Setting>
 		<Setting name="EnableNativeViewMode">yes</Setting>
 		<Setting name="EnableShellBagsSupport">no</Setting>
-		<Setting name="EnableEliteTaskbar">no</Setting>
+		<Setting name="EnableEliteTaskbar">yes</Setting>
 		<Setting name="EnableEliteStartMenu">no</Setting>
 		<Setting name="EnablePortableMirror">yes</Setting>
 		<Setting name="LargeToolbarIcons">yes</Setting>

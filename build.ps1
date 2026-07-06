@@ -1,5 +1,6 @@
 param(
-    [string]$Configuration = "Release"
+    [string]$Configuration = "Release",
+    [string]$Target = "All"
 )
 
 if ($env:ELITE_AUDITOR_RUN -ne "1") {
@@ -11,7 +12,7 @@ if ($env:ELITE_AUDITOR_RUN -ne "1") {
 # Elite-TaskBar Build Script
 $ScriptDir = Split-Path -Parent $MyInvocation.MyCommand.Definition
 
-$LockFile = Join-Path $env:TEMP "elite_taskbar_build.lock"
+$LockFile = Join-Path $env:TEMP "elite_taskbar_build_v2.lock"
 $lockStream = $null
 while ($null -eq $lockStream) {
     try {
@@ -33,7 +34,11 @@ Start-Sleep -Seconds 1
 Write-Host "Triggering pre-build backup..." -ForegroundColor Cyan
 $BackupScript = Join-Path $ScriptDir "backup.ps1"
 if (Test-Path $BackupScript) {
-    try { & $BackupScript } catch { Write-Warning "Backup failed, but continuing build." }
+    try {
+        & $BackupScript -BuildOutputOnly
+    } catch {
+        Write-Warning "Backup failed, but continuing build."
+    }
 } else {
     Write-Warning "Backup script not found. Skipping backup."
 }
@@ -69,20 +74,40 @@ if (-not (Test-Path $SourceDir)) {
 
 # Pre-build Synchronisation: Copy files to Win32Explorer submodule
 $submodDir = Join-Path $ScriptDir "Win32Explorer_26.0.3.0\App_Source\EliteTaskbar"
+$submodDirRemaining = Join-Path $ScriptDir "Remaining_Shell\Win32Explorer_26.0.3.0\App_Source\EliteTaskbar"
+
 Write-Host "Pre-build Synchronisation: Copying source files to Win32Explorer..." -ForegroundColor Yellow
 if (-not (Test-Path $submodDir)) {
     New-Item -ItemType Directory -Path $submodDir -Force | Out-Null
 }
+if (-not (Test-Path $submodDirRemaining)) {
+    New-Item -ItemType Directory -Path $submodDirRemaining -Force | Out-Null
+}
+
+# Copy to main submodule
 Copy-Item (Join-Path $SourceDir "resource.h") -Destination (Join-Path $submodDir "resource.h") -Force
 Copy-Item (Join-Path $SourceDir "resources.rc") -Destination (Join-Path $submodDir "resources.rc") -Force
 Copy-Item (Join-Path $SourceDir "TaskbarProperties.cpp") -Destination (Join-Path $submodDir "TaskbarProperties.cpp") -Force
+Copy-Item (Join-Path $SourceDir "DesktopWindow.cpp") -Destination (Join-Path $submodDir "DesktopWindow.cpp") -Force
 
-# Adjust resource paths in the copied resources.rc for submodule compilation context
+# Copy to remaining shell submodule
+Copy-Item (Join-Path $SourceDir "resource.h") -Destination (Join-Path $submodDirRemaining "resource.h") -Force
+Copy-Item (Join-Path $SourceDir "resources.rc") -Destination (Join-Path $submodDirRemaining "resources.rc") -Force
+Copy-Item (Join-Path $SourceDir "TaskbarProperties.cpp") -Destination (Join-Path $submodDirRemaining "TaskbarProperties.cpp") -Force
+Copy-Item (Join-Path $SourceDir "DesktopWindow.cpp") -Destination (Join-Path $submodDirRemaining "DesktopWindow.cpp") -Force
+
+# Adjust resource paths in the copied resources.rc for submodule compilation contexts
 $targetRc = Join-Path $submodDir "resources.rc"
 if (Test-Path $targetRc) {
     $content = Get-Content $targetRc -Raw
     $newContent = $content.Replace('..\\Resources\\', 'EliteTaskbar\\Resources\\')
     Set-Content -Path $targetRc -Value $newContent -NoNewline
+}
+$targetRcRemaining = Join-Path $submodDirRemaining "resources.rc"
+if (Test-Path $targetRcRemaining) {
+    $content = Get-Content $targetRcRemaining -Raw
+    $newContent = $content.Replace('..\\Resources\\', 'EliteTaskbar\\Resources\\')
+    Set-Content -Path $targetRcRemaining -Value $newContent -NoNewline
 }
 
 # Setup MSVC Environment
@@ -132,23 +157,25 @@ if (Test-Path $rootScannerIconPath) {
 }
 
 $failed = $false
-try {
-    & "$ScriptDir\build_x64.ps1" -SourceDir $SourceDir -BuildDir $BuildDir -VsDevCmd $vsDevCmd
-} catch {
-    Write-Error "x64 Build failed: $_"
-    $failed = $true
-}
-
-if (-not $failed) {
+if ($Target -eq "All" -or $Target -eq "Taskbar") {
     try {
-        & "$ScriptDir\build_x86.ps1" -SourceDir $SourceDir -BuildDir $BuildDirx86 -VsDevCmd $vsDevCmd
+        & "$ScriptDir\build_x64.ps1" -SourceDir $SourceDir -BuildDir $BuildDir -VsDevCmd $vsDevCmd
     } catch {
-        Write-Error "x86 Build failed: $_"
+        Write-Error "x64 Build failed: $_"
         $failed = $true
+    }
+
+    if (-not $failed) {
+        try {
+            & "$ScriptDir\build_x86.ps1" -SourceDir $SourceDir -BuildDir $BuildDirx86 -VsDevCmd $vsDevCmd
+        } catch {
+            Write-Error "x86 Build failed: $_"
+            $failed = $true
+        }
     }
 }
 
-if (-not $failed) {
+if (-not $failed -and ($Target -eq "All" -or $Target -eq "Settings")) {
     try {
         & "$ScriptDir\build_settings.ps1" -SourceDir $SourceDir -BuildDir $BuildDir -BuildDirx86 $BuildDirx86 -VsDevCmd $vsDevCmd
     } catch {
@@ -168,7 +195,7 @@ if ($failed) {
     exit 1
 }
 
-if (-not $failed) {
+if (-not $failed -and ($Target -eq "All" -or $Target -eq "Win32Explorer")) {
     # 1. Compile Win32Explorer
     Write-Host "Building Win32Explorer..." -ForegroundColor Cyan
     $origDir = Get-Location
@@ -186,17 +213,17 @@ if (-not $failed) {
         }
     }
     Set-Location $origDir
+}
 
+if (-not $failed -and ($Target -eq "All" -or $Target -eq "StartMenu") -and (Test-Path "$ScriptDir\EliteStartMenu.ps1")) {
     # 2. Compile EliteStartMenu
-    if (-not $failed -and (Test-Path "$ScriptDir\EliteStartMenu.ps1")) {
-        try {
-            Write-Host 'Compiling EliteStartMenu...' -ForegroundColor Cyan
-            Invoke-ps2exe -inputFile "$ScriptDir\EliteStartMenu.ps1" -outputFile "$BuildDir\EliteStartMenu.exe" -noConsole -STA -iconFile "$ScriptDir\Resources\PREFERENCES.ico"
-            Invoke-ps2exe -inputFile "$ScriptDir\EliteStartMenu.ps1" -outputFile "$BuildDirx86\EliteStartMenu.exe" -noConsole -STA -iconFile "$ScriptDir\Resources\PREFERENCES.ico" -x86
-        } catch {
-            Write-Error "EliteStartMenu compilation failed: $_"
-            $failed = $true
-        }
+    try {
+        Write-Host 'Compiling EliteStartMenu...' -ForegroundColor Cyan
+        Invoke-ps2exe -inputFile "$ScriptDir\EliteStartMenu.ps1" -outputFile "$BuildDir\EliteStartMenu.exe" -noConsole -STA -iconFile "$ScriptDir\Resources\PREFERENCES.ico"
+        Invoke-ps2exe -inputFile "$ScriptDir\EliteStartMenu.ps1" -outputFile "$BuildDirx86\EliteStartMenu.exe" -noConsole -STA -iconFile "$ScriptDir\Resources\PREFERENCES.ico" -x86
+    } catch {
+        Write-Error "EliteStartMenu compilation failed: $_"
+        $failed = $true
     }
 }
 
@@ -211,18 +238,18 @@ if ($failed) {
     exit 1
 }
 
-if (-not $failed) {
+if (-not $failed -and ($Target -eq "All" -or $Target -eq "PostBuild")) {
     $processesToClean = @("EliteTaskbar.exe", "EliteSettings.exe", "EliteSettings.cpl", "EliteEverything.exe", "EliteDLLScanner.exe", "Win32Explorer.exe", "EliteStartMenu.exe")
     foreach ($proc in $processesToClean) {
         if (Test-Path "$ScriptDir\$proc") { Remove-Item "$ScriptDir\$proc" -Force -ErrorAction SilentlyContinue }
     }
 
-    Copy-Item "$BuildDir\EliteTaskbar.exe" "$ScriptDir\EliteTaskbar.exe" -Force
-    Copy-Item "$BuildDir\EliteSettings.exe" "$ScriptDir\EliteSettings.exe" -Force
-    Copy-Item "$BuildDir\EliteSettings.cpl" "$ScriptDir\EliteSettings.cpl" -Force
-    Copy-Item "$BuildDir\EliteEverything.exe" "$ScriptDir\EliteEverything.exe" -Force
-    Copy-Item "$BuildDir\EliteDLLScanner.exe" "$ScriptDir\EliteDLLScanner.exe" -Force
-    Copy-Item "$BuildDir\Win32Explorer.exe" "$ScriptDir\Win32Explorer.exe" -Force
+    if (Test-Path "$BuildDir\EliteTaskbar.exe") { Copy-Item "$BuildDir\EliteTaskbar.exe" "$ScriptDir\EliteTaskbar.exe" -Force }
+    if (Test-Path "$BuildDir\EliteSettings.exe") { Copy-Item "$BuildDir\EliteSettings.exe" "$ScriptDir\EliteSettings.exe" -Force }
+    if (Test-Path "$BuildDir\EliteSettings.cpl") { Copy-Item "$BuildDir\EliteSettings.cpl" "$ScriptDir\EliteSettings.cpl" -Force }
+    if (Test-Path "$BuildDir\EliteEverything.exe") { Copy-Item "$BuildDir\EliteEverything.exe" "$ScriptDir\EliteEverything.exe" -Force }
+    if (Test-Path "$BuildDir\EliteDLLScanner.exe") { Copy-Item "$BuildDir\EliteDLLScanner.exe" "$ScriptDir\EliteDLLScanner.exe" -Force }
+    if (Test-Path "$BuildDir\Win32Explorer.exe") { Copy-Item "$BuildDir\Win32Explorer.exe" "$ScriptDir\Win32Explorer.exe" -Force }
     if (Test-Path "$BuildDir\EliteStartMenu.exe") {
         Copy-Item "$BuildDir\EliteStartMenu.exe" "$ScriptDir\EliteStartMenu.exe" -Force
     }

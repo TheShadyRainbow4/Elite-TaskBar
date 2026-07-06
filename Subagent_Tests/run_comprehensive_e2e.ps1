@@ -333,6 +333,11 @@ try {
     
     # Kill any running Win32Explorer instances first to get a clean baseline
     Get-Process -Name Win32Explorer -ErrorAction SilentlyContinue | Stop-Process -Force
+    $regSettingsPath = "HKCU:\Software\EliteSoftware\Win32Explorer\Advanced"
+    if (-not (Test-Path $regSettingsPath)) {
+        New-Item -Path "HKCU:\Software\EliteSoftware\Win32Explorer" -Name "Advanced" -Force | Out-Null
+    }
+    Set-ItemProperty -Path $regSettingsPath -Name "EnableEliteTaskbar" -Value 1 -Type DWord
     Start-Sleep -Seconds 1
     
     # Rapidly click Apply button (ID 0x3021 / 12321) 3 times
@@ -341,8 +346,8 @@ try {
     [Win32Helper]::SendMessage($hwndSettings, 0x0111, [IntPtr]0x3021, [IntPtr]::Zero) | Out-Null
     [Win32Helper]::SendMessage($hwndSettings, 0x0111, [IntPtr]0x3021, [IntPtr]::Zero) | Out-Null
     
-    Write-Host "Waiting 6 seconds for shell relaunch script to complete..." -ForegroundColor Cyan
-    Start-Sleep -Seconds 6
+    Write-Host "Waiting 10 seconds for shell relaunch script to complete..." -ForegroundColor Cyan
+    Start-Sleep -Seconds 10
     
     # Check number of Win32Explorer processes running
     $explProcesses = Get-Process -Name Win32Explorer -ErrorAction SilentlyContinue

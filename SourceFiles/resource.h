@@ -102,6 +102,26 @@
 #define IDC_DESKTOP_ICON_PREVIEW_2      331
 #define IDC_DESKTOP_ICON_PREVIEW_3      332
 #define IDC_DESKTOP_ICON_PREVIEW_4      333
+#define IDC_USE_NATIVE_WALLPAPER        334
+#define IDC_DESKTOP_THUMBNAILS          335
+
+#define IDD_EXPLORER_PROPS              243
+#define IDD_DWM_PROPS                   244
+#define IDD_COLORS_PROPS                245
+
+#define IDC_EXPLORER_HIDDEN_FILES       340
+#define IDC_EXPLORER_EXTENSIONS         341
+#define IDC_EXPLORER_BACKUP             342
+#define IDC_EXPLORER_RESTORE            343
+
+#define IDC_DWM_ANIMATIONS              350
+#define IDC_DWM_GLASS                   351
+#define IDC_DWM_BORDER_SIZE             352
+
+#define IDC_COLORS_HIGHLIGHT            360
+#define IDC_COLORS_CLASSIC              361
+#define IDC_COLORS_WINDOWS_DARK         362
+#define IDC_COLORS_APP_DARK             363
 
 
 

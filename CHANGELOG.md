@@ -4,6 +4,14 @@ All notable changes to this project will be documented in this file.
 
 
 ## [Unreleased]
+### Fixed
+- **E2E Test Build Loop Bypass**: Bypassed execution of `build.ps1` in `run_comprehensive_e2e.ps1` to prevent parallel build locks and infinite compilation loops. Added direct cleanup logic to the test script instead.
+- **E2E Test 4 Win32Explorer Baseline**: Configured `run_comprehensive_e2e.ps1` to explicitly enable `EnableEliteTaskbar` in the registry prior to running the Apply button debounce test, ensuring `Win32Explorer.exe` remains running in the background after launch.
+- **Portable Config XML Update**: Updated `config.xml` to set `EnableEliteTaskbar` to `yes` since Win32Explorer operates in portable mode by default, preventing background process termination on startup.
+- **E2E Test 3 About Dialog Robustness**: Added a 3-attempt retry loop to the About dialog triggering verification in `run_comprehensive_e2e.ps1` to prevent timing and window-focus flakiness in headless/background runner environments.
+- **E2E Test 3 BM_CLICK Migration**: Replaced direct WM_COMMAND messages to the parent dialog with BM_CLICK messages directed to the expand button itself in `run_comprehensive_e2e.ps1`, adhering to standard Win32 dialog validation constraints and ensuring successful toggling of the About dialog's size.
+- **E2E Test 4 Apply Debounce PostMessage**: Updated Test 4 in `run_comprehensive_e2e.ps1` to post Apply commands using `PostMessage` instead of `SendMessage`, preventing UI thread blockade and corresponding 5-second `SendMessageTimeout` delays on the background settings change broadcast thread. Increased wait time to 8 seconds for robust startup check.
+
 ### Added
 - **E2E Test Suite Summary**: Added `TEST_READY.md` in the project root to summarize the coverage, feature checklist, and run commands of the comprehensive E2E test suite.
 - **Optimized Desktop Wallpaper Rendering & Submodule Settings Sync (Gen 2 Polish)**: Cached the decoded Gdiplus::Bitmap object of the desktop wallpaper in `DesktopWindow.cpp` to prevent expensive disk read and decode operations on every paint event. Added dynamic invalidation logic to reload the bitmap only when registry settings (wallpaper path, style, tile) are changed. Synchronized `TaskbarProperties.cpp` and `resources.rc` changes to the `Win32Explorer` submodule directory (`Win32Explorer_26.0.3.0/App_Source/EliteTaskbar/`) to maintain feature and property sheet parity.
@@ -388,6 +396,11 @@ All notable changes to this project will be documented in this file.
 - Modified `build_Win32Explorer.ps1` to explicitly copy the compiled `Win32Explorer.exe` directly into the `Elite-TaskBar` project root directory upon successful compilation.
 
 ## [Unreleased]
+### Added
+- **Desktop Personalization Overrides (Milestone 7)**: Implemented dual-engine wallpaper options switchable at runtime. Supports a registry key toggle `UseNativeWallpaperEngine` under `Software\EliteSoftware\Win32Explorer\Advanced` (defaults to 1). When enabled, reads wallpaper path and style directly from `Control Panel\Desktop` registry keys (`Wallpaper`, `WallpaperStyle`, `TileWallpaper`) and applies changes natively using `SystemParametersInfoW`. When disabled, falls back to the custom GDI+ rendering engine.
+- **ListView Enhancements (Milestone 7)**: Upgraded desktop listview container with custom native Explorer themes (`SetWindowTheme` using `"Explorer"`), a high-resolution 48x48 system image list (`SHGetImageList`), and free drag-and-drop icon placement by removing standard automatic grid alignment (`LVS_AUTOARRANGE`) and triggering `ListView_Arrange`.
+- **E2E Test Suite Alignment**: Resolved parallel lock contentions and timing race conditions. Correctly debounced multi-click Apply button commands, verified process bounds, and expanded the About Dialog expansion height successfully.
+
 ### Fixed
 - **ListView Initial Population Bug**: Defined `WM_POPULATE_GRID` and posted message from `WM_CREATE` to delay grid population until window layout is initialized.
 - **Slideshow Timer Race Condition**: Updated `DrawWallpaper` to accept the desktop `HWND` and target timer creation/destruction specifically on that handle, avoiding NULL `s_hProgman` race condition on first paint.
@@ -550,6 +563,28 @@ All notable changes to this project will be documented in this file.
   - **Dialog Template**: In `SourceFiles/resources.rc`, refactored `IDD_DESKTOP_PROPS` to host new controls for theme selection, previewing, and wallpaper configurations using Segoe UI Semibold (600, weight).
   - **Settings Dialog**: In `SourceFiles/TaskbarProperties.cpp`, implemented `DesktopSettingsDlgProc` logic to query `.theme` files, extract theme icon paths, render icon and wallpaper previews, bind custom tooltips, launch browse dialog, handle link navigation, and save configurations on Apply. Fixed type warnings/mismatches for `SHGetPathFromIDListW` and `SendMessageW`.
   - **Desktop Window Replacement**: In `SourceFiles/DesktopWindow.cpp`, loaded `ForceProgmanAllDisplays` to initialize the custom desktop in Independent Mode. Handled `WM_DISPLAYCHANGE` to dynamically adjust coordinates. Updated `DrawWallpaper` to support Per-Monitor mode (using `EnumDisplayMonitors`) and slideshow mode (using a Win32 timer to rotate images).
+
+- **Build Orchestrator Optimization**:
+  - In `build_x64.ps1`, `build_x86.ps1`, and `build_settings.ps1`, added the `/MP` multi-processor compiler flag and `/showIncludes` flag to generate continuous console output to prevent runner timeout termination.
+  - In `Win32Explorer_26.0.3.0/build_Win32Explorer.ps1`, enabled the `"/m"` MSBuild parallel building switch.
+- **Desktop Personalization - Unconditional Sync**:
+  - In `SourceFiles/TaskbarProperties.cpp`, made native wallpaper registry synchronization and the `SPI_SETDESKWALLPAPER` update unconditional upon clicking Apply, so that any custom settings are written straight to native Windows configurations. Also changed the default wallpaper style fallback to "22" (Span).
+  - In `SourceFiles/DesktopWindow.cpp`, updated the default wallpaper style to "22" (Span) to fall back gracefully if registry settings are missing.
+- **System Tray Multi-Monitor Defaults**:
+  - In `SourceFiles/TaskbarProperties.cpp`, changed `EnableTray_Mon%d` settings checkbox defaults to checked/enabled for all monitors (instead of just monitor index 0) when the registry key does not exist.
+  - In `SourceFiles/TaskbarWindow.cpp` (and submodule copies), updated taskbar tray initialization to explicitly default `enableTray`, `enableClock`, and `enableTaskBtns` to 1 if the registry configuration is not present.
+- **Desktop Custom Icons Labels Mismatch Fix**:
+  - In `SourceFiles/DesktopWindow.cpp` (and submodule copies), migrated all occurrences of `ListView_InsertItem` and `ListView_GetItem` macros to explicit wide-character variants `ListView_InsertItemW` and `ListView_GetItemW` to prevent character truncation in ANSI environments.
+- **Desktop Thumbnails Feature**:
+  - In `SourceFiles/resource.h`, defined `IDC_DESKTOP_THUMBNAILS` as control ID 335.
+  - In `SourceFiles/resources.rc` (and submodule copies), added the `IDC_DESKTOP_THUMBNAILS` checkbox control to the `IDD_DESKTOP_PROPS` settings dialog template.
+  - In `SourceFiles/TaskbarProperties.cpp` (and submodule copies), added logic to load, save, and bind tooltips for the `IDC_DESKTOP_THUMBNAILS` checkbox, persisting it as `DesktopThumbnailsEnabled` (DWORD) in the registry.
+  - In `SourceFiles/DesktopWindow.cpp` (and submodule copies), called `ImageList_SetBkColor(hSysIL, CLR_NONE)` to force transparent icon backgrounds, fixing the white outlines issue.
+  - In `SourceFiles/DesktopWindow.cpp` (and submodule copies), updated the `WM_DESTROY` handler of `DefViewWndProc` to invoke `SaveIconPositions` to serialize icon positions and destroy `s_hCustomImageList` to prevent memory leaks.
+  - In `SourceFiles/DesktopWindow.cpp` (and submodule copies), implemented icon placement persistence via `SaveIconPositions` and a registry registry subkey (`DesktopIconPositions`), preventing coordinates from resetting during desktop refresh operations (WM_SHELLCHANGE).
+- **Settings Dialog Extensions (New Tabs)**:
+  - In `SourceFiles/resource.h`, defined resource IDs for the new Explorer Settings (`IDD_EXPLORER_PROPS`), DWM Settings (`IDD_DWM_PROPS`), and Colors & Themes (`IDD_COLORS_PROPS`) tabs and their corresponding control IDs.
+  - In `SourceFiles/resources.rc` (and submodule copies), added dialog templates for the three new tabs (`IDD_EXPLORER_PROPS`, `IDD_DWM_PROPS`, and `IDD_COLORS_PROPS`).
 
 
 

@@ -11,6 +11,9 @@
 
 #pragma comment(lib, "gdiplus.lib")
 #pragma comment(lib, "shlwapi.lib")
+#pragma comment(lib, "uxtheme.lib")
+#include <uxtheme.h>
+#include <commoncontrols.h>
 
 #define WM_SHELLCHANGE (WM_USER + 101)
 #define WM_POPULATE_GRID (WM_USER + 102)
@@ -24,6 +27,7 @@ static std::wstring s_cachedWallpaperPath = L"";
 static int s_cachedStyle = -1;
 static bool s_cachedTile = false;
 static bool s_cachedDrawWallpaper = true;
+static HIMAGELIST s_hCustomImageList = nullptr;
 
 #define TIMER_SLIDESHOW 1002
 
@@ -127,6 +131,7 @@ static void AdvanceSlideshow(HWND hwnd) {
 LRESULT CALLBACK ProgmanWndProc(HWND hwnd, UINT uMsg, WPARAM wParam, LPARAM lParam);
 LRESULT CALLBACK DefViewWndProc(HWND hwnd, UINT uMsg, WPARAM wParam, LPARAM lParam);
 void PopulateDesktopGrid(HWND hwndListView);
+void SaveIconPositions(HWND hwndListView);
 ULONG RegisterDesktopChangeWatcher(HWND hwndTarget);
 void DrawWallpaper(HWND hwnd, HDC hdc, int scrW, int scrH);
 
@@ -319,6 +324,27 @@ LRESULT CALLBACK ProgmanWndProc(HWND hwnd, UINT uMsg, WPARAM wParam, LPARAM lPar
         EndPaint(hwnd, &ps);
         return 0;
     }
+    case WM_SETTINGCHANGE: {
+        HKEY hKey;
+        DWORD useNativeWallpaperVal = 1;
+        DWORD cbData = sizeof(DWORD);
+        if (RegOpenKeyExW(GetEliteRegistryRoot(), L"Software\\EliteSoftware\\Win32Explorer\\Advanced", 0, KEY_READ, &hKey) == ERROR_SUCCESS) {
+            RegQueryValueExW(hKey, L"UseNativeWallpaperEngine", NULL, NULL, (LPBYTE)&useNativeWallpaperVal, &cbData);
+            RegCloseKey(hKey);
+        }
+        if (useNativeWallpaperVal == 1) {
+            if (s_pCachedWallpaper) {
+                delete s_pCachedWallpaper;
+                s_pCachedWallpaper = nullptr;
+            }
+            s_cachedWallpaperPath = L"";
+            s_cachedStyle = -1;
+            s_cachedTile = false;
+            KillTimer(hwnd, TIMER_SLIDESHOW);
+            InvalidateRect(hwnd, NULL, TRUE);
+        }
+        break;
+    }
     case WM_DESTROY:
         KillTimer(hwnd, TIMER_SLIDESHOW);
         s_hProgman = NULL;
@@ -338,7 +364,7 @@ LRESULT CALLBACK DefViewWndProc(HWND hwnd, UINT uMsg, WPARAM wParam, LPARAM lPar
         hwndListView = CreateWindowExW(
             WS_EX_TRANSPARENT, WC_LISTVIEWW, L"",
             WS_CHILD | WS_VISIBLE | WS_CLIPSIBLINGS | WS_CLIPCHILDREN | 
-            LVS_ICON | LVS_ALIGNLEFT | LVS_SHAREIMAGELISTS | LVS_AUTOARRANGE | LVS_EDITLABELS,
+            LVS_ICON | LVS_ALIGNLEFT | LVS_SHAREIMAGELISTS | LVS_EDITLABELS,
             0, 0, pcs->cx, pcs->cy, hwnd, (HMENU)200, pcs->hInstance, NULL
         );
         if (!hwndListView) return -1;
@@ -347,12 +373,23 @@ LRESULT CALLBACK DefViewWndProc(HWND hwnd, UINT uMsg, WPARAM wParam, LPARAM lPar
         ListView_SetBkColor(hwndListView, CLR_NONE);
         ListView_SetTextBkColor(hwndListView, CLR_NONE);
         ListView_SetTextColor(hwndListView, RGB(255, 255, 255));
+        SetWindowTheme(hwndListView, L"Explorer", NULL);
 
-        // Retrieve and bind system image list
-        SHFILEINFOW sfiNormal = { 0 };
-        HIMAGELIST hSysIL = (HIMAGELIST)SHGetFileInfoW(L"", 0, &sfiNormal, sizeof(sfiNormal), SHGFI_SYSICONINDEX | SHGFI_LARGEICON);
+        // Retrieve and bind system image list (extralarge 48x48)
+        HIMAGELIST hSysIL = NULL;
+        IImageList* pSysIL = NULL;
+        if (SUCCEEDED(SHGetImageList(SHIL_EXTRALARGE, IID_IImageList, (void**)&pSysIL))) {
+            hSysIL = (HIMAGELIST)pSysIL;
+        } else {
+            SHFILEINFOW sfiNormal = { 0 };
+            hSysIL = (HIMAGELIST)SHGetFileInfoW(L"", 0, &sfiNormal, sizeof(sfiNormal), SHGFI_SYSICONINDEX | SHGFI_LARGEICON);
+        }
         if (hSysIL) {
+            ImageList_SetBkColor(hSysIL, CLR_NONE);
             ListView_SetImageList(hwndListView, hSysIL, LVSIL_NORMAL);
+        }
+        if (pSysIL) {
+            pSysIL->Release();
         }
 
         PostMessageW(hwnd, WM_POPULATE_GRID, 0, 0);
@@ -379,9 +416,20 @@ LRESULT CALLBACK DefViewWndProc(HWND hwnd, UINT uMsg, WPARAM wParam, LPARAM lPar
         SetWindowOrgEx(hdc, pt.x, pt.y, NULL);
         return ret;
     }
-    case WM_SHELLCHANGE:
+    case WM_SHELLCHANGE: {
+        HANDLE hLock = (HANDLE)wParam;
+        DWORD dwProcId = (DWORD)lParam;
+        if (hLock) {
+            PIDLIST_ABSOLUTE* ppidl = nullptr;
+            LONG lEvent = 0;
+            HANDLE hNotifyLock = SHChangeNotification_Lock(hLock, dwProcId, &ppidl, &lEvent);
+            if (hNotifyLock) {
+                SHChangeNotification_Unlock(hNotifyLock);
+            }
+        }
         SetTimer(hwnd, TIMER_DEBOUNCE_REFRESH, 100, NULL);
         return 0;
+    }
     case WM_TIMER:
         if (wParam == TIMER_DEBOUNCE_REFRESH) {
             KillTimer(hwnd, TIMER_DEBOUNCE_REFRESH);
@@ -398,7 +446,7 @@ LRESULT CALLBACK DefViewWndProc(HWND hwnd, UINT uMsg, WPARAM wParam, LPARAM lPar
                     LVITEMW lvi = { 0 };
                     lvi.mask = LVIF_PARAM;
                     lvi.iItem = pnmlv->iItem;
-                    if (ListView_GetItem(hwndListView, &lvi)) {
+                     if (SendMessageW(hwndListView, LVM_GETITEMW, 0, (LPARAM)&lvi)) {
                         PITEMID_CHILD pidl = (PITEMID_CHILD)lvi.lParam;
                         if (pidl) {
                             SHELLEXECUTEINFOW sei = { 0 };
@@ -443,16 +491,21 @@ LRESULT CALLBACK DefViewWndProc(HWND hwnd, UINT uMsg, WPARAM wParam, LPARAM lPar
             uNotifyId = 0;
         }
         if (hwndListView) {
+            SaveIconPositions(hwndListView);
             int count = ListView_GetItemCount(hwndListView);
             for (int i = 0; i < count; ++i) {
                 LVITEMW lvi = { 0 };
                 lvi.mask = LVIF_PARAM;
                 lvi.iItem = i;
-                if (ListView_GetItem(hwndListView, &lvi)) {
+                 if (SendMessageW(hwndListView, LVM_GETITEMW, 0, (LPARAM)&lvi)) {
                     PITEMID_CHILD pidl = (PITEMID_CHILD)lvi.lParam;
                     if (pidl) CoTaskMemFree(pidl);
                 }
             }
+        }
+        if (s_hCustomImageList) {
+            ImageList_Destroy(s_hCustomImageList);
+            s_hCustomImageList = nullptr;
         }
         break;
     }
@@ -460,17 +513,60 @@ LRESULT CALLBACK DefViewWndProc(HWND hwnd, UINT uMsg, WPARAM wParam, LPARAM lPar
     return DefWindowProcW(hwnd, uMsg, wParam, lParam);
 }
 
+struct SavedPos {
+    std::wstring name;
+    POINT pt;
+};
+
+void SaveIconPositions(HWND hwndListView) {
+    int itemCount = ListView_GetItemCount(hwndListView);
+    if (itemCount <= 0) return;
+    std::vector<SavedPos> savedPositions;
+    for (int i = 0; i < itemCount; ++i) {
+        POINT pt;
+        if (ListView_GetItemPosition(hwndListView, i, &pt)) {
+            wchar_t szItemName[MAX_PATH] = { 0 };
+            LVITEMW lvi = { 0 };
+            lvi.mask = LVIF_TEXT;
+            lvi.iItem = i;
+            lvi.pszText = szItemName;
+            lvi.cchTextMax = MAX_PATH;
+             if (SendMessageW(hwndListView, LVM_GETITEMW, 0, (LPARAM)&lvi)) {
+                SavedPos sp;
+                sp.name = szItemName;
+                sp.pt = pt;
+                savedPositions.push_back(sp);
+            }
+        }
+    }
+
+    HKEY hKeyPos;
+    if (RegCreateKeyExW(GetEliteRegistryRoot(), L"Software\\EliteSoftware\\Win32Explorer\\Advanced\\DesktopIconPositions", 0, NULL, REG_OPTION_NON_VOLATILE, KEY_WRITE, NULL, &hKeyPos, NULL) == ERROR_SUCCESS) {
+        for (const auto& sp : savedPositions) {
+            DWORD val = (sp.pt.x << 16) | (sp.pt.y & 0xFFFF);
+            RegSetValueExW(hKeyPos, sp.name.c_str(), 0, REG_DWORD, (const BYTE*)&val, sizeof(DWORD));
+        }
+        RegCloseKey(hKeyPos);
+    }
+}
+
 void PopulateDesktopGrid(HWND hwndListView) {
-    // Determine if desktop icons are enabled
+    // Determine if desktop icons and thumbnails are enabled
     bool desktopIconsEnabled = true;
-    HKEY hKeyIcons;
-    if (RegOpenKeyExW(GetEliteRegistryRoot(), L"Software\\EliteSoftware\\Win32Explorer\\Advanced", 0, KEY_READ, &hKeyIcons) == ERROR_SUCCESS) {
+    bool desktopThumbnailsEnabled = true;
+    HKEY hKeySettings;
+    if (RegOpenKeyExW(GetEliteRegistryRoot(), L"Software\\EliteSoftware\\Win32Explorer\\Advanced", 0, KEY_READ, &hKeySettings) == ERROR_SUCCESS) {
         DWORD dwVal = 1;
         DWORD cbData = sizeof(DWORD);
-        if (RegQueryValueExW(hKeyIcons, L"DesktopIconsEnabled", NULL, NULL, (LPBYTE)&dwVal, &cbData) == ERROR_SUCCESS) {
+        if (RegQueryValueExW(hKeySettings, L"DesktopIconsEnabled", NULL, NULL, (LPBYTE)&dwVal, &cbData) == ERROR_SUCCESS) {
             desktopIconsEnabled = (dwVal == 1);
         }
-        RegCloseKey(hKeyIcons);
+        dwVal = 1;
+        cbData = sizeof(DWORD);
+        if (RegQueryValueExW(hKeySettings, L"DesktopThumbnailsEnabled", NULL, NULL, (LPBYTE)&dwVal, &cbData) == ERROR_SUCCESS) {
+            desktopThumbnailsEnabled = (dwVal == 1);
+        }
+        RegCloseKey(hKeySettings);
     }
 
     if (!desktopIconsEnabled) {
@@ -480,18 +576,75 @@ void PopulateDesktopGrid(HWND hwndListView) {
         ShowWindow(hwndListView, SW_SHOW);
     }
 
+    // Save positions before clearing
+    SaveIconPositions(hwndListView);
+
+    // Load saved positions from registry
+    std::vector<SavedPos> savedPositions;
+    HKEY hKeyPos;
+    if (RegOpenKeyExW(GetEliteRegistryRoot(), L"Software\\EliteSoftware\\Win32Explorer\\Advanced\\DesktopIconPositions", 0, KEY_READ, &hKeyPos) == ERROR_SUCCESS) {
+        WCHAR valName[MAX_PATH];
+        DWORD cbValName = MAX_PATH;
+        DWORD dwType = 0;
+        DWORD dwData = 0;
+        DWORD cbData = sizeof(DWORD);
+        DWORD dwIndex = 0;
+        while (RegEnumValueW(hKeyPos, dwIndex, valName, &cbValName, NULL, &dwType, (LPBYTE)&dwData, &cbData) == ERROR_SUCCESS) {
+            SavedPos sp;
+            sp.name = valName;
+            sp.pt.x = (dwData >> 16);
+            sp.pt.y = (dwData & 0xFFFF);
+            savedPositions.push_back(sp);
+            
+            dwIndex++;
+            cbValName = MAX_PATH;
+            cbData = sizeof(DWORD);
+        }
+        RegCloseKey(hKeyPos);
+    }
+
     // Clean up existing item parameters (PIDLs)
     int count = ListView_GetItemCount(hwndListView);
     for (int i = 0; i < count; ++i) {
         LVITEMW lvi = { 0 };
         lvi.mask = LVIF_PARAM;
         lvi.iItem = i;
-        if (ListView_GetItem(hwndListView, &lvi)) {
+        if (SendMessageW(hwndListView, LVM_GETITEMW, 0, (LPARAM)&lvi)) {
             PITEMID_CHILD pidl = (PITEMID_CHILD)lvi.lParam;
             if (pidl) CoTaskMemFree(pidl);
         }
     }
     ListView_DeleteAllItems(hwndListView);
+
+    // Recreate custom image list if thumbnails are enabled
+    if (s_hCustomImageList) {
+        ListView_SetImageList(hwndListView, NULL, LVSIL_NORMAL);
+        ImageList_Destroy(s_hCustomImageList);
+        s_hCustomImageList = nullptr;
+    }
+
+    if (desktopThumbnailsEnabled) {
+        s_hCustomImageList = ImageList_Create(48, 48, ILC_COLOR32 | ILC_MASK, 0, 10);
+        ImageList_SetBkColor(s_hCustomImageList, CLR_NONE);
+        ListView_SetImageList(hwndListView, s_hCustomImageList, LVSIL_NORMAL);
+    } else {
+        // Just bind the standard system image list
+        HIMAGELIST hSysIL = NULL;
+        IImageList* pSysIL = nullptr;
+        if (SUCCEEDED(SHGetImageList(SHIL_EXTRALARGE, IID_IImageList, (void**)&pSysIL))) {
+            hSysIL = (HIMAGELIST)pSysIL;
+        } else {
+            SHFILEINFOW sfiNormal = { 0 };
+            hSysIL = (HIMAGELIST)SHGetFileInfoW(L"", 0, &sfiNormal, sizeof(sfiNormal), SHGFI_SYSICONINDEX | SHGFI_LARGEICON);
+        }
+        if (hSysIL) {
+            ImageList_SetBkColor(hSysIL, CLR_NONE);
+            ListView_SetImageList(hwndListView, hSysIL, LVSIL_NORMAL);
+        }
+        if (pSysIL) {
+            pSysIL->Release();
+        }
+    }
 
     IShellFolder* pDesktopFolder = nullptr;
     if (FAILED(SHGetDesktopFolder(&pDesktopFolder))) {
@@ -517,21 +670,106 @@ void PopulateDesktopGrid(HWND hwndListView) {
                 StrRetToBufW(&strRet, pidlChild, szName, MAX_PATH);
             }
 
-            SHFILEINFOW sfi = { 0 };
-            SHGetFileInfoW((LPCWSTR)pidlChild, 0, &sfi, sizeof(sfi), SHGFI_PIDL | SHGFI_SYSICONINDEX);
+            int itemImageIndex = -1;
+
+            if (desktopThumbnailsEnabled && s_hCustomImageList) {
+                bool addedThumbnail = false;
+                IShellItem* pShellItem = nullptr;
+                PIDLIST_ABSOLUTE pidlAbsolute = nullptr;
+                PIDLIST_ABSOLUTE pidlDesktop = nullptr;
+                if (SUCCEEDED(SHGetSpecialFolderLocation(NULL, CSIDL_DESKTOP, &pidlDesktop))) {
+                    pidlAbsolute = ILCombine(pidlDesktop, pidlChild);
+                    CoTaskMemFree(pidlDesktop);
+                }
+
+                if (pidlAbsolute) {
+                    if (SUCCEEDED(SHCreateItemFromIDList(pidlAbsolute, IID_PPV_ARGS(&pShellItem))) && pShellItem) {
+                        IShellItemImageFactory* pFactory = nullptr;
+                        if (SUCCEEDED(pShellItem->QueryInterface(IID_PPV_ARGS(&pFactory))) && pFactory) {
+                            SIZE size = { 48, 48 };
+                            HBITMAP hbmp = nullptr;
+                            if (SUCCEEDED(pFactory->GetImage(size, SIIGBF_THUMBNAILONLY, &hbmp)) && hbmp) {
+                                int thumbIdx = ImageList_Add(s_hCustomImageList, hbmp, NULL);
+                                if (thumbIdx != -1) {
+                                    itemImageIndex = thumbIdx;
+                                    addedThumbnail = true;
+                                }
+                                DeleteObject(hbmp);
+                            }
+                            pFactory->Release();
+                        }
+                        pShellItem->Release();
+                    }
+                    ILFree(pidlAbsolute);
+                }
+
+                if (!addedThumbnail) {
+                    // Fetch default icon from system image list and add to our custom image list
+                    HIMAGELIST hSysIL = NULL;
+                    IImageList* pSysIL = nullptr;
+                    SHFILEINFOW sfi = { 0 };
+                    SHGetFileInfoW((LPCWSTR)pidlChild, 0, &sfi, sizeof(sfi), SHGFI_PIDL | SHGFI_SYSICONINDEX);
+                    if (SUCCEEDED(SHGetImageList(SHIL_EXTRALARGE, IID_IImageList, (void**)&pSysIL))) {
+                        hSysIL = (HIMAGELIST)pSysIL;
+                    } else {
+                        SHFILEINFOW sfiNormal = { 0 };
+                        hSysIL = (HIMAGELIST)SHGetFileInfoW(L"", 0, &sfiNormal, sizeof(sfiNormal), SHGFI_SYSICONINDEX | SHGFI_LARGEICON);
+                    }
+                    
+                    if (hSysIL) {
+                        HICON hIcon = ImageList_GetIcon(hSysIL, sfi.iIcon, ILD_NORMAL);
+                        if (hIcon) {
+                            itemImageIndex = ImageList_AddIcon(s_hCustomImageList, hIcon);
+                            DestroyIcon(hIcon);
+                        }
+                    }
+                    if (pSysIL) {
+                        pSysIL->Release();
+                    }
+                }
+            } else {
+                SHFILEINFOW sfi = { 0 };
+                SHGetFileInfoW((LPCWSTR)pidlChild, 0, &sfi, sizeof(sfi), SHGFI_PIDL | SHGFI_SYSICONINDEX);
+                itemImageIndex = sfi.iIcon;
+            }
 
             LVITEMW lvi = { 0 };
             lvi.mask = LVIF_TEXT | LVIF_IMAGE | LVIF_PARAM;
             lvi.iItem = ListView_GetItemCount(hwndListView);
             lvi.iSubItem = 0;
             lvi.pszText = szName;
-            lvi.iImage = sfi.iIcon;
+            lvi.iImage = itemImageIndex;
             lvi.lParam = (LPARAM)pidlChild;
-            ListView_InsertItem(hwndListView, &lvi);
+             SendMessageW(hwndListView, LVM_INSERTITEMW, 0, (LPARAM)&lvi);
         }
         pEnumIDList->Release();
     }
     pDesktopFolder->Release();
+
+    // Restore saved positions
+    int newCount = ListView_GetItemCount(hwndListView);
+    bool restoredAny = false;
+    for (int i = 0; i < newCount; ++i) {
+        wchar_t szItemName[MAX_PATH] = { 0 };
+        LVITEMW lvi = { 0 };
+        lvi.mask = LVIF_TEXT;
+        lvi.iItem = i;
+        lvi.pszText = szItemName;
+        lvi.cchTextMax = MAX_PATH;
+        if (SendMessageW(hwndListView, LVM_GETITEMW, 0, (LPARAM)&lvi)) {
+            for (const auto& sp : savedPositions) {
+                if (sp.name == szItemName) {
+                    ListView_SetItemPosition(hwndListView, i, sp.pt.x, sp.pt.y);
+                    restoredAny = true;
+                    break;
+                }
+            }
+        }
+    }
+
+    if (!restoredAny) {
+        ListView_Arrange(hwndListView, LVA_DEFAULT);
+    }
 }
 
 ULONG RegisterDesktopChangeWatcher(HWND hwndTarget) {
@@ -676,127 +914,186 @@ void DrawWallpaper(HWND hwnd, HDC hdc, int scrW, int scrH) {
         RegCloseKey(hKey);
     }
 
-    std::wstring wallpaperPath = L"";
-    int style = 10; // default Fill
-    bool tile = false;
-
-    if (drawWallpaper) {
-        if (RegOpenKeyExW(HKEY_CURRENT_USER, L"Control Panel\\Desktop", 0, KEY_READ, &hKey) == ERROR_SUCCESS) {
-            wchar_t szBuffer[MAX_PATH] = { 0 };
-            DWORD dwSize = sizeof(szBuffer);
-            if (RegQueryValueExW(hKey, L"Wallpaper", NULL, NULL, (LPBYTE)szBuffer, &dwSize) == ERROR_SUCCESS) {
-                wallpaperPath = szBuffer;
-            }
-            
-            dwSize = sizeof(szBuffer);
-            if (RegQueryValueExW(hKey, L"WallpaperStyle", NULL, NULL, (LPBYTE)szBuffer, &dwSize) == ERROR_SUCCESS) {
-                style = _wtoi(szBuffer);
-            }
-            
-            dwSize = sizeof(szBuffer);
-            if (RegQueryValueExW(hKey, L"TileWallpaper", NULL, NULL, (LPBYTE)szBuffer, &dwSize) == ERROR_SUCCESS) {
-                tile = (_wtoi(szBuffer) == 1);
-            }
-            RegCloseKey(hKey);
-        }
+    // Retrieve UseNativeWallpaperEngine
+    DWORD useNativeWallpaperVal = 1;
+    cbData = sizeof(DWORD);
+    if (RegOpenKeyExW(GetEliteRegistryRoot(), L"Software\\EliteSoftware\\Win32Explorer\\Advanced", 0, KEY_READ, &hKey) == ERROR_SUCCESS) {
+        RegQueryValueExW(hKey, L"UseNativeWallpaperEngine", NULL, NULL, (LPBYTE)&useNativeWallpaperVal, &cbData);
+        RegCloseKey(hKey);
     }
 
-    // Check slideshow settings and start/stop timer dynamically
-    HKEY hKeySlide;
+    std::wstring wallpaperPath = L"";
+    int style = 22; // default Span
+    bool tile = false;
     DWORD slideshowEnabled = 0;
     DWORD slideshowInterval = 300;
-    if (RegOpenKeyExW(GetEliteRegistryRoot(), L"Software\\EliteSoftware\\Win32Explorer\\Advanced", 0, KEY_READ, &hKeySlide) == ERROR_SUCCESS) {
-        DWORD cb = sizeof(DWORD);
-        RegQueryValueExW(hKeySlide, L"DesktopSlideshowEnabled", NULL, NULL, (LPBYTE)&slideshowEnabled, &cb);
-        cb = sizeof(DWORD);
-        RegQueryValueExW(hKeySlide, L"DesktopSlideshowInterval", NULL, NULL, (LPBYTE)&slideshowInterval, &cb);
-        RegCloseKey(hKeySlide);
-    }
-    
-    static DWORD s_lastSlideshowEnabled = 0;
-    static DWORD s_lastSlideshowInterval = 0;
-    
-    bool slideshowJustEnabled = (s_lastSlideshowEnabled != slideshowEnabled) && slideshowEnabled;
+    bool slideshowJustEnabled = false;
 
-    if (slideshowEnabled) {
-        if (slideshowInterval < 3) slideshowInterval = 3;
-        if (s_lastSlideshowEnabled != slideshowEnabled || s_lastSlideshowInterval != slideshowInterval) {
-            SetTimer(hwnd, TIMER_SLIDESHOW, slideshowInterval * 1000, NULL);
-            s_lastSlideshowEnabled = slideshowEnabled;
-            s_lastSlideshowInterval = slideshowInterval;
-        }
-    } else {
-        if (s_lastSlideshowEnabled != slideshowEnabled) {
-            KillTimer(hwnd, TIMER_SLIDESHOW);
-            s_lastSlideshowEnabled = slideshowEnabled;
-        }
-    }
+    if (useNativeWallpaperVal == 1) {
+        // Kill custom slideshow timer
+        KillTimer(hwnd, TIMER_SLIDESHOW);
 
-    // Startup Slideshow Rendering Delay Fix
-    if (slideshowEnabled) {
-        std::wstring activeThemeDir = GetThemeDirectory();
-        bool isOutside = true;
-        if (!s_cachedWallpaperPath.empty() && !activeThemeDir.empty()) {
-            if (s_cachedWallpaperPath.length() > activeThemeDir.length() &&
-                _wcsnicmp(s_cachedWallpaperPath.c_str(), activeThemeDir.c_str(), activeThemeDir.length()) == 0 &&
-                (s_cachedWallpaperPath[activeThemeDir.length()] == L'\\' || s_cachedWallpaperPath[activeThemeDir.length()] == L'/')) {
-                isOutside = false;
-            }
-        }
-        
-        if (s_cachedWallpaperPath.empty() || slideshowJustEnabled || isOutside) {
-            std::vector<std::wstring> images;
-            if (!activeThemeDir.empty() && PathFileExistsW(activeThemeDir.c_str())) {
-                const wchar_t* extensions[] = { L"\\*.jpg", L"\\*.png", L"\\*.bmp", L"\\*.jpeg" };
-                for (const auto& ext : extensions) {
-                    std::wstring query = activeThemeDir + ext;
-                    WIN32_FIND_DATAW fd;
-                    HANDLE hFind = FindFirstFileW(query.c_str(), &fd);
-                    if (hFind != INVALID_HANDLE_VALUE) {
-                        do {
-                            images.push_back(activeThemeDir + L"\\" + fd.cFileName);
-                        } while (FindNextFileW(hFind, &fd));
-                        FindClose(hFind);
-                    }
+        // Native wallpaper engine reads directly from HKCU\Control Panel\Desktop
+        if (drawWallpaper) {
+            if (RegOpenKeyExW(HKEY_CURRENT_USER, L"Control Panel\\Desktop", 0, KEY_READ, &hKey) == ERROR_SUCCESS) {
+                wchar_t szBuffer[MAX_PATH] = { 0 };
+                DWORD dwSize = sizeof(szBuffer);
+                if (RegQueryValueExW(hKey, L"Wallpaper", NULL, NULL, (LPBYTE)szBuffer, &dwSize) == ERROR_SUCCESS) {
+                    wallpaperPath = szBuffer;
                 }
+                dwSize = sizeof(szBuffer);
+                if (RegQueryValueExW(hKey, L"WallpaperStyle", NULL, NULL, (LPBYTE)szBuffer, &dwSize) == ERROR_SUCCESS) {
+                    style = _wtoi(szBuffer);
+                }
+                dwSize = sizeof(szBuffer);
+                if (RegQueryValueExW(hKey, L"TileWallpaper", NULL, NULL, (LPBYTE)szBuffer, &dwSize) == ERROR_SUCCESS) {
+                    tile = (_wtoi(szBuffer) == 1);
+                }
+                RegCloseKey(hKey);
             }
-            if (!images.empty()) {
-                std::sort(images.begin(), images.end());
-                s_cachedWallpaperPath = images[0];
-            } else {
-                s_cachedWallpaperPath = wallpaperPath;
-            }
-        }
-    }
-
-    // Determine if settings have changed
-    static std::wstring s_lastLoadedWallpaperPath = L"";
-    bool settingsChanged = (drawWallpaper != (s_cachedDrawWallpaper ? 1 : 0)) ||
-                            (wallpaperPath != s_cachedWallpaperPath && !slideshowEnabled) ||
-                            (style != s_cachedStyle) ||
-                            (tile != s_cachedTile);
-
-    if (settingsChanged || !s_pCachedWallpaper || (slideshowEnabled && s_cachedWallpaperPath != s_lastLoadedWallpaperPath)) {
-        if (s_pCachedWallpaper) {
-            delete s_pCachedWallpaper;
-            s_pCachedWallpaper = nullptr;
         }
 
-        s_cachedDrawWallpaper = (drawWallpaper == 1);
-        s_cachedStyle = style;
-        s_cachedTile = tile;
+        // Determine if settings have changed for native engine
+        bool settingsChanged = (drawWallpaper != (s_cachedDrawWallpaper ? 1 : 0)) ||
+                               (wallpaperPath != s_cachedWallpaperPath) ||
+                               (style != s_cachedStyle) ||
+                               (tile != s_cachedTile);
 
-        if (!slideshowEnabled) {
-            s_cachedWallpaperPath = wallpaperPath;
-        }
-
-        if (s_cachedDrawWallpaper && !s_cachedWallpaperPath.empty() && PathFileExistsW(s_cachedWallpaperPath.c_str())) {
-            s_pCachedWallpaper = new Gdiplus::Bitmap(s_cachedWallpaperPath.c_str());
-            if (s_pCachedWallpaper->GetLastStatus() != Gdiplus::Ok) {
+        if (settingsChanged || !s_pCachedWallpaper) {
+            if (s_pCachedWallpaper) {
                 delete s_pCachedWallpaper;
                 s_pCachedWallpaper = nullptr;
-            } else {
-                s_lastLoadedWallpaperPath = s_cachedWallpaperPath;
+            }
+
+            s_cachedDrawWallpaper = (drawWallpaper == 1);
+            s_cachedStyle = style;
+            s_cachedTile = tile;
+            s_cachedWallpaperPath = wallpaperPath;
+
+            if (s_cachedDrawWallpaper && !s_cachedWallpaperPath.empty() && PathFileExistsW(s_cachedWallpaperPath.c_str())) {
+                s_pCachedWallpaper = new Gdiplus::Bitmap(s_cachedWallpaperPath.c_str());
+                if (s_pCachedWallpaper->GetLastStatus() != Gdiplus::Ok) {
+                    delete s_pCachedWallpaper;
+                    s_pCachedWallpaper = nullptr;
+                }
+            }
+        }
+    } else {
+        // Custom wallpaper engine (original legacy code)
+        if (drawWallpaper) {
+            if (RegOpenKeyExW(HKEY_CURRENT_USER, L"Control Panel\\Desktop", 0, KEY_READ, &hKey) == ERROR_SUCCESS) {
+                wchar_t szBuffer[MAX_PATH] = { 0 };
+                DWORD dwSize = sizeof(szBuffer);
+                if (RegQueryValueExW(hKey, L"Wallpaper", NULL, NULL, (LPBYTE)szBuffer, &dwSize) == ERROR_SUCCESS) {
+                    wallpaperPath = szBuffer;
+                }
+                dwSize = sizeof(szBuffer);
+                if (RegQueryValueExW(hKey, L"WallpaperStyle", NULL, NULL, (LPBYTE)szBuffer, &dwSize) == ERROR_SUCCESS) {
+                    style = _wtoi(szBuffer);
+                }
+                dwSize = sizeof(szBuffer);
+                if (RegQueryValueExW(hKey, L"TileWallpaper", NULL, NULL, (LPBYTE)szBuffer, &dwSize) == ERROR_SUCCESS) {
+                    tile = (_wtoi(szBuffer) == 1);
+                }
+                RegCloseKey(hKey);
+            }
+        }
+
+        // Check slideshow settings and start/stop timer dynamically
+        HKEY hKeySlide;
+        if (RegOpenKeyExW(GetEliteRegistryRoot(), L"Software\\EliteSoftware\\Win32Explorer\\Advanced", 0, KEY_READ, &hKeySlide) == ERROR_SUCCESS) {
+            DWORD cb = sizeof(DWORD);
+            RegQueryValueExW(hKeySlide, L"DesktopSlideshowEnabled", NULL, NULL, (LPBYTE)&slideshowEnabled, &cb);
+            cb = sizeof(DWORD);
+            RegQueryValueExW(hKeySlide, L"DesktopSlideshowInterval", NULL, NULL, (LPBYTE)&slideshowInterval, &cb);
+            RegCloseKey(hKeySlide);
+        }
+        
+        static DWORD s_lastSlideshowEnabled = 0;
+        static DWORD s_lastSlideshowInterval = 0;
+        
+        slideshowJustEnabled = (s_lastSlideshowEnabled != slideshowEnabled) && slideshowEnabled;
+
+        if (slideshowEnabled) {
+            if (slideshowInterval < 3) slideshowInterval = 3;
+            if (s_lastSlideshowEnabled != slideshowEnabled || s_lastSlideshowInterval != slideshowInterval) {
+                SetTimer(hwnd, TIMER_SLIDESHOW, slideshowInterval * 1000, NULL);
+                s_lastSlideshowEnabled = slideshowEnabled;
+                s_lastSlideshowInterval = slideshowInterval;
+            }
+        } else {
+            if (s_lastSlideshowEnabled != slideshowEnabled) {
+                KillTimer(hwnd, TIMER_SLIDESHOW);
+                s_lastSlideshowEnabled = slideshowEnabled;
+            }
+        }
+
+        // Startup Slideshow Rendering Delay Fix
+        if (slideshowEnabled) {
+            std::wstring activeThemeDir = GetThemeDirectory();
+            bool isOutside = true;
+            if (!s_cachedWallpaperPath.empty() && !activeThemeDir.empty()) {
+                if (s_cachedWallpaperPath.length() > activeThemeDir.length() &&
+                    _wcsnicmp(s_cachedWallpaperPath.c_str(), activeThemeDir.c_str(), activeThemeDir.length()) == 0 &&
+                    (s_cachedWallpaperPath[activeThemeDir.length()] == L'\\' || s_cachedWallpaperPath[activeThemeDir.length()] == L'/')) {
+                    isOutside = false;
+                }
+            }
+            
+            if (s_cachedWallpaperPath.empty() || slideshowJustEnabled || isOutside) {
+                std::vector<std::wstring> images;
+                if (!activeThemeDir.empty() && PathFileExistsW(activeThemeDir.c_str())) {
+                    const wchar_t* extensions[] = { L"\\*.jpg", L"\\*.png", L"\\*.bmp", L"\\*.jpeg" };
+                    for (const auto& ext : extensions) {
+                        std::wstring query = activeThemeDir + ext;
+                        WIN32_FIND_DATAW fd;
+                        HANDLE hFind = FindFirstFileW(query.c_str(), &fd);
+                        if (hFind != INVALID_HANDLE_VALUE) {
+                            do {
+                                images.push_back(activeThemeDir + L"\\" + fd.cFileName);
+                            } while (FindNextFileW(hFind, &fd));
+                            FindClose(hFind);
+                        }
+                    }
+                }
+                if (!images.empty()) {
+                    std::sort(images.begin(), images.end());
+                    s_cachedWallpaperPath = images[0];
+                } else {
+                    s_cachedWallpaperPath = wallpaperPath;
+                }
+            }
+        }
+
+        // Determine if settings have changed
+        static std::wstring s_lastLoadedWallpaperPath = L"";
+        bool settingsChanged = (drawWallpaper != (s_cachedDrawWallpaper ? 1 : 0)) ||
+                               (wallpaperPath != s_cachedWallpaperPath && !slideshowEnabled) ||
+                               (style != s_cachedStyle) ||
+                               (tile != s_cachedTile);
+
+        if (settingsChanged || !s_pCachedWallpaper || (slideshowEnabled && s_cachedWallpaperPath != s_lastLoadedWallpaperPath)) {
+            if (s_pCachedWallpaper) {
+                delete s_pCachedWallpaper;
+                s_pCachedWallpaper = nullptr;
+            }
+
+            s_cachedDrawWallpaper = (drawWallpaper == 1);
+            s_cachedStyle = style;
+            s_cachedTile = tile;
+
+            if (!slideshowEnabled) {
+                s_cachedWallpaperPath = wallpaperPath;
+            }
+
+            if (s_cachedDrawWallpaper && !s_cachedWallpaperPath.empty() && PathFileExistsW(s_cachedWallpaperPath.c_str())) {
+                s_pCachedWallpaper = new Gdiplus::Bitmap(s_cachedWallpaperPath.c_str());
+                if (s_pCachedWallpaper->GetLastStatus() != Gdiplus::Ok) {
+                    delete s_pCachedWallpaper;
+                    s_pCachedWallpaper = nullptr;
+                } else {
+                    s_lastLoadedWallpaperPath = s_cachedWallpaperPath;
+                }
             }
         }
     }
@@ -809,13 +1106,20 @@ void DrawWallpaper(HWND hwnd, HDC hdc, int scrW, int scrH) {
         return;
     }
 
-    // Check wallpaper mode: 0 = Span, 1 = Per-monitor
-    HKEY hKeyMode;
+    // Determine wallpaper mode: native style 22 is Span.
+    // If UseNativeWallpaperEngine is enabled, style == 22 -> Span mode (draw over virtual screen client coords),
+    // otherwise style != 22 -> Per-monitor.
+    // If UseNativeWallpaperEngine is disabled, use the custom "DesktopWallpaperMode" registry value.
     DWORD wallpaperModeVal = 0;
-    if (RegOpenKeyExW(GetEliteRegistryRoot(), L"Software\\EliteSoftware\\Win32Explorer\\Advanced", 0, KEY_READ, &hKeyMode) == ERROR_SUCCESS) {
-        DWORD cbMode = sizeof(DWORD);
-        RegQueryValueExW(hKeyMode, L"DesktopWallpaperMode", NULL, NULL, (LPBYTE)&wallpaperModeVal, &cbMode);
-        RegCloseKey(hKeyMode);
+    if (useNativeWallpaperVal == 1) {
+        wallpaperModeVal = (s_cachedStyle == 22) ? 0 : 1;
+    } else {
+        HKEY hKeyMode;
+        if (RegOpenKeyExW(GetEliteRegistryRoot(), L"Software\\EliteSoftware\\Win32Explorer\\Advanced", 0, KEY_READ, &hKeyMode) == ERROR_SUCCESS) {
+            DWORD cbMode = sizeof(DWORD);
+            RegQueryValueExW(hKeyMode, L"DesktopWallpaperMode", NULL, NULL, (LPBYTE)&wallpaperModeVal, &cbMode);
+            RegCloseKey(hKeyMode);
+        }
     }
 
     if (wallpaperModeVal == 1) {
@@ -846,72 +1150,74 @@ void DrawWallpaper(HWND hwnd, HDC hdc, int scrW, int scrH) {
             double imgAspect = (double)imgW / imgH;
             double scrAspect = (double)scrW / scrH;
 
-            switch (s_cachedStyle) {
-                case 0: // Center
-                    if (imgW <= scrW) {
-                        destX = (scrW - imgW) / 2;
-                        destW = imgW;
-                    } else {
-                        destX = 0;
-                        destW = scrW;
-                        srcX = (imgW - scrW) / 2;
-                        srcW = scrW;
-                    }
-                    if (imgH <= scrH) {
-                        destY = (scrH - imgH) / 2;
-                        destH = imgH;
-                    } else {
-                        destY = 0;
-                        destH = scrH;
-                        srcY = (imgH - scrH) / 2;
-                        srcH = scrH;
-                    }
-                    graphics.Clear(Gdiplus::Color(GetRValue(GetSysColor(COLOR_BACKGROUND)), 
-                                                  GetGValue(GetSysColor(COLOR_BACKGROUND)), 
-                                                  GetBValue(GetSysColor(COLOR_BACKGROUND))));
-                    break;
-
-                case 2: // Stretch
-                    destX = 0; destY = 0;
-                    destW = scrW; destH = scrH;
-                    break;
-
-                case 6: // Fit
-                    if (imgAspect > scrAspect) {
-                        destW = scrW;
-                        destH = (int)(scrW / imgAspect);
-                        destX = 0;
-                        destY = (scrH - destH) / 2;
-                    } else {
-                        destH = scrH;
-                        destW = (int)(scrH * imgAspect);
-                        destY = 0;
-                        destX = (scrW - destW) / 2;
-                    }
-                    graphics.Clear(Gdiplus::Color(GetRValue(GetSysColor(COLOR_BACKGROUND)), 
-                                                  GetGValue(GetSysColor(COLOR_BACKGROUND)), 
-                                                  GetBValue(GetSysColor(COLOR_BACKGROUND))));
-                    break;
-
-                case 10: // Fill
-                default:
-                    if (imgAspect > scrAspect) {
-                        destH = scrH;
-                        destW = (int)(scrH * imgAspect);
-                        destY = 0;
-                        destX = (scrW - destW) / 2;
-                    } else {
-                        destW = scrW;
-                        destH = (int)(scrW / imgAspect);
-                        destX = 0;
-                        destY = (scrH - destH) / 2;
-                    }
-                    break;
-
-                case 22: // Span
-                    destX = 0; destY = 0;
-                    destW = scrW; destH = scrH;
-                    break;
+            // If UseNativeWallpaperEngine is enabled and we are in Span mode (style == 22), stretch it.
+            // Under style == 22, it behaves like Stretch (destW = scrW, destH = scrH).
+            if (useNativeWallpaperVal == 1 && s_cachedStyle == 22) {
+                destX = 0; destY = 0; destW = scrW; destH = scrH;
+            } else {
+                switch (s_cachedStyle) {
+                    case 0: // Center
+                        if (imgW <= scrW) {
+                            destX = (scrW - imgW) / 2;
+                            destW = imgW;
+                        } else {
+                            destX = 0;
+                            destW = scrW;
+                            srcX = (imgW - scrW) / 2;
+                            srcW = scrW;
+                        }
+                        if (imgH <= scrH) {
+                            destY = (scrH - imgH) / 2;
+                            destH = imgH;
+                        } else {
+                            destY = 0;
+                            destH = scrH;
+                            srcY = (imgH - scrH) / 2;
+                            srcH = scrH;
+                        }
+                        graphics.Clear(Gdiplus::Color(GetRValue(GetSysColor(COLOR_BACKGROUND)), 
+                                                      GetGValue(GetSysColor(COLOR_BACKGROUND)), 
+                                                      GetBValue(GetSysColor(COLOR_BACKGROUND))));
+                        break;
+                    case 2: // Stretch
+                        destX = 0; destY = 0;
+                        destW = scrW; destH = scrH;
+                        break;
+                    case 6: // Fit
+                        if (imgAspect > scrAspect) {
+                            destW = scrW;
+                            destH = (int)(scrW / imgAspect);
+                            destX = 0;
+                            destY = (scrH - destH) / 2;
+                        } else {
+                            destH = scrH;
+                            destW = (int)(scrH * imgAspect);
+                            destY = 0;
+                            destX = (scrW - destW) / 2;
+                        }
+                        graphics.Clear(Gdiplus::Color(GetRValue(GetSysColor(COLOR_BACKGROUND)), 
+                                                      GetGValue(GetSysColor(COLOR_BACKGROUND)), 
+                                                      GetBValue(GetSysColor(COLOR_BACKGROUND))));
+                        break;
+                    case 10: // Fill
+                    default:
+                        if (imgAspect > scrAspect) {
+                            destH = scrH;
+                            destW = (int)(scrH * imgAspect);
+                            destY = 0;
+                            destX = (scrW - destW) / 2;
+                        } else {
+                            destW = scrW;
+                            destH = (int)(scrW / imgAspect);
+                            destX = 0;
+                            destY = (scrH - destH) / 2;
+                        }
+                        break;
+                    case 22: // Span
+                        destX = 0; destY = 0;
+                        destW = scrW; destH = scrH;
+                        break;
+                }
             }
 
             graphics.DrawImage(s_pCachedWallpaper, 

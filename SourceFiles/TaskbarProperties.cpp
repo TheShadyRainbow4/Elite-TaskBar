@@ -11,6 +11,7 @@ extern HINSTANCE g_hInstance;
 #include "Logger.h"
 #include "StartButton.h"
 #include <commctrl.h>
+#include <commdlg.h>
 #include <vector>
 #include <string>
 #include <gdiplus.h>
@@ -480,9 +481,6 @@ void SetDefaultFileManagerCPP(DWORD mode) {
 }
 
 DWORD WINAPI BroadcastSettingsChangeThread(LPVOID lpParam) {
-    SendMessageTimeoutW(HWND_BROADCAST, WM_SETTINGCHANGE, 0, (LPARAM)L"TraySettings", SMTO_ABORTIFHUNG, 5000, NULL);
-    SendMessageTimeoutW(HWND_BROADCAST, WM_SETTINGCHANGE, 0, (LPARAM)L"EliteTaskbarSettings", SMTO_ABORTIFHUNG, 500, NULL);
-    
     // Aggressively restart the apps to ensure all settings are applied safely and cleanly
     WCHAR exePath[MAX_PATH] = {0};
     bool pathResolved = false;
@@ -502,6 +500,9 @@ DWORD WINAPI BroadcastSettingsChangeThread(LPVOID lpParam) {
     swprintf_s(psCmd, L"-NoProfile -WindowStyle Hidden -Command \"Stop-Process -Name EliteTaskbar -Force; Stop-Process -Name Win32Explorer -Force; Start-Sleep -Milliseconds 500; Start-Process -FilePath '%s\\EliteTaskbar.exe' -ErrorAction SilentlyContinue; Start-Process -FilePath '%s\\Win32Explorer.exe' -ErrorAction SilentlyContinue\"", exePath, exePath);
 
     ShellExecuteW(NULL, NULL, L"powershell.exe", psCmd, NULL, SW_HIDE);
+
+    SendMessageTimeoutW(HWND_BROADCAST, WM_SETTINGCHANGE, 0, (LPARAM)L"TraySettings", SMTO_ABORTIFHUNG, 5000, NULL);
+    SendMessageTimeoutW(HWND_BROADCAST, WM_SETTINGCHANGE, 0, (LPARAM)L"EliteTaskbarSettings", SMTO_ABORTIFHUNG, 500, NULL);
         
     return 0;
 }
@@ -1095,8 +1096,8 @@ INT_PTR CALLBACK MultiMonSettingsDlgProc(HWND hwndDlg, UINT uMsg, WPARAM wParam,
                 DWORD dwValue = 0, cbData = sizeof(DWORD);
                 WCHAR val[64];
                 wsprintfW(val, L"EnableTray_Mon%d", mon.index);
-                if (RegQueryValueExW(hKey, val, NULL, NULL, (LPBYTE)&dwValue, &cbData) == ERROR_SUCCESS && dwValue) SendMessageW(hChk1, BM_SETCHECK, BST_CHECKED, 0);
-                else if (mon.index == 0) SendMessageW(hChk1, BM_SETCHECK, BST_CHECKED, 0);
+                if (RegQueryValueExW(hKey, val, NULL, NULL, (LPBYTE)&dwValue, &cbData) != ERROR_SUCCESS) dwValue = 1;
+                if (dwValue) SendMessageW(hChk1, BM_SETCHECK, BST_CHECKED, 0);
                 
                 wsprintfW(val, L"EnableClock_Mon%d", mon.index);
                 if (RegQueryValueExW(hKey, val, NULL, NULL, (LPBYTE)&dwValue, &cbData) == ERROR_SUCCESS && dwValue) SendMessageW(hChk2, BM_SETCHECK, BST_CHECKED, 0);
@@ -1106,7 +1107,7 @@ INT_PTR CALLBACK MultiMonSettingsDlgProc(HWND hwndDlg, UINT uMsg, WPARAM wParam,
                 if (RegQueryValueExW(hKey, val, NULL, NULL, (LPBYTE)&dwValue, &cbData) == ERROR_SUCCESS && dwValue) SendMessageW(hChk3, BM_SETCHECK, BST_CHECKED, 0);
                 else SendMessageW(hChk3, BM_SETCHECK, BST_CHECKED, 0);
             } else {
-                if (mon.index == 0) SendMessageW(hChk1, BM_SETCHECK, BST_CHECKED, 0);
+                SendMessageW(hChk1, BM_SETCHECK, BST_CHECKED, 0);
                 SendMessageW(hChk2, BM_SETCHECK, BST_CHECKED, 0);
                 SendMessageW(hChk3, BM_SETCHECK, BST_CHECKED, 0);
             }
@@ -1744,6 +1745,8 @@ INT_PTR CALLBACK DesktopSettingsDlgProc(HWND hwndDlg, UINT uMsg, WPARAM wParam, 
         AddDlgTooltip(hwndDlg, IDC_DESKTOP_ICON_PREVIEW_2, L"Your user files icon representation. A digital box for your files.");
         AddDlgTooltip(hwndDlg, IDC_DESKTOP_ICON_PREVIEW_3, L"Your network icon representation. Connecting you to the web.");
         AddDlgTooltip(hwndDlg, IDC_DESKTOP_ICON_PREVIEW_4, L"Your recycle bin icon representation. Where bad code goes to die.");
+        AddDlgTooltip(hwndDlg, IDC_USE_NATIVE_WALLPAPER, L"Switch between the native Windows wallpaper engine (default) and our retro custom engine.");
+        AddDlgTooltip(hwndDlg, IDC_DESKTOP_THUMBNAILS, L"Render dynamic file previews/thumbnails on the desktop. Premium vibes included.");
         
         HKEY hKey;
         DWORD replaceVal = 1;
@@ -1754,9 +1757,13 @@ INT_PTR CALLBACK DesktopSettingsDlgProc(HWND hwndDlg, UINT uMsg, WPARAM wParam, 
         wchar_t themePathVal[MAX_PATH] = {0};
         DWORD slideshowEnabledVal = 0;
         DWORD slideshowIntervalVal = 300;
+        DWORD useNativeWallpaperVal = 1;
+        DWORD thumbnailsVal = 1;
         DWORD cbData = sizeof(DWORD);
         
         if (RegOpenKeyExW(GetEliteRegistryRoot(), L"Software\\EliteSoftware\\Win32Explorer\\Advanced", 0, KEY_READ, &hKey) == ERROR_SUCCESS) {
+            cbData = sizeof(DWORD);
+            RegQueryValueExW(hKey, L"DesktopThumbnailsEnabled", NULL, NULL, (LPBYTE)&thumbnailsVal, &cbData);
             cbData = sizeof(DWORD);
             RegQueryValueExW(hKey, L"DesktopReplacementEnabled", NULL, NULL, (LPBYTE)&replaceVal, &cbData);
             cbData = sizeof(DWORD);
@@ -1777,12 +1784,19 @@ INT_PTR CALLBACK DesktopSettingsDlgProc(HWND hwndDlg, UINT uMsg, WPARAM wParam, 
             cbData = sizeof(DWORD);
             RegQueryValueExW(hKey, L"DesktopSlideshowInterval", NULL, NULL, (LPBYTE)&slideshowIntervalVal, &cbData);
             
+            cbData = sizeof(DWORD);
+            if (RegQueryValueExW(hKey, L"UseNativeWallpaperEngine", NULL, NULL, (LPBYTE)&useNativeWallpaperVal, &cbData) != ERROR_SUCCESS) {
+                useNativeWallpaperVal = 1;
+            }
+            
             RegCloseKey(hKey);
         }
         
         SendDlgItemMessageW(hwndDlg, IDC_DESKTOP_REPLACE_ENABLED, BM_SETCHECK, replaceVal ? BST_CHECKED : BST_UNCHECKED, 0);
         SendDlgItemMessageW(hwndDlg, IDC_DESKTOP_WALLPAPER_ENABLED, BM_SETCHECK, wallpaperVal ? BST_CHECKED : BST_UNCHECKED, 0);
         SendDlgItemMessageW(hwndDlg, IDC_DESKTOP_ICONS_ENABLED, BM_SETCHECK, iconsVal ? BST_CHECKED : BST_UNCHECKED, 0);
+        SendDlgItemMessageW(hwndDlg, IDC_DESKTOP_THUMBNAILS, BM_SETCHECK, thumbnailsVal ? BST_CHECKED : BST_UNCHECKED, 0);
+        SendDlgItemMessageW(hwndDlg, IDC_USE_NATIVE_WALLPAPER, BM_SETCHECK, useNativeWallpaperVal ? BST_CHECKED : BST_UNCHECKED, 0);
         
         SendDlgItemMessageW(hwndDlg, IDC_DESKTOP_FORCE_PROGMAN_ALL, BM_SETCHECK, forceProgmanVal ? BST_CHECKED : BST_UNCHECKED, 0);
         SendDlgItemMessageW(hwndDlg, IDC_DESKTOP_MODE_SPAN, BM_SETCHECK, (wallpaperModeVal == 0) ? BST_CHECKED : BST_UNCHECKED, 0);
@@ -1892,6 +1906,9 @@ INT_PTR CALLBACK DesktopSettingsDlgProc(HWND hwndDlg, UINT uMsg, WPARAM wParam, 
                 DWORD slideshowIntervalVal = _wtoi(intervalBuf);
                 if (slideshowIntervalVal < 3) slideshowIntervalVal = 3;
                 
+                DWORD useNativeWallpaperVal = (SendDlgItemMessageW(hwndDlg, IDC_USE_NATIVE_WALLPAPER, BM_GETCHECK, 0, 0) == BST_CHECKED) ? 1 : 0;
+                DWORD thumbnailsVal = (SendDlgItemMessageW(hwndDlg, IDC_DESKTOP_THUMBNAILS, BM_GETCHECK, 0, 0) == BST_CHECKED) ? 1 : 0;
+
                 RegSetValueExW(hKey, L"DesktopReplacementEnabled", 0, REG_DWORD, (const BYTE*)&replaceVal, sizeof(DWORD));
                 RegSetValueExW(hKey, L"DesktopWallpaperEnabled", 0, REG_DWORD, (const BYTE*)&wallpaperVal, sizeof(DWORD));
                 RegSetValueExW(hKey, L"DesktopIconsEnabled", 0, REG_DWORD, (const BYTE*)&iconsVal, sizeof(DWORD));
@@ -1901,8 +1918,69 @@ INT_PTR CALLBACK DesktopSettingsDlgProc(HWND hwndDlg, UINT uMsg, WPARAM wParam, 
                 RegSetValueExW(hKey, L"DesktopThemePath", 0, REG_SZ, (const BYTE*)themePathVal, (DWORD)(wcslen(themePathVal) + 1) * sizeof(wchar_t));
                 RegSetValueExW(hKey, L"DesktopSlideshowEnabled", 0, REG_DWORD, (const BYTE*)&slideshowEnabledVal, sizeof(DWORD));
                 RegSetValueExW(hKey, L"DesktopSlideshowInterval", 0, REG_DWORD, (const BYTE*)&slideshowIntervalVal, sizeof(DWORD));
+                RegSetValueExW(hKey, L"UseNativeWallpaperEngine", 0, REG_DWORD, (const BYTE*)&useNativeWallpaperVal, sizeof(DWORD));
+                RegSetValueExW(hKey, L"DesktopThumbnailsEnabled", 0, REG_DWORD, (const BYTE*)&thumbnailsVal, sizeof(DWORD));
                 
                 RegCloseKey(hKey);
+            }
+            
+            {
+                std::wstring wallpaperPath = L"";
+                if (SendDlgItemMessageW(hwndDlg, IDC_DESKTOP_WALLPAPER_ENABLED, BM_GETCHECK, 0, 0) == BST_CHECKED) {
+                    wallpaperPath = GetActiveWallpaperPath(hwndDlg);
+                }
+                
+                std::wstring styleStr = L"22";
+                std::wstring tileStr = L"0";
+                
+                HKEY hKeyDesktop;
+                if (RegOpenKeyExW(HKEY_CURRENT_USER, L"Control Panel\\Desktop", 0, KEY_READ, &hKeyDesktop) == ERROR_SUCCESS) {
+                    wchar_t szBuffer[MAX_PATH] = { 0 };
+                    DWORD dwSize = sizeof(szBuffer);
+                    if (RegQueryValueExW(hKeyDesktop, L"WallpaperStyle", NULL, NULL, (LPBYTE)szBuffer, &dwSize) == ERROR_SUCCESS) {
+                        styleStr = szBuffer;
+                    }
+                    dwSize = sizeof(szBuffer);
+                    if (RegQueryValueExW(hKeyDesktop, L"TileWallpaper", NULL, NULL, (LPBYTE)szBuffer, &dwSize) == ERROR_SUCCESS) {
+                        tileStr = szBuffer;
+                    }
+                    RegCloseKey(hKeyDesktop);
+                }
+                
+                HWND hCombo = GetDlgItem(hwndDlg, IDC_DESKTOP_THEME_SELECT);
+                int sel = (int)SendMessageW(hCombo, CB_GETCURSEL, 0, 0);
+                if (sel != CB_ERR) {
+                    wchar_t themeName[256];
+                    SendMessageW(hCombo, CB_GETLBTEXT, sel, (LPARAM)themeName);
+                    std::wstring themePath = FindThemePathByName(hwndDlg, themeName);
+                    if (!themePath.empty()) {
+                        wchar_t wstyle[32] = {0};
+                        wchar_t wtile[32] = {0};
+                        GetPrivateProfileStringW(L"Control Panel\\Desktop", L"WallpaperStyle", L"", wstyle, 32, themePath.c_str());
+                        GetPrivateProfileStringW(L"Control Panel\\Desktop", L"TileWallpaper", L"", wtile, 32, themePath.c_str());
+                        if (wcslen(wstyle) > 0) styleStr = wstyle;
+                        if (wcslen(wtile) > 0) tileStr = wtile;
+                    }
+                }
+                
+                if (SendDlgItemMessageW(hwndDlg, IDC_DESKTOP_MODE_SPAN, BM_GETCHECK, 0, 0) == BST_CHECKED) {
+                    styleStr = L"22";
+                    tileStr = L"0";
+                } else {
+                    if (styleStr == L"22") {
+                        styleStr = L"10";
+                    }
+                }
+                
+                HKEY hKeyDesktopWrite;
+                if (RegOpenKeyExW(HKEY_CURRENT_USER, L"Control Panel\\Desktop", 0, KEY_SET_VALUE, &hKeyDesktopWrite) == ERROR_SUCCESS) {
+                    RegSetValueExW(hKeyDesktopWrite, L"Wallpaper", 0, REG_SZ, (const BYTE*)wallpaperPath.c_str(), (DWORD)(wallpaperPath.length() + 1) * sizeof(wchar_t));
+                    RegSetValueExW(hKeyDesktopWrite, L"WallpaperStyle", 0, REG_SZ, (const BYTE*)styleStr.c_str(), (DWORD)(styleStr.length() + 1) * sizeof(wchar_t));
+                    RegSetValueExW(hKeyDesktopWrite, L"TileWallpaper", 0, REG_SZ, (const BYTE*)tileStr.c_str(), (DWORD)(tileStr.length() + 1) * sizeof(wchar_t));
+                    RegCloseKey(hKeyDesktopWrite);
+                }
+                
+                SystemParametersInfoW(SPI_SETDESKWALLPAPER, 0, (void*)wallpaperPath.c_str(), SPIF_UPDATEINIFILE | SPIF_SENDCHANGE);
             }
             NotifySettingsChange();
             SendMessageW(GetParent(hwndDlg), PSM_UNCHANGED, (WPARAM)hwndDlg, 0);
@@ -1921,13 +1999,335 @@ INT_PTR CALLBACK DesktopSettingsDlgProc(HWND hwndDlg, UINT uMsg, WPARAM wParam, 
     return FALSE;
 }
 
+void ExportSettingsToXML(HWND hwndOwner) {
+    OPENFILENAMEW ofn = { 0 };
+    wchar_t szFile[MAX_PATH] = L"EliteTaskbarSettings.xml";
+    ofn.lStructSize = sizeof(ofn);
+    ofn.hwndOwner = hwndOwner;
+    ofn.lpstrFile = szFile;
+    ofn.nMaxFile = MAX_PATH;
+    ofn.lpstrFilter = L"XML Files (*.xml)\0*.xml\0All Files (*.*)\0*.*\0";
+    ofn.nFilterIndex = 1;
+    ofn.Flags = OFN_PATHMUSTEXIST | OFN_OVERWRITEPROMPT;
+
+    if (GetSaveFileNameW(&ofn)) {
+        FILE* f = nullptr;
+        if (_wfopen_s(&f, szFile, L"w, ccs=UTF-8") == 0 && f) {
+            fwprintf(f, L"<?xml version=\"1.0\" encoding=\"utf-8\"?>\n");
+            fwprintf(f, L"<EliteTaskbarSettings>\n");
+
+            HKEY hKey;
+            if (RegOpenKeyExW(GetEliteRegistryRoot(), L"Software\\EliteSoftware\\Win32Explorer\\Advanced", 0, KEY_READ, &hKey) == ERROR_SUCCESS) {
+                WCHAR valName[MAX_PATH];
+                DWORD cbValName = MAX_PATH;
+                DWORD dwType = 0;
+                BYTE dwData[1024];
+                DWORD cbData = sizeof(dwData);
+                DWORD dwIndex = 0;
+                while (RegEnumValueW(hKey, dwIndex, valName, &cbValName, NULL, &dwType, dwData, &cbData) == ERROR_SUCCESS) {
+                    if (dwType == REG_DWORD) {
+                        DWORD dwVal = *(DWORD*)dwData;
+                        fwprintf(f, L"    <Setting name=\"%s\" type=\"DWORD\">%u</Setting>\n", valName, dwVal);
+                    }
+                    else if (dwType == REG_SZ) {
+                        wchar_t* szVal = (wchar_t*)dwData;
+                        fwprintf(f, L"    <Setting name=\"%s\" type=\"SZ\">%s</Setting>\n", valName, szVal);
+                    }
+                    dwIndex++;
+                    cbValName = MAX_PATH;
+                    cbData = sizeof(dwData);
+                }
+                RegCloseKey(hKey);
+            }
+            fwprintf(f, L"</EliteTaskbarSettings>\n");
+            fclose(f);
+            MessageBoxW(hwndOwner, L"Configuration successfully exported to XML.", L"Backup Successful", MB_OK | MB_ICONINFORMATION);
+        } else {
+            MessageBoxW(hwndOwner, L"Failed to create the destination XML file.", L"Error", MB_OK | MB_ICONERROR);
+        }
+    }
+}
+
+void ImportSettingsFromXML(HWND hwndOwner) {
+    OPENFILENAMEW ofn = { 0 };
+    wchar_t szFile[MAX_PATH] = { 0 };
+    ofn.lStructSize = sizeof(ofn);
+    ofn.hwndOwner = hwndOwner;
+    ofn.lpstrFile = szFile;
+    ofn.nMaxFile = MAX_PATH;
+    ofn.lpstrFilter = L"XML Files (*.xml)\0*.xml\0All Files (*.*)\0*.*\0";
+    ofn.nFilterIndex = 1;
+    ofn.Flags = OFN_PATHMUSTEXIST | OFN_FILEMUSTEXIST;
+
+    if (GetOpenFileNameW(&ofn)) {
+        FILE* f = nullptr;
+        if (_wfopen_s(&f, szFile, L"r, ccs=UTF-8") == 0 && f) {
+            HKEY hKey;
+            if (RegCreateKeyExW(GetEliteRegistryRoot(), L"Software\\EliteSoftware\\Win32Explorer\\Advanced", 0, NULL, REG_OPTION_NON_VOLATILE, KEY_WRITE, NULL, &hKey, NULL) == ERROR_SUCCESS) {
+                wchar_t line[2048];
+                while (fgetws(line, 2048, f)) {
+                    std::wstring str(line);
+                    size_t posName = str.find(L"name=\"");
+                    if (posName != std::wstring::npos) {
+                        size_t posNameEnd = str.find(L"\"", posName + 6);
+                        std::wstring name = str.substr(posName + 6, posNameEnd - (posName + 6));
+
+                        size_t posType = str.find(L"type=\"");
+                        size_t posTypeEnd = str.find(L"\"", posType + 6);
+                        std::wstring type = str.substr(posType + 6, posTypeEnd - (posType + 6));
+
+                        size_t posValueStart = str.find(L">", posTypeEnd);
+                        size_t posValueEnd = str.find(L"</Setting>", posValueStart);
+                        std::wstring value = str.substr(posValueStart + 1, posValueEnd - (posValueStart + 1));
+
+                        if (type == L"DWORD") {
+                            DWORD dwVal = (DWORD)_wtoi(value.c_str());
+                            RegSetValueExW(hKey, name.c_str(), 0, REG_DWORD, (const BYTE*)&dwVal, sizeof(DWORD));
+                        }
+                        else if (type == L"SZ") {
+                            RegSetValueExW(hKey, name.c_str(), 0, REG_SZ, (const BYTE*)value.c_str(), (DWORD)(value.length() + 1) * sizeof(wchar_t));
+                        }
+                    }
+                }
+                RegCloseKey(hKey);
+                MessageBoxW(hwndOwner, L"Configuration successfully imported from XML.", L"Restore Successful", MB_OK | MB_ICONINFORMATION);
+            } else {
+                MessageBoxW(hwndOwner, L"Failed to open registry for writing.", L"Error", MB_OK | MB_ICONERROR);
+            }
+            fclose(f);
+        } else {
+            MessageBoxW(hwndOwner, L"Failed to open XML file for reading.", L"Error", MB_OK | MB_ICONERROR);
+        }
+    }
+}
+
+INT_PTR CALLBACK ExplorerSettingsDlgProc(HWND hwndDlg, UINT uMsg, WPARAM wParam, LPARAM lParam) {
+    switch (uMsg) {
+    case WM_INITDIALOG: {
+        AddDlgTooltip(hwndDlg, IDC_EXPLORER_HIDDEN_FILES, L"Toggle visibility of files hidden by developers or system internals. Use with caution.");
+        AddDlgTooltip(hwndDlg, IDC_EXPLORER_EXTENSIONS, L"Toggle visibility of file extensions. Keep unchecked if you actually want to know what kind of file you're clicking.");
+        AddDlgTooltip(hwndDlg, IDC_EXPLORER_BACKUP, L"Export current taskbar configuration to XML. Prepare for digital time travel.");
+        AddDlgTooltip(hwndDlg, IDC_EXPLORER_RESTORE, L"Import taskbar configuration from XML. Restoring previous timeline configurations.");
+
+        HKEY hKey;
+        DWORD hiddenVal = 2; // Default to hide (2)
+        DWORD extVal = 1;    // Default to hide extensions (1)
+        DWORD cbData = sizeof(DWORD);
+        if (RegOpenKeyExW(HKEY_CURRENT_USER, L"Software\\Microsoft\\Windows\\CurrentVersion\\Explorer\\Advanced", 0, KEY_READ, &hKey) == ERROR_SUCCESS) {
+            cbData = sizeof(DWORD);
+            RegQueryValueExW(hKey, L"Hidden", NULL, NULL, (LPBYTE)&hiddenVal, &cbData);
+            cbData = sizeof(DWORD);
+            RegQueryValueExW(hKey, L"HideFileExt", NULL, NULL, (LPBYTE)&extVal, &cbData);
+            RegCloseKey(hKey);
+        }
+
+        SendDlgItemMessageW(hwndDlg, IDC_EXPLORER_HIDDEN_FILES, BM_SETCHECK, (hiddenVal == 1) ? BST_CHECKED : BST_UNCHECKED, 0);
+        SendDlgItemMessageW(hwndDlg, IDC_EXPLORER_EXTENSIONS, BM_SETCHECK, (extVal == 1) ? BST_CHECKED : BST_UNCHECKED, 0);
+        return TRUE;
+    }
+    case WM_COMMAND: {
+        WORD wNotifyCode = HIWORD(wParam);
+        WORD wID = LOWORD(wParam);
+        if (wNotifyCode == BN_CLICKED) {
+            if (wID == IDC_EXPLORER_HIDDEN_FILES || wID == IDC_EXPLORER_EXTENSIONS) {
+                SendMessageW(GetParent(hwndDlg), PSM_CHANGED, (WPARAM)hwndDlg, 0);
+            }
+            else if (wID == IDC_EXPLORER_BACKUP) {
+                ExportSettingsToXML(hwndDlg);
+            }
+            else if (wID == IDC_EXPLORER_RESTORE) {
+                ImportSettingsFromXML(hwndDlg);
+                SendMessageW(GetParent(hwndDlg), PSM_CHANGED, (WPARAM)hwndDlg, 0);
+            }
+        }
+        break;
+    }
+    case WM_NOTIFY: {
+        LPNMHDR lpnm = (LPNMHDR)lParam;
+        if (lpnm->code == PSN_APPLY) {
+            HKEY hKey;
+            if (RegOpenKeyExW(HKEY_CURRENT_USER, L"Software\\Microsoft\\Windows\\CurrentVersion\\Explorer\\Advanced", 0, KEY_WRITE, &hKey) == ERROR_SUCCESS) {
+                DWORD hiddenVal = (SendDlgItemMessageW(hwndDlg, IDC_EXPLORER_HIDDEN_FILES, BM_GETCHECK, 0, 0) == BST_CHECKED) ? 1 : 2;
+                DWORD extVal = (SendDlgItemMessageW(hwndDlg, IDC_EXPLORER_EXTENSIONS, BM_GETCHECK, 0, 0) == BST_CHECKED) ? 1 : 0;
+                RegSetValueExW(hKey, L"Hidden", 0, REG_DWORD, (const BYTE*)&hiddenVal, sizeof(DWORD));
+                RegSetValueExW(hKey, L"HideFileExt", 0, REG_DWORD, (const BYTE*)&extVal, sizeof(DWORD));
+                RegCloseKey(hKey);
+
+                SHChangeNotify(SHCNE_ASSOCCHANGED, SHCNF_FLUSHNOWAIT, NULL, NULL);
+            }
+            SetWindowLongPtr(hwndDlg, DWLP_MSGRESULT, PSNRET_NOERROR);
+            return TRUE;
+        }
+        break;
+    }
+    }
+    return FALSE;
+}
+
+INT_PTR CALLBACK DWMSettingsDlgProc(HWND hwndDlg, UINT uMsg, WPARAM wParam, LPARAM lParam) {
+    switch (uMsg) {
+    case WM_INITDIALOG: {
+        AddDlgTooltip(hwndDlg, IDC_DWM_ANIMATIONS, L"Toggle slick window animations. Turn off if your graphics card is from the stone age.");
+        AddDlgTooltip(hwndDlg, IDC_DWM_GLASS, L"Enable beautiful transparent Aero Glass borders. Flat design fans look away.");
+        AddDlgTooltip(hwndDlg, IDC_DWM_BORDER_SIZE, L"Choose window border thickness. Classic Aero values range from 4px to 12px.");
+
+        HWND hCombo = GetDlgItem(hwndDlg, IDC_DWM_BORDER_SIZE);
+        int idx1 = (int)SendMessageW(hCombo, CB_ADDSTRING, 0, (LPARAM)L"Classic (1px)");
+        SendMessageW(hCombo, CB_SETITEMDATA, idx1, 1);
+        int idx2 = (int)SendMessageW(hCombo, CB_ADDSTRING, 0, (LPARAM)L"Standard (4px)");
+        SendMessageW(hCombo, CB_SETITEMDATA, idx2, 4);
+        int idx3 = (int)SendMessageW(hCombo, CB_ADDSTRING, 0, (LPARAM)L"Aero Wide (8px)");
+        SendMessageW(hCombo, CB_SETITEMDATA, idx3, 8);
+        int idx4 = (int)SendMessageW(hCombo, CB_ADDSTRING, 0, (LPARAM)L"Legacy Thick (12px)");
+        SendMessageW(hCombo, CB_SETITEMDATA, idx4, 12);
+
+        HKEY hKey;
+        DWORD animationsVal = 1;
+        DWORD glassVal = 1;
+        DWORD borderSizeVal = 4;
+        DWORD cbData = sizeof(DWORD);
+        if (RegOpenKeyExW(GetEliteRegistryRoot(), L"Software\\EliteSoftware\\Win32Explorer\\Advanced", 0, KEY_READ, &hKey) == ERROR_SUCCESS) {
+            cbData = sizeof(DWORD);
+            RegQueryValueExW(hKey, L"DwmAnimationsEnabled", NULL, NULL, (LPBYTE)&animationsVal, &cbData);
+            cbData = sizeof(DWORD);
+            RegQueryValueExW(hKey, L"DwmGlassEnabled", NULL, NULL, (LPBYTE)&glassVal, &cbData);
+            cbData = sizeof(DWORD);
+            RegQueryValueExW(hKey, L"DwmBorderSize", NULL, NULL, (LPBYTE)&borderSizeVal, &cbData);
+            RegCloseKey(hKey);
+        }
+
+        SendDlgItemMessageW(hwndDlg, IDC_DWM_ANIMATIONS, BM_SETCHECK, animationsVal ? BST_CHECKED : BST_UNCHECKED, 0);
+        SendDlgItemMessageW(hwndDlg, IDC_DWM_GLASS, BM_SETCHECK, glassVal ? BST_CHECKED : BST_UNCHECKED, 0);
+
+        int count = (int)SendMessageW(hCombo, CB_GETCOUNT, 0, 0);
+        for (int i = 0; i < count; i++) {
+            if ((DWORD)SendMessageW(hCombo, CB_GETITEMDATA, i, 0) == borderSizeVal) {
+                SendMessageW(hCombo, CB_SETCURSEL, i, 0);
+                break;
+            }
+        }
+        return TRUE;
+    }
+    case WM_COMMAND: {
+        WORD wNotifyCode = HIWORD(wParam);
+        if (wNotifyCode == BN_CLICKED || wNotifyCode == CBN_SELCHANGE) {
+            SendMessageW(GetParent(hwndDlg), PSM_CHANGED, (WPARAM)hwndDlg, 0);
+        }
+        break;
+    }
+    case WM_NOTIFY: {
+        LPNMHDR lpnm = (LPNMHDR)lParam;
+        if (lpnm->code == PSN_APPLY) {
+            HKEY hKey;
+            if (RegCreateKeyExW(GetEliteRegistryRoot(), L"Software\\EliteSoftware\\Win32Explorer\\Advanced", 0, NULL, REG_OPTION_NON_VOLATILE, KEY_READ | KEY_WRITE, NULL, &hKey, NULL) == ERROR_SUCCESS) {
+                DWORD animationsVal = (SendDlgItemMessageW(hwndDlg, IDC_DWM_ANIMATIONS, BM_GETCHECK, 0, 0) == BST_CHECKED) ? 1 : 0;
+                DWORD glassVal = (SendDlgItemMessageW(hwndDlg, IDC_DWM_GLASS, BM_GETCHECK, 0, 0) == BST_CHECKED) ? 1 : 0;
+                
+                HWND hCombo = GetDlgItem(hwndDlg, IDC_DWM_BORDER_SIZE);
+                int sel = (int)SendMessageW(hCombo, CB_GETCURSEL, 0, 0);
+                DWORD borderSizeVal = 4;
+                if (sel != CB_ERR) {
+                    borderSizeVal = (DWORD)SendMessageW(hCombo, CB_GETITEMDATA, sel, 0);
+                }
+
+                RegSetValueExW(hKey, L"DwmAnimationsEnabled", 0, REG_DWORD, (const BYTE*)&animationsVal, sizeof(DWORD));
+                RegSetValueExW(hKey, L"DwmGlassEnabled", 0, REG_DWORD, (const BYTE*)&glassVal, sizeof(DWORD));
+                RegSetValueExW(hKey, L"DwmBorderSize", 0, REG_DWORD, (const BYTE*)&borderSizeVal, sizeof(DWORD));
+                RegCloseKey(hKey);
+            }
+            SetWindowLongPtr(hwndDlg, DWLP_MSGRESULT, PSNRET_NOERROR);
+            return TRUE;
+        }
+        break;
+    }
+    }
+    return FALSE;
+}
+
+INT_PTR CALLBACK ColorsSettingsDlgProc(HWND hwndDlg, UINT uMsg, WPARAM wParam, LPARAM lParam) {
+    switch (uMsg) {
+    case WM_INITDIALOG: {
+        AddDlgTooltip(hwndDlg, IDC_COLORS_HIGHLIGHT, L"Specify your highlight tint in Hex color format. Standard format for maximum customization.");
+        AddDlgTooltip(hwndDlg, IDC_COLORS_CLASSIC, L"Force Windows Aero highlight styling and classic gradients on taskbar elements.");
+        AddDlgTooltip(hwndDlg, IDC_COLORS_WINDOWS_DARK, L"Toggle dark theme style for Windows shell components and Taskbar.");
+        AddDlgTooltip(hwndDlg, IDC_COLORS_APP_DARK, L"Toggle dark theme style for supporting applications.");
+
+        HKEY hKey;
+        wchar_t highlightVal[32] = L"0078D7";
+        DWORD classicColorsVal = 0;
+        DWORD cbData = sizeof(classicColorsVal);
+        if (RegOpenKeyExW(GetEliteRegistryRoot(), L"Software\\EliteSoftware\\Win32Explorer\\Advanced", 0, KEY_READ, &hKey) == ERROR_SUCCESS) {
+            cbData = sizeof(classicColorsVal);
+            RegQueryValueExW(hKey, L"ClassicColorsEnabled", NULL, NULL, (LPBYTE)&classicColorsVal, &cbData);
+            cbData = sizeof(highlightVal);
+            RegQueryValueExW(hKey, L"HighlightTint", NULL, NULL, (LPBYTE)highlightVal, &cbData);
+            RegCloseKey(hKey);
+        }
+
+        SetDlgItemTextW(hwndDlg, IDC_COLORS_HIGHLIGHT, highlightVal);
+        SendDlgItemMessageW(hwndDlg, IDC_COLORS_CLASSIC, BM_SETCHECK, classicColorsVal ? BST_CHECKED : BST_UNCHECKED, 0);
+
+        DWORD sysUsesLightTheme = 0;
+        DWORD appsUseLightTheme = 1;
+        if (RegOpenKeyExW(HKEY_CURRENT_USER, L"Software\\Microsoft\\Windows\\CurrentVersion\\Themes\\Personalize", 0, KEY_READ, &hKey) == ERROR_SUCCESS) {
+            cbData = sizeof(DWORD);
+            RegQueryValueExW(hKey, L"SystemUsesLightTheme", NULL, NULL, (LPBYTE)&sysUsesLightTheme, &cbData);
+            cbData = sizeof(DWORD);
+            RegQueryValueExW(hKey, L"AppsUseLightTheme", NULL, NULL, (LPBYTE)&appsUseLightTheme, &cbData);
+            RegCloseKey(hKey);
+        }
+
+        SendDlgItemMessageW(hwndDlg, IDC_COLORS_WINDOWS_DARK, BM_SETCHECK, (sysUsesLightTheme == 0) ? BST_CHECKED : BST_UNCHECKED, 0);
+        SendDlgItemMessageW(hwndDlg, IDC_COLORS_APP_DARK, BM_SETCHECK, (appsUseLightTheme == 0) ? BST_CHECKED : BST_UNCHECKED, 0);
+        return TRUE;
+    }
+    case WM_COMMAND: {
+        WORD wNotifyCode = HIWORD(wParam);
+        if (wNotifyCode == BN_CLICKED || wNotifyCode == EN_CHANGE) {
+            SendMessageW(GetParent(hwndDlg), PSM_CHANGED, (WPARAM)hwndDlg, 0);
+        }
+        break;
+    }
+    case WM_NOTIFY: {
+        LPNMHDR lpnm = (LPNMHDR)lParam;
+        if (lpnm->code == PSN_APPLY) {
+            HKEY hKey;
+            if (RegCreateKeyExW(GetEliteRegistryRoot(), L"Software\\EliteSoftware\\Win32Explorer\\Advanced", 0, NULL, REG_OPTION_NON_VOLATILE, KEY_READ | KEY_WRITE, NULL, &hKey, NULL) == ERROR_SUCCESS) {
+                wchar_t highlightVal[32] = { 0 };
+                GetDlgItemTextW(hwndDlg, IDC_COLORS_HIGHLIGHT, highlightVal, 32);
+                DWORD classicColorsVal = (SendDlgItemMessageW(hwndDlg, IDC_COLORS_CLASSIC, BM_GETCHECK, 0, 0) == BST_CHECKED) ? 1 : 0;
+                
+                RegSetValueExW(hKey, L"HighlightTint", 0, REG_SZ, (const BYTE*)highlightVal, (DWORD)(wcslen(highlightVal) + 1) * sizeof(wchar_t));
+                RegSetValueExW(hKey, L"ClassicColorsEnabled", 0, REG_DWORD, (const BYTE*)&classicColorsVal, sizeof(DWORD));
+                RegCloseKey(hKey);
+            }
+
+            if (RegOpenKeyExW(HKEY_CURRENT_USER, L"Software\\Microsoft\\Windows\\CurrentVersion\\Themes\\Personalize", 0, KEY_WRITE, &hKey) == ERROR_SUCCESS) {
+                DWORD sysUsesLightTheme = (SendDlgItemMessageW(hwndDlg, IDC_COLORS_WINDOWS_DARK, BM_GETCHECK, 0, 0) == BST_CHECKED) ? 0 : 1;
+                DWORD appsUseLightTheme = (SendDlgItemMessageW(hwndDlg, IDC_COLORS_APP_DARK, BM_GETCHECK, 0, 0) == BST_CHECKED) ? 0 : 1;
+                
+                RegSetValueExW(hKey, L"SystemUsesLightTheme", 0, REG_DWORD, (const BYTE*)&sysUsesLightTheme, sizeof(DWORD));
+                RegSetValueExW(hKey, L"AppsUseLightTheme", 0, REG_DWORD, (const BYTE*)&appsUseLightTheme, sizeof(DWORD));
+                RegCloseKey(hKey);
+
+                SendMessageTimeoutW(HWND_BROADCAST, WM_SETTINGCHANGE, 0, (LPARAM)L"ImmersiveColorSet", SMTO_ABORTIFHUNG, 500, NULL);
+            }
+            SetWindowLongPtr(hwndDlg, DWLP_MSGRESULT, PSNRET_NOERROR);
+            return TRUE;
+        }
+        break;
+    }
+    }
+    return FALSE;
+}
+
 INT_PTR CALLBACK GenericPageDlgProc(HWND hwndDlg, UINT uMsg, WPARAM wParam, LPARAM lParam) {
     return FALSE;
 }
 
 void ShowTaskbarProperties(HWND hwndOwner) {
     std::vector<HPROPSHEETPAGE> pages;
-    PROPSHEETPAGEW psp[10] = {0};
+    PROPSHEETPAGEW psp[15] = {0};
     HPROPSHEETPAGE hPage;
     
     psp[0].dwSize = sizeof(PROPSHEETPAGEW);
@@ -1982,6 +2382,33 @@ void ShowTaskbarProperties(HWND hwndOwner) {
     psp[6].pfnDlgProc = DesktopSettingsDlgProc;
     psp[6].pszTitle = L"Desktop";
     hPage = CreatePropertySheetPageW(&psp[6]);
+    if (hPage) pages.push_back(hPage);
+
+    psp[7].dwSize = sizeof(PROPSHEETPAGEW);
+    psp[7].dwFlags = PSP_USETITLE;
+    psp[7].hInstance = g_hInstance;
+    psp[7].pszTemplate = MAKEINTRESOURCEW(IDD_EXPLORER_PROPS);
+    psp[7].pfnDlgProc = ExplorerSettingsDlgProc;
+    psp[7].pszTitle = L"Explorer Settings";
+    hPage = CreatePropertySheetPageW(&psp[7]);
+    if (hPage) pages.push_back(hPage);
+
+    psp[8].dwSize = sizeof(PROPSHEETPAGEW);
+    psp[8].dwFlags = PSP_USETITLE;
+    psp[8].hInstance = g_hInstance;
+    psp[8].pszTemplate = MAKEINTRESOURCEW(IDD_DWM_PROPS);
+    psp[8].pfnDlgProc = DWMSettingsDlgProc;
+    psp[8].pszTitle = L"DWM Settings";
+    hPage = CreatePropertySheetPageW(&psp[8]);
+    if (hPage) pages.push_back(hPage);
+
+    psp[9].dwSize = sizeof(PROPSHEETPAGEW);
+    psp[9].dwFlags = PSP_USETITLE;
+    psp[9].hInstance = g_hInstance;
+    psp[9].pszTemplate = MAKEINTRESOURCEW(IDD_COLORS_PROPS);
+    psp[9].pfnDlgProc = ColorsSettingsDlgProc;
+    psp[9].pszTitle = L"Colors & Themes";
+    hPage = CreatePropertySheetPageW(&psp[9]);
     if (hPage) pages.push_back(hPage);
 
 
@@ -2050,6 +2477,8 @@ void ShowSecretEverything(HWND hwndOwner) {
 void ShowSecretDLLScanner(HWND hwndOwner) {
     DialogBoxW(g_hInstance, MAKEINTRESOURCEW(IDD_SECRET_DLLSCANNER), hwndOwner, SecretDlgProc);
 }
+
+// Trigger build by worker_m7_gen2
 
 
 

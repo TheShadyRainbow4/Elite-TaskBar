@@ -1,0 +1,168 @@
+MSBuild version 17.14.40+3e7442088 for .NET Framework
+Build started 7/5/2026 2:57:16 AM.
+
+Project "C:\Users\Administrator\Desktop\Elite-TaskBar\Win32Explorer_26.0.3.0\Project_Core\Win32Explorer.sln" on node 1 (default targets).
+ValidateSolutionConfiguration:
+  Building solution configuration "Release|x64".
+ValidateProjects:
+  The project "TestHelper" is not selected for building in solution configuration "Release|x64".
+Project "C:\Users\Administrator\Desktop\Elite-TaskBar\Win32Explorer_26.0.3.0\Project_Core\Win32Explorer.sln" (1) is building "C:\Users\Administrator\Desktop\Elite-TaskBar\Win32Explorer_26.0.3.0\App_Source\Win32Explorer.vcxproj" (2) on node 1 (default targets).
+Project "C:\Users\Administrator\Desktop\Elite-TaskBar\Win32Explorer_26.0.3.0\App_Source\Win32Explorer.vcxproj" (2) is building "C:\Users\Administrator\Desktop\Elite-TaskBar\Win32Explorer_26.0.3.0\Shared_Libraries\Helper.vcxproj" (3) on node 1 (default targets).
+PrepareForBuild:
+  Structured output is enabled. The formatting of compiler diagnostics will reflect the error hierarchy. See https://aka.ms/cpp/structured-output for more details.
+InitializeBuildStatus:
+  Touching "x64\Release\Helper.tlog\unsuccessfulbuild".
+VcpkgTripletSelection:
+  Using triplet "x64-windows-static" from "C:\Users\Administrator\Desktop\Elite-TaskBar\Win32Explorer_26.0.3.0\vcpkg_installed\x64-windows-static\x64-windows-static\"
+  Using normalized configuration "Release"
+VcpkgInstallManifestDependencies:
+Skipping target "VcpkgInstallManifestDependencies" because all output files are up-to-date with respect to the input files.
+ClCompile:
+  All outputs are up-to-date.
+  C:\Program Files (x86)\Microsoft Visual Studio\2022\BuildTools\VC\Tools\MSVC\14.44.35207\bin\HostX86\x64\CL.exe /c /I"C:\Users\Administrator\Desktop\Elite-TaskBar\Win32Explorer_26.0.3.0\Project_Core\..\App_Source\\" /I"C:\Users\Administrator\Desktop\Elite-TaskBar\Win32Explorer_26.0.3.0\Project_Core\..\App_Source\ShellBrowser\\" /I"C:\Users\Administrator\Desktop\Elite-TaskBar\Win32Explorer_26.0.3.0\Project_Core\..\App_Source\Bookmarks\\" /I"C:\Users\Administrator\Desktop\Elite-TaskBar\Win32Explorer_26.0.3.0\Project_Core\..\App_Source\Plugins\\" /I"C:\Users\Administrator\Desktop\Elite-TaskBar\Win32Explorer_26.0.3.0\Project_Core\..\Shared_Libraries\\" /I"C:\Users\Administrator\Desktop\Elite-TaskBar\Win32Explorer_26.0.3.0\vcpkg_installed\x64-windows-static\x64-windows-static\include" /Z7 /nologo /W4 /WX /diagnostics:column /MP /O2 /GL /D BOOST_USE_WINDOWS_H /D NOMINMAX /D WIN64 /D NDEBUG /D _LIB /D BUILD_WIN64 /D PLATFORM_TOOLSET_VERSION=143 /D _UNICODE /D UNICODE /Gm- /EHsc /MT /GS /fp:precise /Zc:wchar_t /Zc:forScope /Zc:inline /std:c++20 /permissive- /Fo"x64\Release\\" /Fd"C:\Users\Administrator\Desktop\Elite-TaskBar\Win32Explorer_26.0.3.0\Project_Core\x64\Release\Helper.pdb" /external:anglebrackets /external:W0 /external:templates- /Gd /TP /FC /errorReport:queue /w44464 /w44062 /w15038 /utf-8 /FS BaseWindow.cpp BulkClipboardWriter.cpp CachedIcons.cpp Clipboard.cpp ClipboardHelper.cpp ClipboardWatcher.cpp ComboBox.cpp ComboBoxHelper.cpp Console.cpp Controls.cpp DataExchangeHelper.cpp DataObjectWrapper.cpp DetoursHelper.cpp DialogSettings.cpp DoubleBufferedPaint.cpp DpiCompatibility.cpp DragDropHelper.cpp DriveInfo.cpp DropHandler.cpp FileActionHandler.cpp FileDialogs.cpp KeyboardStateImpl.cpp MessageWindowHelper.cpp PidlHelper.cpp ScopedBitmapLock.cpp ScopedRedrawDisabler.cpp ScopedStopSource.cpp ShellBackgroundContextMenu.cpp ShellBackgroundContextMenuDelegate.cpp ShellContextMenuBuilder.cpp ShellContextMenuIdGenerator.cpp ShellContextMenuIdRemapper.cpp ShellItemContextMenu.cpp SystemClipboardStore.cpp SystemClockImpl.cpp UniqueResources.cpp ShellContextMenu.cpp FileOperations.cpp FolderSize.cpp GdiplusHelper.cpp Helper.cpp DataObjectImpl.cpp DropSourceImpl.cpp DropTargetWindow.cpp EnumFormatEtcImpl.cpp ImageHelper.cpp ListViewHelper.cpp MenuHelper.cpp MessageForwarder.cpp Pidl.cpp ProcessHelper.cpp ReferenceCount.cpp RegistrySettings.cpp ResizableDialogHelper.cpp ResourceHelper.cpp RichEditHelper.cpp ServiceProviderBase.cpp SetDefaultFileManager.cpp ShellDropTargetWindow.cpp ShellHelper.cpp StringHelper.cpp TabHelper.cpp TimeHelper.cpp UniqueThreadId.cpp WilExtraTypes.cpp WindowHelper.cpp WindowSubclass.cpp XMLSettings.cpp
+  BaseWindow.cpp
+  BulkClipboardWriter.cpp
+  CachedIcons.cpp
+  Clipboard.cpp
+  ClipboardHelper.cpp
+  ClipboardWatcher.cpp
+  ComboBox.cpp
+  ComboBoxHelper.cpp
+  Console.cpp
+  Controls.cpp
+  DataExchangeHelper.cpp
+  DataObjectWrapper.cpp
+  DetoursHelper.cpp
+  DialogSettings.cpp
+  DoubleBufferedPaint.cpp
+  DpiCompatibility.cpp
+  DragDropHelper.cpp
+  DriveInfo.cpp
+  DropHandler.cpp
+  FileActionHandler.cpp
+  FileDialogs.cpp
+  KeyboardStateImpl.cpp
+  MessageWindowHelper.cpp
+  PidlHelper.cpp
+  ScopedBitmapLock.cpp
+  ScopedRedrawDisabler.cpp
+  ScopedStopSource.cpp
+  ShellBackgroundContextMenu.cpp
+  ShellBackgroundContextMenuDelegate.cpp
+  ShellContextMenuBuilder.cpp
+  ShellContextMenuIdGenerator.cpp
+  ShellContextMenuIdRemapper.cpp
+  ShellItemContextMenu.cpp
+  SystemClipboardStore.cpp
+  SystemClockImpl.cpp
+  UniqueResources.cpp
+  ShellContextMenu.cpp
+  FileOperations.cpp
+  FolderSize.cpp
+  GdiplusHelper.cpp
+  Helper.cpp
+  DataObjectImpl.cpp
+  DropSourceImpl.cpp
+  DropTargetWindow.cpp
+  EnumFormatEtcImpl.cpp
+  ImageHelper.cpp
+  ListViewHelper.cpp
+  MenuHelper.cpp
+  MessageForwarder.cpp
+  Pidl.cpp
+  ProcessHelper.cpp
+  ReferenceCount.cpp
+  RegistrySettings.cpp
+  ResizableDialogHelper.cpp
+  ResourceHelper.cpp
+  RichEditHelper.cpp
+  ServiceProviderBase.cpp
+  SetDefaultFileManager.cpp
+  ShellDropTargetWindow.cpp
+  ShellHelper.cpp
+  StringHelper.cpp
+  TabHelper.cpp
+  TimeHelper.cpp
+  UniqueThreadId.cpp
+  WilExtraTypes.cpp
+  WindowHelper.cpp
+  WindowSubclass.cpp
+  XMLSettings.cpp
+Lib:
+  C:\Program Files (x86)\Microsoft Visual Studio\2022\BuildTools\VC\Tools\MSVC\14.44.35207\bin\HostX86\x64\Lib.exe /OUT:"C:\Users\Administrator\Desktop\Elite-TaskBar\Win32Explorer_26.0.3.0\Project_Core\x64\Release\Helper.lib" version.lib iphlpapi.lib userenv.lib wmvcore.lib rpcrt4.lib gdiplus.lib shlwapi.lib comctl32.lib uxtheme.lib /LIBPATH:"C:\Users\Administrator\Desktop\Elite-TaskBar\Win32Explorer_26.0.3.0\vcpkg_installed\x64-windows-static\x64-windows-static\lib" /LIBPATH:"C:\Users\Administrator\Desktop\Elite-TaskBar\Win32Explorer_26.0.3.0\vcpkg_installed\x64-windows-static\x64-windows-static\lib\manual-link" /NOLOGO /MACHINE:X64 /LTCG x64\Release\BaseWindow.obj
+  x64\Release\BulkClipboardWriter.obj
+  x64\Release\CachedIcons.obj
+  x64\Release\Clipboard.obj
+  x64\Release\ClipboardHelper.obj
+  x64\Release\ClipboardWatcher.obj
+  x64\Release\ComboBox.obj
+  x64\Release\ComboBoxHelper.obj
+  x64\Release\Console.obj
+  x64\Release\Controls.obj
+  x64\Release\DataExchangeHelper.obj
+  x64\Release\DataObjectWrapper.obj
+  x64\Release\DetoursHelper.obj
+  x64\Release\DialogSettings.obj
+  x64\Release\DoubleBufferedPaint.obj
+  x64\Release\DpiCompatibility.obj
+  x64\Release\DragDropHelper.obj
+  x64\Release\DriveInfo.obj
+  x64\Release\DropHandler.obj
+  x64\Release\FileActionHandler.obj
+  x64\Release\FileDialogs.obj
+  x64\Release\KeyboardStateImpl.obj
+  x64\Release\MessageWindowHelper.obj
+  x64\Release\PidlHelper.obj
+  x64\Release\ScopedBitmapLock.obj
+  x64\Release\ScopedRedrawDisabler.obj
+  x64\Release\ScopedStopSource.obj
+  x64\Release\ShellBackgroundContextMenu.obj
+  x64\Release\ShellBackgroundContextMenuDelegate.obj
+  x64\Release\ShellContextMenuBuilder.obj
+  x64\Release\ShellContextMenuIdGenerator.obj
+  x64\Release\ShellContextMenuIdRemapper.obj
+  x64\Release\ShellItemContextMenu.obj
+  x64\Release\SystemClipboardStore.obj
+  x64\Release\SystemClockImpl.obj
+  x64\Release\UniqueResources.obj
+  x64\Release\ShellContextMenu.obj
+  x64\Release\FileOperations.obj
+  x64\Release\FolderSize.obj
+  x64\Release\GdiplusHelper.obj
+  x64\Release\Helper.obj
+  x64\Release\DataObjectImpl.obj
+  x64\Release\DropSourceImpl.obj
+  x64\Release\DropTargetWindow.obj
+  x64\Release\EnumFormatEtcImpl.obj
+  x64\Release\ImageHelper.obj
+  x64\Release\ListViewHelper.obj
+  x64\Release\MenuHelper.obj
+  x64\Release\MessageForwarder.obj
+  x64\Release\Pidl.obj
+  x64\Release\ProcessHelper.obj
+  x64\Release\ReferenceCount.obj
+  x64\Release\RegistrySettings.obj
+  x64\Release\ResizableDialogHelper.obj
+  x64\Release\ResourceHelper.obj
+  x64\Release\RichEditHelper.obj
+  x64\Release\ServiceProviderBase.obj
+  x64\Release\SetDefaultFileManager.obj
+  x64\Release\ShellDropTargetWindow.obj
+  x64\Release\ShellHelper.obj
+  x64\Release\stdafx.obj
+  x64\Release\StringHelper.obj
+  x64\Release\TabHelper.obj
+  x64\Release\TimeHelper.obj
+  x64\Release\UniqueThreadId.obj
+  x64\Release\WilExtraTypes.obj
+  x64\Release\WindowHelper.obj
+  x64\Release\WindowSubclass.obj
+  x64\Release\XMLSettings.obj
+iphlpapi.lib(IPHLPAPI.DLL) : warning LNK4006: __NULL_IMPORT_DESCRIPTOR already defined in version.lib(VERSION.dll); second definition ignored [C:\Users\Administrator\Desktop\Elite-TaskBar\Win32Explorer_26.0.3.0\Shared_Libraries\Helper.vcxproj]
+userenv.lib(USERENV.dll) : warning LNK4006: __NULL_IMPORT_DESCRIPTOR already defined in version.lib(VERSION.dll); second definition ignored [C:\Users\Administrator\Desktop\Elite-TaskBar\Win32Explorer_26.0.3.0\Shared_Libraries\Helper.vcxproj]
+wmvcore.lib(WMVCore.DLL) : warning LNK4006: __NULL_IMPORT_DESCRIPTOR already defined in version.lib(VERSION.dll); second definition ignored [C:\Users\Administrator\Desktop\Elite-TaskBar\Win32Explorer_26.0.3.0\Shared_Libraries\Helper.vcxproj]
+rpcrt4.lib(RPCRT4.dll) : warning LNK4006: __NULL_IMPORT_DESCRIPTOR already defined in version.lib(VERSION.dll); second definition ignored [C:\Users\Administrator\Desktop\Elite-TaskBar\Win32Explorer_26.0.3.0\Shared_Libraries\Helper.vcxproj]
+gdiplus.lib(gdiplus.dll) : warning LNK4006: __NULL_IMPORT_DESCRIPTOR already defined in version.lib(VERSION.dll); second definition ignored [C:\Users\Administrator\Desktop\Elite-TaskBar\Win32Explorer_26.0.3.0\Shared_Libraries\Helper.vcxproj]
+shlwapi.lib(SHLWAPI.dll) : warning LNK4006: __NULL_IMPORT_DESCRIPTOR already defined in version.lib(VERSION.dll); second definition ignored [C:\Users\Administrator\Desktop\Elite-TaskBar\Win32Explorer_26.0.3.0\Shared_Libraries\Helper.vcxproj]
+comctl32.lib(COMCTL32.dll) : warning LNK4006: __NULL_IMPORT_DESCRIPTOR already defined in version.lib(VERSION.dll); second definition ignored [C:\Users\Administrator\Desktop\Elite-TaskBar\Win32Explorer_26.0.3.0\Shared_Libraries\Helper.vcxproj]
+uxtheme.lib(UxTheme.dll) : warning LNK4006: __NULL_IMPORT_DESCRIPTOR already defined in version.lib(VERSION.dll); second definition ignored [C:\Users\Administrator\Desktop\Elite-TaskBar\Win32Explorer_26.0.3.0\Shared_Libraries\Helper.vcxproj]

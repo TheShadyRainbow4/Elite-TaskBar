@@ -1,0 +1,128 @@
+#pragma once
+#pragma warning(disable: 4715)
+
+#define IDI_MAIN_PROGRAM 101
+#define IDI_PREFERENCES  102
+#define IDB_START_ORB    103
+
+#define IDD_TASKBAR_PROPS     201
+#define IDC_LOCK_TASKBAR      202
+#define IDC_AUTOHIDE_TASKBAR  203
+#define IDC_SMALL_ICONS       204
+#define IDC_STATIC            -1
+
+#define IDD_STARTMENU_PROPS   205
+#define IDD_DESKTOP_PROPS     206
+#define IDD_TOOLBARS_PROPS    207
+#define IDD_SECRET_EVERYTHING 208
+#define IDD_SECRET_DLLSCANNER 209
+
+#define IDC_MODE_INDEPENDENT  210
+#define IDC_MODE_REPLACE      211
+#define IDC_MODE_SECONDARY_ONLY 223
+#define IDC_WIDTH_AUTO        224
+#define IDC_WIDTH_FIXED       225
+#define IDC_WIDTH_ICONS       226
+#define IDC_HOVER_PREVIEW     227
+#define IDC_WIDTH_FIXED_SIZE  234
+#define IDC_WIDTH_FIXED_SIZE_LBL 235
+#define IDC_USE_NATIVE_TASKBAND 231
+
+// Taskbar UI
+#define IDC_TRAY_NATIVE       212
+#define IDC_TRAY_LEGACY       213
+#define IDC_MONITOR_LIST      214
+#define IDC_COMPONENTS_LIST   215
+
+// Start Menu UI
+#define IDC_START_OPENSHELL   216
+#define IDC_START_NATIVE      217
+#define IDC_START_COMBO       218
+#define IDC_START_TRIGGER     219
+#define IDC_START_MONITOR_LIST 233
+#define IDC_ORB_PREVIEW 230
+
+// Toolbars UI
+#define IDC_TOOLBAR_LIST      220
+#define IDC_TOOLBAR_NEW       221
+
+#define IDC_NATIVE_REGISTRY_MODE 222
+
+// Orbs
+#define IDB_START_ORB_1ORB          301
+#define IDB_START_ORB_AQUABOTTOM    302
+#define IDB_START_ORB_DUNES         303
+#define IDB_START_ORB_INDIGO        304
+#define IDB_START_ORB_SAPPHIRE      305
+#define IDB_START_ORB_URANUS        306
+#define IDB_START_ORB_VIENNABOTTOM  307
+
+// Orb UI combo box
+#define IDC_ORB_SELECTOR      232
+
+#define IDD_NATIVE_PROPS 240
+#define IDD_MULTIMON_PROPS 241
+#define IDC_DYN_SCROLLAREA 242
+
+#define IDC_PORTABLE_MIRROR          250
+#define IDC_REPLACE_EXPLORER_NONE    251
+#define IDC_REPLACE_EXPLORER_FILESYS 252
+#define IDC_REPLACE_EXPLORER_ALL     253
+#define IDC_THEME_FOLDER_PATH        260
+#define IDC_THEME_FOLDER_BROWSE      261
+#define IDC_ENABLE_DARK_MODE         262
+#define IDC_IMPORT_SETTINGS          270
+#define IDC_EXPORT_SETTINGS          271
+
+#define IDD_HELP_DIALOG              280
+#define IDD_ABOUT_DIALOG             281
+#define IDC_ABOUT_EXPAND             282
+#define IDC_ABOUT_MOREINFO           283
+#define IDC_HELP_TEXT                284
+#define IDC_BANNER                   285
+
+#define IDC_DESKTOP_REPLACE_ENABLED   290
+#define IDC_DESKTOP_WALLPAPER_ENABLED 291
+#define IDC_DESKTOP_ICONS_ENABLED     292
+#define IDC_FALLBACK_STARTMENU_ENABLED 293
+#define IDC_TWO_ROW_TRAY              294
+#define IDC_MIGRATE_START_MENU_SETTINGS 295
+
+#define IDC_DESKTOP_FORCE_PROGMAN_ALL   320
+#define IDC_DESKTOP_MODE_SPAN           321
+#define IDC_DESKTOP_MODE_PERMONITOR      322
+#define IDC_DESKTOP_THEME_PATH          323
+#define IDC_DESKTOP_THEME_BROWSE        324
+#define IDC_DESKTOP_THEME_SELECT        325
+#define IDC_DESKTOP_SLIDESHOW_ENABLED   326
+#define IDC_DESKTOP_SLIDESHOW_INTERVAL  327
+#define IDC_DESKTOP_THEME_TUTORIAL_LINK 328
+#define IDC_DESKTOP_WALLPAPER_PREVIEW   329
+#define IDC_DESKTOP_ICON_PREVIEW_1      330
+#define IDC_DESKTOP_ICON_PREVIEW_2      331
+#define IDC_DESKTOP_ICON_PREVIEW_3      332
+#define IDC_DESKTOP_ICON_PREVIEW_4      333
+#define IDC_USE_NATIVE_WALLPAPER        334
+#define IDC_DESKTOP_THUMBNAILS          335
+
+#define IDD_EXPLORER_PROPS              243
+#define IDD_DWM_PROPS                   244
+#define IDD_COLORS_PROPS                245
+
+#define IDC_EXPLORER_HIDDEN_FILES       340
+#define IDC_EXPLORER_EXTENSIONS         341
+#define IDC_EXPLORER_BACKUP             342
+#define IDC_EXPLORER_RESTORE            343
+
+#define IDC_DWM_ANIMATIONS              350
+#define IDC_DWM_GLASS                   351
+#define IDC_DWM_BORDER_SIZE             352
+
+#define IDC_COLORS_HIGHLIGHT            360
+#define IDC_COLORS_CLASSIC              361
+#define IDC_COLORS_WINDOWS_DARK         362
+#define IDC_COLORS_APP_DARK             363
+
+
+
+

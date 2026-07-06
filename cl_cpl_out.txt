@@ -1,0 +1,27 @@
+Microsoft (R) C/C++ Optimizing Compiler Version 19.44.35228 for x64
+Copyright (C) Microsoft Corporation.  All rights reserved.
+
+EliteSettingsCpl.cpp
+Microsoft (R) Incremental Linker Version 14.44.35228.0
+Copyright (C) Microsoft Corporation.  All rights reserved.
+
+/dll 
+/implib:C:\Users\Administrator\Desktop\Elite-TaskBar\BuildOutput\EliteSettings.lib 
+/out:C:\Users\Administrator\Desktop\Elite-TaskBar\BuildOutput\EliteSettings.cpl 
+/IMPLIB:C:\Users\Administrator\Desktop\Elite-TaskBar\BuildOutput\ObjectLibraryFiles\EliteSettings_cpl.lib 
+/EXPORT:CPlApplet 
+/MANIFEST:EMBED 
+/MANIFESTINPUT:C:\Users\Administrator\Desktop\Elite-TaskBar\SourceFiles\cpl.manifest 
+/MANIFESTUAC:NO 
+C:\Users\Administrator\Desktop\Elite-TaskBar\BuildOutput\ObjectFiles/EliteSettingsCpl.obj 
+C:\Users\Administrator\Desktop\Elite-TaskBar\BuildOutput\ResourceFiles\settings_cpl.res 
+user32.lib 
+shell32.lib 
+shlwapi.lib 
+comctl32.lib 
+advapi32.lib 
+uxtheme.lib 
+gdi32.lib 
+ole32.lib 
+gdiplus.lib 
+   Creating library C:\Users\Administrator\Desktop\Elite-TaskBar\BuildOutput\ObjectLibraryFiles\EliteSettings_cpl.lib and object C:\Users\Administrator\Desktop\Elite-TaskBar\BuildOutput\ObjectLibraryFiles\EliteSettings_cpl.exp

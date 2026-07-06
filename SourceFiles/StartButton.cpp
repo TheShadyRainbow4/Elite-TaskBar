@@ -5,12 +5,32 @@
 #include <shlobj.h>
 #include <vector>
 #include <string>
+#include <tlhelp32.h>
 #pragma comment(lib, "Shlwapi.lib")
 #pragma comment(lib, "shell32.lib")
 
 #pragma comment (lib,"Gdiplus.lib")
 
 using namespace Gdiplus;
+
+static bool IsStartMenuRunning() {
+    bool running = false;
+    HANDLE hSnapshot = CreateToolhelp32Snapshot(TH32CS_SNAPPROCESS, 0);
+    if (hSnapshot != INVALID_HANDLE_VALUE) {
+        PROCESSENTRY32W pe;
+        pe.dwSize = sizeof(pe);
+        if (Process32FirstW(hSnapshot, &pe)) {
+            do {
+                if (_wcsicmp(pe.szExeFile, L"StartMenu.exe") == 0) {
+                    running = true;
+                    break;
+                }
+            } while (Process32NextW(hSnapshot, &pe));
+        }
+        CloseHandle(hSnapshot);
+    }
+    return running;
+}
 
 static bool LaunchOpenShellMenu() {
     std::vector<std::wstring> paths;
@@ -34,6 +54,8 @@ static bool LaunchOpenShellMenu() {
         paths.push_back(std::wstring(progFiles) + L"\\Open-Shell\\StartMenu.exe");
     }
     
+    bool isRunning = IsStartMenuRunning();
+    
     // Try to launch
     for (const auto& path : paths) {
         if (PathFileExistsW(path.c_str())) {
@@ -42,7 +64,11 @@ static bool LaunchOpenShellMenu() {
             STARTUPINFOW si = { sizeof(si) };
             PROCESS_INFORMATION pi;
             wchar_t cmdLine[MAX_PATH + 32];
-            swprintf_s(cmdLine, L"\"%s\" -toggle", path.c_str());
+            if (isRunning) {
+                swprintf_s(cmdLine, L"\"%s\" -toggle", path.c_str());
+            } else {
+                swprintf_s(cmdLine, L"\"%s\"", path.c_str());
+            }
             
             if (CreateProcessW(NULL, cmdLine, NULL, NULL, FALSE, 0, NULL, NULL, &si, &pi)) {
                 CloseHandle(pi.hProcess);

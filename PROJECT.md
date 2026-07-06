@@ -17,9 +17,9 @@ Data flows through registry keys located at `HKCU\Software\EliteSoftware\Win32Ex
 | 4 | E2E Testing Track | Design and implement comprehensive E2E test suite; write verify_final_polish.ps1 and compile tests. | None | DONE |
 | 5 | Milestone 1: Multi-Monitor & Tray/Flyout Fixes | Dynamic primary display spoofing, clock/tray gap, two-row tray, tray actions. | M3 | DONE |
 | 6 | Milestone 2: Settings UI, About Dialog, & Migration Cleanup | Start tab hover bug, About dialog close buttons, reload explorer window bug, *old*.exe cleanup. | M3 | DONE |
-| 7 | Milestone 3: Advanced Desktop & Theme Configuration | Progman multi-display render, Desktop Background tab, Span/Per-monitor modes, Slideshow, dropdown theme select. | M3 | IN_PROGRESS |
-| 8 | Milestone 4: Global Keyboard Hooks & Shell Fallbacks | WH_KEYBOARD_LL hooks and RegisterHotKey for Win+R run dialog fallback when Explorer is killed. | M3 | PLANNED |
-| 9 | Milestone 5: Taskbar Features & View Modes | Clock seconds, show desktop hover, resizable Quick Launch, Win32Explorer view modes. | M3 | PLANNED |
+| 7 | Milestone 3: Advanced Desktop & Theme Configuration | Progman multi-display render, Desktop Background tab, Span/Per-monitor, slideshow, default checked tray on all displays, transparent desktop icon backgrounds (no white outlines), toggleable desktop thumbnails, massive Settings UI extension, re-enable CAB backups via build.ps1 utilizing backup.ps1 -BuildOutputOnly. | M3 | IN_PROGRESS |
+| 8 | Milestone 4: Global Keyboard Hooks & Shell Fallbacks | Compile OpenShell.sln to EliteStartMenu.exe with -monitor/-rect arguments support (StartMenu.cpp command-line parser), read/inherit from official native Open-Shell registry path, WH_KEYBOARD_LL hooks and RegisterHotKey for Win+R. | M3 | PLANNED |
+| 9 | Milestone 5: Taskbar Features & View Modes | Launch EliteStartMenu with monitor arguments, clock seconds, show desktop hover, resizable Quick Launch, view modes. | M3 | PLANNED |
 | 10| Final Milestone: Pass E2E Tests & Hardening | Run all E2E tests, debug and fix failures, run white-box adversarial testing. | M4, M5, M6, M7, M8, M9 | PLANNED |
 
 ## Interface Contracts
@@ -32,3 +32,11 @@ Data flows through registry keys located at `HKCU\Software\EliteSoftware\Win32Ex
 - EliteTaskbar & Settings Stubs: `SourceFiles/`
 - Win32Explorer: `Remaining_Shell/Win32Explorer_26.0.3.0/App_Source/`
 - Output Binaries: `BuildOutput/` and Project Root
+
+## Native Integration & Configuration Guidelines
+1. **Registry Integration & Dual-Sync**: Do NOT invent custom registry keys for features that Windows already tracks. Write user configurations to two locations:
+   a) The native Windows registry keys (for immediate OS integration).
+   b) A custom "Master Configuration" registry key list under `HKCU\Software\EliteSoftware\Win32Explorer\Master` (to store the overall application state).
+2. **Boot Synchronization**: Implement a sync loop on startup in `EliteTaskbar` (`main.cpp` / initialization) that reads the custom Master Configuration registry settings, and writes them directly to the real native Windows registry locations (for native features) or loads them internally (for custom features).
+3. **Total Configurability**: Ensure that every single component, layout parameter, and engine feature is a toggleable setting in the UI. Do not force or hardcode behaviors; make everything configurable for power users.
+4. **Native Classes & Controls**: Use native Win32 window classes/controls (`Progman`, `WorkerW`, `SysListView32`, `ReBarWindow32`, etc.) wherever possible instead of custom rendering or custom classes. Custom classes are reserved ONLY for net-new features that do not exist in standard Windows.

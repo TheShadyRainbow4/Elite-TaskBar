@@ -1,3 +1,7 @@
+param(
+    [switch]$BuildOutputOnly
+)
+
 $ErrorActionPreference = 'Stop'
 $ScriptDir = Split-Path -Parent $MyInvocation.MyCommand.Definition
 $BackupDir = Join-Path $ScriptDir "Backups"
@@ -25,8 +29,14 @@ $ddfContent = @(
     ".Set Compress=on"
 )
 
-$filesToBackup = (Get-ChildItem -Path (Join-Path $ScriptDir "SourceFiles") -Recurse -File) + (Get-ChildItem -Path $ScriptDir -File) | Where-Object {
-    $_.Extension -notmatch "^\.(obj|pdb|ilk|tlog|idb|iobj|ipch|sdf|res|pch|lib|zip|pdf|exe|cpl|txt|log|cab)$" -and $_.Name -notmatch "_old"
+if ($BuildOutputOnly) {
+    $filesToBackup = Get-ChildItem -Path (Join-Path $ScriptDir "BuildOutput"), (Join-Path $ScriptDir "BuildOutputx86") -Recurse -File | Where-Object {
+        $_.Extension -match "^\.(exe|cpl|dll)$"
+    }
+} else {
+    $filesToBackup = (Get-ChildItem -Path (Join-Path $ScriptDir "SourceFiles") -Recurse -File) + (Get-ChildItem -Path $ScriptDir -File) | Where-Object {
+        $_.Extension -notmatch "^\.(obj|pdb|ilk|tlog|idb|iobj|ipch|sdf|res|pch|lib|zip|pdf|exe|cpl|txt|log|cab)$" -and $_.Name -notmatch "_old"
+    }
 }
 
 foreach ($file in $filesToBackup) {
