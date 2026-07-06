@@ -1,4 +1,4 @@
-# BRIEFING — 2026-07-06T02:51:51Z
+# BRIEFING — 2026-07-06T03:00:00Z
 
 ## Mission
 Implement fixes for desktop, slideshow, properties dialog, and compilation pipeline issues identified by the Reviewer/Challenger validation swarm.
@@ -21,7 +21,7 @@ Implement fixes for desktop, slideshow, properties dialog, and compilation pipel
 
 ## Current Parent
 - Conversation ID: 3a154d09-5ab7-416f-bd4d-ce60cb64f386
-- Updated: 2026-07-06T02:51:51Z
+- Updated: 2026-07-06T03:00:00Z
 
 ## Task Summary
 - **What to build**: Fixes for initial population bug, slideshow timer race condition, wallpaper slideshow directory scan bug, startup slideshow rendering delay, properties dialog static icon leak, properties dialog GDI+ token leak, and build/signing pipeline order.
@@ -30,20 +30,29 @@ Implement fixes for desktop, slideshow, properties dialog, and compilation pipel
 - **Code layout**: C:\Users\Administrator\Desktop\Elite-TaskBar\Documentation\PROJECT_SOURCE_MAP.md
 
 ## Key Decisions Made
-- [TBD]
+- Used WM_POPULATE_GRID user-defined message to defer desktop ListView grid population from WM_CREATE so that client layout coordinates are finalized.
+- Updated DrawWallpaper signature to accept the desktop HWND so that timer registration does not rely on a potentially NULL global s_hProgman.
+- Modified GetThemeDirectory to read the Wallpaper path key value directly from the .theme INI layout and expand environment strings.
+- Added a WM_DESTROY handler in DesktopSettingsDlgProc to destroy the preview control static icons and shut down GDI+ to prevent memory/resource leaks.
+- Reordered build.ps1 compilation pipeline and expanded build_sign.ps1 to include Win32Explorer and EliteStartMenu targets for clean code-signing.
 
 ## Artifact Index
 - C:\Users\Administrator\Desktop\Elite-TaskBar\.agents\worker_2\handoff.md — Handoff report of the changes and verification.
 
 ## Change Tracker
-- **Files modified**: [TBD]
-- **Build status**: [TBD]
-- **Pending issues**: [TBD]
+- **Files modified**:
+  - SourceFiles/DesktopWindow.cpp — Added WM_POPULATE_GRID, passed hwnd to DrawWallpaper, fixed theme directory scan and startup delay.
+  - SourceFiles/TaskbarProperties.cpp — Added WM_DESTROY handler with icon destruction and GdiplusShutdown.
+  - build.ps1 — Reordered MSBuild, ps2exe, and build_sign.ps1 calls.
+  - build_sign.ps1 — Expanded list of signed binaries.
+  - CHANGELOG.md — Documented all fixes.
+- **Build status**: PASS
+- **Pending issues**: None
 
 ## Quality Status
-- **Build/test result**: [TBD]
-- **Lint status**: [TBD]
-- **Tests added/modified**: [TBD]
+- **Build/test result**: PASS (All tests in verify_desktop_shell.ps1 passed)
+- **Lint status**: 0 violations
+- **Tests added/modified**: verify_desktop_shell.ps1 verified
 
 ## Loaded Skills
-- None loaded yet.
+- None loaded.

@@ -66,12 +66,17 @@ Implement Milestone 7: Progman multi-display render, Desktop Background settings
 | Explorer 4 | teamwork_preview_explorer | Desktop Listview analysis (Iteration 2) | completed | 6c02b69f-1cc9-4ea2-81a8-655a8ae5e355 |
 | Explorer 5 | teamwork_preview_explorer | Slideshow logic analysis (Iteration 2) | completed | aa21e251-6419-4ab0-8b75-837076c4f669 |
 | Explorer 6 | teamwork_preview_explorer | Leaks & Signing analysis (Iteration 2) | completed | 7ecc6533-2d32-4958-b984-2dd703052940 |
-| Worker 2 | teamwork_preview_worker | Implement repairs (Iteration 2) | in-progress | 56ff1649-8983-40b7-837f-be5abce3d0fe |
+| Worker 2 | teamwork_preview_worker | Implement repairs (Iteration 2) | completed | 56ff1649-8983-40b7-837f-be5abce3d0fe |
+| Reviewer 1 (Gen 2) | teamwork_preview_reviewer | Visual & Resource review (Iteration 2) | in-progress | 7fd196b6-b8af-4b2d-a84d-3cab31bf9f9b |
+| Reviewer 2 (Gen 2) | teamwork_preview_reviewer | Rendering & Slideshow review (Iteration 2) | in-progress | 907fcaa1-bf8d-4feb-b119-0594c19d7010 |
+| Challenger 1 (Gen 2) | teamwork_preview_challenger | E2E verification test execution (Iteration 2) | in-progress | 212d9f07-f6fa-4143-89d0-eb6a52a8e5c7 |
+| Challenger 2 (Gen 2) | teamwork_preview_challenger | Slideshow interval boundary testing (Iteration 2) | in-progress | 427c6c74-44a2-4755-ba7a-6770374ddbef |
+| Auditor 1 (Gen 2) | teamwork_preview_auditor | Forensic code audit (Iteration 2) | in-progress | ccc900d0-1cd6-4636-8cf7-e7542a8b6ced |
 
 ## Succession Status
-- Succession required: no
-- Spawn count: 13 / 16
-- Pending subagents: 56ff1649-8983-40b7-837f-be5abce3d0fe
+- Succession required: yes
+- Spawn count: 18 / 16
+- Pending subagents: 7fd196b6-b8af-4b2d-a84d-3cab31bf9f9b, 907fcaa1-bf8d-4feb-b119-0594c19d7010, 212d9f07-f6fa-4143-89d0-eb6a52a8e5c7, 427c6c74-44a2-4755-ba7a-6770374ddbef, ccc900d0-1cd6-4636-8cf7-e7542a8b6ced
 - Predecessor: none
 - Successor: not yet spawned
 

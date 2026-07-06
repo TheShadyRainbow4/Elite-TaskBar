@@ -1,5 +1,5 @@
 # Progress — Milestone 7 Iteration 2 Fixes
-Last visited: 2026-07-06T02:58:10Z
+Last visited: 2026-07-06T03:00:00Z
 
 - [x] 1. ListView Initial Population Bug
 - [x] 2. Slideshow Timer Race Condition
@@ -8,6 +8,6 @@ Last visited: 2026-07-06T02:58:10Z
 - [x] 5. Static Control Icon Leaks
 - [x] 6. GDI+ Token Leak in Properties Dialog
 - [x] 7. Compilation & Signing Order Repair
-- [ ] 8. Submodule Synchronization
-- [ ] 9. Post-Flight Changelog
-- [ ] 10. Verification
+- [x] 8. Submodule Synchronization
+- [x] 9. Post-Flight Changelog
+- [x] 10. Verification
