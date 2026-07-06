@@ -250,8 +250,8 @@ try {
     
     # Open About dialog by sending WM_COMMAND with wParam=40002 (About menu item ID) to settings sheet
     Write-Host "Triggering About dialog..." -ForegroundColor Cyan
-    [Win32Helper]::SendMessage($hwndSettings, 0x0111, [IntPtr]40002, [IntPtr]::Zero) | Out-Null
-    Start-Sleep -Seconds 1
+    [Win32Helper]::PostMessage($hwndSettings, 0x0111, [IntPtr]40002, [IntPtr]::Zero) | Out-Null
+    Start-Sleep -Seconds 2
     
     # Find the About dialog window
     $hwndAbout = [Win32Helper]::FindProcessWindow($proc.Id, "#32770", "About EliteTaskbar")
