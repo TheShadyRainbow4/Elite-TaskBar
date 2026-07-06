@@ -5,8 +5,8 @@
 - [x] Step 3: Implement About Dialog Layout Fix (chin paint height boundary, expand/collapse borders size computation) in both variants.
 - [x] Step 4: Implement Reload Win32Explorer Multi-Spawn Fix (debounce check in NotifySettingsChange) in both TaskbarProperties.cpp files.
 - [x] Step 5: Implement old .exe/.cpl cleanup logic in build.ps1.
-- [ ] Step 6: Verify and Build (run build.ps1, check signing and compiler logs).
+- [x] Step 6: Verify and Build (run build.ps1, check signing and compiler logs).
 - [x] Step 7: Post-flight - Update CHANGELOG.md, README.md, Source Map / Checklist as needed.
-- [ ] Step 8: Write handoff report and notify parent.
+- [x] Step 8: Write handoff report and notify parent.
 
-Last visited: 2026-07-05T17:30:30Z
+Last visited: 2026-07-05T17:34:00Z
