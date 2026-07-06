@@ -208,9 +208,11 @@ if (-not $failed) {
     Write-Host "Done!" -ForegroundColor Green
 }
 
-Write-Host 'Compiling EliteStartMenu...' -ForegroundColor Cyan
-Invoke-ps2exe -inputFile EliteStartMenu.ps1 -outputFile BuildOutput\EliteStartMenu.exe -noConsole -STA -iconFile Resources\PREFERENCES.ico
-Invoke-ps2exe -inputFile EliteStartMenu.ps1 -outputFile BuildOutputx86\EliteStartMenu.exe -noConsole -STA -iconFile Resources\PREFERENCES.ico -x86
+if (Test-Path EliteStartMenu.ps1) {
+    Write-Host 'Compiling EliteStartMenu...' -ForegroundColor Cyan
+    Invoke-ps2exe -inputFile EliteStartMenu.ps1 -outputFile BuildOutput\EliteStartMenu.exe -noConsole -STA -iconFile Resources\PREFERENCES.ico
+    Invoke-ps2exe -inputFile EliteStartMenu.ps1 -outputFile BuildOutputx86\EliteStartMenu.exe -noConsole -STA -iconFile Resources\PREFERENCES.ico -x86
+}
 
 } finally {
     if ($lockStream) {

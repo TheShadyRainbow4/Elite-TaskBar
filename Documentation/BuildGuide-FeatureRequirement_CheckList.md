@@ -495,3 +495,15 @@
 3. White Background Bar: Call SetWindowTheme(hSysPager, L"", L"") and SetWindowTheme(hToolbar, L"", L"") to strip native visual style themed backgrounds. Implement DrawThemeParentBackground and custom parent background/WM_ERASEBKGND drawing in SysPagerSubclassProc and TrayToolbarSubclassProc subclass procedures. **[COMPLETED]**
 
 [2026-07-05 16:48] - Milestone 5 Feedback Fixes completed. Added [TRAY_LIMIT, GetProcessIcon, SetWindowTheme calls on hSysPager and hToolbar, WM_ERASEBKGND handling in TrayToolbarSubclassProc].
+
+---
+## MILESTONE 5 POLISH & ROBUSTNESS FIXES (CURRENT WORK)
+---
+
+1. GDI HICON Leak Fix: Add `bool bOwnsIcon` to `ScrapedTrayIcon` struct, track owned status in `GetWindowIconFix`, fallback to shared system application icon when NULL, and destroy owned icons in `UpdateTrayToolbar` and `TrayNotifyProc`.
+2. Primary Monitor Display Spoofing: Remove monitor check so `StartNativeTaskbarSpoof` is called unconditionally on all clicks.
+3. Toolbar Hover State: Preserve the glossy hover state of the toolbar buttons by not calling `SetWindowTheme` on `hToolbar`.
+4. Active Items Alignment: Dynamically query `hTaskSwitch` button height using `TB_GETBUTTONSIZE` and center the task switch control vertically.
+5. Clock Alignment: Center multi-line clock text vertically in `TrayClockProc`'s `WM_PAINT` handler using `DrawTextW` with `DT_CALCRECT`.
+6. Build & Test Fixes: Wrap the `EliteStartMenu.ps1` compilation in a `Test-Path` check, and fix E2E verification variables `$hwndNotify` and `$hwndClock` in `run_comprehensive_e2e.ps1`.
+

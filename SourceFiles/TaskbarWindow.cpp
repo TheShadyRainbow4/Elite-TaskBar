@@ -127,8 +127,8 @@ LRESULT CALLBACK TrayToolbarSubclassProc(HWND hWnd, UINT uMsg, WPARAM wParam, LP
         if (index >= 0 && index < (int)g_CurrentTrayIcons.size()) {
             const auto& icon = g_CurrentTrayIcons[index];
             TaskbarInstance* inst = (TaskbarInstance*)dwRefData;
-            if (inst && inst->hMonitor != MonitorFromWindow(FindWindowW(L"Shell_TrayWnd", NULL), MONITOR_DEFAULTTOPRIMARY)) {
-                extern void StartNativeTaskbarSpoof(HWND hClickedTaskbar);
+            extern void StartNativeTaskbarSpoof(HWND hClickedTaskbar);
+            if (inst) {
                 StartNativeTaskbarSpoof(inst->hTaskbar);
             }
             PostMessageW(icon.hwnd, icon.uCallbackMessage, icon.uID, uMsg);
@@ -454,7 +454,17 @@ void UpdateTaskbarLayout(TaskbarInstance* inst) {
         int widthTaskSwitch = xNotifyStart - xTaskSwitch;
         if (widthTaskSwitch < 0) widthTaskSwitch = 0;
 
-        SetWindowPos(inst->hTaskSwitch, NULL, xTaskSwitch, 0, widthTaskSwitch, taskbarHeight, SWP_NOZORDER | SWP_NOACTIVATE);
+        int switchHeight = taskbarHeight;
+        int switchY = 0;
+        if (inst->hTaskSwitch) {
+            DWORD dwBtnSize = (DWORD)SendMessageW(inst->hTaskSwitch, TB_GETBUTTONSIZE, 0, 0);
+            int btnHeight = HIWORD(dwBtnSize);
+            if (btnHeight > 0 && btnHeight < taskbarHeight) {
+                switchHeight = btnHeight;
+                switchY = (taskbarHeight - btnHeight) / 2;
+            }
+        }
+        SetWindowPos(inst->hTaskSwitch, NULL, xTaskSwitch, switchY, widthTaskSwitch, switchHeight, SWP_NOZORDER | SWP_NOACTIVATE);
         SendMessageW(inst->hTaskSwitch, TB_AUTOSIZE, 0, 0);
     }
 }
@@ -1195,7 +1205,10 @@ LRESULT CALLBACK TrayNotifyProc(HWND hwnd, UINT uMsg, WPARAM wParam, LPARAM lPar
                     bool found = false;
                     for (auto& icon : g_TrayIcons) {
                         if (icon.hWnd == nid->hWnd && icon.uID == nid->uID) {
-                            if (nid->uFlags & NIF_ICON) icon.hIcon = CopyIcon(nid->hIcon);
+                            if (nid->uFlags & NIF_ICON) {
+                                if (icon.hIcon) DestroyIcon(icon.hIcon);
+                                icon.hIcon = CopyIcon(nid->hIcon);
+                            }
                             if (nid->uFlags & NIF_TIP) wcscpy_s(icon.szTip, nid->szTip);
                             if (nid->uFlags & NIF_MESSAGE) icon.uCallbackMessage = nid->uCallbackMessage;
                             if (nid->uFlags & NIF_STATE) icon.dwState = nid->dwState;
@@ -1571,6 +1584,16 @@ LRESULT CALLBACK TrayClockProc(HWND hwnd, UINT uMsg, WPARAM wParam, LPARAM lPara
                 HFONT hFont = CreateFontIndirectW(&lf);
                 HFONT hOldFont = (HFONT)SelectObject(hdcBuffer, hFont);
 
+                RECT rcCalc = {0};
+                DrawTextW(hdcBuffer, clockText, -1, &rcCalc, DT_CENTER | DT_CALCRECT);
+                int textHeight = rcCalc.bottom - rcCalc.top;
+                int clientHeight = rcClient.bottom - rcClient.top;
+                if (textHeight < clientHeight) {
+                    int yOffset = (clientHeight - textHeight) / 2;
+                    rcClient.top += yOffset;
+                    rcClient.bottom = rcClient.top + textHeight;
+                }
+
                 DTTOPTS dttOpts = { sizeof(DTTOPTS) };
                 dttOpts.dwFlags = DTT_COMPOSITED | DTT_GLOWSIZE | DTT_TEXTCOLOR;
                 dttOpts.iGlowSize = 0; // Neutralize glow but keep alpha channel intact
@@ -1590,6 +1613,17 @@ LRESULT CALLBACK TrayClockProc(HWND hwnd, UINT uMsg, WPARAM wParam, LPARAM lPara
                 // Fallback if Theme fails inside BufferedPaint
                 HFONT hFont = CreateFontIndirectW(&lf);
                 HFONT hOldFont = (HFONT)SelectObject(hdcBuffer, hFont);
+
+                RECT rcCalc = {0};
+                DrawTextW(hdcBuffer, clockText, -1, &rcCalc, DT_CENTER | DT_CALCRECT);
+                int textHeight = rcCalc.bottom - rcCalc.top;
+                int clientHeight = rcClient.bottom - rcClient.top;
+                if (textHeight < clientHeight) {
+                    int yOffset = (clientHeight - textHeight) / 2;
+                    rcClient.top += yOffset;
+                    rcClient.bottom = rcClient.top + textHeight;
+                }
+
                 SetTextColor(hdcBuffer, RGB(255, 255, 255));
                 SetBkMode(hdcBuffer, TRANSPARENT);
                 DrawTextW(hdcBuffer, clockText, -1, &rcClient, DT_CENTER | DT_VCENTER | DT_NOCLIP);
@@ -1601,6 +1635,17 @@ LRESULT CALLBACK TrayClockProc(HWND hwnd, UINT uMsg, WPARAM wParam, LPARAM lPara
             // Absolute Fallback if BufferedPaint fails completely for Standard User
             HFONT hFont = CreateFontIndirectW(&lf);
             HFONT hOldFont = (HFONT)SelectObject(hdc, hFont);
+
+            RECT rcCalc = {0};
+            DrawTextW(hdc, clockText, -1, &rcCalc, DT_CENTER | DT_CALCRECT);
+            int textHeight = rcCalc.bottom - rcCalc.top;
+            int clientHeight = rcClient.bottom - rcClient.top;
+            if (textHeight < clientHeight) {
+                int yOffset = (clientHeight - textHeight) / 2;
+                rcClient.top += yOffset;
+                rcClient.bottom = rcClient.top + textHeight;
+            }
+
             SetTextColor(hdc, RGB(255, 255, 255));
             SetBkMode(hdc, TRANSPARENT);
             DrawTextW(hdc, clockText, -1, &rcClient, DT_CENTER | DT_VCENTER | DT_NOCLIP);
@@ -2781,7 +2826,6 @@ bool TaskbarWindow::Initialize(HINSTANCE hInstance) {
                     toolbarStyle |= TBSTYLE_WRAPABLE;
                 }
                 inst->hToolbar = CreateWindowExW(0, L"ToolbarWindow32", L"", toolbarStyle, 0, 0, MulDiv(100, dpi, 96), inst->taskbarHeight, inst->hSysPager, NULL, hInstance, NULL);
-                SetWindowTheme(inst->hToolbar, L"", L"");
                 SetWindowSubclass(inst->hToolbar, TrayToolbarSubclassProc, 2, (DWORD_PTR)inst);
                 SendMessageW(inst->hToolbar, TB_BUTTONSTRUCTSIZE, sizeof(TBBUTTON), 0);
                 int iconDim = g_Config.EnableTwoRowTray ? 12 : 16;

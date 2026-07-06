@@ -63,7 +63,8 @@ static HICON GetProcessIcon(HWND hwnd) {
     return hIcon;
 }
 
-static HICON GetWindowIconFix(HWND hwnd) {
+static HICON GetWindowIconFix(HWND hwnd, bool& bOutOwnsIcon) {
+    bOutOwnsIcon = false;
     if (!hwnd || !IsWindow(hwnd)) return NULL;
     DWORD_PTR dwRes = 0;
     if (SendMessageTimeoutW(hwnd, WM_GETICON, 2 /* ICON_SMALL2 */, 0, SMTO_ABORTIFHUNG, 100, &dwRes) && dwRes) {
@@ -79,6 +80,7 @@ static HICON GetWindowIconFix(HWND hwnd) {
     if (hIcon) return hIcon;
     hIcon = (HICON)GetClassLongPtrW(hwnd, GCLP_HICON);
     if (hIcon) return hIcon;
+    bOutOwnsIcon = true;
     return GetProcessIcon(hwnd);
 }
 
@@ -137,11 +139,15 @@ void ScrapeTrayIconsFromToolbar(HWND hToolbar, std::vector<ScrapedTrayIcon>& ico
                         icon.uCallbackMessage = iconCallbackMessage;
                         icon.uID = iconUID;
                         icon.hIcon = iconHIcon;
+                        icon.bOwnsIcon = false;
                         if (!icon.hIcon) {
-                            icon.hIcon = GetWindowIconFix(icon.hwnd);
+                            bool bOwns = false;
+                            icon.hIcon = GetWindowIconFix(icon.hwnd, bOwns);
+                            icon.bOwnsIcon = bOwns;
                         }
                         if (!icon.hIcon) {
                             icon.hIcon = LoadIconW(NULL, MAKEINTRESOURCEW(32512));
+                            icon.bOwnsIcon = false;
                         }
                         if (icon.hIcon) {
                             icons.push_back(icon);
@@ -212,7 +218,18 @@ void UpdateTrayToolbar(HWND hToolbar, HIMAGELIST hImageList, const std::vector<S
     }
     
     if (changed) {
+        for (const auto& icon : g_CurrentTrayIcons) {
+            if (icon.hIcon && icon.bOwnsIcon) {
+                DestroyIcon(icon.hIcon);
+            }
+        }
         g_CurrentTrayIcons = icons;
+    } else {
+        for (const auto& icon : icons) {
+            if (icon.hIcon && icon.bOwnsIcon) {
+                DestroyIcon(icon.hIcon);
+            }
+        }
     }
     
     // Always update the toolbar if it's empty but we have icons, in case this is a new taskbar

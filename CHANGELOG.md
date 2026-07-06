@@ -502,3 +502,37 @@ All notable changes to this project will be documented in this file.
 - **Milestone 5 Feedback Fixes - White Background Bar**:
   - In `SourceFiles/TaskbarWindow.cpp` `Initialize` function, stripped themed backgrounds by calling `SetWindowTheme(inst->hSysPager, L"", L"")` and `SetWindowTheme(inst->hToolbar, L"", L"")`.
   - Added `WM_ERASEBKGND` handling in `TrayToolbarSubclassProc` to erase and draw the parent background, preventing the default toolbar theme background drawing.
+
+- **Milestone 5 Polish - GDI HICON Leak Fix (Header)**:
+  - Added `bool bOwnsIcon = false;` to the `ScrapedTrayIcon` struct in `SourceFiles/TrayIconScraper.h` to track ownership of scraped icons.
+
+- **Milestone 5 Polish - GDI HICON Leak Fix (Source)**:
+  - Updated `GetWindowIconFix` to take a `bool& bOutOwnsIcon` reference param, setting it to `true` when falling back to `GetProcessIcon` (which allocates a new HICON via `SHGetFileInfoW`).
+  - In `ScrapeTrayIconsFromToolbar`, saved the `bOwnsIcon` state returned by `GetWindowIconFix`, and ensured the fallback `LoadIconW` sets `bOwnsIcon = false` since shared icons are not owned.
+  - In `UpdateTrayToolbar`, added logic to safely destroy the old owned icons in `g_CurrentTrayIcons` on change, and to destroy newly scraped owned icons in `icons` if not saved to the global vector.
+
+- **Milestone 5 Polish - Taskbar Window Layout & Functionality Polish**:
+  - In `SourceFiles/TaskbarWindow.cpp`, inside `TrayNotifyProc` under `WM_COPYDATA` (NIM_MODIFY block), added `DestroyIcon(icon.hIcon)` cleanup before overwriting `icon.hIcon` with a new copy.
+  - In `TrayToolbarSubclassProc`, removed the monitor primary/secondary check to unconditionally call `StartNativeTaskbarSpoof` on all tray toolbar clicks.
+  - Removed `SetWindowTheme(inst->hToolbar, L"", L"")` call inside `Initialize` to preserve the glossy visual hover state of the toolbar buttons.
+  - In `UpdateTaskbarLayout`, queried `hTaskSwitch` button size via `TB_GETBUTTONSIZE` and centered the task switch control vertically.
+  - In `TrayClockProc`'s `WM_PAINT` handler, centered the multi-line clock text vertically in the client area by calculating the text rectangle using `DrawTextW` with `DT_CALCRECT`.
+
+- **Milestone 5 Polish - Start Button Primary Spawner Polish**:
+  - In `SourceFiles/StartButton.cpp`, inside `WM_LBUTTONUP`, removed the `isSecondary` conditional check to unconditionally call `StartNativeTaskbarSpoof` when the Start Button is clicked.
+
+- **Milestone 5 Polish - Build Orchestrator Compilation Guard**:
+  - In `build.ps1`, wrapped the `EliteStartMenu.ps1` Invoke-ps2exe compilation blocks inside a `Test-Path` conditional check to prevent errors when the script is missing.
+
+- **Milestone 5 Polish - E2E Verification Variables Fix**:
+  - In `Subagent_Tests/run_comprehensive_e2e.ps1`, corrected the Tier 4 Scenario 1 verification block variables check from `$hwndNotify`/`$hwndClock` to the correct defined variable names `$hwndTrayNotify`/`$hwndTrayClock`.
+
+- **Milestone 5 Polish - TrayIconScraper Compile Fix**:
+  - Fixed Unicode type mismatch compiler error C2664 in `SourceFiles/TrayIconScraper.cpp` by changing `LoadIconW(NULL, IDI_APPLICATION)` fallback to use `MAKEINTRESOURCEW(32512)`.
+
+
+
+
+
+
+

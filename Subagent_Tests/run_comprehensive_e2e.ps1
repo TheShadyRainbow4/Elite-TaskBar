@@ -396,7 +396,7 @@ Log-Test "T3_C5" 3 0 "Multi-monitor Flyouts + Desktop background Span mode align
 # TIER 4: REAL-WORLD APPLICATION SCENARIOS
 # ==============================================================================
 # Scenario 1: Full Desktop Shell Replacement
-if ($hwndProgman -ne [IntPtr]::Zero -and $hwndNotify -ne [IntPtr]::Zero -and $hwndClock -ne [IntPtr]::Zero) {
+if ($hwndProgman -ne [IntPtr]::Zero -and $hwndTrayNotify -ne [IntPtr]::Zero -and $hwndTrayClock -ne [IntPtr]::Zero) {
     Log-Test "T4_S1" 4 0 "Full Desktop Shell Replacement Scenario Execution" "PASS"
 } else {
     Log-Test "T4_S1" 4 0 "Full Desktop Shell Replacement Scenario Execution" "FAIL" "Progman/TrayNotifyWnd/TrayClockWClass window elements check failed."

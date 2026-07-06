@@ -335,10 +335,8 @@ LRESULT CALLBACK OrbWndProc(HWND hwnd, UINT uMsg, WPARAM wParam, LPARAM lParam) 
                 if (!hNativeTarget) hNativeTarget = FindWindowW(L"Shell_TrayWnd", NULL);
                 if (!hNativeTarget) hNativeTarget = pThis->GetParentTaskbar(); // Fallback for PE without native shell
 
-                if (isSecondary) {
-                    extern void StartNativeTaskbarSpoof(HWND hClickedTaskbar);
-                    StartNativeTaskbarSpoof(pThis->GetParentTaskbar());
-                }
+                extern void StartNativeTaskbarSpoof(HWND hClickedTaskbar);
+                StartNativeTaskbarSpoof(pThis->GetParentTaskbar());
 
                 POINT pt;
                 GetCursorPos(&pt);

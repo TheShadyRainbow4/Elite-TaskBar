@@ -7,6 +7,7 @@ struct ScrapedTrayIcon {
     UINT uCallbackMessage;
     UINT uID;
     HICON hIcon;
+    bool bOwnsIcon = false;
 };
 
 std::vector<ScrapedTrayIcon> ScrapeTrayIcons();
