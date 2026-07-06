@@ -67,6 +67,24 @@ if (-not (Test-Path $SourceDir)) {
     exit 0
 }
 
+# Pre-build Synchronisation: Copy files to Win32Explorer submodule
+$submodDir = Join-Path $ScriptDir "Win32Explorer_26.0.3.0\App_Source\EliteTaskbar"
+Write-Host "Pre-build Synchronisation: Copying source files to Win32Explorer..." -ForegroundColor Yellow
+if (-not (Test-Path $submodDir)) {
+    New-Item -ItemType Directory -Path $submodDir -Force | Out-Null
+}
+Copy-Item (Join-Path $SourceDir "resource.h") -Destination (Join-Path $submodDir "resource.h") -Force
+Copy-Item (Join-Path $SourceDir "resources.rc") -Destination (Join-Path $submodDir "resources.rc") -Force
+Copy-Item (Join-Path $SourceDir "TaskbarProperties.cpp") -Destination (Join-Path $submodDir "TaskbarProperties.cpp") -Force
+
+# Adjust resource paths in the copied resources.rc for submodule compilation context
+$targetRc = Join-Path $submodDir "resources.rc"
+if (Test-Path $targetRc) {
+    $content = Get-Content $targetRc -Raw
+    $newContent = $content.Replace('..\\Resources\\', 'EliteTaskbar\\Resources\\')
+    Set-Content -Path $targetRc -Value $newContent -NoNewline
+}
+
 # Setup MSVC Environment
 $vsPath = "C:\Program Files (x86)\Microsoft Visual Studio\2022\BuildTools"
 

@@ -1,3 +1,4 @@
+#include "stdafx.h"
 #pragma warning(disable: 4996)
 #pragma warning(disable: 4100)
 #pragma warning(disable: 4244)
@@ -1433,18 +1434,307 @@ INT_PTR CALLBACK StartMenuSettingsDlgProc(HWND hwndDlg, UINT uMsg, WPARAM wParam
     return FALSE;
 }
 
+#pragma comment(lib, "shlwapi.lib")
+
+#ifndef SPI_GETDESKTOPWALLPAPER
+#define SPI_GETDESKTOPWALLPAPER 0x0073
+#endif
+
+static std::wstring FindThemePathByName(HWND hwndDlg, const std::wstring& name) {
+    std::vector<std::wstring> searchPaths;
+    wchar_t systemRoot[MAX_PATH];
+    if (GetEnvironmentVariableW(L"SystemRoot", systemRoot, MAX_PATH) > 0) {
+        searchPaths.push_back(std::wstring(systemRoot) + L"\\Resources\\Themes");
+    } else {
+        searchPaths.push_back(L"C:\\Windows\\Resources\\Themes");
+    }
+    wchar_t localAppData[MAX_PATH];
+    if (GetEnvironmentVariableW(L"USERPROFILE", localAppData, MAX_PATH) > 0) {
+        searchPaths.push_back(std::wstring(localAppData) + L"\\AppData\\Local\\Microsoft\\Windows\\Themes");
+    }
+    wchar_t localAppPath[MAX_PATH];
+    if (GetEnvironmentVariableW(L"LOCALAPPDATA", localAppPath, MAX_PATH) > 0) {
+        searchPaths.push_back(std::wstring(localAppPath) + L"\\Microsoft\\Windows\\Themes");
+    }
+    
+    wchar_t customPath[MAX_PATH] = {0};
+    GetDlgItemTextW(hwndDlg, IDC_DESKTOP_THEME_PATH, customPath, MAX_PATH);
+    if (wcslen(customPath) > 0) {
+        std::wstring customPathStr(customPath);
+        if (PathIsDirectoryW(customPathStr.c_str())) {
+            searchPaths.push_back(customPathStr);
+        } else {
+            size_t lastSlash = customPathStr.find_last_of(L'\\');
+            if (lastSlash != std::wstring::npos) {
+                searchPaths.push_back(customPathStr.substr(0, lastSlash));
+            }
+        }
+    }
+    
+    for (const auto& path : searchPaths) {
+        std::wstring fullPath = path + L"\\" + name + L".theme";
+        if (GetFileAttributesW(fullPath.c_str()) != INVALID_FILE_ATTRIBUTES) {
+            return fullPath;
+        }
+    }
+    return L"";
+}
+
+static void PopulateThemesComboBox(HWND hwndDlg) {
+    HWND hCombo = GetDlgItem(hwndDlg, IDC_DESKTOP_THEME_SELECT);
+    SendMessageW(hCombo, CB_RESETCONTENT, 0, 0);
+    
+    std::vector<std::wstring> searchPaths;
+    
+    wchar_t systemRoot[MAX_PATH];
+    if (GetEnvironmentVariableW(L"SystemRoot", systemRoot, MAX_PATH) > 0) {
+        searchPaths.push_back(std::wstring(systemRoot) + L"\\Resources\\Themes");
+    } else {
+        searchPaths.push_back(L"C:\\Windows\\Resources\\Themes");
+    }
+    
+    wchar_t localAppData[MAX_PATH];
+    if (GetEnvironmentVariableW(L"USERPROFILE", localAppData, MAX_PATH) > 0) {
+        searchPaths.push_back(std::wstring(localAppData) + L"\\AppData\\Local\\Microsoft\\Windows\\Themes");
+    }
+    
+    wchar_t localAppPath[MAX_PATH];
+    if (GetEnvironmentVariableW(L"LOCALAPPDATA", localAppPath, MAX_PATH) > 0) {
+        searchPaths.push_back(std::wstring(localAppPath) + L"\\Microsoft\\Windows\\Themes");
+    }
+    
+    wchar_t customPath[MAX_PATH] = {0};
+    GetDlgItemTextW(hwndDlg, IDC_DESKTOP_THEME_PATH, customPath, MAX_PATH);
+    if (wcslen(customPath) > 0) {
+        std::wstring customPathStr(customPath);
+        if (PathIsDirectoryW(customPathStr.c_str())) {
+            searchPaths.push_back(customPathStr);
+        } else {
+            size_t lastSlash = customPathStr.find_last_of(L'\\');
+            if (lastSlash != std::wstring::npos) {
+                searchPaths.push_back(customPathStr.substr(0, lastSlash));
+            }
+        }
+    }
+    
+    for (const auto& path : searchPaths) {
+        if (path.empty() || !PathFileExistsW(path.c_str())) continue;
+        std::wstring query = path + L"\\*.theme";
+        WIN32_FIND_DATAW fd;
+        HANDLE hFind = FindFirstFileW(query.c_str(), &fd);
+        if (hFind != INVALID_HANDLE_VALUE) {
+            do {
+                std::wstring themeName = fd.cFileName;
+                size_t dot = themeName.find_last_of(L'.');
+                if (dot != std::wstring::npos) {
+                    themeName = themeName.substr(0, dot);
+                }
+                if (SendMessageW(hCombo, CB_FINDSTRINGEXACT, (WPARAM)-1, (LPARAM)themeName.c_str()) == CB_ERR) {
+                    SendMessageW(hCombo, CB_ADDSTRING, 0, (LPARAM)themeName.c_str());
+                }
+            } while (FindNextFileW(hFind, &fd));
+            FindClose(hFind);
+        }
+    }
+}
+
+static HICON LoadThemeIcon(const std::wstring& rawPath) {
+    if (rawPath.empty()) return NULL;
+    
+    wchar_t expandedPath[MAX_PATH];
+    ExpandEnvironmentStringsW(rawPath.c_str(), expandedPath, MAX_PATH);
+    
+    std::wstring pathStr(expandedPath);
+    int index = 0;
+    size_t comma = pathStr.find_last_of(L',');
+    if (comma != std::wstring::npos) {
+        std::wstring indexStr = pathStr.substr(comma + 1);
+        index = _wtoi(indexStr.c_str());
+        pathStr = pathStr.substr(0, comma);
+    }
+    
+    HICON hIcon = NULL;
+    if (ExtractIconExW(pathStr.c_str(), index, &hIcon, NULL, 1) > 0 && hIcon != NULL) {
+        return hIcon;
+    }
+    
+    return (HICON)LoadImageW(NULL, (LPCWSTR)IDI_APPLICATION, IMAGE_ICON, 32, 32, LR_SHARED);
+}
+
+static void UpdateIconPreviews(HWND hwndDlg, const std::wstring& themePath) {
+    const wchar_t* clsids[] = {
+        L"CLSID\\{20D04FE0-3AEA-1069-A2D8-08002B30309D}\\DefaultIcon",
+        L"CLSID\\{59031A47-3F72-44A7-89C5-5595FE6B30EE}\\DefaultIcon",
+        L"CLSID\\{F02C10A9-C50E-10D5-9A7A-00105A2F161D}\\DefaultIcon",
+        L"CLSID\\{645FF040-5081-101B-9F08-00AA002F954E}\\DefaultIcon"
+    };
+    
+    int previewIds[] = {
+        IDC_DESKTOP_ICON_PREVIEW_1,
+        IDC_DESKTOP_ICON_PREVIEW_2,
+        IDC_DESKTOP_ICON_PREVIEW_3,
+        IDC_DESKTOP_ICON_PREVIEW_4
+    };
+    
+    for (int i = 0; i < 4; i++) {
+        wchar_t iconPath[MAX_PATH] = {0};
+        GetPrivateProfileStringW(clsids[i], L"DefaultValue", L"", iconPath, MAX_PATH, themePath.c_str());
+        HICON hIcon = LoadThemeIcon(iconPath);
+        if (hIcon) {
+            HICON hOldIcon = (HICON)SendDlgItemMessageW(hwndDlg, previewIds[i], STM_SETIMAGE, IMAGE_ICON, (LPARAM)hIcon);
+            if (hOldIcon) DestroyIcon(hOldIcon);
+        }
+    }
+}
+
+static std::wstring GetWallpaperPathFromTheme(const std::wstring& themePath) {
+    wchar_t wallpaperPath[MAX_PATH] = {0};
+    GetPrivateProfileStringW(L"Control Panel\\Desktop", L"Wallpaper", L"", wallpaperPath, MAX_PATH, themePath.c_str());
+    if (wcslen(wallpaperPath) > 0) {
+        wchar_t expanded[MAX_PATH];
+        ExpandEnvironmentStringsW(wallpaperPath, expanded, MAX_PATH);
+        return expanded;
+    }
+    return L"";
+}
+
+static std::wstring GetActiveWallpaperPath(HWND hwndDlg) {
+    HWND hCombo = GetDlgItem(hwndDlg, IDC_DESKTOP_THEME_SELECT);
+    int sel = (int)SendMessageW(hCombo, CB_GETCURSEL, 0, 0);
+    if (sel != CB_ERR) {
+        wchar_t themeName[256];
+        SendMessageW(hCombo, CB_GETLBTEXT, sel, (LPARAM)themeName);
+        std::wstring themePath = FindThemePathByName(hwndDlg, themeName);
+        if (!themePath.empty()) {
+            std::wstring wall = GetWallpaperPathFromTheme(themePath);
+            if (!wall.empty() && PathFileExistsW(wall.c_str())) {
+                return wall;
+            }
+        }
+    }
+    wchar_t sysWallpaper[MAX_PATH] = {0};
+    if (SystemParametersInfoW(SPI_GETDESKTOPWALLPAPER, MAX_PATH, sysWallpaper, 0)) {
+        return sysWallpaper;
+    }
+    return L"";
+}
+
+static void DrawWallpaperPreview(HWND hwndDlg, HDC hdc, const RECT* prc) {
+    HBRUSH hBg = CreateSolidBrush(GetSysColor(COLOR_3DFACE));
+    FillRect(hdc, prc, hBg);
+    DeleteObject(hBg);
+    
+    std::wstring path = GetActiveWallpaperPath(hwndDlg);
+    if (!path.empty() && PathFileExistsW(path.c_str())) {
+        Gdiplus::Graphics graphics(hdc);
+        Gdiplus::Bitmap bitmap(path.c_str());
+        if (bitmap.GetLastStatus() == Gdiplus::Ok) {
+            int imgW = bitmap.GetWidth();
+            int imgH = bitmap.GetHeight();
+            
+            int prcW = prc->right - prc->left;
+            int prcH = prc->bottom - prc->top;
+            
+            double imgAspect = (double)imgW / imgH;
+            double prcAspect = (double)prcW / prcH;
+            
+            int destW, destH;
+            if (imgAspect > prcAspect) {
+                destW = prcW;
+                destH = (int)(prcW / imgAspect);
+            } else {
+                destH = prcH;
+                destW = (int)(prcH * imgAspect);
+            }
+            
+            int destX = prc->left + (prcW - destW) / 2;
+            int destY = prc->top + (prcH - destH) / 2;
+            
+            graphics.DrawImage(&bitmap, destX, destY, destW, destH);
+        }
+    } else {
+        SetBkMode(hdc, TRANSPARENT);
+        SetTextColor(hdc, GetSysColor(COLOR_GRAYTEXT));
+        HFONT hFont = (HFONT)SendMessageW(hwndDlg, WM_GETFONT, 0, 0);
+        HFONT hOldFont = (HFONT)SelectObject(hdc, hFont);
+        DrawTextW(hdc, L"No Wallpaper Preview Available", -1, (LPRECT)prc, DT_CENTER | DT_VCENTER | DT_SINGLELINE);
+        SelectObject(hdc, hOldFont);
+    }
+}
+
+static void LoadThemeSettings(HWND hwndDlg, const std::wstring& themePath) {
+    if (themePath.empty() || !PathFileExistsW(themePath.c_str())) return;
+    SetDlgItemTextW(hwndDlg, IDC_DESKTOP_THEME_PATH, themePath.c_str());
+    
+    HWND hCombo = GetDlgItem(hwndDlg, IDC_DESKTOP_THEME_SELECT);
+    size_t dot = themePath.find_last_of(L'.');
+    size_t slash = themePath.find_last_of(L'\\');
+    if (slash != std::wstring::npos && dot != std::wstring::npos && dot > slash) {
+        std::wstring name = themePath.substr(slash + 1, dot - slash - 1);
+        int idx = (int)SendMessageW(hCombo, CB_FINDSTRINGEXACT, (WPARAM)-1, (LPARAM)name.c_str());
+        if (idx != CB_ERR) {
+            SendMessageW(hCombo, CB_SETCURSEL, idx, 0);
+        }
+    }
+    UpdateIconPreviews(hwndDlg, themePath);
+    InvalidateRect(GetDlgItem(hwndDlg, IDC_DESKTOP_WALLPAPER_PREVIEW), NULL, TRUE);
+}
+
+static std::wstring BrowseForFolder(HWND hwndOwner) {
+    wchar_t szDir[MAX_PATH] = {0};
+    BROWSEINFOW bi = {0};
+    bi.hwndOwner = hwndOwner;
+    bi.pszDisplayName = szDir;
+    bi.lpszTitle = L"Select Theme Directory:";
+    bi.ulFlags = BIF_USENEWUI | BIF_RETURNONLYFSDIRS;
+    
+    LPITEMIDLIST pidl = SHBrowseForFolderW(&bi);
+    if (pidl != NULL) {
+        SHGetPathFromIDListW((PCIDLIST_ABSOLUTE)pidl, szDir);
+        CoTaskMemFree(pidl);
+        return szDir;
+    }
+    return L"";
+}
+
 INT_PTR CALLBACK DesktopSettingsDlgProc(HWND hwndDlg, UINT uMsg, WPARAM wParam, LPARAM lParam) {
+    static ULONG_PTR gdiplusToken = 0;
     switch (uMsg) {
     case WM_INITDIALOG: {
         EnableThemeDialogTexture(hwndDlg, ETDT_ENABLETAB);
+        if (!gdiplusToken) {
+            Gdiplus::GdiplusStartupInput gdiplusStartupInput;
+            Gdiplus::GdiplusStartup(&gdiplusToken, &gdiplusStartupInput, NULL);
+        }
+        
         AddDlgTooltip(hwndDlg, IDC_DESKTOP_REPLACE_ENABLED, L"Enable custom desktop replacement window. Pure classic shell experience.");
         AddDlgTooltip(hwndDlg, IDC_DESKTOP_WALLPAPER_ENABLED, L"Render desktop background wallpaper using custom styles.");
         AddDlgTooltip(hwndDlg, IDC_DESKTOP_ICONS_ENABLED, L"Display folder items and files on the desktop grid.");
+        
+        AddDlgTooltip(hwndDlg, IDC_DESKTOP_FORCE_PROGMAN_ALL, L"Forcibly injects our Progman replacement onto every screen. Because one display is never enough for Elite performance.");
+        AddDlgTooltip(hwndDlg, IDC_DESKTOP_MODE_SPAN, L"Stretches your wallpaper across your entire multi-monitor setup, hoping the aspect ratios align.");
+        AddDlgTooltip(hwndDlg, IDC_DESKTOP_MODE_PERMONITOR, L"Allows each display to render its own distinct wallpaper, like a true professional workspace.");
+        AddDlgTooltip(hwndDlg, IDC_DESKTOP_THEME_PATH, L"Specifies the directory path of your custom desktop wallpaper themes. Choose wisely.");
+        AddDlgTooltip(hwndDlg, IDC_DESKTOP_THEME_BROWSE, L"Browse directory folders to discover where your hidden themes are stored.");
+        AddDlgTooltip(hwndDlg, IDC_DESKTOP_THEME_SELECT, L"Select your active visual theme. Instant aesthetic upgrade.");
+        AddDlgTooltip(hwndDlg, IDC_DESKTOP_SLIDESHOW_ENABLED, L"Periodically rotates wallpapers. Keeps your eyes occupied while the system works.");
+        AddDlgTooltip(hwndDlg, IDC_DESKTOP_SLIDESHOW_INTERVAL, L"Select how long a single wallpaper remains before being unceremoniously swapped out.");
+        AddDlgTooltip(hwndDlg, IDC_DESKTOP_THEME_TUTORIAL_LINK, L"Learn how to craft themes. Warning: may lead to retro design obsessions.");
+        AddDlgTooltip(hwndDlg, IDC_DESKTOP_WALLPAPER_PREVIEW, L"Your tiny, non-interactive window to the aesthetic soul of your machine.");
+        AddDlgTooltip(hwndDlg, IDC_DESKTOP_ICON_PREVIEW_1, L"Your computer icon representation. Reminding you that you own this hardware.");
+        AddDlgTooltip(hwndDlg, IDC_DESKTOP_ICON_PREVIEW_2, L"Your user files icon representation. A digital box for your files.");
+        AddDlgTooltip(hwndDlg, IDC_DESKTOP_ICON_PREVIEW_3, L"Your network icon representation. Connecting you to the web.");
+        AddDlgTooltip(hwndDlg, IDC_DESKTOP_ICON_PREVIEW_4, L"Your recycle bin icon representation. Where bad code goes to die.");
         
         HKEY hKey;
         DWORD replaceVal = 1;
         DWORD wallpaperVal = 1;
         DWORD iconsVal = 1;
+        DWORD forceProgmanVal = 0;
+        DWORD wallpaperModeVal = 0;
+        wchar_t themePathVal[MAX_PATH] = {0};
+        DWORD slideshowEnabledVal = 0;
+        DWORD slideshowIntervalVal = 300;
         DWORD cbData = sizeof(DWORD);
         
         if (RegOpenKeyExW(GetEliteRegistryRoot(), L"Software\\EliteSoftware\\Win32Explorer\\Advanced", 0, KEY_READ, &hKey) == ERROR_SUCCESS) {
@@ -1454,19 +1744,112 @@ INT_PTR CALLBACK DesktopSettingsDlgProc(HWND hwndDlg, UINT uMsg, WPARAM wParam, 
             RegQueryValueExW(hKey, L"DesktopWallpaperEnabled", NULL, NULL, (LPBYTE)&wallpaperVal, &cbData);
             cbData = sizeof(DWORD);
             RegQueryValueExW(hKey, L"DesktopIconsEnabled", NULL, NULL, (LPBYTE)&iconsVal, &cbData);
+            
+            cbData = sizeof(DWORD);
+            RegQueryValueExW(hKey, L"ForceProgmanAllDisplays", NULL, NULL, (LPBYTE)&forceProgmanVal, &cbData);
+            cbData = sizeof(DWORD);
+            RegQueryValueExW(hKey, L"DesktopWallpaperMode", NULL, NULL, (LPBYTE)&wallpaperModeVal, &cbData);
+            
+            cbData = MAX_PATH * sizeof(wchar_t);
+            RegQueryValueExW(hKey, L"DesktopThemePath", NULL, NULL, (LPBYTE)themePathVal, &cbData);
+            
+            cbData = sizeof(DWORD);
+            RegQueryValueExW(hKey, L"DesktopSlideshowEnabled", NULL, NULL, (LPBYTE)&slideshowEnabledVal, &cbData);
+            cbData = sizeof(DWORD);
+            RegQueryValueExW(hKey, L"DesktopSlideshowInterval", NULL, NULL, (LPBYTE)&slideshowIntervalVal, &cbData);
+            
             RegCloseKey(hKey);
         }
         
         SendDlgItemMessageW(hwndDlg, IDC_DESKTOP_REPLACE_ENABLED, BM_SETCHECK, replaceVal ? BST_CHECKED : BST_UNCHECKED, 0);
         SendDlgItemMessageW(hwndDlg, IDC_DESKTOP_WALLPAPER_ENABLED, BM_SETCHECK, wallpaperVal ? BST_CHECKED : BST_UNCHECKED, 0);
         SendDlgItemMessageW(hwndDlg, IDC_DESKTOP_ICONS_ENABLED, BM_SETCHECK, iconsVal ? BST_CHECKED : BST_UNCHECKED, 0);
+        
+        SendDlgItemMessageW(hwndDlg, IDC_DESKTOP_FORCE_PROGMAN_ALL, BM_SETCHECK, forceProgmanVal ? BST_CHECKED : BST_UNCHECKED, 0);
+        SendDlgItemMessageW(hwndDlg, IDC_DESKTOP_MODE_SPAN, BM_SETCHECK, (wallpaperModeVal == 0) ? BST_CHECKED : BST_UNCHECKED, 0);
+        SendDlgItemMessageW(hwndDlg, IDC_DESKTOP_MODE_PERMONITOR, BM_SETCHECK, (wallpaperModeVal == 1) ? BST_CHECKED : BST_UNCHECKED, 0);
+        
+        SetDlgItemTextW(hwndDlg, IDC_DESKTOP_THEME_PATH, themePathVal);
+        SendDlgItemMessageW(hwndDlg, IDC_DESKTOP_SLIDESHOW_ENABLED, BM_SETCHECK, slideshowEnabledVal ? BST_CHECKED : BST_UNCHECKED, 0);
+        
+        HWND hIntervalCombo = GetDlgItem(hwndDlg, IDC_DESKTOP_SLIDESHOW_INTERVAL);
+        const wchar_t* intervals[] = { L"10", L"30", L"60", L"300", L"600", L"1800", L"3600" };
+        for (const auto& val : intervals) {
+            SendMessageW(hIntervalCombo, CB_ADDSTRING, 0, (LPARAM)val);
+        }
+        wchar_t intervalBuf[32];
+        swprintf_s(intervalBuf, L"%lu", slideshowIntervalVal);
+        SetWindowTextW(hIntervalCombo, intervalBuf);
+        
+        PopulateThemesComboBox(hwndDlg);
+        if (wcslen(themePathVal) > 0) {
+            LoadThemeSettings(hwndDlg, themePathVal);
+        }
+        
         return TRUE;
     }
-    case WM_COMMAND:
-        if (HIWORD(wParam) == BN_CLICKED || HIWORD(wParam) == CBN_SELCHANGE || HIWORD(wParam) == EN_CHANGE) {
+    case WM_COMMAND: {
+        WORD wNotifyCode = HIWORD(wParam);
+        WORD wID = LOWORD(wParam);
+        
+        if (wNotifyCode == BN_CLICKED || wNotifyCode == CBN_SELCHANGE || wNotifyCode == EN_CHANGE) {
             SendMessageW(GetParent(hwndDlg), PSM_CHANGED, (WPARAM)hwndDlg, 0);
         }
+        
+        if (wNotifyCode == BN_CLICKED) {
+            if (wID == IDC_DESKTOP_THEME_BROWSE) {
+                std::wstring folder = BrowseForFolder(hwndDlg);
+                if (!folder.empty()) {
+                    SetDlgItemTextW(hwndDlg, IDC_DESKTOP_THEME_PATH, folder.c_str());
+                    PopulateThemesComboBox(hwndDlg);
+                    SendMessageW(GetParent(hwndDlg), PSM_CHANGED, (WPARAM)hwndDlg, 0);
+                }
+            }
+        }
+        
+        if (wNotifyCode == CBN_SELCHANGE) {
+            if (wID == IDC_DESKTOP_THEME_SELECT) {
+                HWND hCombo = (HWND)lParam;
+                int sel = (int)SendMessageW(hCombo, CB_GETCURSEL, 0, 0);
+                if (sel != CB_ERR) {
+                    wchar_t themeName[256];
+                    SendMessageW(hCombo, CB_GETLBTEXT, sel, (LPARAM)themeName);
+                    std::wstring themePath = FindThemePathByName(hwndDlg, themeName);
+                    if (!themePath.empty()) {
+                        SetDlgItemTextW(hwndDlg, IDC_DESKTOP_THEME_PATH, themePath.c_str());
+                        UpdateIconPreviews(hwndDlg, themePath);
+                        
+                        wchar_t wallpaperPath[MAX_PATH] = {0};
+                        GetPrivateProfileStringW(L"Control Panel\\Desktop", L"Wallpaper", L"", wallpaperPath, MAX_PATH, themePath.c_str());
+                        if (wcslen(wallpaperPath) > 0) {
+                            SendDlgItemMessageW(hwndDlg, IDC_DESKTOP_WALLPAPER_ENABLED, BM_SETCHECK, BST_CHECKED, 0);
+                        }
+                        
+                        wchar_t styleVal[32] = {0};
+                        GetPrivateProfileStringW(L"Control Panel\\Desktop", L"WallpaperStyle", L"", styleVal, 32, themePath.c_str());
+                        int styleNum = _wtoi(styleVal);
+                        if (styleNum == 22) {
+                            SendDlgItemMessageW(hwndDlg, IDC_DESKTOP_MODE_SPAN, BM_SETCHECK, BST_CHECKED, 0);
+                            SendDlgItemMessageW(hwndDlg, IDC_DESKTOP_MODE_PERMONITOR, BM_SETCHECK, BST_UNCHECKED, 0);
+                        } else {
+                            SendDlgItemMessageW(hwndDlg, IDC_DESKTOP_MODE_SPAN, BM_SETCHECK, BST_UNCHECKED, 0);
+                            SendDlgItemMessageW(hwndDlg, IDC_DESKTOP_MODE_PERMONITOR, BM_SETCHECK, BST_CHECKED, 0);
+                        }
+                        InvalidateRect(GetDlgItem(hwndDlg, IDC_DESKTOP_WALLPAPER_PREVIEW), NULL, TRUE);
+                    }
+                }
+            }
+        }
         return TRUE;
+    }
+    case WM_DRAWITEM: {
+        DRAWITEMSTRUCT* pDIS = (DRAWITEMSTRUCT*)lParam;
+        if (pDIS->CtlID == IDC_DESKTOP_WALLPAPER_PREVIEW) {
+            DrawWallpaperPreview(hwndDlg, pDIS->hDC, &pDIS->rcItem);
+            return TRUE;
+        }
+        break;
+    }
     case WM_NOTIFY: {
         LPNMHDR lpnm = (LPNMHDR)lParam;
         if (lpnm->code == PSN_APPLY) {
@@ -1477,9 +1860,28 @@ INT_PTR CALLBACK DesktopSettingsDlgProc(HWND hwndDlg, UINT uMsg, WPARAM wParam, 
                 DWORD wallpaperVal = (SendDlgItemMessageW(hwndDlg, IDC_DESKTOP_WALLPAPER_ENABLED, BM_GETCHECK, 0, 0) == BST_CHECKED) ? 1 : 0;
                 DWORD iconsVal = (SendDlgItemMessageW(hwndDlg, IDC_DESKTOP_ICONS_ENABLED, BM_GETCHECK, 0, 0) == BST_CHECKED) ? 1 : 0;
                 
+                DWORD forceProgmanVal = (SendDlgItemMessageW(hwndDlg, IDC_DESKTOP_FORCE_PROGMAN_ALL, BM_GETCHECK, 0, 0) == BST_CHECKED) ? 1 : 0;
+                DWORD wallpaperModeVal = (SendDlgItemMessageW(hwndDlg, IDC_DESKTOP_MODE_PERMONITOR, BM_GETCHECK, 0, 0) == BST_CHECKED) ? 1 : 0;
+                
+                wchar_t themePathVal[MAX_PATH] = {0};
+                GetDlgItemTextW(hwndDlg, IDC_DESKTOP_THEME_PATH, themePathVal, MAX_PATH);
+                
+                DWORD slideshowEnabledVal = (SendDlgItemMessageW(hwndDlg, IDC_DESKTOP_SLIDESHOW_ENABLED, BM_GETCHECK, 0, 0) == BST_CHECKED) ? 1 : 0;
+                
+                wchar_t intervalBuf[32] = {0};
+                GetDlgItemTextW(hwndDlg, IDC_DESKTOP_SLIDESHOW_INTERVAL, intervalBuf, 32);
+                DWORD slideshowIntervalVal = _wtoi(intervalBuf);
+                if (slideshowIntervalVal < 3) slideshowIntervalVal = 3;
+                
                 RegSetValueExW(hKey, L"DesktopReplacementEnabled", 0, REG_DWORD, (const BYTE*)&replaceVal, sizeof(DWORD));
                 RegSetValueExW(hKey, L"DesktopWallpaperEnabled", 0, REG_DWORD, (const BYTE*)&wallpaperVal, sizeof(DWORD));
                 RegSetValueExW(hKey, L"DesktopIconsEnabled", 0, REG_DWORD, (const BYTE*)&iconsVal, sizeof(DWORD));
+                
+                RegSetValueExW(hKey, L"ForceProgmanAllDisplays", 0, REG_DWORD, (const BYTE*)&forceProgmanVal, sizeof(DWORD));
+                RegSetValueExW(hKey, L"DesktopWallpaperMode", 0, REG_DWORD, (const BYTE*)&wallpaperModeVal, sizeof(DWORD));
+                RegSetValueExW(hKey, L"DesktopThemePath", 0, REG_SZ, (const BYTE*)themePathVal, (DWORD)(wcslen(themePathVal) + 1) * sizeof(wchar_t));
+                RegSetValueExW(hKey, L"DesktopSlideshowEnabled", 0, REG_DWORD, (const BYTE*)&slideshowEnabledVal, sizeof(DWORD));
+                RegSetValueExW(hKey, L"DesktopSlideshowInterval", 0, REG_DWORD, (const BYTE*)&slideshowIntervalVal, sizeof(DWORD));
                 
                 RegCloseKey(hKey);
             }
@@ -1487,6 +1889,12 @@ INT_PTR CALLBACK DesktopSettingsDlgProc(HWND hwndDlg, UINT uMsg, WPARAM wParam, 
             SendMessageW(GetParent(hwndDlg), PSM_UNCHANGED, (WPARAM)hwndDlg, 0);
             SetWindowLongPtr(hwndDlg, DWLP_MSGRESULT, PSNRET_NOERROR);
             return TRUE;
+        }
+        else if (lpnm->code == NM_CLICK || lpnm->code == NM_RETURN) {
+            if (lpnm->idFrom == IDC_DESKTOP_THEME_TUTORIAL_LINK) {
+                ShellExecuteW(NULL, L"open", L"https://elitesoftwaretech.com/themes-tutorial", NULL, NULL, SW_SHOWNORMAL);
+                return TRUE;
+            }
         }
         break;
     }

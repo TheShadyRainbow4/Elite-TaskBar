@@ -7,6 +7,7 @@
 #include <gdiplus.h>
 #include <vector>
 #include <string>
+#include <algorithm>
 
 #pragma comment(lib, "gdiplus.lib")
 #pragma comment(lib, "shlwapi.lib")
@@ -23,6 +24,85 @@ static int s_cachedStyle = -1;
 static bool s_cachedTile = false;
 static bool s_cachedDrawWallpaper = true;
 
+#define TIMER_SLIDESHOW 1002
+
+static std::wstring GetThemeDirectory() {
+    HKEY hKey;
+    wchar_t themePathVal[MAX_PATH] = {0};
+    DWORD cbData = sizeof(themePathVal);
+    if (RegOpenKeyExW(GetEliteRegistryRoot(), L"Software\\EliteSoftware\\Win32Explorer\\Advanced", 0, KEY_READ, &hKey) == ERROR_SUCCESS) {
+        RegQueryValueExW(hKey, L"DesktopThemePath", NULL, NULL, (LPBYTE)themePathVal, &cbData);
+        RegCloseKey(hKey);
+    }
+    
+    if (wcslen(themePathVal) > 0) {
+        std::wstring pathStr(themePathVal);
+        if (PathIsDirectoryW(pathStr.c_str())) {
+            return pathStr;
+        } else {
+            size_t lastSlash = pathStr.find_last_of(L'\\');
+            if (lastSlash != std::wstring::npos) {
+                return pathStr.substr(0, lastSlash);
+            }
+        }
+    }
+    
+    wchar_t winDir[MAX_PATH];
+    if (GetWindowsDirectoryW(winDir, MAX_PATH) > 0) {
+        std::wstring fallback = std::wstring(winDir) + L"\\Web\\Wallpaper";
+        if (PathFileExistsW(fallback.c_str())) {
+            return fallback;
+        }
+    }
+    return L"";
+}
+
+static void AdvanceSlideshow(HWND hwnd) {
+    std::wstring dir = GetThemeDirectory();
+    if (dir.empty() || !PathFileExistsW(dir.c_str())) return;
+    
+    std::vector<std::wstring> images;
+    const wchar_t* extensions[] = { L"\\*.jpg", L"\\*.png", L"\\*.bmp", L"\\*.jpeg" };
+    for (const auto& ext : extensions) {
+        std::wstring query = dir + ext;
+        WIN32_FIND_DATAW fd;
+        HANDLE hFind = FindFirstFileW(query.c_str(), &fd);
+        if (hFind != INVALID_HANDLE_VALUE) {
+            do {
+                images.push_back(dir + L"\\" + fd.cFileName);
+            } while (FindNextFileW(hFind, &fd));
+            FindClose(hFind);
+        }
+    }
+    
+    if (images.empty()) return;
+    
+    std::sort(images.begin(), images.end());
+    
+    int currentIndex = -1;
+    for (size_t i = 0; i < images.size(); i++) {
+        if (_wcsicmp(images[i].c_str(), s_cachedWallpaperPath.c_str()) == 0) {
+            currentIndex = (int)i;
+            break;
+        }
+    }
+    
+    int nextIndex = (currentIndex + 1) % images.size();
+    std::wstring nextWallpaper = images[nextIndex];
+    
+    if (s_pCachedWallpaper) {
+        delete s_pCachedWallpaper;
+        s_pCachedWallpaper = nullptr;
+    }
+    s_cachedWallpaperPath = nextWallpaper;
+    s_pCachedWallpaper = new Gdiplus::Bitmap(s_cachedWallpaperPath.c_str());
+    if (s_pCachedWallpaper->GetLastStatus() != Gdiplus::Ok) {
+        delete s_pCachedWallpaper;
+        s_pCachedWallpaper = nullptr;
+    }
+    
+    InvalidateRect(hwnd, NULL, TRUE);
+}
 
 LRESULT CALLBACK ProgmanWndProc(HWND hwnd, UINT uMsg, WPARAM wParam, LPARAM lParam);
 LRESULT CALLBACK DefViewWndProc(HWND hwnd, UINT uMsg, WPARAM wParam, LPARAM lParam);
@@ -33,6 +113,18 @@ void DrawWallpaper(HDC hdc, int scrW, int scrH);
 namespace DesktopWindow {
     bool Initialize() {
         Logger::Log(L"DesktopWindow::Initialize starting.");
+        
+        bool forceProgman = false;
+        HKEY hKeyForce;
+        if (RegOpenKeyExW(GetEliteRegistryRoot(), L"Software\\EliteSoftware\\Win32Explorer\\Advanced", 0, KEY_READ, &hKeyForce) == ERROR_SUCCESS) {
+            DWORD dwVal = 0;
+            DWORD cbData = sizeof(DWORD);
+            if (RegQueryValueExW(hKeyForce, L"ForceProgmanAllDisplays", NULL, NULL, (LPBYTE)&dwVal, &cbData) == ERROR_SUCCESS) {
+                forceProgman = (dwVal == 1);
+            }
+            RegCloseKey(hKeyForce);
+        }
+        Logger::Log(forceProgman ? L"ForceProgmanAllDisplays is active." : L"ForceProgmanAllDisplays is inactive.");
         
         HINSTANCE hInst = GetModuleHandleW(NULL);
         
@@ -173,6 +265,24 @@ LRESULT CALLBACK ProgmanWndProc(HWND hwnd, UINT uMsg, WPARAM wParam, LPARAM lPar
         lpw->flags &= ~SWP_NOZORDER;
         break;
     }
+    case WM_DISPLAYCHANGE: {
+        int x = GetSystemMetrics(SM_XVIRTUALSCREEN);
+        int y = GetSystemMetrics(SM_YVIRTUALSCREEN);
+        int cx = GetSystemMetrics(SM_CXVIRTUALSCREEN);
+        int cy = GetSystemMetrics(SM_CYVIRTUALSCREEN);
+        SetWindowPos(hwnd, HWND_BOTTOM, x, y, cx, cy, SWP_NOACTIVATE | SWP_SHOWWINDOW);
+        if (hwndDefView) {
+            SetWindowPos(hwndDefView, NULL, 0, 0, cx, cy, SWP_NOZORDER | SWP_NOACTIVATE);
+        }
+        return 0;
+    }
+    case WM_TIMER: {
+        if (wParam == TIMER_SLIDESHOW) {
+            AdvanceSlideshow(hwnd);
+            return 0;
+        }
+        break;
+    }
     case WM_ERASEBKGND: {
         HDC hdc = (HDC)wParam;
         RECT rc;
@@ -190,6 +300,7 @@ LRESULT CALLBACK ProgmanWndProc(HWND hwnd, UINT uMsg, WPARAM wParam, LPARAM lPar
         return 0;
     }
     case WM_DESTROY:
+        KillTimer(hwnd, TIMER_SLIDESHOW);
         s_hProgman = NULL;
         break;
     }
@@ -421,6 +532,118 @@ ULONG RegisterDesktopChangeWatcher(HWND hwndTarget) {
     return uRegisterId;
 }
 
+struct MonitorWallpaperData {
+    HDC hdc;
+    Gdiplus::Bitmap* pBitmap;
+    int style;
+    bool tile;
+    COLORREF bgColor;
+};
+
+static BOOL CALLBACK DrawWallpaperMonitorProc(HMONITOR hMonitor, HDC hdcMonitor, LPRECT lprcMonitor, LPARAM dwData) {
+    MonitorWallpaperData* pData = (MonitorWallpaperData*)dwData;
+    
+    int virtualX = GetSystemMetrics(SM_XVIRTUALSCREEN);
+    int virtualY = GetSystemMetrics(SM_YVIRTUALSCREEN);
+    
+    int monLeft = lprcMonitor->left - virtualX;
+    int monTop = lprcMonitor->top - virtualY;
+    int monWidth = lprcMonitor->right - lprcMonitor->left;
+    int monHeight = lprcMonitor->bottom - lprcMonitor->top;
+    
+    Gdiplus::Graphics graphics(pData->hdc);
+    graphics.SetInterpolationMode(Gdiplus::InterpolationModeHighQualityBicubic);
+    graphics.SetPixelOffsetMode(Gdiplus::PixelOffsetModeHighQuality);
+    
+    if (pData->tile) {
+        Gdiplus::TextureBrush brush(pData->pBitmap);
+        brush.SetWrapMode(Gdiplus::WrapModeTile);
+        brush.TranslateTransform((Gdiplus::REAL)monLeft, (Gdiplus::REAL)monTop);
+        graphics.FillRectangle(&brush, monLeft, monTop, monWidth, monHeight);
+    } else {
+        int imgW = pData->pBitmap->GetWidth();
+        int imgH = pData->pBitmap->GetHeight();
+        
+        int destX = monLeft, destY = monTop, destW = monWidth, destH = monHeight;
+        int srcX = 0, srcY = 0, srcW = imgW, srcH = imgH;
+        
+        double imgAspect = (double)imgW / imgH;
+        double scrAspect = (double)monWidth / monHeight;
+        
+        switch (pData->style) {
+            case 0: // Center
+                if (imgW <= monWidth) {
+                    destX = monLeft + (monWidth - imgW) / 2;
+                    destW = imgW;
+                } else {
+                    destX = monLeft;
+                    destW = monWidth;
+                    srcX = (imgW - monWidth) / 2;
+                    srcW = monWidth;
+                }
+                if (imgH <= monHeight) {
+                    destY = monTop + (monHeight - imgH) / 2;
+                    destH = imgH;
+                } else {
+                    destY = monTop;
+                    destH = monHeight;
+                    srcY = (imgH - monHeight) / 2;
+                    srcH = monHeight;
+                }
+                {
+                    Gdiplus::SolidBrush bgBrush(Gdiplus::Color(GetRValue(pData->bgColor), GetGValue(pData->bgColor), GetBValue(pData->bgColor)));
+                    graphics.FillRectangle(&bgBrush, monLeft, monTop, monWidth, monHeight);
+                }
+                break;
+                
+            case 2: // Stretch
+                destX = monLeft; destY = monTop;
+                destW = monWidth; destH = monHeight;
+                break;
+                
+            case 6: // Fit
+                if (imgAspect > scrAspect) {
+                    destW = monWidth;
+                    destH = (int)(monWidth / imgAspect);
+                    destX = monLeft;
+                    destY = monTop + (monHeight - destH) / 2;
+                } else {
+                    destH = monHeight;
+                    destW = (int)(monHeight * imgAspect);
+                    destY = monTop;
+                    destX = monLeft + (monWidth - destW) / 2;
+                }
+                {
+                    Gdiplus::SolidBrush bgBrush(Gdiplus::Color(GetRValue(pData->bgColor), GetGValue(pData->bgColor), GetBValue(pData->bgColor)));
+                    graphics.FillRectangle(&bgBrush, monLeft, monTop, monWidth, monHeight);
+                }
+                break;
+                
+            case 10: // Fill
+            default:
+                if (imgAspect > scrAspect) {
+                    destH = monHeight;
+                    destW = (int)(monHeight * imgAspect);
+                    destY = monTop;
+                    destX = monLeft + (monWidth - destW) / 2;
+                } else {
+                    destW = monWidth;
+                    destH = (int)(monWidth / imgAspect);
+                    destX = monLeft;
+                    destY = monTop + (monHeight - destH) / 2;
+                }
+                break;
+        }
+        
+        graphics.DrawImage(pData->pBitmap, 
+            Gdiplus::Rect(destX, destY, destW, destH),
+            srcX, srcY, srcW, srcH, 
+            Gdiplus::UnitPixel);
+    }
+    
+    return TRUE;
+}
+
 void DrawWallpaper(HDC hdc, int scrW, int scrH) {
     HKEY hKey;
     DWORD drawWallpaper = 1;
@@ -455,9 +678,38 @@ void DrawWallpaper(HDC hdc, int scrW, int scrH) {
         }
     }
 
+    // Check slideshow settings and start/stop timer dynamically
+    HKEY hKeySlide;
+    DWORD slideshowEnabled = 0;
+    DWORD slideshowInterval = 300;
+    if (RegOpenKeyExW(GetEliteRegistryRoot(), L"Software\\EliteSoftware\\Win32Explorer\\Advanced", 0, KEY_READ, &hKeySlide) == ERROR_SUCCESS) {
+        DWORD cb = sizeof(DWORD);
+        RegQueryValueExW(hKeySlide, L"DesktopSlideshowEnabled", NULL, NULL, (LPBYTE)&slideshowEnabled, &cb);
+        cb = sizeof(DWORD);
+        RegQueryValueExW(hKeySlide, L"DesktopSlideshowInterval", NULL, NULL, (LPBYTE)&slideshowInterval, &cb);
+        RegCloseKey(hKeySlide);
+    }
+    
+    static DWORD s_lastSlideshowEnabled = 0;
+    static DWORD s_lastSlideshowInterval = 0;
+    
+    if (slideshowEnabled) {
+        if (slideshowInterval < 3) slideshowInterval = 3;
+        if (s_lastSlideshowEnabled != slideshowEnabled || s_lastSlideshowInterval != slideshowInterval) {
+            SetTimer(s_hProgman, TIMER_SLIDESHOW, slideshowInterval * 1000, NULL);
+            s_lastSlideshowEnabled = slideshowEnabled;
+            s_lastSlideshowInterval = slideshowInterval;
+        }
+    } else {
+        if (s_lastSlideshowEnabled != slideshowEnabled) {
+            KillTimer(s_hProgman, TIMER_SLIDESHOW);
+            s_lastSlideshowEnabled = slideshowEnabled;
+        }
+    }
+
     // Determine if settings have changed
     bool settingsChanged = (drawWallpaper != (s_cachedDrawWallpaper ? 1 : 0)) ||
-                            (wallpaperPath != s_cachedWallpaperPath) ||
+                            (wallpaperPath != s_cachedWallpaperPath && !slideshowEnabled) ||
                             (style != s_cachedStyle) ||
                             (tile != s_cachedTile);
 
@@ -468,9 +720,12 @@ void DrawWallpaper(HDC hdc, int scrW, int scrH) {
         }
 
         s_cachedDrawWallpaper = (drawWallpaper == 1);
-        s_cachedWallpaperPath = wallpaperPath;
         s_cachedStyle = style;
         s_cachedTile = tile;
+
+        if (!slideshowEnabled) {
+            s_cachedWallpaperPath = wallpaperPath;
+        }
 
         if (s_cachedDrawWallpaper && !s_cachedWallpaperPath.empty() && PathFileExistsW(s_cachedWallpaperPath.c_str())) {
             s_pCachedWallpaper = new Gdiplus::Bitmap(s_cachedWallpaperPath.c_str());
@@ -489,95 +744,115 @@ void DrawWallpaper(HDC hdc, int scrW, int scrH) {
         return;
     }
 
-    int imgW = s_pCachedWallpaper->GetWidth();
-    int imgH = s_pCachedWallpaper->GetHeight();
+    // Check wallpaper mode: 0 = Span, 1 = Per-monitor
+    HKEY hKeyMode;
+    DWORD wallpaperModeVal = 0;
+    if (RegOpenKeyExW(GetEliteRegistryRoot(), L"Software\\EliteSoftware\\Win32Explorer\\Advanced", 0, KEY_READ, &hKeyMode) == ERROR_SUCCESS) {
+        DWORD cbMode = sizeof(DWORD);
+        RegQueryValueExW(hKeyMode, L"DesktopWallpaperMode", NULL, NULL, (LPBYTE)&wallpaperModeVal, &cbMode);
+        RegCloseKey(hKeyMode);
+    }
 
-    Gdiplus::Graphics graphics(hdc);
-    graphics.SetInterpolationMode(Gdiplus::InterpolationModeHighQualityBicubic);
-    graphics.SetPixelOffsetMode(Gdiplus::PixelOffsetModeHighQuality);
-
-    if (s_cachedTile) {
-        Gdiplus::TextureBrush brush(s_pCachedWallpaper);
-        brush.SetWrapMode(Gdiplus::WrapModeTile);
-        graphics.FillRectangle(&brush, 0, 0, scrW, scrH);
+    if (wallpaperModeVal == 1) {
+        MonitorWallpaperData data;
+        data.hdc = hdc;
+        data.pBitmap = s_pCachedWallpaper;
+        data.style = s_cachedStyle;
+        data.tile = s_cachedTile;
+        data.bgColor = GetSysColor(COLOR_BACKGROUND);
+        
+        EnumDisplayMonitors(NULL, NULL, DrawWallpaperMonitorProc, (LPARAM)&data);
     } else {
-        int destX = 0, destY = 0, destW = scrW, destH = scrH;
-        int srcX = 0, srcY = 0, srcW = imgW, srcH = imgH;
+        int imgW = s_pCachedWallpaper->GetWidth();
+        int imgH = s_pCachedWallpaper->GetHeight();
 
-        double imgAspect = (double)imgW / imgH;
-        double scrAspect = (double)scrW / scrH;
+        Gdiplus::Graphics graphics(hdc);
+        graphics.SetInterpolationMode(Gdiplus::InterpolationModeHighQualityBicubic);
+        graphics.SetPixelOffsetMode(Gdiplus::PixelOffsetModeHighQuality);
 
-        switch (s_cachedStyle) {
-            case 0: // Center
-                if (imgW <= scrW) {
-                    destX = (scrW - imgW) / 2;
-                    destW = imgW;
-                } else {
-                    destX = 0;
-                    destW = scrW;
-                    srcX = (imgW - scrW) / 2;
-                    srcW = scrW;
-                }
-                if (imgH <= scrH) {
-                    destY = (scrH - imgH) / 2;
-                    destH = imgH;
-                } else {
-                    destY = 0;
-                    destH = scrH;
-                    srcY = (imgH - scrH) / 2;
-                    srcH = scrH;
-                }
-                graphics.Clear(Gdiplus::Color(GetRValue(GetSysColor(COLOR_BACKGROUND)), 
-                                              GetGValue(GetSysColor(COLOR_BACKGROUND)), 
-                                              GetBValue(GetSysColor(COLOR_BACKGROUND))));
-                break;
+        if (s_cachedTile) {
+            Gdiplus::TextureBrush brush(s_pCachedWallpaper);
+            brush.SetWrapMode(Gdiplus::WrapModeTile);
+            graphics.FillRectangle(&brush, 0, 0, scrW, scrH);
+        } else {
+            int destX = 0, destY = 0, destW = scrW, destH = scrH;
+            int srcX = 0, srcY = 0, srcW = imgW, srcH = imgH;
 
-            case 2: // Stretch
-                destX = 0; destY = 0;
-                destW = scrW; destH = scrH;
-                break;
+            double imgAspect = (double)imgW / imgH;
+            double scrAspect = (double)scrW / scrH;
 
-            case 6: // Fit (Letterbox / Pillarbox)
-                if (imgAspect > scrAspect) {
-                    destW = scrW;
-                    destH = (int)(scrW / imgAspect);
-                    destX = 0;
-                    destY = (scrH - destH) / 2;
-                } else {
-                    destH = scrH;
-                    destW = (int)(scrH * imgAspect);
-                    destY = 0;
-                    destX = (scrW - destW) / 2;
-                }
-                graphics.Clear(Gdiplus::Color(GetRValue(GetSysColor(COLOR_BACKGROUND)), 
-                                              GetGValue(GetSysColor(COLOR_BACKGROUND)), 
-                                              GetBValue(GetSysColor(COLOR_BACKGROUND))));
-                break;
+            switch (s_cachedStyle) {
+                case 0: // Center
+                    if (imgW <= scrW) {
+                        destX = (scrW - imgW) / 2;
+                        destW = imgW;
+                    } else {
+                        destX = 0;
+                        destW = scrW;
+                        srcX = (imgW - scrW) / 2;
+                        srcW = scrW;
+                    }
+                    if (imgH <= scrH) {
+                        destY = (scrH - imgH) / 2;
+                        destH = imgH;
+                    } else {
+                        destY = 0;
+                        destH = scrH;
+                        srcY = (imgH - scrH) / 2;
+                        srcH = scrH;
+                    }
+                    graphics.Clear(Gdiplus::Color(GetRValue(GetSysColor(COLOR_BACKGROUND)), 
+                                                  GetGValue(GetSysColor(COLOR_BACKGROUND)), 
+                                                  GetBValue(GetSysColor(COLOR_BACKGROUND))));
+                    break;
 
-            case 10: // Fill
-            default:
-                if (imgAspect > scrAspect) {
-                    destH = scrH;
-                    destW = (int)(scrH * imgAspect);
-                    destY = 0;
-                    destX = (scrW - destW) / 2;
-                } else {
-                    destW = scrW;
-                    destH = (int)(scrW / imgAspect);
-                    destX = 0;
-                    destY = (scrH - destH) / 2;
-                }
-                break;
+                case 2: // Stretch
+                    destX = 0; destY = 0;
+                    destW = scrW; destH = scrH;
+                    break;
 
-            case 22: // Span
-                destX = 0; destY = 0;
-                destW = scrW; destH = scrH;
-                break;
+                case 6: // Fit
+                    if (imgAspect > scrAspect) {
+                        destW = scrW;
+                        destH = (int)(scrW / imgAspect);
+                        destX = 0;
+                        destY = (scrH - destH) / 2;
+                    } else {
+                        destH = scrH;
+                        destW = (int)(scrH * imgAspect);
+                        destY = 0;
+                        destX = (scrW - destW) / 2;
+                    }
+                    graphics.Clear(Gdiplus::Color(GetRValue(GetSysColor(COLOR_BACKGROUND)), 
+                                                  GetGValue(GetSysColor(COLOR_BACKGROUND)), 
+                                                  GetBValue(GetSysColor(COLOR_BACKGROUND))));
+                    break;
+
+                case 10: // Fill
+                default:
+                    if (imgAspect > scrAspect) {
+                        destH = scrH;
+                        destW = (int)(scrH * imgAspect);
+                        destY = 0;
+                        destX = (scrW - destW) / 2;
+                    } else {
+                        destW = scrW;
+                        destH = (int)(scrW / imgAspect);
+                        destX = 0;
+                        destY = (scrH - destH) / 2;
+                    }
+                    break;
+
+                case 22: // Span
+                    destX = 0; destY = 0;
+                    destW = scrW; destH = scrH;
+                    break;
+            }
+
+            graphics.DrawImage(s_pCachedWallpaper, 
+                Gdiplus::Rect(destX, destY, destW, destH),
+                srcX, srcY, srcW, srcH, 
+                Gdiplus::UnitPixel);
         }
-
-        graphics.DrawImage(s_pCachedWallpaper, 
-            Gdiplus::Rect(destX, destY, destW, destH),
-            srcX, srcY, srcW, srcH, 
-            Gdiplus::UnitPixel);
     }
 }

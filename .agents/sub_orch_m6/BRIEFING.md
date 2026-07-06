@@ -76,7 +76,7 @@ Implement Milestone 6 features: Start Menu settings tab fix, About dialog spacin
 - Successor: not yet spawned
 
 ## Active Timers
-- Heartbeat cron: ce47fa31-c215-44a2-8083-787f37b736f5/task-11
+- Heartbeat cron: none (killed on completion)
 - Safety timer: none
 - On succession: kill all timers before spawning successor
 - On context truncation: run manage_task(Action="list") — re-create if missing

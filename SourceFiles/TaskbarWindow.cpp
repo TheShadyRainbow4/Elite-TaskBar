@@ -2950,7 +2950,18 @@ bool TaskbarWindow::Initialize(HINSTANCE hInstance) {
         RegCloseKey(hKeyDesktop);
     }
 
-    if (g_Config.Mode == TaskbarMode::Replace && desktopReplaceEnabled) {
+    bool forceProgman = false;
+    HKEY hKeyForce;
+    if (RegOpenKeyExW(GetEliteRegistryRoot(), L"Software\\EliteSoftware\\Win32Explorer\\Advanced", 0, KEY_READ, &hKeyForce) == ERROR_SUCCESS) {
+        DWORD dwVal = 0;
+        DWORD cbData = sizeof(DWORD);
+        if (RegQueryValueExW(hKeyForce, L"ForceProgmanAllDisplays", NULL, NULL, (LPBYTE)&dwVal, &cbData) == ERROR_SUCCESS) {
+            forceProgman = (dwVal == 1);
+        }
+        RegCloseKey(hKeyForce);
+    }
+
+    if ((g_Config.Mode == TaskbarMode::Replace || forceProgman) && desktopReplaceEnabled) {
         DesktopWindow::Initialize();
     }
 

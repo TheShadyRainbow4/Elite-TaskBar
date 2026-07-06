@@ -16,8 +16,8 @@ Data flows through registry keys located at `HKCU\Software\EliteSoftware\Win32Ex
 | 3 | R1: Deep Metadata & R4: View Modes & Grouping | Display extended metadata (Ratings/Authors/Dimensions) in details. Thumbnail Tiles and Group by Type. | M1 | DONE |
 | 4 | E2E Testing Track | Design and implement comprehensive E2E test suite; write verify_final_polish.ps1 and compile tests. | None | DONE |
 | 5 | Milestone 1: Multi-Monitor & Tray/Flyout Fixes | Dynamic primary display spoofing, clock/tray gap, two-row tray, tray actions. | M3 | DONE |
-| 6 | Milestone 2: Settings UI, About Dialog, & Migration Cleanup | Start tab hover bug, About dialog close buttons, reload explorer window bug, *old*.exe cleanup. | M3 | IN_PROGRESS |
-| 7 | Milestone 3: Advanced Desktop & Theme Configuration | Progman multi-display render, Desktop Background tab, Span/Per-monitor modes, Slideshow, dropdown theme select. | M3 | PLANNED |
+| 6 | Milestone 2: Settings UI, About Dialog, & Migration Cleanup | Start tab hover bug, About dialog close buttons, reload explorer window bug, *old*.exe cleanup. | M3 | DONE |
+| 7 | Milestone 3: Advanced Desktop & Theme Configuration | Progman multi-display render, Desktop Background tab, Span/Per-monitor modes, Slideshow, dropdown theme select. | M3 | IN_PROGRESS |
 | 8 | Milestone 4: Global Keyboard Hooks & Shell Fallbacks | WH_KEYBOARD_LL hooks and RegisterHotKey for Win+R run dialog fallback when Explorer is killed. | M3 | PLANNED |
 | 9 | Milestone 5: Taskbar Features & View Modes | Clock seconds, show desktop hover, resizable Quick Launch, Win32Explorer view modes. | M3 | PLANNED |
 | 10| Final Milestone: Pass E2E Tests & Hardening | Run all E2E tests, debug and fix failures, run white-box adversarial testing. | M4, M5, M6, M7, M8, M9 | PLANNED |

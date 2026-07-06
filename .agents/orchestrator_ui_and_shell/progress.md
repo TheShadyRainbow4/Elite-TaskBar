@@ -1,8 +1,9 @@
 ## Current Status
-Last visited: 2026-07-05T18:50:04-07:00
+Last visited: 2026-07-05T19:20:03-07:00
 - E2E Testing Track (Milestone 4): Completed
 - Milestone 1: Multi-Monitor & Tray/Flyout Fixes (Milestone 5): Completed
-- Milestone 2: Settings UI, About Dialog, & Migration Cleanup (Milestone 6): Active (Gen 2 validation suite is still verifying)
+- Milestone 2: Settings UI, About Dialog, & Migration Cleanup (Milestone 6): Completed
+- Milestone 3: Advanced Desktop & Theme Configuration (Milestone 7): Active (Worker is implementing multi-display Progman, slideshow mode, and Desktop tab controls)
 
 ## Iteration Status
 Current iteration: 1 / 32
