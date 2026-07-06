@@ -1,8 +1,8 @@
 ## Current Status
-Last visited: 2026-07-05T17:30:05-07:00
+Last visited: 2026-07-05T17:40:03-07:00
 - E2E Testing Track (Milestone 4): Completed
 - Milestone 1: Multi-Monitor & Tray/Flyout Fixes (Milestone 5): Completed
-- Milestone 2: Settings UI, About Dialog, & Migration Cleanup (Milestone 6): Active (Worker is still implementing features)
+- Milestone 2: Settings UI, About Dialog, & Migration Cleanup (Milestone 6): Active (Reviewers, Challengers, and Forensic Auditor are verifying the implemented fixes)
 
 ## Iteration Status
 Current iteration: 1 / 32
