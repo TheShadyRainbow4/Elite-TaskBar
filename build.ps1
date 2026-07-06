@@ -212,14 +212,10 @@ if ($failed) {
 }
 
 if (-not $failed) {
-    $Suffix = (Get-Random).ToString()
-    if (Test-Path "$ScriptDir\EliteTaskbar.exe") { Rename-Item "$ScriptDir\EliteTaskbar.exe" "EliteTaskbar_old_$Suffix.exe" -Force -ErrorAction SilentlyContinue }
-    if (Test-Path "$ScriptDir\EliteSettings.exe") { Rename-Item "$ScriptDir\EliteSettings.exe" "EliteSettings_old_$Suffix.exe" -Force -ErrorAction SilentlyContinue }
-    if (Test-Path "$ScriptDir\EliteSettings.cpl") { Rename-Item "$ScriptDir\EliteSettings.cpl" "EliteSettings_old_$Suffix.cpl" -Force -ErrorAction SilentlyContinue }
-    if (Test-Path "$ScriptDir\EliteEverything.exe") { Rename-Item "$ScriptDir\EliteEverything.exe" "EliteEverything_old_$Suffix.exe" -Force -ErrorAction SilentlyContinue }
-    if (Test-Path "$ScriptDir\EliteDLLScanner.exe") { Rename-Item "$ScriptDir\EliteDLLScanner.exe" "EliteDLLScanner_old_$Suffix.exe" -Force -ErrorAction SilentlyContinue }
-    if (Test-Path "$ScriptDir\Win32Explorer.exe") { Rename-Item "$ScriptDir\Win32Explorer.exe" "Win32Explorer_old_$Suffix.exe" -Force -ErrorAction SilentlyContinue }
-    if (Test-Path "$ScriptDir\EliteStartMenu.exe") { Rename-Item "$ScriptDir\EliteStartMenu.exe" "EliteStartMenu_old_$Suffix.exe" -Force -ErrorAction SilentlyContinue }
+    $processesToClean = @("EliteTaskbar.exe", "EliteSettings.exe", "EliteSettings.cpl", "EliteEverything.exe", "EliteDLLScanner.exe", "Win32Explorer.exe", "EliteStartMenu.exe")
+    foreach ($proc in $processesToClean) {
+        if (Test-Path "$ScriptDir\$proc") { Remove-Item "$ScriptDir\$proc" -Force -ErrorAction SilentlyContinue }
+    }
 
     Copy-Item "$BuildDir\EliteTaskbar.exe" "$ScriptDir\EliteTaskbar.exe" -Force
     Copy-Item "$BuildDir\EliteSettings.exe" "$ScriptDir\EliteSettings.exe" -Force
