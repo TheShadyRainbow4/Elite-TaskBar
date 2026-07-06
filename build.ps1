@@ -169,44 +169,70 @@ if ($failed) {
 }
 
 if (-not $failed) {
+    # 1. Compile Win32Explorer
+    Write-Host "Building Win32Explorer..." -ForegroundColor Cyan
+    $origDir = Get-Location
+    Set-Location "$ScriptDir\Win32Explorer_26.0.3.0"
+    & ".\build_Win32Explorer.ps1" -Platform "x64"
+    if ($LASTEXITCODE -ne 0) {
+        Write-Error "Win32Explorer x64 build failed!"
+        $failed = $true
+    } else {
+        Start-Sleep -Seconds 2
+        & ".\build_Win32Explorer.ps1" -Platform "Win32"
+        if ($LASTEXITCODE -ne 0) {
+            Write-Error "Win32Explorer Win32 build failed!"
+            $failed = $true
+        }
+    }
+    Set-Location $origDir
+
+    # 2. Compile EliteStartMenu
+    if (-not $failed -and (Test-Path "$ScriptDir\EliteStartMenu.ps1")) {
+        try {
+            Write-Host 'Compiling EliteStartMenu...' -ForegroundColor Cyan
+            Invoke-ps2exe -inputFile "$ScriptDir\EliteStartMenu.ps1" -outputFile "$BuildDir\EliteStartMenu.exe" -noConsole -STA -iconFile "$ScriptDir\Resources\PREFERENCES.ico"
+            Invoke-ps2exe -inputFile "$ScriptDir\EliteStartMenu.ps1" -outputFile "$BuildDirx86\EliteStartMenu.exe" -noConsole -STA -iconFile "$ScriptDir\Resources\PREFERENCES.ico" -x86
+        } catch {
+            Write-Error "EliteStartMenu compilation failed: $_"
+            $failed = $true
+        }
+    }
+}
+
+if ($failed) {
+    Write-Host "Build failed! Cleaning up recent backup..." -ForegroundColor Red
+    $latestBackup = Get-ChildItem -Path (Join-Path $ScriptDir "Backups") -Filter *.cab | Sort-Object LastWriteTime -Descending | Select-Object -First 1
+    if ($latestBackup -and (New-TimeSpan -Start $latestBackup.LastWriteTime -End (Get-Date)).TotalMinutes -lt 5) {
+        Remove-Item $latestBackup.FullName -Force
+        Write-Host "Deleted backup ($($latestBackup.Name)) because the build failed." -ForegroundColor Yellow
+    }
+    Write-Error "Compilation failed!"
+    exit 1
+}
+
+if (-not $failed) {
     $Suffix = (Get-Random).ToString()
     if (Test-Path "$ScriptDir\EliteTaskbar.exe") { Rename-Item "$ScriptDir\EliteTaskbar.exe" "EliteTaskbar_old_$Suffix.exe" -Force -ErrorAction SilentlyContinue }
     if (Test-Path "$ScriptDir\EliteSettings.exe") { Rename-Item "$ScriptDir\EliteSettings.exe" "EliteSettings_old_$Suffix.exe" -Force -ErrorAction SilentlyContinue }
     if (Test-Path "$ScriptDir\EliteSettings.cpl") { Rename-Item "$ScriptDir\EliteSettings.cpl" "EliteSettings_old_$Suffix.cpl" -Force -ErrorAction SilentlyContinue }
     if (Test-Path "$ScriptDir\EliteEverything.exe") { Rename-Item "$ScriptDir\EliteEverything.exe" "EliteEverything_old_$Suffix.exe" -Force -ErrorAction SilentlyContinue }
     if (Test-Path "$ScriptDir\EliteDLLScanner.exe") { Rename-Item "$ScriptDir\EliteDLLScanner.exe" "EliteDLLScanner_old_$Suffix.exe" -Force -ErrorAction SilentlyContinue }
+    if (Test-Path "$ScriptDir\Win32Explorer.exe") { Rename-Item "$ScriptDir\Win32Explorer.exe" "Win32Explorer_old_$Suffix.exe" -Force -ErrorAction SilentlyContinue }
+    if (Test-Path "$ScriptDir\EliteStartMenu.exe") { Rename-Item "$ScriptDir\EliteStartMenu.exe" "EliteStartMenu_old_$Suffix.exe" -Force -ErrorAction SilentlyContinue }
 
     Copy-Item "$BuildDir\EliteTaskbar.exe" "$ScriptDir\EliteTaskbar.exe" -Force
     Copy-Item "$BuildDir\EliteSettings.exe" "$ScriptDir\EliteSettings.exe" -Force
     Copy-Item "$BuildDir\EliteSettings.cpl" "$ScriptDir\EliteSettings.cpl" -Force
     Copy-Item "$BuildDir\EliteEverything.exe" "$ScriptDir\EliteEverything.exe" -Force
     Copy-Item "$BuildDir\EliteDLLScanner.exe" "$ScriptDir\EliteDLLScanner.exe" -Force
-    
-    # Run the separate signing stage
-    & "$ScriptDir\build_sign.ps1" -BuildDir $BuildDir -BuildDirx86 $BuildDirx86
-    
-    Write-Host "Building Win32Explorer..." -ForegroundColor Cyan
-    $origDir = Get-Location
-    
-    Set-Location "$ScriptDir\Win32Explorer_26.0.3.0"
-    & ".\build_Win32Explorer.ps1" -Platform "x64"
-    if ($LASTEXITCODE -ne 0) {
-        Write-Error "Win32Explorer x64 build failed!"
-        Set-Location $origDir
-        exit 1
-    }
-    Start-Sleep -Seconds 2
-    & ".\build_Win32Explorer.ps1" -Platform "Win32"
-    if ($LASTEXITCODE -ne 0) {
-        Write-Error "Win32Explorer Win32 build failed!"
-        Set-Location $origDir
-        exit 1
-    }
-    Set-Location $origDir
-    
-    # Relocate x64 artifact to root for developer execution
-    if (Test-Path "$ScriptDir\Win32Explorer.exe") { Rename-Item "$ScriptDir\Win32Explorer.exe" "Win32Explorer_old_$Suffix.exe" -Force -ErrorAction SilentlyContinue }
     Copy-Item "$BuildDir\Win32Explorer.exe" "$ScriptDir\Win32Explorer.exe" -Force
+    if (Test-Path "$BuildDir\EliteStartMenu.exe") {
+        Copy-Item "$BuildDir\EliteStartMenu.exe" "$ScriptDir\EliteStartMenu.exe" -Force
+    }
+    
+    # Run the separate signing stage (after all compilations and copy actions are completed)
+    & "$ScriptDir\build_sign.ps1" -BuildDir $BuildDir -BuildDirx86 $BuildDirx86
     
     Write-Host "Cleaning up old executables and control panel files..." -ForegroundColor Cyan
     $cleanupPaths = @($PSScriptRoot, "$PSScriptRoot\BuildOutput", "$PSScriptRoot\BuildOutputx86")
@@ -235,12 +261,6 @@ if (-not $failed) {
     $ErrorActionPreference = 'Stop'
     
     Write-Host "Done!" -ForegroundColor Green
-}
-
-if (Test-Path EliteStartMenu.ps1) {
-    Write-Host 'Compiling EliteStartMenu...' -ForegroundColor Cyan
-    Invoke-ps2exe -inputFile EliteStartMenu.ps1 -outputFile BuildOutput\EliteStartMenu.exe -noConsole -STA -iconFile Resources\PREFERENCES.ico
-    Invoke-ps2exe -inputFile EliteStartMenu.ps1 -outputFile BuildOutputx86\EliteStartMenu.exe -noConsole -STA -iconFile Resources\PREFERENCES.ico -x86
 }
 
 } finally {

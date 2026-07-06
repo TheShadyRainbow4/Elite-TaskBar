@@ -13,16 +13,23 @@ $exeFiles = @(
     (Join-Path $PSScriptRoot "EliteSettings.cpl"),
     (Join-Path $PSScriptRoot "EliteEverything.exe"),
     (Join-Path $PSScriptRoot "EliteDLLScanner.exe"),
+    (Join-Path $PSScriptRoot "Win32Explorer.exe"),
+    (Join-Path $PSScriptRoot "EliteStartMenu.exe"),
     (Join-Path $BuildDir "EliteTaskbar.exe"),
     (Join-Path $BuildDir "EliteSettings.exe"),
     (Join-Path $BuildDir "EliteSettings.cpl"),
     (Join-Path $BuildDir "EliteEverything.exe"),
     (Join-Path $BuildDir "EliteDLLScanner.exe"),
+    (Join-Path $BuildDir "Win32Explorer.exe"),
+    (Join-Path $BuildDir "EliteStartMenu.exe"),
     (Join-Path $BuildDirx86 "EliteTaskbar_x86.exe"),
     (Join-Path $BuildDirx86 "EliteSettings_x86.exe"),
     (Join-Path $BuildDirx86 "EliteSettings_x86.cpl"),
     (Join-Path $BuildDirx86 "EliteEverything_x86.exe"),
-    (Join-Path $BuildDirx86 "EliteDLLScanner_x86.exe")
+    (Join-Path $BuildDirx86 "EliteDLLScanner_x86.exe"),
+    (Join-Path $BuildDirx86 "Win32Explorer_x86.exe"),
+    (Join-Path $BuildDirx86 "EliteStartMenu_x86.exe"),
+    (Join-Path $BuildDirx86 "EliteStartMenu.exe")
 )
 
 $signtool = (Get-ChildItem -Path "C:\Program Files (x86)\Windows Kits\10\bin\*" -Filter signtool.exe -Recurse | Where-Object { $_.FullName -like "*x64*" } | Select-Object -First 1).FullName

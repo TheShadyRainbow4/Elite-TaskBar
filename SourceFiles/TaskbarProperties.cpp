@@ -1700,6 +1700,25 @@ static std::wstring BrowseForFolder(HWND hwndOwner) {
 INT_PTR CALLBACK DesktopSettingsDlgProc(HWND hwndDlg, UINT uMsg, WPARAM wParam, LPARAM lParam) {
     static ULONG_PTR gdiplusToken = 0;
     switch (uMsg) {
+    case WM_DESTROY: {
+        int previewIds[] = {
+            IDC_DESKTOP_ICON_PREVIEW_1,
+            IDC_DESKTOP_ICON_PREVIEW_2,
+            IDC_DESKTOP_ICON_PREVIEW_3,
+            IDC_DESKTOP_ICON_PREVIEW_4
+        };
+        for (int i = 0; i < 4; i++) {
+            HICON hIcon = (HICON)SendDlgItemMessageW(hwndDlg, previewIds[i], STM_GETIMAGE, IMAGE_ICON, 0);
+            if (hIcon) {
+                DestroyIcon(hIcon);
+            }
+        }
+        if (gdiplusToken) {
+            Gdiplus::GdiplusShutdown(gdiplusToken);
+            gdiplusToken = 0;
+        }
+        break;
+    }
     case WM_INITDIALOG: {
         EnableThemeDialogTexture(hwndDlg, ETDT_ENABLETAB);
         if (!gdiplusToken) {

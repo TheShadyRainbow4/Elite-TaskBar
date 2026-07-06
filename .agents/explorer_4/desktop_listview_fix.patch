@@ -1,0 +1,34 @@
+diff --git a/SourceFiles/DesktopWindow.cpp b/SourceFiles/DesktopWindow.cpp
+index 7a1f5c3..fb83de2 100644
+--- a/SourceFiles/DesktopWindow.cpp
++++ b/SourceFiles/DesktopWindow.cpp
+@@ -12,8 +12,9 @@
+ #pragma comment(lib, "gdiplus.lib")
+ #pragma comment(lib, "shlwapi.lib")
+ 
+ #define WM_SHELLCHANGE (WM_USER + 101)
++#define WM_POPULATE_GRID (WM_USER + 102)
+ #define TIMER_DEBOUNCE_REFRESH 1001
+ 
+ static HWND s_hProgman = NULL;
+ static HWND s_hNativeProgman = NULL;
+@@ -335,7 +336,7 @@ LRESULT CALLBACK DefViewWndProc(HWND hwnd, UINT uMsg, WPARAM wParam, LPARAM lPar
+             ListView_SetImageList(hwndListView, hSysIL, LVSIL_NORMAL);
+         }
+ 
+-        PopulateDesktopGrid(hwndListView);
++        PostMessageW(hwnd, WM_POPULATE_GRID, 0, 0);
+         uNotifyId = RegisterDesktopChangeWatcher(hwnd);
+         return 0;
+     }
+@@ -357,6 +358,11 @@ LRESULT CALLBACK DefViewWndProc(HWND hwnd, UINT uMsg, WPARAM wParam, LPARAM lPar
+         return ret;
+     }
++    case WM_POPULATE_GRID:
++        if (hwndListView) {
++            PopulateDesktopGrid(hwndListView);
++        }
++        return 0;
+     case WM_SHELLCHANGE:
+         SetTimer(hwnd, TIMER_DEBOUNCE_REFRESH, 100, NULL);
+         return 0;

@@ -388,6 +388,15 @@ All notable changes to this project will be documented in this file.
 - Modified `build_Win32Explorer.ps1` to explicitly copy the compiled `Win32Explorer.exe` directly into the `Elite-TaskBar` project root directory upon successful compilation.
 
 ## [Unreleased]
+### Fixed
+- **ListView Initial Population Bug**: Defined `WM_POPULATE_GRID` and posted message from `WM_CREATE` to delay grid population until window layout is initialized.
+- **Slideshow Timer Race Condition**: Updated `DrawWallpaper` to accept the desktop `HWND` and target timer creation/destruction specifically on that handle, avoiding NULL `s_hProgman` race condition on first paint.
+- **Wallpaper Slideshow Theme Directory Scan Bug**: Updated `GetThemeDirectory` to query and expand wallpaper environment strings from `.theme` files rather than stripping their directories directly.
+- **Startup Slideshow Rendering Delay**: Instantly scans the active theme directory and assigns the first sorted image to `s_cachedWallpaperPath` on first paint if slideshow is enabled and path is empty.
+- **Static Control Icon Leaks**: Added a `WM_DESTROY` handler to `DesktopSettingsDlgProc` to retrieve and destroy any active HICON handles in the desktop preview controls.
+- **GDI+ Token Leak in Properties Dialog**: Implemented GDI+ shutdown logic in the `WM_DESTROY` handler of `DesktopSettingsDlgProc` to release the GDI+ startup token when properties sheet is closed.
+- **Compilation & Signing Order Repair**: Reordered `build.ps1` to ensure all compilations (including Win32Explorer and EliteStartMenu) complete before the signing script `build_sign.ps1` runs. Expanded the list of signed binaries in `build_sign.ps1` to include `Win32Explorer.exe` and `EliteStartMenu.exe` in the root, `BuildOutput/`, and `BuildOutputx86/` folders.
+
 ### Added
 - **Start Menu Settings Tab Fix**: Added runtime migration toggle `MigrateStartMenuSettings` (defaulting to 1 in registry). If enabled, per-monitor comboboxes and previews reside in the "Start Menu" tab scroll container, and the "Multi-Monitor" tab scroll container only shows "System Tray", "Clock", and "Task Buttons" checkboxes.
 - **Debounced Settings Change Notification**: Added a 1000ms debounce check to `NotifySettingsChange()` to prevent multiple rapid restarts/reloads of Win32Explorer when settings are modified.

@@ -13,6 +13,7 @@
 #pragma comment(lib, "shlwapi.lib")
 
 #define WM_SHELLCHANGE (WM_USER + 101)
+#define WM_POPULATE_GRID (WM_USER + 102)
 #define TIMER_DEBOUNCE_REFRESH 1001
 
 static HWND s_hProgman = NULL;
@@ -39,6 +40,25 @@ static std::wstring GetThemeDirectory() {
         std::wstring pathStr(themePathVal);
         if (PathIsDirectoryW(pathStr.c_str())) {
             return pathStr;
+        } else if (PathFileExistsW(pathStr.c_str())) {
+            wchar_t wallpaperVal[MAX_PATH] = {0};
+            GetPrivateProfileStringW(L"Control Panel\\Desktop", L"Wallpaper", L"", wallpaperVal, MAX_PATH, pathStr.c_str());
+            if (wcslen(wallpaperVal) > 0) {
+                wchar_t expandedWallpaper[MAX_PATH] = {0};
+                ExpandEnvironmentStringsW(wallpaperVal, expandedWallpaper, MAX_PATH);
+                std::wstring wallPath(expandedWallpaper);
+                size_t lastSlash = wallPath.find_last_of(L'\\');
+                if (lastSlash != std::wstring::npos) {
+                    std::wstring parentDir = wallPath.substr(0, lastSlash);
+                    if (PathIsDirectoryW(parentDir.c_str())) {
+                        return parentDir;
+                    }
+                }
+            }
+            size_t lastSlash = pathStr.find_last_of(L'\\');
+            if (lastSlash != std::wstring::npos) {
+                return pathStr.substr(0, lastSlash);
+            }
         } else {
             size_t lastSlash = pathStr.find_last_of(L'\\');
             if (lastSlash != std::wstring::npos) {
@@ -108,7 +128,7 @@ LRESULT CALLBACK ProgmanWndProc(HWND hwnd, UINT uMsg, WPARAM wParam, LPARAM lPar
 LRESULT CALLBACK DefViewWndProc(HWND hwnd, UINT uMsg, WPARAM wParam, LPARAM lParam);
 void PopulateDesktopGrid(HWND hwndListView);
 ULONG RegisterDesktopChangeWatcher(HWND hwndTarget);
-void DrawWallpaper(HDC hdc, int scrW, int scrH);
+void DrawWallpaper(HWND hwnd, HDC hdc, int scrW, int scrH);
 
 namespace DesktopWindow {
     bool Initialize() {
@@ -287,7 +307,7 @@ LRESULT CALLBACK ProgmanWndProc(HWND hwnd, UINT uMsg, WPARAM wParam, LPARAM lPar
         HDC hdc = (HDC)wParam;
         RECT rc;
         GetClientRect(hwnd, &rc);
-        DrawWallpaper(hdc, rc.right - rc.left, rc.bottom - rc.top);
+        DrawWallpaper(hwnd, hdc, rc.right - rc.left, rc.bottom - rc.top);
         return TRUE;
     }
     case WM_PAINT: {
@@ -295,7 +315,7 @@ LRESULT CALLBACK ProgmanWndProc(HWND hwnd, UINT uMsg, WPARAM wParam, LPARAM lPar
         HDC hdc = BeginPaint(hwnd, &ps);
         RECT rc;
         GetClientRect(hwnd, &rc);
-        DrawWallpaper(hdc, rc.right - rc.left, rc.bottom - rc.top);
+        DrawWallpaper(hwnd, hdc, rc.right - rc.left, rc.bottom - rc.top);
         EndPaint(hwnd, &ps);
         return 0;
     }
@@ -335,10 +355,13 @@ LRESULT CALLBACK DefViewWndProc(HWND hwnd, UINT uMsg, WPARAM wParam, LPARAM lPar
             ListView_SetImageList(hwndListView, hSysIL, LVSIL_NORMAL);
         }
 
-        PopulateDesktopGrid(hwndListView);
+        PostMessageW(hwnd, WM_POPULATE_GRID, 0, 0);
         uNotifyId = RegisterDesktopChangeWatcher(hwnd);
         return 0;
     }
+    case WM_POPULATE_GRID:
+        PopulateDesktopGrid(hwndListView);
+        return 0;
     case WM_SIZE: {
         if (hwndListView) {
             SetWindowPos(hwndListView, NULL, 0, 0, LOWORD(lParam), HIWORD(lParam), SWP_NOZORDER | SWP_NOACTIVATE);
@@ -644,7 +667,7 @@ static BOOL CALLBACK DrawWallpaperMonitorProc(HMONITOR hMonitor, HDC hdcMonitor,
     return TRUE;
 }
 
-void DrawWallpaper(HDC hdc, int scrW, int scrH) {
+void DrawWallpaper(HWND hwnd, HDC hdc, int scrW, int scrH) {
     HKEY hKey;
     DWORD drawWallpaper = 1;
     DWORD cbData = sizeof(DWORD);
@@ -693,27 +716,67 @@ void DrawWallpaper(HDC hdc, int scrW, int scrH) {
     static DWORD s_lastSlideshowEnabled = 0;
     static DWORD s_lastSlideshowInterval = 0;
     
+    bool slideshowJustEnabled = (s_lastSlideshowEnabled != slideshowEnabled) && slideshowEnabled;
+
     if (slideshowEnabled) {
         if (slideshowInterval < 3) slideshowInterval = 3;
         if (s_lastSlideshowEnabled != slideshowEnabled || s_lastSlideshowInterval != slideshowInterval) {
-            SetTimer(s_hProgman, TIMER_SLIDESHOW, slideshowInterval * 1000, NULL);
+            SetTimer(hwnd, TIMER_SLIDESHOW, slideshowInterval * 1000, NULL);
             s_lastSlideshowEnabled = slideshowEnabled;
             s_lastSlideshowInterval = slideshowInterval;
         }
     } else {
         if (s_lastSlideshowEnabled != slideshowEnabled) {
-            KillTimer(s_hProgman, TIMER_SLIDESHOW);
+            KillTimer(hwnd, TIMER_SLIDESHOW);
             s_lastSlideshowEnabled = slideshowEnabled;
         }
     }
 
+    // Startup Slideshow Rendering Delay Fix
+    if (slideshowEnabled) {
+        std::wstring activeThemeDir = GetThemeDirectory();
+        bool isOutside = true;
+        if (!s_cachedWallpaperPath.empty() && !activeThemeDir.empty()) {
+            if (s_cachedWallpaperPath.length() > activeThemeDir.length() &&
+                _wcsnicmp(s_cachedWallpaperPath.c_str(), activeThemeDir.c_str(), activeThemeDir.length()) == 0 &&
+                (s_cachedWallpaperPath[activeThemeDir.length()] == L'\\' || s_cachedWallpaperPath[activeThemeDir.length()] == L'/')) {
+                isOutside = false;
+            }
+        }
+        
+        if (s_cachedWallpaperPath.empty() || slideshowJustEnabled || isOutside) {
+            std::vector<std::wstring> images;
+            if (!activeThemeDir.empty() && PathFileExistsW(activeThemeDir.c_str())) {
+                const wchar_t* extensions[] = { L"\\*.jpg", L"\\*.png", L"\\*.bmp", L"\\*.jpeg" };
+                for (const auto& ext : extensions) {
+                    std::wstring query = activeThemeDir + ext;
+                    WIN32_FIND_DATAW fd;
+                    HANDLE hFind = FindFirstFileW(query.c_str(), &fd);
+                    if (hFind != INVALID_HANDLE_VALUE) {
+                        do {
+                            images.push_back(activeThemeDir + L"\\" + fd.cFileName);
+                        } while (FindNextFileW(hFind, &fd));
+                        FindClose(hFind);
+                    }
+                }
+            }
+            if (!images.empty()) {
+                std::sort(images.begin(), images.end());
+                s_cachedWallpaperPath = images[0];
+            } else {
+                s_cachedWallpaperPath = wallpaperPath;
+            }
+        }
+    }
+
     // Determine if settings have changed
+    static std::wstring s_lastLoadedWallpaperPath = L"";
     bool settingsChanged = (drawWallpaper != (s_cachedDrawWallpaper ? 1 : 0)) ||
                             (wallpaperPath != s_cachedWallpaperPath && !slideshowEnabled) ||
                             (style != s_cachedStyle) ||
                             (tile != s_cachedTile);
 
-    if (settingsChanged || !s_pCachedWallpaper) {
+    if (settingsChanged || !s_pCachedWallpaper || (slideshowEnabled && s_cachedWallpaperPath != s_lastLoadedWallpaperPath)) {
         if (s_pCachedWallpaper) {
             delete s_pCachedWallpaper;
             s_pCachedWallpaper = nullptr;
@@ -732,6 +795,8 @@ void DrawWallpaper(HDC hdc, int scrW, int scrH) {
             if (s_pCachedWallpaper->GetLastStatus() != Gdiplus::Ok) {
                 delete s_pCachedWallpaper;
                 s_pCachedWallpaper = nullptr;
+            } else {
+                s_lastLoadedWallpaperPath = s_cachedWallpaperPath;
             }
         }
     }
