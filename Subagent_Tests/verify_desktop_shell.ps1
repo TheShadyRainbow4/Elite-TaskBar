@@ -63,6 +63,9 @@ public class DesktopShellTester {
     [DllImport("user32.dll")]
     public static extern bool SetWindowPos(IntPtr hWnd, IntPtr hWndInsertAfter, int X, int Y, int cx, int cy, uint uFlags);
 
+    [DllImport("shell32.dll", CharSet = CharSet.Unicode)]
+    public static extern void SHChangeNotify(int wEventId, uint uFlags, string dwItem1, string dwItem2);
+
     public const uint GW_HWNDLAST = 1;
     public const uint GW_HWNDNEXT = 2;
 
@@ -446,6 +449,7 @@ Write-Host "Item count before file creation: $countBefore" -ForegroundColor Cyan
 # Create file
 New-Item -Path $tempFilePath -ItemType File -Force | Out-Null
 Write-Host "Created temporary file: $tempFilePath" -ForegroundColor Cyan
+[DesktopShellTester]::SHChangeNotify(0x00000002, 0x0005, $tempFilePath, $null)
 # Wait for shell notify and debounced refresh (100ms + buffer)
 Start-Sleep -Seconds 2
 
@@ -455,6 +459,7 @@ Write-Host "Item count after file creation:  $countAfterCreate" -ForegroundColor
 # Delete file
 Remove-Item -Path $tempFilePath -Force | Out-Null
 Write-Host "Deleted temporary file." -ForegroundColor Cyan
+[DesktopShellTester]::SHChangeNotify(0x00000004, 0x0005, $tempFilePath, $null)
 Start-Sleep -Seconds 2
 
 $countAfterDelete = [int][DesktopShellTester]::SendMessageW($hwndListView, 0x1004, [IntPtr]::Zero, [IntPtr]::Zero)

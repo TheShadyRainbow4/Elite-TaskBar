@@ -40,3 +40,10 @@ Data flows through registry keys located at `HKCU\Software\EliteSoftware\Win32Ex
 2. **Boot Synchronization**: Implement a sync loop on startup in `EliteTaskbar` (`main.cpp` / initialization) that reads the custom Master Configuration registry settings, and writes them directly to the real native Windows registry locations (for native features) or loads them internally (for custom features).
 3. **Total Configurability**: Ensure that every single component, layout parameter, and engine feature is a toggleable setting in the UI. Do not force or hardcode behaviors; make everything configurable for power users.
 4. **Native Classes & Controls**: Use native Win32 window classes/controls (`Progman`, `WorkerW`, `SysListView32`, `ReBarWindow32`, etc.) wherever possible instead of custom rendering or custom classes. Custom classes are reserved ONLY for net-new features that do not exist in standard Windows.
+
+## Dedicated Builder Swarm Workflow
+To resolve build lock collisions and race conditions:
+1. **Dedicated BUILDER Agent**: A dedicated BUILDER agent sub-orchestrator (`builder_sub_orch`) handles all compilation.
+2. **No Direct Builds**: Worker agents are strictly prohibited from running `build.ps1` directly.
+3. **Concurrent and Sequential Builds**: The BUILDER agent is authorized to run individual component builds (e.g. `build.ps1 -Target "Win32Explorer"`, etc.) concurrently to speed up compilation. However, the final master build must be queued and executed sequentially at the very end.
+4. **Validation Handoff**: Once the build succeeds, control is handed back to the testing/validation swarm for verification.

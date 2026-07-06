@@ -417,6 +417,7 @@ LRESULT CALLBACK DefViewWndProc(HWND hwnd, UINT uMsg, WPARAM wParam, LPARAM lPar
         return ret;
     }
     case WM_SHELLCHANGE: {
+        Logger::Log(L"DefViewWndProc: WM_SHELLCHANGE received.");
         HANDLE hLock = (HANDLE)wParam;
         DWORD dwProcId = (DWORD)lParam;
         if (hLock) {
