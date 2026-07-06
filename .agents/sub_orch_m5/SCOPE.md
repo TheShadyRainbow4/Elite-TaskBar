@@ -13,8 +13,8 @@
 |---|------|-------|-------------|--------|
 | 1 | Codebase Analysis (Exploration) | Explore codebase (TaskbarWindow.cpp, ClockWidget.cpp, TrayIconScraper.cpp, etc.) to understand current structure and formulate exact implementation strategy. | None | DONE |
 | 2 | Feature Implementation (Worker) | Implement display spoofing, tray-clock gap adjustment, 2-row tray layout, tray icons fixing, tray click/double-click actions, and properties panel integrations. | M1 | DONE |
-| 3 | Verification & Auditing (Review/Test/Audit) | Run review, test with challengers, and verify code authenticity with Forensic Auditor. | M2 | IN_PROGRESS |
-| 4 | Final Verification & Binary Signing | Sign compiled binaries using elite-easysigner and verify everything is working cleanly. | M3 | PLANNED |
+| 3 | Verification & Auditing (Review/Test/Audit) | Run review, test with challengers, and verify code authenticity with Forensic Auditor. | M2 | DONE |
+| 4 | Final Verification & Binary Signing | Sign compiled binaries using elite-easysigner and verify everything is working cleanly. | M3 | DONE |
 
 ## Interface Contracts
 - Registry Path: `HKCU\Software\EliteSoftware\Win32Explorer\Advanced`

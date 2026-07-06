@@ -66,17 +66,17 @@ Implement Milestone 5 features: Dynamic Primary Display Spoofing, Tray-Clock Gap
 | Challenger 1 | teamwork_preview_challenger | Run E2E tests | completed | f6f3a55b-af6e-42a8-b5c8-470cbe1326f1 |
 | Challenger 2 | teamwork_preview_challenger | Run E2E tests | completed | 232171b2-2ac7-416f-a944-fe7f1331526c |
 | Forensic Auditor | teamwork_preview_auditor | Integrity verification | completed | eb82009b-b0b2-4896-89e0-3674c5cb3241 |
-| Worker Polish | teamwork_preview_worker | Implement Polish and Layout Fixes | in-progress | 45de17b8-f505-437c-840f-6d50150c5555 |
+| Worker Polish | teamwork_preview_worker | Implement Polish and Layout Fixes | completed | 45de17b8-f505-437c-840f-6d50150c5555 |
 
 ## Succession Status
 - Succession required: no
 - Spawn count: 11 / 16
-- Pending subagents: 45de17b8-f505-437c-840f-6d50150c5555
+- Pending subagents: none
 - Predecessor: none
-- Successor: not yet spawned
+- Successor: none
 
 ## Active Timers
-- Heartbeat cron: task-27
+- Heartbeat cron: none
 - Safety timer: none
 - On succession: kill all timers before spawning successor
 - On context truncation: run manage_task(Action="list") — re-create if missing
