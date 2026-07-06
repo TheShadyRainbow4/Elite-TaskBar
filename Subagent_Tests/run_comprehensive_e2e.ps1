@@ -190,7 +190,7 @@ try {
     $proc = Start-Process -FilePath $settingsExe -PassThru
     Start-Sleep -Seconds 2
     
-    $hwndSettings = [Win32Helper]::FindProcessWindow($proc.Id, "#32770", "EliteTaskbar Properties")
+    $hwndSettings = [Win32Helper]::FindProcessWindow($proc.Id, "#32770", "Taskbar and Start Menu Properties")
     if ($hwndSettings -eq [IntPtr]::Zero) {
         throw "Could not find EliteSettings main window."
     }
