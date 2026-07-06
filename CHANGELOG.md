@@ -390,6 +390,12 @@ All notable changes to this project will be documented in this file.
 
 ## [Unreleased]
 ### Added
+- **Start Menu Settings Tab Fix**: Added runtime migration toggle `MigrateStartMenuSettings` (defaulting to 1 in registry). If enabled, per-monitor comboboxes and previews reside in the "Start Menu" tab scroll container, and the "Multi-Monitor" tab scroll container only shows "System Tray", "Clock", and "Task Buttons" checkboxes.
+- **Debounced Settings Change Notification**: Added a 1000ms debounce check to `NotifySettingsChange()` to prevent multiple rapid restarts/reloads of Win32Explorer when settings are modified.
+- **Auto Cleanup of Backup Binaries**: Added a cleanup loop to the end of `build.ps1` to delete all files matching `*old*.exe`, `*Old*.exe`, `*old*.cpl`, and `*Old*.cpl` in the workspace root, `BuildOutput`, and `BuildOutputx86` directories.
+
+### Fixed
+- **About Dialog Layout Fix**: Updated the expanded height chin boundary in `WM_PAINT` of the About dialog procedure (`AboutDlgProc`) to 192. Corrected the expand/collapse resizing logic in `WM_COMMAND` (`IDC_ABOUT_EXPAND`) to dynamically compute window borders/caption size and set window positions accordingly, preventing layout and border clipping.
 - **E2E Testing Track Implementation**: Designed and implemented the automated verification script `verify_final_polish.ps1` at the project root to programmatically validate the registry settings for Desktop Background (`DesktopWallpaperEnabled`), Quick Launch (`QuickLaunchEnabled`), 2-Row Tray (`TrayTwoRowsEnabled`), and Clock Seconds (`ShowClockSeconds`) under both normal mode (HKCU) and Portable Mirror mode (HKLM & `config.xml`).
 - **Comprehensive E2E Test Suite (`Subagent_Tests/run_comprehensive_e2e.ps1`)**: Implemented a comprehensive E2E test runner covering all 4 tiers (Feature Coverage, Boundary/Corner cases, Cross-Feature Combinations, and Real-world Application Scenarios) for the 10 features defined in `TEST_INFRA.md`.
 - **PowerShell / Win32 Integration Verification**: Query child and grandchild window hierarchy (`Progman -> SHELLDLL_DefView -> SysListView32` and `Taskbar -> TrayNotifyWnd -> TrayClockWClass`) via Win32 API calls compiled in-memory inside PowerShell.

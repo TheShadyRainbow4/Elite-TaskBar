@@ -509,4 +509,15 @@
 
 [2026-07-05 17:10] - Milestone 5 Polish and Robustness Fixes completed. Added [bOwnsIcon, GetWindowIconFix signature update, LoadIconW default, UpdateTrayToolbar and TrayNotifyProc DestroyIcon calls, removed monitor check for StartNativeTaskbarSpoof, hToolbar theme preservation, task switch and clock vertical centering, build.ps1 compilation guard, run_comprehensive_e2e.ps1 variable fixes].
 
+---
+## MILESTONE 6 IMPLEMENTATION (CURRENT WORK)
+---
+
+1. Start Menu Settings Tab Fix: Add runtime migration toggle `MigrateStartMenuSettings` (defaulting to 1 in registry). If 1, per-monitor comboboxes and previews reside in the "Start Menu" tab scroll container, and the "Multi-Monitor" tab scroll container only shows "System Tray", "Clock", and "Task Buttons" checkboxes. If 0, legacy combined layout is preserved. **[COMPLETED]**
+2. About Dialog Layout Fix: Update the expanded height chin boundary in WM_PAINT of `AboutDlgProc` to 192. Update the expand/collapse resizing logic in WM_COMMAND (IDC_ABOUT_EXPAND) to dynamically compute window borders/caption size. **[COMPLETED]**
+3. Reload Win32Explorer Multi-Spawn Fix: Add a 1000ms debounce check to `NotifySettingsChange()`. **[COMPLETED]**
+4. Automatically Clean Up *old*.exe and *old*.cpl Files: Add a cleanup loop to the end of `build.ps1` to delete all files matching `*old*.exe`, `*Old*.exe`, `*old*.cpl`, and `*Old*.cpl`. **[COMPLETED]**
+
+[2026-07-05 17:20] - Milestone 6 Implementation completed. Added [MigrateStartMenuSettings toggle & dialog scroll layout migration in TaskbarProperties.cpp, About dialog 192 height limit & dynamic window border bounds calculation, 1000ms settings change notify debounce, build.ps1 old artifact automatic deletion].
+
 

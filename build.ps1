@@ -205,6 +205,17 @@ if (-not $failed) {
     git commit -m "Auto-commit after successful build (build.ps1)"
     # git push origin HEAD
     $ErrorActionPreference = 'Stop'
+    
+    Write-Host "Cleaning up old executables and control panel files..." -ForegroundColor Cyan
+    $cleanupPaths = @($PSScriptRoot, "$PSScriptRoot\BuildOutput", "$PSScriptRoot\BuildOutputx86")
+    foreach ($path in $cleanupPaths) {
+        if (Test-Path $path) {
+            Get-ChildItem -Path $path -File -ErrorAction SilentlyContinue | Where-Object {
+                $_.Name -like "*old*.exe" -or $_.Name -like "*Old*.exe" -or $_.Name -like "*old*.cpl" -or $_.Name -like "*Old*.cpl"
+            } | Remove-Item -Force -ErrorAction SilentlyContinue
+        }
+    }
+    
     Write-Host "Done!" -ForegroundColor Green
 }
 

@@ -1,4 +1,8 @@
 #pragma warning(disable: 4996)
+#pragma warning(disable: 4100)
+#pragma warning(disable: 4244)
+#pragma warning(disable: 4312)
+#pragma warning(disable: 4267)
 #include "TaskbarWindow.h"
 #include "resource.h"
 extern HINSTANCE g_hInstance;
@@ -159,7 +163,7 @@ INT_PTR CALLBACK AboutDlgProc(HWND hwndDlg, UINT uMsg, WPARAM wParam, LPARAM lPa
         
         RECT rcChin;
         if (bExpanded) {
-            rcChin = { 0, 168, 250, 195 };
+            rcChin = { 0, 168, 250, 192 };
         } else {
             rcChin = { 0, 86, 250, 110 };
         }
@@ -222,20 +226,27 @@ INT_PTR CALLBACK AboutDlgProc(HWND hwndDlg, UINT uMsg, WPARAM wParam, LPARAM lPa
         }
         if (LOWORD(wParam) == IDC_ABOUT_EXPAND) {
             bExpanded = !bExpanded;
+            
+            RECT rcWindow, rcClient;
+            GetWindowRect(hwndDlg, &rcWindow);
+            GetClientRect(hwndDlg, &rcClient);
+            int borderX = (rcWindow.right - rcWindow.left) - rcClient.right;
+            int borderY = (rcWindow.bottom - rcWindow.top) - rcClient.bottom;
+            
             if (bExpanded) {
                 SetDlgItemTextW(hwndDlg, IDC_ABOUT_EXPAND, L"Less Info <<");
                 
-                RECT rcDlg = { 0, 0, 250, 195 };
+                RECT rcDlg = { 0, 0, 250, 192 };
                 MapDialogRect(hwndDlg, &rcDlg);
-                SetWindowPos(hwndDlg, NULL, 0, 0, rcDlg.right, rcDlg.bottom, SWP_NOMOVE | SWP_NOZORDER | SWP_NOACTIVATE);
+                SetWindowPos(hwndDlg, NULL, 0, 0, rcDlg.right + borderX, rcDlg.bottom + borderY, SWP_NOMOVE | SWP_NOZORDER | SWP_NOACTIVATE);
                 
                 ShowWindow(GetDlgItem(hwndDlg, IDC_ABOUT_MOREINFO), SW_SHOW);
                 
-                RECT rcExpand = { 10, 172, 70, 186 };
+                RECT rcExpand = { 10, 168, 70, 182 };
                 MapDialogRect(hwndDlg, &rcExpand);
                 SetWindowPos(GetDlgItem(hwndDlg, IDC_ABOUT_EXPAND), NULL, rcExpand.left, rcExpand.top, rcExpand.right - rcExpand.left, rcExpand.bottom - rcExpand.top, SWP_NOZORDER | SWP_NOACTIVATE);
                 
-                RECT rcOk = { 190, 172, 240, 186 };
+                RECT rcOk = { 190, 168, 240, 182 };
                 MapDialogRect(hwndDlg, &rcOk);
                 SetWindowPos(GetDlgItem(hwndDlg, IDOK), NULL, rcOk.left, rcOk.top, rcOk.right - rcOk.left, rcOk.bottom - rcOk.top, SWP_NOZORDER | SWP_NOACTIVATE);
             } else {
@@ -253,7 +264,7 @@ INT_PTR CALLBACK AboutDlgProc(HWND hwndDlg, UINT uMsg, WPARAM wParam, LPARAM lPa
                 
                 RECT rcDlg = { 0, 0, 250, 110 };
                 MapDialogRect(hwndDlg, &rcDlg);
-                SetWindowPos(hwndDlg, NULL, 0, 0, rcDlg.right, rcDlg.bottom, SWP_NOMOVE | SWP_NOZORDER | SWP_NOACTIVATE);
+                SetWindowPos(hwndDlg, NULL, 0, 0, rcDlg.right + borderX, rcDlg.bottom + borderY, SWP_NOMOVE | SWP_NOZORDER | SWP_NOACTIVATE);
             }
             InvalidateRect(hwndDlg, NULL, TRUE);
             return TRUE;
@@ -495,6 +506,13 @@ DWORD WINAPI BroadcastSettingsChangeThread(LPVOID lpParam) {
 }
 
 void NotifySettingsChange() {
+    static ULONGLONG lastTriggerTime = 0;
+    ULONGLONG currentTime = GetTickCount64();
+    if (currentTime - lastTriggerTime < 1000) {
+        return;
+    }
+    lastTriggerTime = currentTime;
+
     HANDLE hThread = CreateThread(NULL, 0, BroadcastSettingsChangeThread, NULL, 0, NULL);
     if (hThread) {
         CloseHandle(hThread);
@@ -921,9 +939,14 @@ LRESULT CALLBACK NoMouseWheelSubclassProc(HWND hwnd, UINT uMsg, WPARAM wParam, L
 HWND CreateDynScrollArea(HWND hwndDlg, int idc_placeholder) {
     InitDynScrollClass();
     HWND hPlaceholder = GetDlgItem(hwndDlg, idc_placeholder);
-    RECT rc;
-    GetClientRect(hwndDlg, &rc);
-    HWND hScroll = CreateWindowExW(WS_EX_CONTROLPARENT, L"EliteDynScrollArea", L"", WS_CHILD | WS_VISIBLE | WS_VSCROLL, 0, 0, rc.right, rc.bottom, hwndDlg, NULL, g_hInstance, NULL);
+    RECT rc = { 0 };
+    if (hPlaceholder) {
+        GetWindowRect(hPlaceholder, &rc);
+        MapWindowPoints(NULL, hwndDlg, (LPPOINT)&rc, 2);
+    } else {
+        GetClientRect(hwndDlg, &rc);
+    }
+    HWND hScroll = CreateWindowExW(WS_EX_CONTROLPARENT, L"EliteDynScrollArea", L"", WS_CHILD | WS_VISIBLE | WS_VSCROLL, rc.left, rc.top, rc.right - rc.left, rc.bottom - rc.top, hwndDlg, NULL, g_hInstance, NULL);
     if (hPlaceholder) DestroyWindow(hPlaceholder);
     return hScroll;
 }
@@ -964,12 +987,20 @@ INT_PTR CALLBACK MultiMonSettingsDlgProc(HWND hwndDlg, UINT uMsg, WPARAM wParam,
         HFONT hFont = (HFONT)SendMessageW(hwndDlg, WM_GETFONT, 0, 0);
         
         HKEY hKey;
+        DWORD migrateStartMenu = 1; // Default to 1
+        if (RegOpenKeyExW(GetEliteRegistryRoot(), L"Software\\EliteSoftware\\Win32Explorer\\Advanced", 0, KEY_READ, &hKey) == ERROR_SUCCESS) {
+            DWORD cbData = sizeof(DWORD);
+            RegQueryValueExW(hKey, L"MigrateStartMenuSettings", NULL, NULL, (LPBYTE)&migrateStartMenu, &cbData);
+            RegCloseKey(hKey);
+        }
+
         RegOpenKeyExW(GetEliteRegistryRoot(), L"Software\\EliteSoftware\\Win32Explorer\\Advanced", 0, KEY_READ, &hKey);
         
         for (const auto& mon : g_Monitors) {
             WCHAR title[64];
             wsprintfW(title, L"Monitor %d (%dx%d)", mon.index, mon.rect.right - mon.rect.left, mon.rect.bottom - mon.rect.top);
-            HWND hGroup = CreateWindowExW(0, L"Button", title, WS_CHILD | WS_VISIBLE | BS_GROUPBOX, 5, y, 320, 175, hScroll, NULL, g_hInstance, NULL);
+            int boxHeight = (migrateStartMenu == 1) ? 60 : 175;
+            HWND hGroup = CreateWindowExW(0, L"Button", title, WS_CHILD | WS_VISIBLE | BS_GROUPBOX, 5, y, 320, boxHeight, hScroll, NULL, g_hInstance, NULL);
             SendMessageW(hGroup, WM_SETFONT, (WPARAM)hFont, 0);
             
             HWND hChk1 = CreateWindowExW(0, L"Button", L"System Tray", WS_CHILD | WS_VISIBLE | BS_AUTOCHECKBOX | WS_TABSTOP, 15, y + 20, 100, 15, hScroll, (HMENU)(ID_BASE_MM_TRAY + mon.index), g_hInstance, NULL);
@@ -980,46 +1011,85 @@ INT_PTR CALLBACK MultiMonSettingsDlgProc(HWND hwndDlg, UINT uMsg, WPARAM wParam,
             SendMessageW(hChk2, WM_SETFONT, (WPARAM)hFont, 0);
             SendMessageW(hChk3, WM_SETFONT, (WPARAM)hFont, 0);
             
-            HWND hLblMode = CreateWindowExW(0, L"Static", L"Start Menu Mode:", WS_CHILD | WS_VISIBLE, 15, y + 65, 120, 15, hScroll, NULL, g_hInstance, NULL);
-            HWND hLblTrig = CreateWindowExW(0, L"Static", L"Start Menu Trigger:", WS_CHILD | WS_VISIBLE, 15, y + 90, 120, 15, hScroll, NULL, g_hInstance, NULL);
-            HWND hLblOrb = CreateWindowExW(0, L"Static", L"Start Orb Theme:", WS_CHILD | WS_VISIBLE, 15, y + 115, 120, 15, hScroll, NULL, g_hInstance, NULL);
-
-            SendMessageW(hLblMode, WM_SETFONT, (WPARAM)hFont, 0);
-            SendMessageW(hLblTrig, WM_SETFONT, (WPARAM)hFont, 0);
-            SendMessageW(hLblOrb, WM_SETFONT, (WPARAM)hFont, 0);
-
-            HWND hCmbMode = CreateWindowExW(0, L"ComboBox", L"", WS_CHILD | WS_VISIBLE | CBS_DROPDOWNLIST | WS_VSCROLL | WS_TABSTOP, 140, y + 60, 100, 100, hScroll, (HMENU)(ID_BASE_SM_MODE + mon.index), g_hInstance, NULL);
-            HWND hCmbTrig = CreateWindowExW(0, L"ComboBox", L"", WS_CHILD | WS_VISIBLE | CBS_DROPDOWNLIST | WS_VSCROLL | WS_TABSTOP, 140, y + 85, 100, 100, hScroll, (HMENU)(ID_BASE_SM_TRIG + mon.index), g_hInstance, NULL);
-            HWND hCmbOrb = CreateWindowExW(0, L"ComboBox", L"", WS_CHILD | WS_VISIBLE | CBS_DROPDOWNLIST | WS_VSCROLL | WS_TABSTOP, 140, y + 110, 100, 100, hScroll, (HMENU)(ID_BASE_SM_ORB + mon.index), g_hInstance, NULL);
-            HWND hPreview = CreateWindowExW(0, L"Static", L"", WS_CHILD | WS_VISIBLE | SS_BITMAP | SS_CENTERIMAGE | WS_BORDER, 250, y + 100, 54, 54, hScroll, (HMENU)(ID_BASE_SM_PREV + mon.index), g_hInstance, NULL);
-
             AddTooltip(hScroll, hChk1, L"Show system tray icons on this monitor. Notification overload!");
             AddTooltip(hScroll, hChk2, L"Show clock widget on this monitor. Never lose track of time!");
             AddTooltip(hScroll, hChk3, L"Show application task buttons on this monitor. Keep tabs on everything.");
-            AddTooltip(hScroll, hCmbMode, L"Choose which Start Menu to open on this monitor. Make it your own.");
-            AddTooltip(hScroll, hCmbTrig, L"Select mouse/keyboard trigger to summon the Start Menu.");
-            AddTooltip(hScroll, hCmbOrb, L"Pick the graphic theme for your Start Orb. Show some style!");
-            AddTooltip(hScroll, hPreview, L"A preview of your selected Start Orb theme. Looks sharp!");
 
-            SetWindowSubclass(hCmbMode, NoMouseWheelSubclassProc, 1, 0);
-            SetWindowSubclass(hCmbTrig, NoMouseWheelSubclassProc, 1, 0);
-            SetWindowSubclass(hCmbOrb, NoMouseWheelSubclassProc, 1, 0);
+            if (migrateStartMenu == 0) {
+                HWND hLblMode = CreateWindowExW(0, L"Static", L"Start Menu Mode:", WS_CHILD | WS_VISIBLE, 15, y + 65, 120, 15, hScroll, NULL, g_hInstance, NULL);
+                HWND hLblTrig = CreateWindowExW(0, L"Static", L"Start Menu Trigger:", WS_CHILD | WS_VISIBLE, 15, y + 90, 120, 15, hScroll, NULL, g_hInstance, NULL);
+                HWND hLblOrb = CreateWindowExW(0, L"Static", L"Start Orb Theme:", WS_CHILD | WS_VISIBLE, 15, y + 115, 120, 15, hScroll, NULL, g_hInstance, NULL);
 
-            SendMessageW(hCmbMode, WM_SETFONT, (WPARAM)hFont, 0);
-            SendMessageW(hCmbTrig, WM_SETFONT, (WPARAM)hFont, 0);
-            SendMessageW(hCmbOrb, WM_SETFONT, (WPARAM)hFont, 0);
+                SendMessageW(hLblMode, WM_SETFONT, (WPARAM)hFont, 0);
+                SendMessageW(hLblTrig, WM_SETFONT, (WPARAM)hFont, 0);
+                SendMessageW(hLblOrb, WM_SETFONT, (WPARAM)hFont, 0);
 
-            SendMessageW(hCmbMode, CB_ADDSTRING, 0, (LPARAM)L"Open-Shell Native Injection");
-            SendMessageW(hCmbMode, CB_ADDSTRING, 0, (LPARAM)L"Native Windows Start Menu");
-            SendMessageW(hCmbMode, CB_ADDSTRING, 0, (LPARAM)L"Elite Custom Menu");
-            SendMessageW(hCmbMode, CB_ADDSTRING, 0, (LPARAM)L"Open-Shell Standalone");
+                HWND hCmbMode = CreateWindowExW(0, L"ComboBox", L"", WS_CHILD | WS_VISIBLE | CBS_DROPDOWNLIST | WS_VSCROLL | WS_TABSTOP, 140, y + 60, 100, 100, hScroll, (HMENU)(ID_BASE_SM_MODE + mon.index), g_hInstance, NULL);
+                HWND hCmbTrig = CreateWindowExW(0, L"ComboBox", L"", WS_CHILD | WS_VISIBLE | CBS_DROPDOWNLIST | WS_VSCROLL | WS_TABSTOP, 140, y + 85, 100, 100, hScroll, (HMENU)(ID_BASE_SM_TRIG + mon.index), g_hInstance, NULL);
+                HWND hCmbOrb = CreateWindowExW(0, L"ComboBox", L"", WS_CHILD | WS_VISIBLE | CBS_DROPDOWNLIST | WS_VSCROLL | WS_TABSTOP, 140, y + 110, 100, 100, hScroll, (HMENU)(ID_BASE_SM_ORB + mon.index), g_hInstance, NULL);
+                HWND hPreview = CreateWindowExW(0, L"Static", L"", WS_CHILD | WS_VISIBLE | SS_BITMAP | SS_CENTERIMAGE | WS_BORDER, 250, y + 100, 54, 54, hScroll, (HMENU)(ID_BASE_SM_PREV + mon.index), g_hInstance, NULL);
 
-            SendMessageW(hCmbTrig, CB_ADDSTRING, 0, (LPARAM)L"Left Click");
-            SendMessageW(hCmbTrig, CB_ADDSTRING, 0, (LPARAM)L"Middle Click");
-            SendMessageW(hCmbTrig, CB_ADDSTRING, 0, (LPARAM)L"Win Key");
+                AddTooltip(hScroll, hCmbMode, L"Choose which Start Menu to open on this monitor. Make it your own.");
+                AddTooltip(hScroll, hCmbTrig, L"Select mouse/keyboard trigger to summon the Start Menu.");
+                AddTooltip(hScroll, hCmbOrb, L"Pick the graphic theme for your Start Orb. Show some style!");
+                AddTooltip(hScroll, hPreview, L"A preview of your selected Start Orb theme. Looks sharp!");
 
-            PopulateOrbComboBox(hCmbOrb);
-            
+                SetWindowSubclass(hCmbMode, NoMouseWheelSubclassProc, 1, 0);
+                SetWindowSubclass(hCmbTrig, NoMouseWheelSubclassProc, 1, 0);
+                SetWindowSubclass(hCmbOrb, NoMouseWheelSubclassProc, 1, 0);
+
+                SendMessageW(hCmbMode, WM_SETFONT, (WPARAM)hFont, 0);
+                SendMessageW(hCmbTrig, WM_SETFONT, (WPARAM)hFont, 0);
+                SendMessageW(hCmbOrb, WM_SETFONT, (WPARAM)hFont, 0);
+
+                SendMessageW(hCmbMode, CB_ADDSTRING, 0, (LPARAM)L"Open-Shell Native Injection");
+                SendMessageW(hCmbMode, CB_ADDSTRING, 0, (LPARAM)L"Native Windows Start Menu");
+                SendMessageW(hCmbMode, CB_ADDSTRING, 0, (LPARAM)L"Elite Custom Menu");
+                SendMessageW(hCmbMode, CB_ADDSTRING, 0, (LPARAM)L"Open-Shell Standalone");
+
+                SendMessageW(hCmbTrig, CB_ADDSTRING, 0, (LPARAM)L"Left Click");
+                SendMessageW(hCmbTrig, CB_ADDSTRING, 0, (LPARAM)L"Middle Click");
+                SendMessageW(hCmbTrig, CB_ADDSTRING, 0, (LPARAM)L"Win Key");
+
+                PopulateOrbComboBox(hCmbOrb);
+                
+                if (hKey) {
+                    DWORD mode = 0, cbData = sizeof(DWORD);
+                    WCHAR val[64];
+                    wsprintfW(val, L"StartMenuMode_Mon%d", mon.index);
+                    if (RegQueryValueExW(hKey, val, NULL, NULL, (LPBYTE)&mode, &cbData) != ERROR_SUCCESS) {
+                        cbData = sizeof(DWORD);
+                        RegQueryValueExW(hKey, L"StartMenuMode", NULL, NULL, (LPBYTE)&mode, &cbData);
+                    }
+                    SendMessageW(hCmbMode, CB_SETCURSEL, mode, 0);
+
+                    DWORD trig = 0; cbData = sizeof(DWORD);
+                    wsprintfW(val, L"StartMenuTrigger_Mon%d", mon.index);
+                    if (RegQueryValueExW(hKey, val, NULL, NULL, (LPBYTE)&trig, &cbData) != ERROR_SUCCESS) {
+                        cbData = sizeof(DWORD);
+                        RegQueryValueExW(hKey, L"StartMenuTrigger", NULL, NULL, (LPBYTE)&trig, &cbData);
+                    }
+                    SendMessageW(hCmbTrig, CB_SETCURSEL, trig, 0);
+
+                    DWORD orb = 0; cbData = sizeof(DWORD);
+                    wsprintfW(val, L"StartOrbID_Mon%d", mon.index);
+                    if (RegQueryValueExW(hKey, val, NULL, NULL, (LPBYTE)&orb, &cbData) == ERROR_SUCCESS) {
+                        SelectOrbComboBox(hCmbOrb, orb);
+                    } else {
+                        SendMessageW(hCmbOrb, CB_SETCURSEL, 0, 0);
+                        orb = IDB_START_ORB;
+                    }
+                    HBITMAP hBitmap = LoadPngResourceAsHBITMAP(orb);
+                    SendMessageW(hPreview, STM_SETIMAGE, IMAGE_BITMAP, (LPARAM)hBitmap);
+                } else {
+                    SendMessageW(hCmbOrb, CB_SETCURSEL, 0, 0);
+                    HBITMAP hBitmap = LoadPngResourceAsHBITMAP(IDB_START_ORB);
+                    SendMessageW(hPreview, STM_SETIMAGE, IMAGE_BITMAP, (LPARAM)hBitmap);
+                    SendMessageW(hCmbMode, CB_SETCURSEL, 0, 0);
+                    SendMessageW(hCmbTrig, CB_SETCURSEL, 0, 0);
+                }
+            }
+
             if (hKey) {
                 DWORD dwValue = 0, cbData = sizeof(DWORD);
                 WCHAR val[64];
@@ -1034,45 +1104,13 @@ INT_PTR CALLBACK MultiMonSettingsDlgProc(HWND hwndDlg, UINT uMsg, WPARAM wParam,
                 wsprintfW(val, L"EnableTaskBtns_Mon%d", mon.index);
                 if (RegQueryValueExW(hKey, val, NULL, NULL, (LPBYTE)&dwValue, &cbData) == ERROR_SUCCESS && dwValue) SendMessageW(hChk3, BM_SETCHECK, BST_CHECKED, 0);
                 else SendMessageW(hChk3, BM_SETCHECK, BST_CHECKED, 0);
-
-                DWORD mode = 0; cbData = sizeof(DWORD);
-                wsprintfW(val, L"StartMenuMode_Mon%d", mon.index);
-                if (RegQueryValueExW(hKey, val, NULL, NULL, (LPBYTE)&mode, &cbData) != ERROR_SUCCESS) {
-                    cbData = sizeof(DWORD);
-                    RegQueryValueExW(hKey, L"StartMenuMode", NULL, NULL, (LPBYTE)&mode, &cbData);
-                }
-                SendMessageW(hCmbMode, CB_SETCURSEL, mode, 0);
-
-                DWORD trig = 0; cbData = sizeof(DWORD);
-                wsprintfW(val, L"StartMenuTrigger_Mon%d", mon.index);
-                if (RegQueryValueExW(hKey, val, NULL, NULL, (LPBYTE)&trig, &cbData) != ERROR_SUCCESS) {
-                    cbData = sizeof(DWORD);
-                    RegQueryValueExW(hKey, L"StartMenuTrigger", NULL, NULL, (LPBYTE)&trig, &cbData);
-                }
-                SendMessageW(hCmbTrig, CB_SETCURSEL, trig, 0);
-
-                DWORD orb = 0; cbData = sizeof(DWORD);
-                wsprintfW(val, L"StartOrbID_Mon%d", mon.index);
-                if (RegQueryValueExW(hKey, val, NULL, NULL, (LPBYTE)&orb, &cbData) == ERROR_SUCCESS) {
-                    SelectOrbComboBox(hCmbOrb, orb);
-                } else {
-                    SendMessageW(hCmbOrb, CB_SETCURSEL, 0, 0);
-                    orb = IDB_START_ORB;
-                }
-                HBITMAP hBitmap = LoadPngResourceAsHBITMAP(orb);
-                SendMessageW(hPreview, STM_SETIMAGE, IMAGE_BITMAP, (LPARAM)hBitmap);
             } else {
-                SendMessageW(hCmbOrb, CB_SETCURSEL, 0, 0);
-                HBITMAP hBitmap = LoadPngResourceAsHBITMAP(IDB_START_ORB);
-                SendMessageW(hPreview, STM_SETIMAGE, IMAGE_BITMAP, (LPARAM)hBitmap);
                 if (mon.index == 0) SendMessageW(hChk1, BM_SETCHECK, BST_CHECKED, 0);
                 SendMessageW(hChk2, BM_SETCHECK, BST_CHECKED, 0);
                 SendMessageW(hChk3, BM_SETCHECK, BST_CHECKED, 0);
-                SendMessageW(hCmbMode, CB_SETCURSEL, 0, 0);
-                SendMessageW(hCmbTrig, CB_SETCURSEL, 0, 0);
             }
             
-            y += 185;
+            y += (migrateStartMenu == 1) ? 70 : 185;
         }
         if (hKey) RegCloseKey(hKey);
         
@@ -1103,16 +1141,23 @@ INT_PTR CALLBACK MultiMonSettingsDlgProc(HWND hwndDlg, UINT uMsg, WPARAM wParam,
         LPNMHDR lpnm = (LPNMHDR)lParam;
         if (lpnm->code == PSN_APPLY) {
             HKEY hKey;
+            DWORD migrateStartMenu = 1; // Default to 1
+            if (RegOpenKeyExW(GetEliteRegistryRoot(), L"Software\\EliteSoftware\\Win32Explorer\\Advanced", 0, KEY_READ, &hKey) == ERROR_SUCCESS) {
+                DWORD cbData = sizeof(DWORD);
+                RegQueryValueExW(hKey, L"MigrateStartMenuSettings", NULL, NULL, (LPBYTE)&migrateStartMenu, &cbData);
+                RegCloseKey(hKey);
+            }
+
             if (RegCreateKeyExW(GetEliteRegistryRoot(), L"Software\\EliteSoftware\\Win32Explorer\\Advanced", 0, NULL, REG_OPTION_NON_VOLATILE, KEY_READ | KEY_WRITE, NULL, &hKey, NULL) == ERROR_SUCCESS) {
                 for (const auto& mon : g_Monitors) {
-                    DWORD v1 = (SendMessageW(GetDlgItem(hScroll, ID_BASE_MM_TRAY + mon.index), BM_GETCHECK, 0, 0) == BST_CHECKED) ? 1 : 0;
-                    DWORD v2 = (SendMessageW(GetDlgItem(hScroll, ID_BASE_MM_CLOCK + mon.index), BM_GETCHECK, 0, 0) == BST_CHECKED) ? 1 : 0;
-                    DWORD v3 = (SendMessageW(GetDlgItem(hScroll, ID_BASE_MM_TBTN + mon.index), BM_GETCHECK, 0, 0) == BST_CHECKED) ? 1 : 0;
-                    
-                    DWORD mode = SendMessageW(GetDlgItem(hScroll, ID_BASE_SM_MODE + mon.index), CB_GETCURSEL, 0, 0);
-                    DWORD trig = SendMessageW(GetDlgItem(hScroll, ID_BASE_SM_TRIG + mon.index), CB_GETCURSEL, 0, 0);
-                    DWORD orb = GetSelectedOrbID(GetDlgItem(hScroll, ID_BASE_SM_ORB + mon.index));
+                    HWND hT = GetDlgItem(hScroll, ID_BASE_MM_TRAY + mon.index);
+                    HWND hC = GetDlgItem(hScroll, ID_BASE_MM_CLOCK + mon.index);
+                    HWND hB = GetDlgItem(hScroll, ID_BASE_MM_TBTN + mon.index);
 
+                    DWORD v1 = (hT && SendMessageW(hT, BM_GETCHECK, 0, 0) == BST_CHECKED) ? 1 : 0;
+                    DWORD v2 = (hC && SendMessageW(hC, BM_GETCHECK, 0, 0) == BST_CHECKED) ? 1 : 0;
+                    DWORD v3 = (hB && SendMessageW(hB, BM_GETCHECK, 0, 0) == BST_CHECKED) ? 1 : 0;
+                    
                     WCHAR val[64];
                     wsprintfW(val, L"EnableTray_Mon%d", mon.index);
                     RegSetValueExW(hKey, val, 0, REG_DWORD, (const BYTE*)&v1, sizeof(DWORD));
@@ -1121,12 +1166,22 @@ INT_PTR CALLBACK MultiMonSettingsDlgProc(HWND hwndDlg, UINT uMsg, WPARAM wParam,
                     wsprintfW(val, L"EnableTaskBtns_Mon%d", mon.index);
                     RegSetValueExW(hKey, val, 0, REG_DWORD, (const BYTE*)&v3, sizeof(DWORD));
                     
-                    wsprintfW(val, L"StartMenuMode_Mon%d", mon.index);
-                    RegSetValueExW(hKey, val, 0, REG_DWORD, (const BYTE*)&mode, sizeof(DWORD));
-                    wsprintfW(val, L"StartMenuTrigger_Mon%d", mon.index);
-                    RegSetValueExW(hKey, val, 0, REG_DWORD, (const BYTE*)&trig, sizeof(DWORD));
-                    wsprintfW(val, L"StartOrbID_Mon%d", mon.index);
-                    RegSetValueExW(hKey, val, 0, REG_DWORD, (const BYTE*)&orb, sizeof(DWORD));
+                    if (migrateStartMenu == 0) {
+                        HWND hMode = GetDlgItem(hScroll, ID_BASE_SM_MODE + mon.index);
+                        HWND hTrig = GetDlgItem(hScroll, ID_BASE_SM_TRIG + mon.index);
+                        HWND hOrb = GetDlgItem(hScroll, ID_BASE_SM_ORB + mon.index);
+
+                        DWORD mode = hMode ? SendMessageW(hMode, CB_GETCURSEL, 0, 0) : 0;
+                        DWORD trig = hTrig ? SendMessageW(hTrig, CB_GETCURSEL, 0, 0) : 0;
+                        DWORD orb = hOrb ? GetSelectedOrbID(hOrb) : IDB_START_ORB;
+
+                        wsprintfW(val, L"StartMenuMode_Mon%d", mon.index);
+                        RegSetValueExW(hKey, val, 0, REG_DWORD, (const BYTE*)&mode, sizeof(DWORD));
+                        wsprintfW(val, L"StartMenuTrigger_Mon%d", mon.index);
+                        RegSetValueExW(hKey, val, 0, REG_DWORD, (const BYTE*)&trig, sizeof(DWORD));
+                        wsprintfW(val, L"StartOrbID_Mon%d", mon.index);
+                        RegSetValueExW(hKey, val, 0, REG_DWORD, (const BYTE*)&orb, sizeof(DWORD));
+                    }
                 }
                 RegCloseKey(hKey);
             }
@@ -1189,26 +1244,149 @@ INT_PTR CALLBACK ToolbarsSettingsDlgProc(HWND hwndDlg, UINT uMsg, WPARAM wParam,
 }
 
 INT_PTR CALLBACK StartMenuSettingsDlgProc(HWND hwndDlg, UINT uMsg, WPARAM wParam, LPARAM lParam) {
+    static HWND hScroll = NULL;
+    static ULONG_PTR gdiplusToken = 0;
     switch (uMsg) {
     case WM_INITDIALOG: {
         EnableThemeDialogTexture(hwndDlg, ETDT_ENABLETAB);
-        AddDlgTooltip(hwndDlg, IDC_FALLBACK_STARTMENU_ENABLED, L"Enable Open-Shell integration fallback when in replace mode. Classic Start Menu experience.");
+        if (!gdiplusToken) {
+            GdiplusStartupInput gdiplusStartupInput;
+            GdiplusStartup(&gdiplusToken, &gdiplusStartupInput, NULL);
+        }
         
-        CreateDynScrollArea(hwndDlg, IDC_DYN_SCROLLAREA);
+        AddDlgTooltip(hwndDlg, IDC_FALLBACK_STARTMENU_ENABLED, L"Enable Open-Shell integration fallback when in replace mode. Classic Start Menu experience.");
+        AddDlgTooltip(hwndDlg, IDC_MIGRATE_START_MENU_SETTINGS, L"Migrate per-monitor Start Menu settings from the Multi-Monitor tab into this tab.");
+        
+        hScroll = CreateDynScrollArea(hwndDlg, IDC_DYN_SCROLLAREA);
         
         HKEY hKey;
-        DWORD dwValue = 1; // Default to 1
-        DWORD cbData = sizeof(DWORD);
+        DWORD fallbackValue = 1; // Default to 1
+        DWORD migrateValue = 1;  // Default to 1
+        
         if (RegOpenKeyExW(GetEliteRegistryRoot(), L"Software\\EliteSoftware\\Win32Explorer\\Advanced", 0, KEY_READ, &hKey) == ERROR_SUCCESS) {
-            RegQueryValueExW(hKey, L"FallbackStartMenuEnabled", NULL, NULL, (LPBYTE)&dwValue, &cbData);
+            DWORD cbData = sizeof(DWORD);
+            RegQueryValueExW(hKey, L"FallbackStartMenuEnabled", NULL, NULL, (LPBYTE)&fallbackValue, &cbData);
+            cbData = sizeof(DWORD);
+            RegQueryValueExW(hKey, L"MigrateStartMenuSettings", NULL, NULL, (LPBYTE)&migrateValue, &cbData);
             RegCloseKey(hKey);
         }
-        SendDlgItemMessageW(hwndDlg, IDC_FALLBACK_STARTMENU_ENABLED, BM_SETCHECK, dwValue ? BST_CHECKED : BST_UNCHECKED, 0);
+        
+        SendDlgItemMessageW(hwndDlg, IDC_FALLBACK_STARTMENU_ENABLED, BM_SETCHECK, fallbackValue ? BST_CHECKED : BST_UNCHECKED, 0);
+        SendDlgItemMessageW(hwndDlg, IDC_MIGRATE_START_MENU_SETTINGS, BM_SETCHECK, migrateValue ? BST_CHECKED : BST_UNCHECKED, 0);
+        
+        if (migrateValue == 1) {
+            if (g_Monitors.empty()) EnumDisplayMonitors(NULL, NULL, TaskbarPropsMonitorEnumProc, 0);
+            
+            int y = 5;
+            HFONT hFont = (HFONT)SendMessageW(hwndDlg, WM_GETFONT, 0, 0);
+            
+            RegOpenKeyExW(GetEliteRegistryRoot(), L"Software\\EliteSoftware\\Win32Explorer\\Advanced", 0, KEY_READ, &hKey);
+            
+            for (const auto& mon : g_Monitors) {
+                WCHAR title[64];
+                wsprintfW(title, L"Monitor %d (%dx%d)", mon.index, mon.rect.right - mon.rect.left, mon.rect.bottom - mon.rect.top);
+                HWND hGroup = CreateWindowExW(0, L"Button", title, WS_CHILD | WS_VISIBLE | BS_GROUPBOX, 5, y, 320, 135, hScroll, NULL, g_hInstance, NULL);
+                SendMessageW(hGroup, WM_SETFONT, (WPARAM)hFont, 0);
+                
+                HWND hLblMode = CreateWindowExW(0, L"Static", L"Start Menu Mode:", WS_CHILD | WS_VISIBLE, 15, y + 25, 120, 15, hScroll, NULL, g_hInstance, NULL);
+                HWND hLblTrig = CreateWindowExW(0, L"Static", L"Start Menu Trigger:", WS_CHILD | WS_VISIBLE, 15, y + 50, 120, 15, hScroll, NULL, g_hInstance, NULL);
+                HWND hLblOrb = CreateWindowExW(0, L"Static", L"Start Orb Theme:", WS_CHILD | WS_VISIBLE, 15, y + 75, 120, 15, hScroll, NULL, g_hInstance, NULL);
+
+                SendMessageW(hLblMode, WM_SETFONT, (WPARAM)hFont, 0);
+                SendMessageW(hLblTrig, WM_SETFONT, (WPARAM)hFont, 0);
+                SendMessageW(hLblOrb, WM_SETFONT, (WPARAM)hFont, 0);
+
+                HWND hCmbMode = CreateWindowExW(0, L"ComboBox", L"", WS_CHILD | WS_VISIBLE | CBS_DROPDOWNLIST | WS_VSCROLL | WS_TABSTOP, 140, y + 20, 100, 100, hScroll, (HMENU)(ID_BASE_SM_MODE + mon.index), g_hInstance, NULL);
+                HWND hCmbTrig = CreateWindowExW(0, L"ComboBox", L"", WS_CHILD | WS_VISIBLE | CBS_DROPDOWNLIST | WS_VSCROLL | WS_TABSTOP, 140, y + 45, 100, 100, hScroll, (HMENU)(ID_BASE_SM_TRIG + mon.index), g_hInstance, NULL);
+                HWND hCmbOrb = CreateWindowExW(0, L"ComboBox", L"", WS_CHILD | WS_VISIBLE | CBS_DROPDOWNLIST | WS_VSCROLL | WS_TABSTOP, 140, y + 70, 100, 100, hScroll, (HMENU)(ID_BASE_SM_ORB + mon.index), g_hInstance, NULL);
+                HWND hPreview = CreateWindowExW(0, L"Static", L"", WS_CHILD | WS_VISIBLE | SS_BITMAP | SS_CENTERIMAGE | WS_BORDER, 250, y + 45, 54, 54, hScroll, (HMENU)(ID_BASE_SM_PREV + mon.index), g_hInstance, NULL);
+
+                AddTooltip(hScroll, hCmbMode, L"Choose which Start Menu to open on this monitor. Make it your own.");
+                AddTooltip(hScroll, hCmbTrig, L"Select mouse/keyboard trigger to summon the Start Menu.");
+                AddTooltip(hScroll, hCmbOrb, L"Pick the graphic theme for your Start Orb. Show some style!");
+                AddTooltip(hScroll, hPreview, L"A preview of your selected Start Orb theme. Looks sharp!");
+
+                SetWindowSubclass(hCmbMode, NoMouseWheelSubclassProc, 1, 0);
+                SetWindowSubclass(hCmbTrig, NoMouseWheelSubclassProc, 1, 0);
+                SetWindowSubclass(hCmbOrb, NoMouseWheelSubclassProc, 1, 0);
+
+                SendMessageW(hCmbMode, WM_SETFONT, (WPARAM)hFont, 0);
+                SendMessageW(hCmbTrig, WM_SETFONT, (WPARAM)hFont, 0);
+                SendMessageW(hCmbOrb, WM_SETFONT, (WPARAM)hFont, 0);
+
+                SendMessageW(hCmbMode, CB_ADDSTRING, 0, (LPARAM)L"Open-Shell Native Injection");
+                SendMessageW(hCmbMode, CB_ADDSTRING, 0, (LPARAM)L"Native Windows Start Menu");
+                SendMessageW(hCmbMode, CB_ADDSTRING, 0, (LPARAM)L"Elite Custom Menu");
+                SendMessageW(hCmbMode, CB_ADDSTRING, 0, (LPARAM)L"Open-Shell Standalone");
+
+                SendMessageW(hCmbTrig, CB_ADDSTRING, 0, (LPARAM)L"Left Click");
+                SendMessageW(hCmbTrig, CB_ADDSTRING, 0, (LPARAM)L"Middle Click");
+                SendMessageW(hCmbTrig, CB_ADDSTRING, 0, (LPARAM)L"Win Key");
+
+                PopulateOrbComboBox(hCmbOrb);
+                
+                if (hKey) {
+                    DWORD mode = 0, cbData = sizeof(DWORD);
+                    WCHAR val[64];
+                    wsprintfW(val, L"StartMenuMode_Mon%d", mon.index);
+                    if (RegQueryValueExW(hKey, val, NULL, NULL, (LPBYTE)&mode, &cbData) != ERROR_SUCCESS) {
+                        cbData = sizeof(DWORD);
+                        RegQueryValueExW(hKey, L"StartMenuMode", NULL, NULL, (LPBYTE)&mode, &cbData);
+                    }
+                    SendMessageW(hCmbMode, CB_SETCURSEL, mode, 0);
+
+                    DWORD trig = 0; cbData = sizeof(DWORD);
+                    wsprintfW(val, L"StartMenuTrigger_Mon%d", mon.index);
+                    if (RegQueryValueExW(hKey, val, NULL, NULL, (LPBYTE)&trig, &cbData) != ERROR_SUCCESS) {
+                        cbData = sizeof(DWORD);
+                        RegQueryValueExW(hKey, L"StartMenuTrigger", NULL, NULL, (LPBYTE)&trig, &cbData);
+                    }
+                    SendMessageW(hCmbTrig, CB_SETCURSEL, trig, 0);
+
+                    DWORD orb = 0; cbData = sizeof(DWORD);
+                    wsprintfW(val, L"StartOrbID_Mon%d", mon.index);
+                    if (RegQueryValueExW(hKey, val, NULL, NULL, (LPBYTE)&orb, &cbData) == ERROR_SUCCESS) {
+                        SelectOrbComboBox(hCmbOrb, orb);
+                    } else {
+                        SendMessageW(hCmbOrb, CB_SETCURSEL, 0, 0);
+                        orb = IDB_START_ORB;
+                    }
+                    HBITMAP hBitmap = LoadPngResourceAsHBITMAP(orb);
+                    SendMessageW(hPreview, STM_SETIMAGE, IMAGE_BITMAP, (LPARAM)hBitmap);
+                } else {
+                    SendMessageW(hCmbOrb, CB_SETCURSEL, 0, 0);
+                    HBITMAP hBitmap = LoadPngResourceAsHBITMAP(IDB_START_ORB);
+                    SendMessageW(hPreview, STM_SETIMAGE, IMAGE_BITMAP, (LPARAM)hBitmap);
+                    SendMessageW(hCmbMode, CB_SETCURSEL, 0, 0);
+                    SendMessageW(hCmbTrig, CB_SETCURSEL, 0, 0);
+                }
+                
+                y += 145;
+            }
+            if (hKey) RegCloseKey(hKey);
+            
+            SCROLLINFO si = { sizeof(si), SIF_RANGE | SIF_PAGE, 0, y, 200 };
+            SetScrollInfo(hScroll, SB_VERT, &si, TRUE);
+        }
         return TRUE;
     }
     case WM_COMMAND:
         if (HIWORD(wParam) == BN_CLICKED || HIWORD(wParam) == CBN_SELCHANGE || HIWORD(wParam) == EN_CHANGE) {
             SendMessageW(GetParent(hwndDlg), PSM_CHANGED, (WPARAM)hwndDlg, 0);
+            
+            int id = LOWORD(wParam);
+            if (HIWORD(wParam) == CBN_SELCHANGE && id >= ID_BASE_SM_ORB && id < ID_BASE_SM_ORB + 32) {
+                int monIndex = id - ID_BASE_SM_ORB;
+                HWND hCombo = GetDlgItem(hScroll, id);
+                int sel = SendMessageW(hCombo, CB_GETCURSEL, 0, 0);
+                if (sel != CB_ERR) {
+                    DWORD orbId = SendMessageW(hCombo, CB_GETITEMDATA, sel, 0);
+                    HWND hPreview = GetDlgItem(hScroll, ID_BASE_SM_PREV + monIndex);
+                    HBITMAP hBitmap = LoadPngResourceAsHBITMAP(orbId);
+                    HBITMAP hOld = (HBITMAP)SendMessageW(hPreview, STM_SETIMAGE, IMAGE_BITMAP, (LPARAM)hBitmap);
+                    if (hOld) DeleteObject(hOld);
+                }
+            }
         }
         return TRUE;
     case WM_NOTIFY: {
@@ -1218,7 +1396,30 @@ INT_PTR CALLBACK StartMenuSettingsDlgProc(HWND hwndDlg, UINT uMsg, WPARAM wParam
             HKEY hKeyRoot = GetEliteRegistryRoot();
             if (RegCreateKeyExW(hKeyRoot, L"Software\\EliteSoftware\\Win32Explorer\\Advanced", 0, NULL, REG_OPTION_NON_VOLATILE, KEY_READ | KEY_WRITE, NULL, &hKey, NULL) == ERROR_SUCCESS) {
                 DWORD fallbackVal = (SendDlgItemMessageW(hwndDlg, IDC_FALLBACK_STARTMENU_ENABLED, BM_GETCHECK, 0, 0) == BST_CHECKED) ? 1 : 0;
+                DWORD migrateVal = (SendDlgItemMessageW(hwndDlg, IDC_MIGRATE_START_MENU_SETTINGS, BM_GETCHECK, 0, 0) == BST_CHECKED) ? 1 : 0;
+                
                 RegSetValueExW(hKey, L"FallbackStartMenuEnabled", 0, REG_DWORD, (const BYTE*)&fallbackVal, sizeof(DWORD));
+                RegSetValueExW(hKey, L"MigrateStartMenuSettings", 0, REG_DWORD, (const BYTE*)&migrateVal, sizeof(DWORD));
+                
+                if (migrateVal == 1) {
+                    for (const auto& mon : g_Monitors) {
+                        HWND hMode = GetDlgItem(hScroll, ID_BASE_SM_MODE + mon.index);
+                        HWND hTrig = GetDlgItem(hScroll, ID_BASE_SM_TRIG + mon.index);
+                        HWND hOrb = GetDlgItem(hScroll, ID_BASE_SM_ORB + mon.index);
+
+                        DWORD mode = hMode ? SendMessageW(hMode, CB_GETCURSEL, 0, 0) : 0;
+                        DWORD trig = hTrig ? SendMessageW(hTrig, CB_GETCURSEL, 0, 0) : 0;
+                        DWORD orb = hOrb ? GetSelectedOrbID(hOrb) : IDB_START_ORB;
+
+                        WCHAR val[64];
+                        wsprintfW(val, L"StartMenuMode_Mon%d", mon.index);
+                        RegSetValueExW(hKey, val, 0, REG_DWORD, (const BYTE*)&mode, sizeof(DWORD));
+                        wsprintfW(val, L"StartMenuTrigger_Mon%d", mon.index);
+                        RegSetValueExW(hKey, val, 0, REG_DWORD, (const BYTE*)&trig, sizeof(DWORD));
+                        wsprintfW(val, L"StartOrbID_Mon%d", mon.index);
+                        RegSetValueExW(hKey, val, 0, REG_DWORD, (const BYTE*)&orb, sizeof(DWORD));
+                    }
+                }
                 RegCloseKey(hKey);
             }
             NotifySettingsChange();
