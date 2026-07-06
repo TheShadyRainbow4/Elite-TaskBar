@@ -196,9 +196,13 @@ try {
     }
     Write-Host "Found Settings sheet HWND: $hwndSettings" -ForegroundColor DarkCyan
     
-    # Select tab index 1 (Start Menu) via PSM_SETCURSEL (0x0468)
-    [Win32Helper]::SendMessage($hwndSettings, 0x0468, [IntPtr]1, [IntPtr]::Zero) | Out-Null
-    Start-Sleep -Milliseconds 500
+    # Select tab index 1 (Start Menu) via tab control key simulation
+    $hwndTab = [Win32Helper]::FindChildByClass($hwndSettings, "SysTabControl32")
+    if ($hwndTab -ne [IntPtr]::Zero) {
+        [Win32Helper]::SendMessage($hwndTab, 0x0100, [IntPtr]0x27, [IntPtr]::Zero) | Out-Null
+        [Win32Helper]::SendMessage($hwndTab, 0x0101, [IntPtr]0x27, [IntPtr]::Zero) | Out-Null
+    }
+    Start-Sleep -Seconds 1
     
     # Check properties of controls in the Start Menu page dialog
     # Search for controls: IDC_FALLBACK_STARTMENU_ENABLED (293), IDC_MIGRATE_START_MENU_SETTINGS (295) and EliteDynScrollArea
