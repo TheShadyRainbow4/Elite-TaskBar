@@ -92,14 +92,101 @@ int EXCEPTION_EXECUTE_HANDLER_FUNC(unsigned int code, struct _EXCEPTION_POINTERS
     
     wchar_t msg[512];
     wsprintfW(msg, L"The taskbar has encountered a fatal existence failure.\nError Code: 0x%08X", code);
-    MessageBoxW(NULL, msg, L"EliteTaskbar - Fatal Error", MB_ICONERROR | MB_OK);
+        MessageBoxW(NULL, msg, L"EliteTaskbar - Fatal Error", MB_ICONERROR | MB_OK);
     
     return EXCEPTION_EXECUTE_HANDLER;
+}
+
+void PerformBootSynchronization() {
+    HKEY hMasterKey = NULL;
+    if (RegOpenKeyExW(HKEY_CURRENT_USER, L"Software\\EliteSoftware\\Win32Explorer\\Master", 0, KEY_READ, &hMasterKey) != ERROR_SUCCESS) {
+        return;
+    }
+    
+    HKEY hAdvancedKey = NULL;
+    RegCreateKeyExW(GetEliteRegistryRoot(), L"Software\\EliteSoftware\\Win32Explorer\\Advanced", 0, NULL, REG_OPTION_NON_VOLATILE, KEY_WRITE, NULL, &hAdvancedKey, NULL);
+    
+    DWORD dwIndex = 0;
+    wchar_t valueName[16384];
+    DWORD cbValueName = 16384;
+    DWORD dwType = 0;
+    BYTE valData[16384];
+    DWORD cbValData = 16384;
+    
+    while (RegEnumValueW(hMasterKey, dwIndex, valueName, &cbValueName, NULL, &dwType, valData, &cbValData) == ERROR_SUCCESS) {
+        if (hAdvancedKey) {
+            RegSetValueExW(hAdvancedKey, valueName, 0, dwType, valData, cbValData);
+        }
+        
+        // Sync to native Windows registry paths
+        if (_wcsicmp(valueName, L"Hidden") == 0) {
+            HKEY hNative = NULL;
+            if (RegCreateKeyExW(HKEY_CURRENT_USER, L"Software\\Microsoft\\Windows\\CurrentVersion\\Explorer\\Advanced", 0, NULL, REG_OPTION_NON_VOLATILE, KEY_WRITE, NULL, &hNative, NULL) == ERROR_SUCCESS) {
+                RegSetValueExW(hNative, L"Hidden", 0, dwType, valData, cbValData);
+                RegCloseKey(hNative);
+            }
+        }
+        else if (_wcsicmp(valueName, L"HideFileExt") == 0) {
+            HKEY hNative = NULL;
+            if (RegCreateKeyExW(HKEY_CURRENT_USER, L"Software\\Microsoft\\Windows\\CurrentVersion\\Explorer\\Advanced", 0, NULL, REG_OPTION_NON_VOLATILE, KEY_WRITE, NULL, &hNative, NULL) == ERROR_SUCCESS) {
+                RegSetValueExW(hNative, L"HideFileExt", 0, dwType, valData, cbValData);
+                RegCloseKey(hNative);
+            }
+        }
+        else if (_wcsicmp(valueName, L"DwmAnimationsEnabled") == 0) {
+            HKEY hNative = NULL;
+            if (RegCreateKeyExW(HKEY_CURRENT_USER, L"Control Panel\\Desktop\\WindowMetrics", 0, NULL, REG_OPTION_NON_VOLATILE, KEY_WRITE, NULL, &hNative, NULL) == ERROR_SUCCESS) {
+                DWORD val = *(DWORD*)valData;
+                const wchar_t* strVal = val ? L"1" : L"0";
+                RegSetValueExW(hNative, L"MinAnimate", 0, REG_SZ, (const BYTE*)strVal, (DWORD)(wcslen(strVal) + 1) * sizeof(wchar_t));
+                RegCloseKey(hNative);
+            }
+            ANIMATIONINFO ai = { sizeof(ANIMATIONINFO) };
+            ai.iMinAnimate = *(DWORD*)valData;
+            SystemParametersInfoW(SPI_SETANIMATION, sizeof(ANIMATIONINFO), &ai, SPIF_UPDATEINIFILE | SPIF_SENDCHANGE);
+        }
+        else if (_wcsicmp(valueName, L"DwmGlassEnabled") == 0) {
+            HKEY hNative = NULL;
+            if (RegCreateKeyExW(HKEY_CURRENT_USER, L"Software\\Microsoft\\Windows\\DWM", 0, NULL, REG_OPTION_NON_VOLATILE, KEY_WRITE, NULL, &hNative, NULL) == ERROR_SUCCESS) {
+                RegSetValueExW(hNative, L"Composition", 0, dwType, valData, cbValData);
+                RegCloseKey(hNative);
+            }
+        }
+        else if (_wcsicmp(valueName, L"DwmBorderSize") == 0) {
+            HKEY hNative = NULL;
+            if (RegCreateKeyExW(HKEY_CURRENT_USER, L"Control Panel\\Desktop\\WindowMetrics", 0, NULL, REG_OPTION_NON_VOLATILE, KEY_WRITE, NULL, &hNative, NULL) == ERROR_SUCCESS) {
+                wchar_t strVal[32];
+                swprintf_s(strVal, L"%lu", *(DWORD*)valData);
+                RegSetValueExW(hNative, L"BorderWidth", 0, REG_SZ, (const BYTE*)strVal, (DWORD)(wcslen(strVal) + 1) * sizeof(wchar_t));
+                RegCloseKey(hNative);
+            }
+        }
+        else if (_wcsicmp(valueName, L"DesktopIconsEnabled") == 0) {
+            HKEY hNative = NULL;
+            if (RegCreateKeyExW(HKEY_CURRENT_USER, L"Software\\Microsoft\\Windows\\CurrentVersion\\Explorer\\Advanced", 0, NULL, REG_OPTION_NON_VOLATILE, KEY_WRITE, NULL, &hNative, NULL) == ERROR_SUCCESS) {
+                DWORD val = *(DWORD*)valData;
+                DWORD hideVal = val ? 0 : 1;
+                RegSetValueExW(hNative, L"HideIcons", 0, REG_DWORD, (const BYTE*)&hideVal, sizeof(DWORD));
+                RegCloseKey(hNative);
+            }
+        }
+        
+        dwIndex++;
+        cbValueName = 16384;
+        cbValData = 16384;
+    }
+    
+    if (hMasterKey) RegCloseKey(hMasterKey);
+    if (hAdvancedKey) RegCloseKey(hAdvancedKey);
+    
+    SendMessageTimeoutW(HWND_BROADCAST, WM_SETTINGCHANGE, 0, (LPARAM)L"TraySettings", SMTO_ABORTIFHUNG, 5000, NULL);
+    SendMessageTimeoutW(HWND_BROADCAST, WM_SETTINGCHANGE, 0, (LPARAM)L"EliteTaskbarSettings", SMTO_ABORTIFHUNG, 500, NULL);
 }
 
 void RunApplication(HINSTANCE hInstance) {
     // 3 & 4. Initialize global logging function & Bootstrapper logic
     Logger::Initialize();
+    PerformBootSynchronization();
     
     // Initialize COM and Common Controls
     CoInitializeEx(NULL, COINIT_APARTMENTTHREADED);
