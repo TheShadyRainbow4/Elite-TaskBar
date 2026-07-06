@@ -34,17 +34,20 @@ Implement pre-build synchronisation, resource definitions, dialog layout, settin
 - **Code layout**: C:\Users\Administrator\Desktop\Elite-TaskBar\PROJECT.md
 
 ## Key Decisions Made
-- [TBD]
+- Added literal .Replace() string replacement in build.ps1 to translate relative resource directories for the Win32Explorer submodule context.
+- Added dummy SourceFiles/stdafx.h file to satisfy precompiled header requirements in the Win32Explorer submodule project.
+- Handled SPI_GETDESKTOPWALLPAPER missing declaration with conditional macro fallback.
+- Enforced WPARAM cast for SendMessageW index parameter to prevent type warnings.
 
 ## Change Tracker
-- **Files modified**: [TBD]
-- **Build status**: [TBD]
-- **Pending issues**: [TBD]
+- **Files modified**: SourceFiles/resource.h, SourceFiles/resources.rc, SourceFiles/TaskbarProperties.cpp, SourceFiles/DesktopWindow.cpp, SourceFiles/TaskbarWindow.cpp, SourceFiles/stdafx.h, build.ps1, CHANGELOG.md, README.md
+- **Build status**: Pass
+- **Pending issues**: None
 
 ## Quality Status
-- **Build/test result**: [TBD]
-- **Lint status**: [TBD]
-- **Tests added/modified**: [TBD]
+- **Build/test result**: Pass (All 7 verification tests passed in verify_desktop_shell.ps1)
+- **Lint status**: 0 warnings, 0 errors
+- **Tests added/modified**: Subagent_Tests/verify_desktop_shell.ps1 verified cleanly
 
 ## Loaded Skills
 - C:\Users\Administrator\.gemini\config\skills\accidental-data-loss-prevention\SKILL.md - Accidental Data Loss Prevention - Prevent accidental data loss

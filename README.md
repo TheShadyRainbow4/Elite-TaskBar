@@ -90,7 +90,7 @@ Elite-Taskbar is designed from the ground up to seamlessly blend into the Window
 * **Tray Item Limit Extension**: Replaced the hardcoded inline notification tray limit of 4 with a new maximum of 48 (`TRAY_LIMIT`), correctly handling overflow rendering and mouse interaction routing across primary and secondary screen taskbars.
 * **Missing Tray Icons Process Fallback**: Integrated process icon extraction (`GetProcessIcon`) using `QueryFullProcessImageNameW` and `SHGetFileInfoW` alongside a generic application icon fallback to eliminate blank gaps in the system tray.
 * **White Background Bar Theme Removal**: Stripped native visual style themed backgrounds from the notification area `SysPager` and `ToolbarWindow32` controls, and subclassed `WM_ERASEBKGND` to draw the transparent parent background.
-
+* **Desktop Personalization & Themes Settings (Milestone 7)**: Extends custom desktop replacement with Span and Per-Monitor wallpaper rendering modes using `EnumDisplayMonitors`, dynamic display layout resizing on `WM_DISPLAYCHANGE`, and wallpaper slideshow support using a Win32 timer. Integrates a settings page with theme detection, preview icons, browse button, tutorial SysLink, and a custom GDI+ wallpaper preview control, fully mirrored in the CPL and Settings executables.
 
 </details>
 

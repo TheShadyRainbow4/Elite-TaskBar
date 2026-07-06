@@ -535,6 +535,14 @@ All notable changes to this project will be documented in this file.
 - **Milestone 5 Polish - TrayIconScraper Compile Fix**:
   - Fixed Unicode type mismatch compiler error C2664 in `SourceFiles/TrayIconScraper.cpp` by changing `LoadIconW(NULL, IDI_APPLICATION)` fallback to use `MAKEINTRESOURCEW(32512)`.
 
+- **Milestone 7 - Desktop Personalization and Settings Mirroring**:
+  - **Pre-build Synchronisation**: In `build.ps1`, added a pre-build copy step to sync `resource.h`, `resources.rc`, and `TaskbarProperties.cpp` into the Win32Explorer submodule path. Modified relative resource paths in the copied `resources.rc` to target the submodule directory structure correctly. Added dummy `SourceFiles/stdafx.h` to ensure header inclusion compatibility.
+  - **Resource Definitions**: In `SourceFiles/resource.h`, added new control IDs `IDC_DESKTOP_FORCE_PROGMAN_ALL` = 320 to `IDC_DESKTOP_ICON_PREVIEW_4` = 333.
+  - **Dialog Template**: In `SourceFiles/resources.rc`, refactored `IDD_DESKTOP_PROPS` to host new controls for theme selection, previewing, and wallpaper configurations using Segoe UI Semibold (600, weight).
+  - **Settings Dialog**: In `SourceFiles/TaskbarProperties.cpp`, implemented `DesktopSettingsDlgProc` logic to query `.theme` files, extract theme icon paths, render icon and wallpaper previews, bind custom tooltips, launch browse dialog, handle link navigation, and save configurations on Apply. Fixed type warnings/mismatches for `SHGetPathFromIDListW` and `SendMessageW`.
+  - **Desktop Window Replacement**: In `SourceFiles/DesktopWindow.cpp`, loaded `ForceProgmanAllDisplays` to initialize the custom desktop in Independent Mode. Handled `WM_DISPLAYCHANGE` to dynamically adjust coordinates. Updated `DrawWallpaper` to support Per-Monitor mode (using `EnumDisplayMonitors`) and slideshow mode (using a Win32 timer to rotate images).
+
+
 
 
 
