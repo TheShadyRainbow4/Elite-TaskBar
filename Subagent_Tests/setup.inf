@@ -1,0 +1,80 @@
+;*** BEGIN **********************************************************
+;**                                                                **
+;** Automatically generated on: Sun Jul 05 18:45:49 2026           **
+;**                                                                **
+;** MakeCAB Version: 5.00                                 **
+;**                                                                **
+;*** BEGIN **********************************************************
+[disk list]
+1,Disk 1
+[cabinet list]
+1,1,EliteTaskBar_Backup-Jul-05-2026-18-45.cab
+[file list]
+1,1,SourceFiles\app.manifest,1240
+1,1,SourceFiles\ClockWidget.cpp,1828
+1,1,SourceFiles\ClockWidget.h,96
+1,1,SourceFiles\Config.h,1601
+1,1,SourceFiles\cpl.manifest,1229
+1,1,SourceFiles\DesktopWindow.cpp,21180
+1,1,SourceFiles\DesktopWindow.h,126
+1,1,SourceFiles\DynamicScroll.cpp,0
+1,1,SourceFiles\EliteDLLScannerStub.cpp,551
+1,1,SourceFiles\EliteDLLScannerStub.rc,83
+1,1,SourceFiles\EliteEverythingStub.cpp,551
+1,1,SourceFiles\EliteEverythingStub.rc,83
+1,1,SourceFiles\EliteSettings.ps1,356952
+1,1,SourceFiles\EliteSettingsCpl.cpp,3267
+1,1,SourceFiles\EliteSettingsStub.cpp,2390
+1,1,SourceFiles\EliteSettingsStub.rc,81
+1,1,SourceFiles\Logger.cpp,1777
+1,1,SourceFiles\Logger.h,205
+1,1,SourceFiles\main.cpp,7384
+1,1,SourceFiles\resource.h,2715
+1,1,SourceFiles\resources.rc,8590
+1,1,SourceFiles\resource_stub.h,26
+1,1,SourceFiles\SettingsStub.cpp,549
+1,1,SourceFiles\settings_cpl.rc,97
+1,1,SourceFiles\settings_cpl_x86.rc,103
+1,1,SourceFiles\settings_resources.rc,63
+1,1,SourceFiles\StartButton.cpp,15492
+1,1,SourceFiles\StartButton.h,1188
+1,1,SourceFiles\TaskbarProperties.cpp,87760
+1,1,SourceFiles\TaskbarProperties.h,165
+1,1,SourceFiles\TaskbarProperties.new.cpp,31882
+1,1,SourceFiles\TaskbarWindow.cpp,129778
+1,1,SourceFiles\TaskbarWindow.h,648
+1,1,SourceFiles\TrayIconScraper.cpp,9040
+1,1,SourceFiles\TrayIconScraper.h,350
+1,1,.gitignore,540
+1,1,backup.ps1,2271
+1,1,build.ps1,10087
+1,1,build_settings.ps1,8230
+1,1,build_sign.ps1,1847
+1,1,build_x64.ps1,1478
+1,1,build_x86.ps1,1482
+1,1,CHANGELOG.md,92569
+1,1,config.xml,13442
+1,1,create_release.ps1,2419
+1,1,CREDITS.md,793
+1,1,Elite-TaskBar.7z,4393468
+1,1,Gemini.md,4088
+1,1,inject_b64.ps1,280
+1,1,install_prereqs.ps1,1840
+1,1,KILLEXPLORER.ps1,63
+1,1,LICENSE,927
+1,1,orb_base64.ps1,163380
+1,1,ORIGINAL_REQUEST.md,14414
+1,1,package_release.ps1,2585
+1,1,PROJECT.md,2943
+1,1,README.md,12967
+1,1,test_empirical_challenger.ps1,12078
+1,1,TEST_INFRA.md,2337
+1,1,TEST_READY.md,1282
+1,1,verify_final_polish.ps1,16761
+1,1,verify_milestone1.ps1,15108
+1,1,verify_milestone2.ps1,8270
+;*** END ************************************************************
+;**                                                                **
+;** Automatically generated on: Sun Jul 05 18:45:49 2026           **
+;**                                                                **
+;*** END ************************************************************
