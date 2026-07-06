@@ -19,7 +19,7 @@ Implement polish, layout, and robustness fixes for the Elite-TaskBar project.
 
 ## Current Parent
 - Conversation ID: 9d3a25c6-79e6-4bc0-8e9d-1dc6ca522bef
-- Updated: not yet
+- Updated: 2026-07-05T17:10:00-07:00
 
 ## Task Summary
 - **What to build**: Implement GDI HICON leak fix, primary monitor display spoofing fix, toolbar hover state adjustments, task switch vertical centering alignment, clock vertical centering alignment, and build/test script updates.
@@ -28,20 +28,28 @@ Implement polish, layout, and robustness fixes for the Elite-TaskBar project.
 - **Code layout**: SourceFiles/ (source code), Resources/ (resources), Subagent_Tests/ (tests).
 
 ## Key Decisions Made
-- None yet.
+- Resolved LoadIconW parameter type mismatch compiler error C2664 in unicode environment by using MAKEINTRESOURCEW(32512).
 
 ## Artifact Index
 - C:\Users\Administrator\Desktop\Elite-TaskBar\.agents\worker_m5_polish\handoff.md — Handoff report
 
 ## Change Tracker
-- **Files modified**: None yet.
-- **Build status**: Unknown.
-- **Pending issues**: Implement all requested changes.
+- **Files modified**:
+  - SourceFiles/TrayIconScraper.h (added bOwnsIcon to ScrapedTrayIcon)
+  - SourceFiles/TrayIconScraper.cpp (added bOutOwnsIcon param, clean up icons in UpdateTrayToolbar)
+  - SourceFiles/TaskbarWindow.cpp (cleaned up icon in WM_COPYDATA, vertical alignment of task switch and clock, hToolbar theme preservation)
+  - SourceFiles/StartButton.cpp (unconditional StartNativeTaskbarSpoof on click)
+  - build.ps1 (wrap EliteStartMenu.ps1 compilation in Test-Path check)
+  - Subagent_Tests/run_comprehensive_e2e.ps1 (fixed $hwndTrayNotify / $hwndTrayClock variables)
+  - CHANGELOG.md (appended details of changes)
+  - Documentation/BuildGuide-FeatureRequirement_CheckList.md (checked off and logged polish tasks)
+- **Build status**: pass
+- **Pending issues**: None
 
 ## Quality Status
-- **Build/test result**: Unknown.
-- **Lint status**: Unknown.
-- **Tests added/modified**: None yet.
+- **Build/test result**: pass (108/108 test cases passed)
+- **Lint status**: clean
+- **Tests added/modified**: None (fixed existing E2E script)
 
 ## Loaded Skills
 - None loaded.
