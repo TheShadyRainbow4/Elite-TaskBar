@@ -1,8 +1,8 @@
 ## Current Status
-Last visited: 2026-07-05T18:30:03-07:00
+Last visited: 2026-07-05T18:40:05-07:00
 - E2E Testing Track (Milestone 4): Completed
 - Milestone 1: Multi-Monitor & Tray/Flyout Fixes (Milestone 5): Completed
-- Milestone 2: Settings UI, About Dialog, & Migration Cleanup (Milestone 6): Active (Worker 2 is implementing git sequencing and .gitignore fixes)
+- Milestone 2: Settings UI, About Dialog, & Migration Cleanup (Milestone 6): Active (Worker 2 completed, Gen 2 validation suite is verifying the changes)
 
 ## Iteration Status
 Current iteration: 1 / 32
