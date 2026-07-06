@@ -30,3 +30,9 @@ x86/
 *.exp
 BuildOutput/desktop.ini
 BuildOutputx86/desktop.ini
+
+# Old/Backup executable stubs and binaries
+*old*.exe
+*Old*.exe
+*old*.cpl
+*Old*.cpl
