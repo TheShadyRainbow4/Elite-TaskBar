@@ -61,12 +61,17 @@ Implement Milestone 6 features: Start Menu settings tab fix, About dialog spacin
 | Challenger 1 | teamwork_preview_challenger | Milestone 6 Testing | completed | de49fb89-93eb-4634-83b2-d91abacad73a |
 | Challenger 2 | teamwork_preview_challenger | Milestone 6 Testing | completed | 430795f9-808e-43b0-ab31-cce4264df9d3 |
 | Auditor 1 | teamwork_preview_auditor | Milestone 6 Forensic Audit | completed | 1a7a122b-8e47-424e-bab2-17441c3c370d |
-| Worker 2 | teamwork_preview_worker | Git Sequencing Fix | in-progress | ee146169-d396-4df0-9991-a20791f5087b |
+| Worker 2 | teamwork_preview_worker | Git Sequencing Fix | completed | ee146169-d396-4df0-9991-a20791f5087b |
+| Reviewer 3 | teamwork_preview_reviewer | Milestone 6 Gen 2 Review | in-progress | ae1217e1-84d6-4dab-968d-5df6e4550cd4 |
+| Reviewer 4 | teamwork_preview_reviewer | Milestone 6 Gen 2 Review | in-progress | 0a627045-d8e9-42e4-98fa-847297d2de38 |
+| Challenger 3 | teamwork_preview_challenger | Milestone 6 Gen 2 Test | in-progress | 4d5e8b65-b8ff-4359-806d-36f91c65d287 |
+| Challenger 4 | teamwork_preview_challenger | Milestone 6 Gen 2 Test | in-progress | de5a1a9d-73e1-453d-9af7-1fd2cd39a936 |
+| Auditor 2 | teamwork_preview_auditor | Milestone 6 Gen 2 Audit | in-progress | 74be269a-88f1-4bce-903f-7792d765b7e0 |
 
 ## Succession Status
 - Succession required: no
-- Spawn count: 10 / 16
-- Pending subagents: ee146169-d396-4df0-9991-a20791f5087b
+- Spawn count: 15 / 16
+- Pending subagents: ae1217e1-84d6-4dab-968d-5df6e4550cd4, 0a627045-d8e9-42e4-98fa-847297d2de38, 4d5e8b65-b8ff-4359-806d-36f91c65d287, de5a1a9d-73e1-453d-9af7-1fd2cd39a936, 74be269a-88f1-4bce-903f-7792d765b7e0
 - Predecessor: none
 - Successor: not yet spawned
 
