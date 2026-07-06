@@ -110,3 +110,798 @@ Waiting for another agent to finish building...
 Waiting for another agent to finish building...
 Waiting for another agent to finish building...
 Waiting for another agent to finish building...
+Waiting for another agent to finish building...
+Checking for running Elite processes...
+Triggering pre-build backup...
+Creating CAB backup snapshot: C:\Users\Administrator\Desktop\Elite-TaskBar\Backups\EliteTaskBar_Backup-Jul-05-2026-17-40.cab
+Compressing files into CAB format...
+Backup completed successfully!
+========================================================
+Title:      EliteSoftware Custom Taskbar Shell
+File Name:  EliteTaskbar.exe
+Authors:    EliteSoftware | Zachary Whiteman | Susan Gemm | TheShadyRainbow4
+Company:    EliteSoftware Tech Co.
+Copywrite:  2026 EliteSoftware 
+License:    EliteSoftware Public License (Freely Open Source!)
+Website:    https://main.elitesoftwaretech.cc
+OS:         Windows Vista & Up
+========================================================
+Starting build process for Elite-TaskBar...
+No EliteTaskbar.ico found in root.
+No EliteSettings.ico found in root. Using default fallback if missing...
+Compiling x64 Resources and C++...
+**********************************************************************
+** Visual Studio 2022 Developer Command Prompt v17.14.35
+** Copyright (c) 2025 Microsoft Corporation
+**********************************************************************
+Microsoft (R) Windows (R) Resource Compiler Version 10.0.10011.16384
+
+Copyright (C) Microsoft Corporation.  All rights reserved.
+
+
+Microsoft (R) C/C++ Optimizing Compiler Version 19.44.35228 for x64
+Copyright (C) Microsoft Corporation.  All rights reserved.
+
+main.cpp
+Logger.cpp
+TaskbarWindow.cpp
+StartButton.cpp
+ClockWidget.cpp
+TrayIconScraper.cpp
+TaskbarProperties.cpp
+DesktopWindow.cpp
+Generating Code...
+Microsoft (R) Incremental Linker Version 14.44.35228.0
+Copyright (C) Microsoft Corporation.  All rights reserved.
+
+/out:C:\Users\Administrator\Desktop\Elite-TaskBar\BuildOutput\EliteTaskbar.exe 
+/MANIFEST:EMBED 
+/MANIFESTINPUT:C:\Users\Administrator\Desktop\Elite-TaskBar\SourceFiles\app.manifest 
+/MANIFESTUAC:NO 
+C:\Users\Administrator\Desktop\Elite-TaskBar\BuildOutput\ObjectFiles/main.obj 
+C:\Users\Administrator\Desktop\Elite-TaskBar\BuildOutput\ObjectFiles/Logger.obj 
+C:\Users\Administrator\Desktop\Elite-TaskBar\BuildOutput\ObjectFiles/TaskbarWindow.obj 
+C:\Users\Administrator\Desktop\Elite-TaskBar\BuildOutput\ObjectFiles/StartButton.obj 
+C:\Users\Administrator\Desktop\Elite-TaskBar\BuildOutput\ObjectFiles/ClockWidget.obj 
+C:\Users\Administrator\Desktop\Elite-TaskBar\BuildOutput\ObjectFiles/TrayIconScraper.obj 
+C:\Users\Administrator\Desktop\Elite-TaskBar\BuildOutput\ObjectFiles/TaskbarProperties.obj 
+C:\Users\Administrator\Desktop\Elite-TaskBar\BuildOutput\ObjectFiles/DesktopWindow.obj 
+C:\Users\Administrator\Desktop\Elite-TaskBar\BuildOutput\ResourceFiles\resources.res 
+user32.lib 
+advapi32.lib 
+shell32.lib 
+gdi32.lib 
+dwmapi.lib 
+comctl32.lib 
+gdiplus.lib 
+ole32.lib 
+oleaut32.lib 
+uxtheme.lib 
+comdlg32.lib 
+x64 Build finished successfully.
+Compiling x86 Resources and C++...
+**********************************************************************
+** Visual Studio 2022 Developer Command Prompt v17.14.35
+** Copyright (c) 2025 Microsoft Corporation
+**********************************************************************
+Microsoft (R) Windows (R) Resource Compiler Version 10.0.10011.16384
+
+Copyright (C) Microsoft Corporation.  All rights reserved.
+
+
+Microsoft (R) C/C++ Optimizing Compiler Version 19.44.35228 for x86
+Copyright (C) Microsoft Corporation.  All rights reserved.
+
+main.cpp
+Logger.cpp
+TaskbarWindow.cpp
+StartButton.cpp
+ClockWidget.cpp
+TrayIconScraper.cpp
+TaskbarProperties.cpp
+DesktopWindow.cpp
+Generating Code...
+Microsoft (R) Incremental Linker Version 14.44.35228.0
+Copyright (C) Microsoft Corporation.  All rights reserved.
+
+/out:C:\Users\Administrator\Desktop\Elite-TaskBar\BuildOutputx86\EliteTaskbar_x86.exe 
+/MANIFEST:EMBED 
+/MANIFESTINPUT:C:\Users\Administrator\Desktop\Elite-TaskBar\SourceFiles\app.manifest 
+/MANIFESTUAC:NO 
+C:\Users\Administrator\Desktop\Elite-TaskBar\BuildOutputx86\ObjectFiles/main.obj 
+C:\Users\Administrator\Desktop\Elite-TaskBar\BuildOutputx86\ObjectFiles/Logger.obj 
+C:\Users\Administrator\Desktop\Elite-TaskBar\BuildOutputx86\ObjectFiles/TaskbarWindow.obj 
+C:\Users\Administrator\Desktop\Elite-TaskBar\BuildOutputx86\ObjectFiles/StartButton.obj 
+C:\Users\Administrator\Desktop\Elite-TaskBar\BuildOutputx86\ObjectFiles/ClockWidget.obj 
+C:\Users\Administrator\Desktop\Elite-TaskBar\BuildOutputx86\ObjectFiles/TrayIconScraper.obj 
+C:\Users\Administrator\Desktop\Elite-TaskBar\BuildOutputx86\ObjectFiles/TaskbarProperties.obj 
+C:\Users\Administrator\Desktop\Elite-TaskBar\BuildOutputx86\ObjectFiles/DesktopWindow.obj 
+C:\Users\Administrator\Desktop\Elite-TaskBar\BuildOutputx86\ResourceFiles\resources.res 
+user32.lib 
+advapi32.lib 
+shell32.lib 
+gdi32.lib 
+dwmapi.lib 
+comctl32.lib 
+gdiplus.lib 
+ole32.lib 
+oleaut32.lib 
+uxtheme.lib 
+comdlg32.lib 
+x86 Build finished successfully.
+Compiling Settings and CPL...
+**********************************************************************
+** Visual Studio 2022 Developer Command Prompt v17.14.35
+** Copyright (c) 2025 Microsoft Corporation
+**********************************************************************
+Microsoft (R) Windows (R) Resource Compiler Version 10.0.10011.16384
+
+Copyright (C) Microsoft Corporation.  All rights reserved.
+
+
+**********************************************************************
+** Visual Studio 2022 Developer Command Prompt v17.14.35
+** Copyright (c) 2025 Microsoft Corporation
+**********************************************************************
+Microsoft (R) C/C++ Optimizing Compiler Version 19.44.35228 for x64
+Copyright (C) Microsoft Corporation.  All rights reserved.
+
+EliteSettingsStub.cpp
+TaskbarProperties.cpp
+Generating Code...
+Microsoft (R) Incremental Linker Version 14.44.35228.0
+Copyright (C) Microsoft Corporation.  All rights reserved.
+
+/out:C:\Users\Administrator\Desktop\Elite-TaskBar\BuildOutput\EliteSettings.exe 
+/MANIFEST:EMBED 
+/MANIFESTINPUT:C:\Users\Administrator\Desktop\Elite-TaskBar\SourceFiles\cpl.manifest 
+/MANIFESTUAC:NO 
+C:\Users\Administrator\Desktop\Elite-TaskBar\BuildOutput\ObjectFiles/EliteSettingsStub.obj 
+C:\Users\Administrator\Desktop\Elite-TaskBar\BuildOutput\ObjectFiles/TaskbarProperties.obj 
+C:\Users\Administrator\Desktop\Elite-TaskBar\BuildOutput\ResourceFiles\settings_resources.res 
+user32.lib 
+shell32.lib 
+shlwapi.lib 
+comctl32.lib 
+advapi32.lib 
+uxtheme.lib 
+gdi32.lib 
+ole32.lib 
+gdiplus.lib 
+   Creating library C:\Users\Administrator\Desktop\Elite-TaskBar\BuildOutput\EliteSettings.lib and object C:\Users\Administrator\Desktop\Elite-TaskBar\BuildOutput\EliteSettings.exp
+**********************************************************************
+** Visual Studio 2022 Developer Command Prompt v17.14.35
+** Copyright (c) 2025 Microsoft Corporation
+**********************************************************************
+Microsoft (R) Windows (R) Resource Compiler Version 10.0.10011.16384
+
+Copyright (C) Microsoft Corporation.  All rights reserved.
+
+
+**********************************************************************
+** Visual Studio 2022 Developer Command Prompt v17.14.35
+** Copyright (c) 2025 Microsoft Corporation
+**********************************************************************
+Microsoft (R) C/C++ Optimizing Compiler Version 19.44.35228 for x64
+Copyright (C) Microsoft Corporation.  All rights reserved.
+
+EliteSettingsCpl.cpp
+Microsoft (R) Incremental Linker Version 14.44.35228.0
+Copyright (C) Microsoft Corporation.  All rights reserved.
+
+/dll 
+/implib:C:\Users\Administrator\Desktop\Elite-TaskBar\BuildOutput\EliteSettings.lib 
+/out:C:\Users\Administrator\Desktop\Elite-TaskBar\BuildOutput\EliteSettings.cpl 
+/IMPLIB:C:\Users\Administrator\Desktop\Elite-TaskBar\BuildOutput\ObjectLibraryFiles\EliteSettings_cpl.lib 
+/EXPORT:CPlApplet 
+/MANIFEST:EMBED 
+/MANIFESTINPUT:C:\Users\Administrator\Desktop\Elite-TaskBar\SourceFiles\cpl.manifest 
+/MANIFESTUAC:NO 
+C:\Users\Administrator\Desktop\Elite-TaskBar\BuildOutput\ObjectFiles/EliteSettingsCpl.obj 
+C:\Users\Administrator\Desktop\Elite-TaskBar\BuildOutput\ResourceFiles\settings_cpl.res 
+user32.lib 
+shell32.lib 
+shlwapi.lib 
+comctl32.lib 
+advapi32.lib 
+uxtheme.lib 
+gdi32.lib 
+ole32.lib 
+gdiplus.lib 
+   Creating library C:\Users\Administrator\Desktop\Elite-TaskBar\BuildOutput\ObjectLibraryFiles\EliteSettings_cpl.lib and object C:\Users\Administrator\Desktop\Elite-TaskBar\BuildOutput\ObjectLibraryFiles\EliteSettings_cpl.exp
+**********************************************************************
+** Visual Studio 2022 Developer Command Prompt v17.14.35
+** Copyright (c) 2025 Microsoft Corporation
+**********************************************************************
+Microsoft (R) Windows (R) Resource Compiler Version 10.0.10011.16384
+
+Copyright (C) Microsoft Corporation.  All rights reserved.
+
+
+**********************************************************************
+** Visual Studio 2022 Developer Command Prompt v17.14.35
+** Copyright (c) 2025 Microsoft Corporation
+**********************************************************************
+Microsoft (R) C/C++ Optimizing Compiler Version 19.44.35228 for x64
+Copyright (C) Microsoft Corporation.  All rights reserved.
+
+EliteEverythingStub.cpp
+Microsoft (R) Incremental Linker Version 14.44.35228.0
+Copyright (C) Microsoft Corporation.  All rights reserved.
+
+/out:C:\Users\Administrator\Desktop\Elite-TaskBar\BuildOutput\EliteEverything.exe 
+/MANIFEST:EMBED 
+/MANIFESTINPUT:C:\Users\Administrator\Desktop\Elite-TaskBar\SourceFiles\cpl.manifest 
+/MANIFESTUAC:NO 
+C:\Users\Administrator\Desktop\Elite-TaskBar\BuildOutput\ObjectFiles/EliteEverythingStub.obj 
+C:\Users\Administrator\Desktop\Elite-TaskBar\BuildOutput\ResourceFiles\everything_resources.res 
+user32.lib 
+shell32.lib 
+shlwapi.lib 
+**********************************************************************
+** Visual Studio 2022 Developer Command Prompt v17.14.35
+** Copyright (c) 2025 Microsoft Corporation
+**********************************************************************
+Microsoft (R) Windows (R) Resource Compiler Version 10.0.10011.16384
+
+Copyright (C) Microsoft Corporation.  All rights reserved.
+
+
+**********************************************************************
+** Visual Studio 2022 Developer Command Prompt v17.14.35
+** Copyright (c) 2025 Microsoft Corporation
+**********************************************************************
+Microsoft (R) C/C++ Optimizing Compiler Version 19.44.35228 for x64
+Copyright (C) Microsoft Corporation.  All rights reserved.
+
+EliteDLLScannerStub.cpp
+Microsoft (R) Incremental Linker Version 14.44.35228.0
+Copyright (C) Microsoft Corporation.  All rights reserved.
+
+/out:C:\Users\Administrator\Desktop\Elite-TaskBar\BuildOutput\EliteDLLScanner.exe 
+/MANIFEST:EMBED 
+/MANIFESTINPUT:C:\Users\Administrator\Desktop\Elite-TaskBar\SourceFiles\cpl.manifest 
+/MANIFESTUAC:NO 
+C:\Users\Administrator\Desktop\Elite-TaskBar\BuildOutput\ObjectFiles/EliteDLLScannerStub.obj 
+C:\Users\Administrator\Desktop\Elite-TaskBar\BuildOutput\ResourceFiles\dll_resources.res 
+user32.lib 
+shell32.lib 
+shlwapi.lib 
+**********************************************************************
+** Visual Studio 2022 Developer Command Prompt v17.14.35
+** Copyright (c) 2025 Microsoft Corporation
+**********************************************************************
+Microsoft (R) Windows (R) Resource Compiler Version 10.0.10011.16384
+
+Copyright (C) Microsoft Corporation.  All rights reserved.
+
+
+**********************************************************************
+** Visual Studio 2022 Developer Command Prompt v17.14.35
+** Copyright (c) 2025 Microsoft Corporation
+**********************************************************************
+Microsoft (R) C/C++ Optimizing Compiler Version 19.44.35228 for x86
+Copyright (C) Microsoft Corporation.  All rights reserved.
+
+EliteSettingsStub.cpp
+TaskbarProperties.cpp
+Generating Code...
+Microsoft (R) Incremental Linker Version 14.44.35228.0
+Copyright (C) Microsoft Corporation.  All rights reserved.
+
+/out:C:\Users\Administrator\Desktop\Elite-TaskBar\BuildOutputx86\EliteSettings_x86.exe 
+/MANIFEST:EMBED 
+/MANIFESTINPUT:C:\Users\Administrator\Desktop\Elite-TaskBar\SourceFiles\cpl.manifest 
+/MANIFESTUAC:NO 
+C:\Users\Administrator\Desktop\Elite-TaskBar\BuildOutputx86\ObjectFiles/EliteSettingsStub.obj 
+C:\Users\Administrator\Desktop\Elite-TaskBar\BuildOutputx86\ObjectFiles/TaskbarProperties.obj 
+C:\Users\Administrator\Desktop\Elite-TaskBar\BuildOutputx86\ResourceFiles\settings_resources.res 
+user32.lib 
+shell32.lib 
+shlwapi.lib 
+comctl32.lib 
+advapi32.lib 
+uxtheme.lib 
+gdi32.lib 
+ole32.lib 
+gdiplus.lib 
+   Creating library C:\Users\Administrator\Desktop\Elite-TaskBar\BuildOutputx86\EliteSettings_x86.lib and object C:\Users\Administrator\Desktop\Elite-TaskBar\BuildOutputx86\EliteSettings_x86.exp
+**********************************************************************
+** Visual Studio 2022 Developer Command Prompt v17.14.35
+** Copyright (c) 2025 Microsoft Corporation
+**********************************************************************
+Microsoft (R) Windows (R) Resource Compiler Version 10.0.10011.16384
+
+Copyright (C) Microsoft Corporation.  All rights reserved.
+
+
+**********************************************************************
+** Visual Studio 2022 Developer Command Prompt v17.14.35
+** Copyright (c) 2025 Microsoft Corporation
+**********************************************************************
+Microsoft (R) C/C++ Optimizing Compiler Version 19.44.35228 for x86
+Copyright (C) Microsoft Corporation.  All rights reserved.
+
+EliteSettingsCpl.cpp
+Microsoft (R) Incremental Linker Version 14.44.35228.0
+Copyright (C) Microsoft Corporation.  All rights reserved.
+
+/dll 
+/implib:C:\Users\Administrator\Desktop\Elite-TaskBar\BuildOutputx86\EliteSettings_x86.lib 
+/out:C:\Users\Administrator\Desktop\Elite-TaskBar\BuildOutputx86\EliteSettings_x86.cpl 
+/IMPLIB:C:\Users\Administrator\Desktop\Elite-TaskBar\BuildOutputx86\ObjectLibraryFiles\EliteSettings_x86_cpl.lib 
+/EXPORT:CPlApplet 
+/MANIFEST:EMBED 
+/MANIFESTINPUT:C:\Users\Administrator\Desktop\Elite-TaskBar\SourceFiles\cpl.manifest 
+/MANIFESTUAC:NO 
+C:\Users\Administrator\Desktop\Elite-TaskBar\BuildOutputx86\ObjectFiles/EliteSettingsCpl.obj 
+C:\Users\Administrator\Desktop\Elite-TaskBar\BuildOutputx86\ResourceFiles\settings_cpl.res 
+user32.lib 
+shell32.lib 
+shlwapi.lib 
+comctl32.lib 
+advapi32.lib 
+uxtheme.lib 
+gdi32.lib 
+ole32.lib 
+gdiplus.lib 
+   Creating library C:\Users\Administrator\Desktop\Elite-TaskBar\BuildOutputx86\ObjectLibraryFiles\EliteSettings_x86_cpl.lib and object C:\Users\Administrator\Desktop\Elite-TaskBar\BuildOutputx86\ObjectLibraryFiles\EliteSettings_x86_cpl.exp
+**********************************************************************
+** Visual Studio 2022 Developer Command Prompt v17.14.35
+** Copyright (c) 2025 Microsoft Corporation
+**********************************************************************
+Microsoft (R) Windows (R) Resource Compiler Version 10.0.10011.16384
+
+Copyright (C) Microsoft Corporation.  All rights reserved.
+
+
+**********************************************************************
+** Visual Studio 2022 Developer Command Prompt v17.14.35
+** Copyright (c) 2025 Microsoft Corporation
+**********************************************************************
+Microsoft (R) C/C++ Optimizing Compiler Version 19.44.35228 for x86
+Copyright (C) Microsoft Corporation.  All rights reserved.
+
+EliteEverythingStub.cpp
+Microsoft (R) Incremental Linker Version 14.44.35228.0
+Copyright (C) Microsoft Corporation.  All rights reserved.
+
+/out:C:\Users\Administrator\Desktop\Elite-TaskBar\BuildOutputx86\EliteEverything_x86.exe 
+/MANIFEST:EMBED 
+/MANIFESTINPUT:C:\Users\Administrator\Desktop\Elite-TaskBar\SourceFiles\cpl.manifest 
+/MANIFESTUAC:NO 
+C:\Users\Administrator\Desktop\Elite-TaskBar\BuildOutputx86\ObjectFiles/EliteEverythingStub.obj 
+C:\Users\Administrator\Desktop\Elite-TaskBar\BuildOutputx86\ResourceFiles\everything_resources.res 
+user32.lib 
+shell32.lib 
+shlwapi.lib 
+**********************************************************************
+** Visual Studio 2022 Developer Command Prompt v17.14.35
+** Copyright (c) 2025 Microsoft Corporation
+**********************************************************************
+Microsoft (R) Windows (R) Resource Compiler Version 10.0.10011.16384
+
+Copyright (C) Microsoft Corporation.  All rights reserved.
+
+
+**********************************************************************
+** Visual Studio 2022 Developer Command Prompt v17.14.35
+** Copyright (c) 2025 Microsoft Corporation
+**********************************************************************
+Microsoft (R) C/C++ Optimizing Compiler Version 19.44.35228 for x86
+Copyright (C) Microsoft Corporation.  All rights reserved.
+
+EliteDLLScannerStub.cpp
+Microsoft (R) Incremental Linker Version 14.44.35228.0
+Copyright (C) Microsoft Corporation.  All rights reserved.
+
+/out:C:\Users\Administrator\Desktop\Elite-TaskBar\BuildOutputx86\EliteDLLScanner_x86.exe 
+/MANIFEST:EMBED 
+/MANIFESTINPUT:C:\Users\Administrator\Desktop\Elite-TaskBar\SourceFiles\cpl.manifest 
+/MANIFESTUAC:NO 
+C:\Users\Administrator\Desktop\Elite-TaskBar\BuildOutputx86\ObjectFiles/EliteDLLScannerStub.obj 
+C:\Users\Administrator\Desktop\Elite-TaskBar\BuildOutputx86\ResourceFiles\dll_resources.res 
+user32.lib 
+shell32.lib 
+shlwapi.lib 
+Settings Build finished successfully.
+Signing executables using signtool.exe...
+Found signtool: C:\Program Files (x86)\Windows Kits\10\bin\10.0.19041.0\x64\signtool.exe
+Signing C:\Users\Administrator\Desktop\Elite-TaskBar\EliteTaskbar.exe...
+The following certificate was selected:
+    Issued to: EliteSoftwareTech Company - Zachary Whiteman
+
+    Issued by: EliteSoftwareTech Company - Zachary Whiteman
+
+    Expires:   Thu Jun 05 03:08:20 2036
+
+    SHA1 hash: 11F5E401A611434F4F159D26CD1878426320FF6B
+
+
+Done Adding Additional Store
+Successfully signed: C:\Users\Administrator\Desktop\Elite-TaskBar\EliteTaskbar.exe
+
+
+Number of files successfully Signed: 1
+
+Number of warnings: 0
+
+Number of errors: 0
+
+Signing C:\Users\Administrator\Desktop\Elite-TaskBar\EliteSettings.exe...
+The following certificate was selected:
+    Issued to: EliteSoftwareTech Company - Zachary Whiteman
+
+    Issued by: EliteSoftwareTech Company - Zachary Whiteman
+
+    Expires:   Thu Jun 05 03:08:20 2036
+
+    SHA1 hash: 11F5E401A611434F4F159D26CD1878426320FF6B
+
+
+Done Adding Additional Store
+Successfully signed: C:\Users\Administrator\Desktop\Elite-TaskBar\EliteSettings.exe
+
+
+Number of files successfully Signed: 1
+
+Number of warnings: 0
+
+Number of errors: 0
+
+Signing C:\Users\Administrator\Desktop\Elite-TaskBar\EliteSettings.cpl...
+The following certificate was selected:
+    Issued to: EliteSoftwareTech Company - Zachary Whiteman
+
+    Issued by: EliteSoftwareTech Company - Zachary Whiteman
+
+    Expires:   Thu Jun 05 03:08:20 2036
+
+    SHA1 hash: 11F5E401A611434F4F159D26CD1878426320FF6B
+
+
+Done Adding Additional Store
+Successfully signed: C:\Users\Administrator\Desktop\Elite-TaskBar\EliteSettings.cpl
+
+
+Number of files successfully Signed: 1
+
+Number of warnings: 0
+
+Number of errors: 0
+
+Signing C:\Users\Administrator\Desktop\Elite-TaskBar\EliteEverything.exe...
+The following certificate was selected:
+    Issued to: EliteSoftwareTech Company - Zachary Whiteman
+
+    Issued by: EliteSoftwareTech Company - Zachary Whiteman
+
+    Expires:   Thu Jun 05 03:08:20 2036
+
+    SHA1 hash: 11F5E401A611434F4F159D26CD1878426320FF6B
+
+
+Done Adding Additional Store
+Successfully signed: C:\Users\Administrator\Desktop\Elite-TaskBar\EliteEverything.exe
+
+
+Number of files successfully Signed: 1
+
+Number of warnings: 0
+
+Number of errors: 0
+
+Signing C:\Users\Administrator\Desktop\Elite-TaskBar\EliteDLLScanner.exe...
+The following certificate was selected:
+    Issued to: EliteSoftwareTech Company - Zachary Whiteman
+
+    Issued by: EliteSoftwareTech Company - Zachary Whiteman
+
+    Expires:   Thu Jun 05 03:08:20 2036
+
+    SHA1 hash: 11F5E401A611434F4F159D26CD1878426320FF6B
+
+
+Done Adding Additional Store
+Successfully signed: C:\Users\Administrator\Desktop\Elite-TaskBar\EliteDLLScanner.exe
+
+
+Number of files successfully Signed: 1
+
+Number of warnings: 0
+
+Number of errors: 0
+
+Signing C:\Users\Administrator\Desktop\Elite-TaskBar\BuildOutput\EliteTaskbar.exe...
+The following certificate was selected:
+    Issued to: EliteSoftwareTech Company - Zachary Whiteman
+
+    Issued by: EliteSoftwareTech Company - Zachary Whiteman
+
+    Expires:   Thu Jun 05 03:08:20 2036
+
+    SHA1 hash: 11F5E401A611434F4F159D26CD1878426320FF6B
+
+
+Done Adding Additional Store
+Successfully signed: C:\Users\Administrator\Desktop\Elite-TaskBar\BuildOutput\EliteTaskbar.exe
+
+
+Number of files successfully Signed: 1
+
+Number of warnings: 0
+
+Number of errors: 0
+
+Signing C:\Users\Administrator\Desktop\Elite-TaskBar\BuildOutput\EliteSettings.exe...
+The following certificate was selected:
+    Issued to: EliteSoftwareTech Company - Zachary Whiteman
+
+    Issued by: EliteSoftwareTech Company - Zachary Whiteman
+
+    Expires:   Thu Jun 05 03:08:20 2036
+
+    SHA1 hash: 11F5E401A611434F4F159D26CD1878426320FF6B
+
+
+Done Adding Additional Store
+Successfully signed: C:\Users\Administrator\Desktop\Elite-TaskBar\BuildOutput\EliteSettings.exe
+
+
+Number of files successfully Signed: 1
+
+Number of warnings: 0
+
+Number of errors: 0
+
+Signing C:\Users\Administrator\Desktop\Elite-TaskBar\BuildOutput\EliteSettings.cpl...
+The following certificate was selected:
+    Issued to: EliteSoftwareTech Company - Zachary Whiteman
+
+    Issued by: EliteSoftwareTech Company - Zachary Whiteman
+
+    Expires:   Thu Jun 05 03:08:20 2036
+
+    SHA1 hash: 11F5E401A611434F4F159D26CD1878426320FF6B
+
+
+Done Adding Additional Store
+Successfully signed: C:\Users\Administrator\Desktop\Elite-TaskBar\BuildOutput\EliteSettings.cpl
+
+
+Number of files successfully Signed: 1
+
+Number of warnings: 0
+
+Number of errors: 0
+
+Signing C:\Users\Administrator\Desktop\Elite-TaskBar\BuildOutput\EliteEverything.exe...
+The following certificate was selected:
+    Issued to: EliteSoftwareTech Company - Zachary Whiteman
+
+    Issued by: EliteSoftwareTech Company - Zachary Whiteman
+
+    Expires:   Thu Jun 05 03:08:20 2036
+
+    SHA1 hash: 11F5E401A611434F4F159D26CD1878426320FF6B
+
+
+Done Adding Additional Store
+Successfully signed: C:\Users\Administrator\Desktop\Elite-TaskBar\BuildOutput\EliteEverything.exe
+
+
+Number of files successfully Signed: 1
+
+Number of warnings: 0
+
+Number of errors: 0
+
+Signing C:\Users\Administrator\Desktop\Elite-TaskBar\BuildOutput\EliteDLLScanner.exe...
+The following certificate was selected:
+    Issued to: EliteSoftwareTech Company - Zachary Whiteman
+
+    Issued by: EliteSoftwareTech Company - Zachary Whiteman
+
+    Expires:   Thu Jun 05 03:08:20 2036
+
+    SHA1 hash: 11F5E401A611434F4F159D26CD1878426320FF6B
+
+
+Done Adding Additional Store
+Successfully signed: C:\Users\Administrator\Desktop\Elite-TaskBar\BuildOutput\EliteDLLScanner.exe
+
+
+Number of files successfully Signed: 1
+
+Number of warnings: 0
+
+Number of errors: 0
+
+Signing C:\Users\Administrator\Desktop\Elite-TaskBar\BuildOutputx86\EliteTaskbar_x86.exe...
+The following certificate was selected:
+    Issued to: EliteSoftwareTech Company - Zachary Whiteman
+
+    Issued by: EliteSoftwareTech Company - Zachary Whiteman
+
+    Expires:   Thu Jun 05 03:08:20 2036
+
+    SHA1 hash: 11F5E401A611434F4F159D26CD1878426320FF6B
+
+
+Done Adding Additional Store
+Successfully signed: C:\Users\Administrator\Desktop\Elite-TaskBar\BuildOutputx86\EliteTaskbar_x86.exe
+
+
+Number of files successfully Signed: 1
+
+Number of warnings: 0
+
+Number of errors: 0
+
+Signing C:\Users\Administrator\Desktop\Elite-TaskBar\BuildOutputx86\EliteSettings_x86.exe...
+The following certificate was selected:
+    Issued to: EliteSoftwareTech Company - Zachary Whiteman
+
+    Issued by: EliteSoftwareTech Company - Zachary Whiteman
+
+    Expires:   Thu Jun 05 03:08:20 2036
+
+    SHA1 hash: 11F5E401A611434F4F159D26CD1878426320FF6B
+
+
+Done Adding Additional Store
+Successfully signed: C:\Users\Administrator\Desktop\Elite-TaskBar\BuildOutputx86\EliteSettings_x86.exe
+
+
+Number of files successfully Signed: 1
+
+Number of warnings: 0
+
+Number of errors: 0
+
+Signing C:\Users\Administrator\Desktop\Elite-TaskBar\BuildOutputx86\EliteSettings_x86.cpl...
+The following certificate was selected:
+    Issued to: EliteSoftwareTech Company - Zachary Whiteman
+
+    Issued by: EliteSoftwareTech Company - Zachary Whiteman
+
+    Expires:   Thu Jun 05 03:08:20 2036
+
+    SHA1 hash: 11F5E401A611434F4F159D26CD1878426320FF6B
+
+
+Done Adding Additional Store
+Successfully signed: C:\Users\Administrator\Desktop\Elite-TaskBar\BuildOutputx86\EliteSettings_x86.cpl
+
+
+Number of files successfully Signed: 1
+
+Number of warnings: 0
+
+Number of errors: 0
+
+Signing C:\Users\Administrator\Desktop\Elite-TaskBar\BuildOutputx86\EliteEverything_x86.exe...
+The following certificate was selected:
+    Issued to: EliteSoftwareTech Company - Zachary Whiteman
+
+    Issued by: EliteSoftwareTech Company - Zachary Whiteman
+
+    Expires:   Thu Jun 05 03:08:20 2036
+
+    SHA1 hash: 11F5E401A611434F4F159D26CD1878426320FF6B
+
+
+Done Adding Additional Store
+Successfully signed: C:\Users\Administrator\Desktop\Elite-TaskBar\BuildOutputx86\EliteEverything_x86.exe
+
+
+Number of files successfully Signed: 1
+
+Number of warnings: 0
+
+Number of errors: 0
+
+Signing C:\Users\Administrator\Desktop\Elite-TaskBar\BuildOutputx86\EliteDLLScanner_x86.exe...
+The following certificate was selected:
+    Issued to: EliteSoftwareTech Company - Zachary Whiteman
+
+    Issued by: EliteSoftwareTech Company - Zachary Whiteman
+
+    Expires:   Thu Jun 05 03:08:20 2036
+
+    SHA1 hash: 11F5E401A611434F4F159D26CD1878426320FF6B
+
+
+Done Adding Additional Store
+Successfully signed: C:\Users\Administrator\Desktop\Elite-TaskBar\BuildOutputx86\EliteDLLScanner_x86.exe
+
+
+Number of files successfully Signed: 1
+
+Number of warnings: 0
+
+Number of errors: 0
+
+Signing stage completed!
+Building Win32Explorer...
+[2026-07-05 17:42:10] Locating MSBuild...
+[2026-07-05 17:42:10] Found MSBuild: C:\Program Files (x86)\Microsoft Visual Studio\2022\BuildTools\MSBuild\Current\Bin\MSBuild.exe
+[2026-07-05 17:42:10] Building Project_Core\Win32Explorer.sln (Release|x64)...
+MSBuild version 17.14.40+3e7442088 for .NET Framework
+
+  Helper.vcxproj -> C:\Users\Administrator\Desktop\Elite-TaskBar\Win32Explorer_26.0.3.0\Project_Core\x64\Release\Helper.lib
+  Win32Explorer.vcxproj -> C:\Users\Administrator\Desktop\Elite-TaskBar\Win32Explorer_26.0.3.0\App_Source\x64\Release\Win32Explorer.exe
+          1 file(s) moved.
+[2026-07-05 17:42:17] Relocating build artifacts to project root...
+[2026-07-05 17:42:17] Signing C:\Users\Administrator\Desktop\Elite-TaskBar\Win32Explorer_26.0.3.0\App_Source\x64\Release\Win32Explorer.exe using signtool.exe...
+The following certificate was selected:
+    Issued to: EliteSoftwareTech Company - Zachary Whiteman
+
+    Issued by: EliteSoftwareTech Company - Zachary Whiteman
+
+    Expires:   Thu Jun 05 03:08:20 2036
+
+    SHA1 hash: 11F5E401A611434F4F159D26CD1878426320FF6B
+
+
+Done Adding Additional Store
+Successfully signed: C:\Users\Administrator\Desktop\Elite-TaskBar\Win32Explorer_26.0.3.0\App_Source\x64\Release\Win32Explorer.exe
+
+
+Number of files successfully Signed: 1
+
+Number of warnings: 0
+
+Number of errors: 0
+
+[2026-07-05 17:42:17] Copying C:\Users\Administrator\Desktop\Elite-TaskBar\Win32Explorer_26.0.3.0\App_Source\x64\Release\Win32Explorer.exe to C:\Users\Administrator\Desktop\Elite-TaskBar\BuildOutput\Win32Explorer.exe
+[2026-07-05 17:42:17] Build artifacts successfully relocated to root.
+[2026-07-05 17:42:17] Build SUCCESSFUL.
+[2026-07-05 17:42:19] Locating MSBuild...
+[2026-07-05 17:42:19] Found MSBuild: C:\Program Files (x86)\Microsoft Visual Studio\2022\BuildTools\MSBuild\Current\Bin\MSBuild.exe
+[2026-07-05 17:42:19] Building Project_Core\Win32Explorer.sln (Release|Win32)...
+MSBuild version 17.14.40+3e7442088 for .NET Framework
+
+  Helper.vcxproj -> C:\Users\Administrator\Desktop\Elite-TaskBar\Win32Explorer_26.0.3.0\Project_Core\Win32\Release\Helper.lib
+  Win32Explorer.vcxproj -> C:\Users\Administrator\Desktop\Elite-TaskBar\Win32Explorer_26.0.3.0\App_Source\Win32\Release\Win32Explorer.exe
+          1 file(s) moved.
+[2026-07-05 17:42:29] Relocating build artifacts to project root...
+[2026-07-05 17:42:29] Signing C:\Users\Administrator\Desktop\Elite-TaskBar\Win32Explorer_26.0.3.0\App_Source\Win32\Release\Win32Explorer.exe using signtool.exe...
+The following certificate was selected:
+    Issued to: EliteSoftwareTech Company - Zachary Whiteman
+
+    Issued by: EliteSoftwareTech Company - Zachary Whiteman
+
+    Expires:   Thu Jun 05 03:08:20 2036
+
+    SHA1 hash: 11F5E401A611434F4F159D26CD1878426320FF6B
+
+
+Done Adding Additional Store
+Successfully signed: C:\Users\Administrator\Desktop\Elite-TaskBar\Win32Explorer_26.0.3.0\App_Source\Win32\Release\Win32Explorer.exe
+
+
+Number of files successfully Signed: 1
+
+Number of warnings: 0
+
+Number of errors: 0
+
+[2026-07-05 17:42:30] Copying C:\Users\Administrator\Desktop\Elite-TaskBar\Win32Explorer_26.0.3.0\App_Source\Win32\Release\Win32Explorer.exe to C:\Users\Administrator\Desktop\Elite-TaskBar\BuildOutputx86\Win32Explorer_x86.exe
+[2026-07-05 17:42:30] Build artifacts successfully relocated to root.
+[2026-07-05 17:42:30] Build SUCCESSFUL.
+Auto-committing submodules and main repository...
+On branch master
+Your branch is up to date with 'origin/master'.
+
+nothing to commit, working tree clean
+[master c52f90b] Auto-commit after successful build (build.ps1)
+ 22 files changed, 57 insertions(+)
+ rename EliteDLLScanner_old_1144534902.exe => EliteDLLScanner_old_1232427288.exe (99%)
+ rename EliteEverything_old_1144534902.exe => EliteEverything_old_1232427288.exe (99%)
+ rename EliteSettings_old_1144534902.cpl => EliteSettings_old_1232427288.cpl (99%)
+ rename EliteSettings_old_1144534902.exe => EliteSettings_old_1232427288.exe (99%)
+ rename EliteTaskbar_old_1144534902.exe => EliteTaskbar_old_1232427288.exe (99%)
+ rename Win32Explorer_old_1144534902.exe => Win32Explorer_old_1232427288.exe (100%)
+Cleaning up old executables and control panel files...
+Done!
