@@ -67,21 +67,24 @@ Implement Milestone 7: Progman multi-display render, Desktop Background settings
 | Explorer 5 | teamwork_preview_explorer | Slideshow logic analysis (Iteration 2) | completed | aa21e251-6419-4ab0-8b75-837076c4f669 |
 | Explorer 6 | teamwork_preview_explorer | Leaks & Signing analysis (Iteration 2) | completed | 7ecc6533-2d32-4958-b984-2dd703052940 |
 | Worker 2 | teamwork_preview_worker | Implement repairs (Iteration 2) | completed | 56ff1649-8983-40b7-837f-be5abce3d0fe |
-| Reviewer 1 (Gen 2) | teamwork_preview_reviewer | Visual & Resource review (Iteration 2) | in-progress | 7fd196b6-b8af-4b2d-a84d-3cab31bf9f9b |
-| Reviewer 2 (Gen 2) | teamwork_preview_reviewer | Rendering & Slideshow review (Iteration 2) | in-progress | 907fcaa1-bf8d-4feb-b119-0594c19d7010 |
-| Challenger 1 (Gen 2) | teamwork_preview_challenger | E2E verification test execution (Iteration 2) | in-progress | 212d9f07-f6fa-4143-89d0-eb6a52a8e5c7 |
-| Challenger 2 (Gen 2) | teamwork_preview_challenger | Slideshow interval boundary testing (Iteration 2) | in-progress | 427c6c74-44a2-4755-ba7a-6770374ddbef |
-| Auditor 1 (Gen 2) | teamwork_preview_auditor | Forensic code audit (Iteration 2) | in-progress | ccc900d0-1cd6-4636-8cf7-e7542a8b6ced |
+| Reviewer 1 (Gen 2) | teamwork_preview_reviewer | Visual & Resource review (Iteration 2) | completed | 7fd196b6-b8af-4b2d-a84d-3cab31bf9f9b |
+| Reviewer 2 (Gen 2) | teamwork_preview_reviewer | Rendering & Slideshow review (Iteration 2) | completed | 907fcaa1-bf8d-4feb-b119-0594c19d7010 |
+| Challenger 1 (Gen 2) | teamwork_preview_challenger | E2E verification test execution (Iteration 2) | completed | 212d9f07-f6fa-4143-89d0-eb6a52a8e5c7 |
+| Challenger 2 (Gen 2) | teamwork_preview_challenger | Slideshow interval boundary testing (Iteration 2) | completed | 427c6c74-44a2-4755-ba7a-6770374ddbef |
+| Auditor 1 (Gen 2) | teamwork_preview_auditor | Forensic code audit (Iteration 2) | completed | ccc900d0-1cd6-4636-8cf7-e7542a8b6ced |
+| Explorer 1 (Gen 3) | teamwork_preview_explorer | Wallpaper logic analysis (Iteration 3) | in-progress | 6d6cbbf8-6c82-447c-92ec-fef42c466662 |
+| Explorer 2 (Gen 3) | teamwork_preview_explorer | ListView enhancements analysis (Iteration 3) | in-progress | a5c09ade-cc8b-416c-9a03-7a0ded754463 |
+| Explorer 3 (Gen 3) | teamwork_preview_explorer | Settings sync & Mirroring analysis (Iteration 3) | in-progress | 30af0360-2947-473b-8078-39f6691108d2 |
 
 ## Succession Status
-- Succession required: yes
-- Spawn count: 18 / 16
-- Pending subagents: 7fd196b6-b8af-4b2d-a84d-3cab31bf9f9b, 907fcaa1-bf8d-4feb-b119-0594c19d7010, 212d9f07-f6fa-4143-89d0-eb6a52a8e5c7, 427c6c74-44a2-4755-ba7a-6770374ddbef, ccc900d0-1cd6-4636-8cf7-e7542a8b6ced
-- Predecessor: none
+- Succession required: no
+- Spawn count: 3 / 16
+- Pending subagents: none
+- Predecessor: 3a154d09-5ab7-416f-bd4d-ce60cb64f386
 - Successor: not yet spawned
 
 ## Active Timers
-- Heartbeat cron: task-43
+- Heartbeat cron: task-57
 - Safety timer: none
 - On succession: kill all timers before spawning successor
 - On context truncation: run manage_task(Action="list") — re-create if missing

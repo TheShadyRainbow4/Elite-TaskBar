@@ -1,12 +1,12 @@
 
 Name                           Value
 ----                           -----
-ClassRegistration              PASS
 StartButtonFallback            PASS
-DirectoryChangeNotify          PASS
-DesktopStartupDynamic          PASS
-DesktopIconsLoading            PASS
-ZOrderConstraints              PASS
 SettingsRegistryToggles        PASS
+ZOrderConstraints              PASS
+DesktopIconsLoading            PASS
+DirectoryChangeNotify          PASS
+ClassRegistration              PASS
+DesktopStartupDynamic          PASS
 
 
