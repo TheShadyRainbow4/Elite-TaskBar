@@ -55,9 +55,6 @@ All notable changes to this project will be documented in this file.
 - **Replace Mode System Tray Scaling**: Scaled system tray width `W_tray` dynamically using DPI scale settings in Replace mode.
 - **Mirrored Properties & Settings (Rule 7)**: Synchronized `IDC_IMPORT_SETTINGS`, `IDC_EXPORT_SETTINGS` command handlers, and the aggressive PowerShell reboot logic in `BroadcastSettingsChangeThread` directly to the Win32Explorer settings CPL copy of `TaskbarProperties.cpp` to ensure 100% feature parity.
 
-### Fixed
-- **Settings Build Linker Error**: Added `#pragma comment(lib, "comdlg32.lib")` to `TaskbarProperties.cpp` to resolve `LNK2019` errors for `GetOpenFileNameW` and `GetSaveFileNameW` during `EliteSettings.exe` compilation.
-
 ### Changed
 - **About Dialog Spacing (R8)**: Adjusted `IDD_ABOUT_DIALOG` button layout in both `SourceFiles/resources.rc` and `Win32Explorer_26.0.3.0/App_Source/EliteTaskbar/resources.rc` to y=118, and updated dynamic positioning and chin rendering in `SourceFiles/TaskbarProperties.cpp`.
 - **Default Taskbar Mode (R3)**: Updated both `SourceFiles/EliteSettings.ps1` and `Win32Explorer_26.0.3.0/App_Source/EliteTaskbar/EliteSettings.ps1` to default `TaskbarMode` to Independent when the registry value is missing, and ensured that both `SourceFiles/TaskbarProperties.cpp` and `Win32Explorer_26.0.3.0/App_Source/EliteTaskbar/TaskbarProperties.cpp` default to checking `IDC_MODE_INDEPENDENT`.
@@ -262,6 +259,8 @@ All notable changes to this project will be documented in this file.
 - **Taskbar Layout Compile Fix**: Defined `UpdateTaskbarLayout` inside `SourceFiles/TaskbarProperties.cpp` to resolve unresolved external symbol link errors.
 
 ### Fixed
+- **Build Sequence & Git Hygiene (Milestone 6 Reviewer 2 Remediation)**: Moved the wildcard old binary cleanup loop in `build.ps1` to run before the git add / git commit sequence. Appended patterns for old binaries (`*old*.exe`, `*Old*.exe`, `*old*.cpl`, `*Old*.cpl`) to `.gitignore` to prevent tracking build backups and artifacts. Cleared previously tracked/cached old binaries from the repository index to maintain strict git hygiene.
+- **Settings Build Linker Error**: Added `#pragma comment(lib, "comdlg32.lib")` to `TaskbarProperties.cpp` to resolve `LNK2019` errors for `GetOpenFileNameW` and `GetSaveFileNameW` during `EliteSettings.exe` compilation.
 - **PDB Synchronization Compiler Error (C1041)**: Added `/FS` flag to the `cl.exe` compile command in `build_x64.ps1` and `build_x86.ps1` to prevent concurrent write lock contentions on PDB files.
 - **PowerShell Registry Value Parameter Validation Bug**: Replaced `Get-ItemProperty -Name ""` with `(Get-Item -Path $path).GetValue("")` (or safe wrapper) in `SourceFiles\EliteSettings.ps1` to avoid throwing a parameter validation exception when querying empty-string default registry values, restoring successful settings saving.
 - **Win32Explorer Submodule Sync & Build Handling**: Integrated automated sync of modified source files from `Remaining_Shell\Win32Explorer_26.0.3.0` to the submodule `Win32Explorer_26.0.3.0` in `build.ps1`, configured MSBuild path in submodule build script to target BuildTools, and hardened `build.ps1` to abort with exit code 1 if Win32Explorer compilation fails.
