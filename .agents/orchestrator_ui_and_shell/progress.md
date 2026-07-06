@@ -1,7 +1,8 @@
 ## Current Status
-Last visited: 2026-07-05T17:10:05-07:00
-- E2E Testing Orchestrator: Completed (test plan designed, verify_final_polish.ps1 and run_comprehensive_e2e.ps1 written)
-- Milestone 5 Sub-Orchestrator: Active (Worker Polish is implementing UI & Layout Feedback fixes)
+Last visited: 2026-07-05T17:11:07-07:00
+- E2E Testing Track (Milestone 4): Completed
+- Milestone 1: Multi-Monitor & Tray/Flyout Fixes (Milestone 5): Completed
+- Milestone 2: Settings UI, About Dialog, & Migration Cleanup (Milestone 6): In-progress
 
 ## Iteration Status
 Current iteration: 1 / 32

@@ -55,12 +55,13 @@ Implement advanced UI fixes, multi-monitor display corrections, tray functionali
 | Agent | Type | Work Item | Status | Conv ID |
 |-------|------|-----------|--------|---------|
 | E2E Testing | E2E Testing Orchestrator | E2E Test Suite Development | completed | c16d9899-5cf2-40e4-b513-71f54dd86ec8 |
-| Milestone 5 | Milestone 5 Sub-Orchestrator | Multi-Monitor & Tray/Flyout Fixes | in-progress | 9d3a25c6-79e6-4bc0-8e9d-1dc6ca522bef |
+| Milestone 5 | Milestone 5 Sub-Orchestrator | Multi-Monitor & Tray/Flyout Fixes | completed | 9d3a25c6-79e6-4bc0-8e9d-1dc6ca522bef |
+| Milestone 6 | Milestone 6 Sub-Orchestrator | Settings, About Dialog, & Migration | in-progress | ce47fa31-c215-44a2-8083-787f37b736f5 |
 
 ## Succession Status
 - Succession required: no
-- Spawn count: 2 / 16
-- Pending subagents: 9d3a25c6-79e6-4bc0-8e9d-1dc6ca522bef
+- Spawn count: 3 / 16
+- Pending subagents: ce47fa31-c215-44a2-8083-787f37b736f5
 - Predecessor: none
 - Successor: not yet spawned
 
