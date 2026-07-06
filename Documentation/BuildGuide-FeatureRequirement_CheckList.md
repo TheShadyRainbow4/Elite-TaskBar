@@ -500,10 +500,13 @@
 ## MILESTONE 5 POLISH & ROBUSTNESS FIXES (CURRENT WORK)
 ---
 
-1. GDI HICON Leak Fix: Add `bool bOwnsIcon` to `ScrapedTrayIcon` struct, track owned status in `GetWindowIconFix`, fallback to shared system application icon when NULL, and destroy owned icons in `UpdateTrayToolbar` and `TrayNotifyProc`.
-2. Primary Monitor Display Spoofing: Remove monitor check so `StartNativeTaskbarSpoof` is called unconditionally on all clicks.
-3. Toolbar Hover State: Preserve the glossy hover state of the toolbar buttons by not calling `SetWindowTheme` on `hToolbar`.
-4. Active Items Alignment: Dynamically query `hTaskSwitch` button height using `TB_GETBUTTONSIZE` and center the task switch control vertically.
-5. Clock Alignment: Center multi-line clock text vertically in `TrayClockProc`'s `WM_PAINT` handler using `DrawTextW` with `DT_CALCRECT`.
-6. Build & Test Fixes: Wrap the `EliteStartMenu.ps1` compilation in a `Test-Path` check, and fix E2E verification variables `$hwndNotify` and `$hwndClock` in `run_comprehensive_e2e.ps1`.
+1. GDI HICON Leak Fix: Add `bool bOwnsIcon` to `ScrapedTrayIcon` struct, track owned status in `GetWindowIconFix`, fallback to shared system application icon when NULL, and destroy owned icons in `UpdateTrayToolbar` and `TrayNotifyProc`. **[COMPLETED]**
+2. Primary Monitor Display Spoofing: Remove monitor check so `StartNativeTaskbarSpoof` is called unconditionally on all clicks. **[COMPLETED]**
+3. Toolbar Hover State: Preserve the glossy hover state of the toolbar buttons by not calling `SetWindowTheme` on `hToolbar`. **[COMPLETED]**
+4. Active Items Alignment: Dynamically query `hTaskSwitch` button height using `TB_GETBUTTONSIZE` and center the task switch control vertically. **[COMPLETED]**
+5. Clock Alignment: Center multi-line clock text vertically in `TrayClockProc`'s `WM_PAINT` handler using `DrawTextW` with `DT_CALCRECT`. **[COMPLETED]**
+6. Build & Test Fixes: Wrap the `EliteStartMenu.ps1` compilation in a `Test-Path` check, and fix E2E verification variables `$hwndNotify` and `$hwndClock` in `run_comprehensive_e2e.ps1`. **[COMPLETED]**
+
+[2026-07-05 17:10] - Milestone 5 Polish and Robustness Fixes completed. Added [bOwnsIcon, GetWindowIconFix signature update, LoadIconW default, UpdateTrayToolbar and TrayNotifyProc DestroyIcon calls, removed monitor check for StartNativeTaskbarSpoof, hToolbar theme preservation, task switch and clock vertical centering, build.ps1 compilation guard, run_comprehensive_e2e.ps1 variable fixes].
+
 
