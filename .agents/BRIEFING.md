@@ -19,6 +19,8 @@ Coordinate the EliteTaskbar UI fixes, multi-monitor display corrections, tray fu
 - Constraint: Automated shell restarts may be performed as needed for testing/deployment (temporary focus lock warning lifted).
 - Tray Constraints: Remove or drastically increase the hardcoded 4-item visible tray limit (especially for 2-row mode). Fix missing/blank tray icons by correcting the scraping fallbacks. Fix the rendering glitch where a white background bar shows above tray items.
 - Layout & Aesthetic Constraints: Restore the Aero/glossy hover state on toolbar items (do not strip visual styles via `SetWindowTheme(..., L"", L"")`). Fix toolbar heights/margins to fit cleanly. Vertically align active program items and the clock text.
+- Personalization Constraints: Retain `.theme` directory parsing logic for overriding system icons. However, specifically for the WALLPAPER, EliteTaskbar must NOT track its own custom wallpaper image path. It must strictly read and write native Windows configurations (`HKCU\Control Panel\Desktop\Wallpaper`, `SPI_GETDESKWALLPAPER`, `SPI_SETDESKWALLPAPER`). Custom wallpapers set in our UI must change the underlying native Windows settings, which `DesktopWindow.cpp` will then read natively. Default style is "Span".
+- Desktop Icon Constraints: Make listview text and backgrounds transparent using `CLR_NONE` and double buffering. Apply `SetWindowTheme(hwnd, L"Explorer", NULL)` for modern Aero visual styles. Retrieve high-res System Image Lists (e.g., 48x48 via `SHGetImageList`). Disable `LVS_AUTOARRANGE` to support free drag-and-drop icon placement.
 
 ## User Context
 - **Last user request**: UI fixes, multi-monitor corrections, tray enhancements, advanced shell integration, CPL Start Menu tab hover bug, cleanup of *old*.exe, custom desktop background settings CPL tab, slideshow mode, Win+R hooks, tray icon click behaviors, quick launch bar, and thumbnail tile view modes.
@@ -29,7 +31,7 @@ Coordinate the EliteTaskbar UI fixes, multi-monitor display corrections, tray fu
 - **Phase**: in progress
 
 ## Victory Audit Status
-- **Triggered**: no
+- **Trigger no**: no
 - **Verdict**: pending
 - **Retry count**: 0
 
