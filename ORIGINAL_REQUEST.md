@@ -335,6 +335,14 @@ The user has cleared testing the GUI/shell, with corrections:
 1. **Window retention**: Don't instantly close windows/shell immediately after launching a test; allow them to stay open briefly so they don't rapidly flash and disappear.
 2. **Expand test scope**: Expand testing from trivial settings app pages to core requirements (Z-ordering, independent system tray, desktop multi-monitor rendering, mirrored folder options).
 
+## Follow-up — 2026-07-08T02:23:33Z
+
+The user reports a critical issue: "task bar has encountered a fatal existance failure" (it crashed, failed to launch, or disappeared entirely).
+1. Halt feature development.
+2. Investigate what broke the `EliteTaskbar` build/execution. Check compiler outputs, unhandled exceptions, broken window handles/Z-ordering logic.
+3. Restore the taskbar online.
+
+
 
 
 

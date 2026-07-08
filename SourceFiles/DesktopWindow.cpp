@@ -204,18 +204,19 @@ public:
     STDMETHODIMP SetToolbarItems(LPTBBUTTONSB lpButtons, UINT nButtons, UINT uFlags) override { return E_NOTIMPL; }
 };
 
-struct MonitorInfo {
+// Rename struct to DesktopMonitorInfo to prevent ODR violation - Builder-Bob
+struct DesktopMonitorInfo {
     RECT rect;
     bool isPrimary;
 };
 
 // Rename callback to DesktopMonitorEnumProc to resolve ODR violation - Builder-Bob
 static BOOL CALLBACK DesktopMonitorEnumProc(HMONITOR hMonitor, HDC hdcMonitor, LPRECT lprcMonitor, LPARAM dwData) {
-    auto* monitors = reinterpret_cast<std::vector<MonitorInfo>*>(dwData);
+    auto* monitors = reinterpret_cast<std::vector<DesktopMonitorInfo>*>(dwData);
     MONITORINFOEXW mi;
     mi.cbSize = sizeof(MONITORINFOEXW);
     if (GetMonitorInfoW(hMonitor, &mi)) {
-        MonitorInfo info;
+        DesktopMonitorInfo info;
         info.rect = mi.rcMonitor;
         info.isPrimary = (mi.dwFlags & MONITORINFOF_PRIMARY) != 0;
         monitors->push_back(info);
@@ -356,18 +357,18 @@ namespace DesktopWindow {
         }
 
         // Enumerate displays - Builder-Bob
-        std::vector<MonitorInfo> monitors;
+        std::vector<DesktopMonitorInfo> monitors;
         // Update reference to DesktopMonitorEnumProc - Builder-Bob
         EnumDisplayMonitors(NULL, NULL, DesktopMonitorEnumProc, (LPARAM)&monitors);
 
-        MonitorInfo primaryMon;
+        DesktopMonitorInfo primaryMon;
         primaryMon.isPrimary = true;
         primaryMon.rect.left = 0;
         primaryMon.rect.top = 0;
         primaryMon.rect.right = GetSystemMetrics(SM_CXSCREEN);
         primaryMon.rect.bottom = GetSystemMetrics(SM_CYSCREEN);
 
-        std::vector<MonitorInfo> secondaryMons;
+        std::vector<DesktopMonitorInfo> secondaryMons;
         for (const auto& m : monitors) {
             if (m.isPrimary) {
                 primaryMon = m;
@@ -545,18 +546,18 @@ LRESULT CALLBACK ProgmanWndProc(HWND hwnd, UINT uMsg, WPARAM wParam, LPARAM lPar
         break;
     }
     case WM_DISPLAYCHANGE: {
-        std::vector<MonitorInfo> monitors;
+        std::vector<DesktopMonitorInfo> monitors;
         // Update reference to DesktopMonitorEnumProc - Builder-Bob
         EnumDisplayMonitors(NULL, NULL, DesktopMonitorEnumProc, (LPARAM)&monitors);
 
-        MonitorInfo primaryMon;
+        DesktopMonitorInfo primaryMon;
         primaryMon.isPrimary = true;
         primaryMon.rect.left = 0;
         primaryMon.rect.top = 0;
         primaryMon.rect.right = GetSystemMetrics(SM_CXSCREEN);
         primaryMon.rect.bottom = GetSystemMetrics(SM_CYSCREEN);
 
-        std::vector<MonitorInfo> secondaryMons;
+        std::vector<DesktopMonitorInfo> secondaryMons;
         for (const auto& m : monitors) {
             if (m.isPrimary) {
                 primaryMon = m;

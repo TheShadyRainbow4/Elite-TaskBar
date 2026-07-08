@@ -1071,14 +1071,15 @@ HWND CreateDynScrollArea(HWND hwndDlg, int idc_placeholder) {
     return hScroll;
 }
 
-struct MonitorInfo {
+// Rename struct to TaskbarPropertiesMonitorInfo to prevent ODR violation - Builder-Bob
+struct TaskbarPropertiesMonitorInfo {
     int index;
     HMONITOR hMonitor;
     RECT rect;
 };
-std::vector<MonitorInfo> g_Monitors;
+std::vector<TaskbarPropertiesMonitorInfo> g_Monitors;
 BOOL CALLBACK TaskbarPropsMonitorEnumProc(HMONITOR hMonitor, HDC hdcMonitor, LPRECT lprcMonitor, LPARAM dwData) {
-    MonitorInfo info;
+    TaskbarPropertiesMonitorInfo info;
     info.index = (int)g_Monitors.size();
     info.hMonitor = hMonitor;
     info.rect = *lprcMonitor;
