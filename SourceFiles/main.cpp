@@ -260,6 +260,14 @@ void RunApplication(HINSTANCE hInstance) {
     // 6 & 7. Query Windows Registry & Declare global struct
     QueryOperationalMode();
     
+    // Initialize default toolbars registry configuration - Builder-Bob
+    HKEY hToolbarsKey = NULL;
+    if (RegCreateKeyExW(HKEY_LOCAL_MACHINE, L"SOFTWARE\\EliteSoftware\\Win32Explorer\\Toolbars", 0, NULL, REG_OPTION_NON_VOLATILE, KEY_WRITE, NULL, &hToolbarsKey, NULL) == ERROR_SUCCESS) {
+        std::wstring qlPath = L"%APPDATA%\\Microsoft\\Internet Explorer\\Quick Launch";
+        RegSetValueExW(hToolbarsKey, L"Quick Launch", 0, REG_SZ, (const BYTE*)qlPath.c_str(), (DWORD)(qlPath.length() + 1) * sizeof(wchar_t));
+        RegCloseKey(hToolbarsKey);
+    }
+    
     BufferedPaintInit();
     
     ULONG_PTR gdiToken = 0;

@@ -387,6 +387,19 @@ The user provided the shell lifecycle and tray layout directive:
    - **Custom**: Skip taskbar instantiation entirely based on settings (Desktop-only mode).
 4. **Memory Leak Prevention**: Prevent GDI leaks during teardown.
 
+## Follow-up — 2026-07-08T04:20:41Z
+
+The user provided the folder-based toolbar (Quick Launch) directive:
+1. **Container (ReBarWindow32)**: Initialize a `ReBarWindow32` (ICC_COOL_CLASSES) between the taskband and the system tray. Use `RB_INSERTBAND` to insert toolbars.
+2. **Folder Parsing Engine**: Create `FolderBand` C++ class. Parse `.lnk`, `.url`, `.exe`. Extract high-res icons and details using `IShellLink` and `SHGetFileInfoW`. Push to `HIMAGELIST` and populate `ToolbarWindow32` via `TB_ADDBUTTONS`. Target path stored in `dwData` for `WM_COMMAND`.
+3. **Toggles**:
+   - **Show Title**: `RBBS_HIDETITLE` toggle via `RB_SETBANDINFO`.
+   - **Show Text**: `TBSTYLE_LIST` toggle via `TB_SETSTYLE` and padding via `TB_SETBUTTONINFO`.
+   - **Large/Small Icons**: Toggle imagelist, bitmap size, button size between 16x16 and 32x32.
+4. **Registry Cache**: Cache layout state to `HKEY_LOCAL_MACHINE\SOFTWARE\EliteSoftware\Win32Explorer\Toolbars\Cache\<FolderName>` (overriding HKCU to obey the global HKLM-only settings constraint).
+5. **Execution**: Use `IShellLink` COM interface for shortcuts, and launch via `ShellExecuteEx`.
+
+
 
 
 

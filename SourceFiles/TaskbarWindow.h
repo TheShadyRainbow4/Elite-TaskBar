@@ -4,7 +4,6 @@
 #include "StartButton.h"
 #include "ClockWidget.h"
 
-
 struct TaskbarInstance {
     HWND hTaskbar;
     HWND hSysPager;
@@ -13,6 +12,7 @@ struct TaskbarInstance {
     HWND hTaskSwitch;
     HWND hTrayNotify;
     HWND hTrayClock;
+    HWND hRebar; // Container for folder-based toolbars - Builder-Bob
     HIMAGELIST hImageList;
     HIMAGELIST hTrayImageList;
     HMONITOR hMonitor;
@@ -29,4 +29,3 @@ namespace TaskbarWindow {
     void RunMessageLoop();
     void Cleanup();
 }
-

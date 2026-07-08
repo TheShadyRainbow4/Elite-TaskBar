@@ -27,6 +27,281 @@
 
 static void InvokeNativeRunDialog(HWND hwndOwner);
 
+#include <shlwapi.h>
+#pragma comment(lib, "shlwapi.lib")
+
+class FolderBand {
+public:
+    HWND hToolbar;
+    HIMAGELIST hImgListSmall;
+    HIMAGELIST hImgListLarge;
+    std::wstring folderName;
+    std::wstring folderPath;
+    std::vector<std::wstring*> buttonTargets;
+
+    bool showTitle;
+    bool showText;
+    int iconSize; // 0 = small, 1 = large
+
+    FolderBand() : hToolbar(NULL), hImgListSmall(NULL), hImgListLarge(NULL), showTitle(true), showText(false), iconSize(0) {}
+
+    ~FolderBand() {
+        if (hToolbar) {
+            DestroyWindow(hToolbar);
+        }
+        if (hImgListSmall) {
+            ImageList_Destroy(hImgListSmall);
+        }
+        if (hImgListLarge) {
+            ImageList_Destroy(hImgListLarge);
+        }
+        for (auto* ptr : buttonTargets) {
+            delete ptr;
+        }
+    }
+
+    void LoadCacheSettings() {
+        HKEY hKey;
+        std::wstring keyPath = L"SOFTWARE\\EliteSoftware\\Win32Explorer\\Toolbars\\Cache\\" + folderName;
+        if (RegOpenKeyExW(HKEY_LOCAL_MACHINE, keyPath.c_str(), 0, KEY_READ, &hKey) == ERROR_SUCCESS) {
+            DWORD val = 0, cb = sizeof(DWORD);
+            if (RegQueryValueExW(hKey, L"ShowTitle", NULL, NULL, (LPBYTE)&val, &cb) == ERROR_SUCCESS) {
+                showTitle = (val != 0);
+            }
+            cb = sizeof(DWORD);
+            if (RegQueryValueExW(hKey, L"ShowText", NULL, NULL, (LPBYTE)&val, &cb) == ERROR_SUCCESS) {
+                showText = (val != 0);
+            }
+            cb = sizeof(DWORD);
+            if (RegQueryValueExW(hKey, L"IconSize", NULL, NULL, (LPBYTE)&val, &cb) == ERROR_SUCCESS) {
+                iconSize = (int)val;
+            }
+            RegCloseKey(hKey);
+        }
+    }
+
+    void SaveCacheSettings() {
+        HKEY hKey;
+        std::wstring keyPath = L"SOFTWARE\\EliteSoftware\\Win32Explorer\\Toolbars\\Cache\\" + folderName;
+        if (RegCreateKeyExW(HKEY_LOCAL_MACHINE, keyPath.c_str(), 0, NULL, REG_OPTION_NON_VOLATILE, KEY_WRITE, NULL, &hKey, NULL) == ERROR_SUCCESS) {
+            DWORD val = showTitle ? 1 : 0;
+            RegSetValueExW(hKey, L"ShowTitle", 0, REG_DWORD, (const BYTE*)&val, sizeof(DWORD));
+            val = showText ? 1 : 0;
+            RegSetValueExW(hKey, L"ShowText", 0, REG_DWORD, (const BYTE*)&val, sizeof(DWORD));
+            val = iconSize;
+            RegSetValueExW(hKey, L"IconSize", 0, REG_DWORD, (const BYTE*)&val, sizeof(DWORD));
+            RegCloseKey(hKey);
+        }
+    }
+
+    bool Initialize(HWND hParentRebar, const std::wstring& name, const std::wstring& rawPath) {
+        folderName = name;
+        
+        wchar_t expanded[MAX_PATH];
+        ExpandEnvironmentStringsW(rawPath.c_str(), expanded, MAX_PATH);
+        folderPath = expanded;
+
+        LoadCacheSettings();
+
+        hImgListSmall = ImageList_Create(16, 16, ILC_COLOR32 | ILC_MASK, 0, 10);
+        hImgListLarge = ImageList_Create(32, 32, ILC_COLOR32 | ILC_MASK, 0, 10);
+
+        DWORD style = WS_CHILD | WS_VISIBLE | TBSTYLE_FLAT | TBSTYLE_TRANSPARENT | CCS_NORESIZE | CCS_NODIVIDER;
+        if (showText) {
+            style |= TBSTYLE_LIST;
+        }
+        hToolbar = CreateWindowExW(0, TOOLBARCLASSNAMEW, NULL, style, 0, 0, 0, 0, hParentRebar, NULL, GetModuleHandle(NULL), NULL);
+        if (!hToolbar) return false;
+
+        SendMessageW(hToolbar, TB_BUTTONSTRUCTSIZE, sizeof(TBBUTTON), 0);
+        SendMessageW(hToolbar, TB_SETIMAGELIST, 0, (LPARAM)(iconSize == 1 ? hImgListLarge : hImgListSmall));
+        int btnDim = iconSize == 1 ? 32 : 16;
+        SendMessageW(hToolbar, TB_SETBITMAPSIZE, 0, MAKELPARAM(btnDim, btnDim));
+
+        std::wstring searchPath = folderPath + L"\\*";
+        WIN32_FIND_DATAW fd;
+        HANDLE hFind = FindFirstFileW(searchPath.c_str(), &fd);
+        if (hFind != INVALID_HANDLE_VALUE) {
+            int imageIndex = 0;
+            std::vector<TBBUTTON> buttons;
+            do {
+                if (fd.dwFileAttributes & FILE_ATTRIBUTE_DIRECTORY) {
+                    continue;
+                }
+                std::wstring fileName = fd.cFileName;
+                std::wstring fullPath = folderPath + L"\\" + fileName;
+
+                HICON hIconSmall = NULL;
+                HICON hIconLarge = NULL;
+                SHFILEINFOW sfi;
+                if (SHGetFileInfoW(fullPath.c_str(), 0, &sfi, sizeof(sfi), SHGFI_ICON | SHGFI_SMALLICON)) {
+                    hIconSmall = sfi.hIcon;
+                }
+                if (SHGetFileInfoW(fullPath.c_str(), 0, &sfi, sizeof(sfi), SHGFI_ICON | SHGFI_LARGEICON)) {
+                    hIconLarge = sfi.hIcon;
+                }
+
+                if (hIconSmall && hIconLarge) {
+                    ImageList_AddIcon(hImgListSmall, hIconSmall);
+                    ImageList_AddIcon(hImgListLarge, hIconLarge);
+                    DestroyIcon(hIconSmall);
+                    DestroyIcon(hIconLarge);
+
+                    TBBUTTON btn = {0};
+                    btn.iBitmap = imageIndex++;
+                    btn.idCommand = 3000 + imageIndex;
+                    btn.fsState = TBSTATE_ENABLED;
+                    btn.fsStyle = BTNS_BUTTON | BTNS_AUTOSIZE;
+                    
+                    std::wstring* pPath = new std::wstring(fullPath);
+                    buttonTargets.push_back(pPath);
+                    btn.dwData = (DWORD_PTR)pPath;
+
+                    wchar_t label[MAX_PATH];
+                    wcscpy_s(label, fileName.c_str());
+                    PathRemoveExtensionW(label);
+                    btn.iString = (INT_PTR)label;
+
+                    buttons.push_back(btn);
+                }
+            } while (FindNextFileW(hFind, &fd));
+            FindClose(hFind);
+
+            if (!buttons.empty()) {
+                SendMessageW(hToolbar, TB_ADDBUTTONS, buttons.size(), (LPARAM)buttons.data());
+            }
+        }
+
+        SendMessageW(hToolbar, TB_SETPADDING, 0, MAKELPARAM(6, 4));
+        SendMessageW(hToolbar, TB_AUTOSIZE, 0, 0);
+
+        return true;
+    }
+
+    void ToggleTitle(HWND hRebar, int bandIndex) {
+        showTitle = !showTitle;
+        REBARBANDINFOW rbbi = {0};
+        rbbi.cbSize = sizeof(rbbi);
+        rbbi.fMask = RBBIM_STYLE;
+        SendMessageW(hRebar, RB_GETBANDINFO, bandIndex, (LPARAM)&rbbi);
+        if (showTitle) {
+            rbbi.fStyle &= ~RBBS_HIDETITLE;
+        } else {
+            rbbi.fStyle |= RBBS_HIDETITLE;
+        }
+        SendMessageW(hRebar, RB_SETBANDINFO, bandIndex, (LPARAM)&rbbi);
+        SaveCacheSettings();
+    }
+
+    void ToggleText() {
+        showText = !showText;
+        DWORD style = GetWindowLongW(hToolbar, GWL_STYLE);
+        if (showText) {
+            style |= TBSTYLE_LIST;
+        } else {
+            style &= ~TBSTYLE_LIST;
+        }
+        SetWindowLongW(hToolbar, GWL_STYLE, style);
+        SendMessageW(hToolbar, TB_AUTOSIZE, 0, 0);
+        SaveCacheSettings();
+    }
+
+    void ToggleIconSize() {
+        iconSize = (iconSize == 0) ? 1 : 0;
+        SendMessageW(hToolbar, TB_SETIMAGELIST, 0, (LPARAM)(iconSize == 1 ? hImgListLarge : hImgListSmall));
+        int btnDim = iconSize == 1 ? 32 : 16;
+        SendMessageW(hToolbar, TB_SETBITMAPSIZE, 0, MAKELPARAM(btnDim, btnDim));
+        SendMessageW(hToolbar, TB_SETBUTTONSIZE, 0, MAKELPARAM(btnDim + 12, btnDim + 12));
+        SendMessageW(hToolbar, TB_AUTOSIZE, 0, 0);
+        SaveCacheSettings();
+    }
+};
+
+std::vector<FolderBand*> g_FolderBands;
+
+std::wstring ResolveShortcut(const std::wstring& shortcutPath) {
+    CoInitialize(NULL);
+    IShellLinkW* psl = NULL;
+    std::wstring targetPath = shortcutPath;
+    HRESULT hr = CoCreateInstance(CLSID_ShellLink, NULL, CLSCTX_INPROC_SERVER, IID_IShellLinkW, (void**)&psl);
+    if (SUCCEEDED(hr)) {
+        IPersistFile* ppf = NULL;
+        hr = psl->QueryInterface(IID_IPersistFile, (void**)&ppf);
+        if (SUCCEEDED(hr)) {
+            hr = ppf->Load(shortcutPath.c_str(), STGM_READ);
+            if (SUCCEEDED(hr)) {
+                wchar_t szGotPath[MAX_PATH];
+                WIN32_FIND_DATAW wfd;
+                hr = psl->GetPath(szGotPath, MAX_PATH, &wfd, SLGP_UNCPRIORITY);
+                if (SUCCEEDED(hr) && wcsclen(szGotPath) > 0) {
+                    targetPath = szGotPath;
+                }
+            }
+            ppf->Release();
+        }
+        psl->Release();
+    }
+    return targetPath;
+}
+
+void ExecuteTarget(const std::wstring& path) {
+    std::wstring finalPath = path;
+    if (path.length() > 4 && _wcsicmp(path.c_str() + path.length() - 4, L".lnk") == 0) {
+        finalPath = ResolveShortcut(path);
+    }
+    
+    SHELLEXECUTEINFOW sei = {0};
+    sei.cbSize = sizeof(sei);
+    sei.fMask = SEE_MASK_DEFAULT;
+    sei.lpFile = finalPath.c_str();
+    sei.nShow = SW_SHOWNORMAL;
+    ShellExecuteExW(&sei);
+}
+
+void LoadFolderToolbars(HWND hRebar) {
+    HKEY hKey;
+    if (RegOpenKeyExW(HKEY_LOCAL_MACHINE, L"SOFTWARE\\EliteSoftware\\Win32Explorer\\Toolbars", 0, KEY_READ, &hKey) == ERROR_SUCCESS) {
+        wchar_t valueName[16384];
+        DWORD cbValueName = 16384;
+        wchar_t valueData[16384];
+        DWORD cbValueData = 16384;
+        DWORD dwType = 0;
+        DWORD dwIndex = 0;
+        
+        while (RegEnumValueW(hKey, dwIndex, valueName, &cbValueName, NULL, &dwType, (LPBYTE)valueData, &cbValueData) == ERROR_SUCCESS) {
+            if (dwType == REG_SZ) {
+                FolderBand* band = new FolderBand();
+                if (band->Initialize(hRebar, valueName, valueData)) {
+                    REBARBANDINFOW rbbi = {0};
+                    rbbi.cbSize = sizeof(rbbi);
+                    rbbi.fMask = RBBIM_STYLE | RBBIM_CHILD | RBBIM_CHILDSIZE | RBBIM_TEXT;
+                    rbbi.fStyle = RBBS_GRIPPERALWAYS | RBBS_CHILDEDGE;
+                    if (!band->showTitle) {
+                        rbbi.fStyle |= RBBS_HIDETITLE;
+                    }
+                    rbbi.hwndChild = band->hToolbar;
+                    rbbi.lpText = (LPWSTR)band->folderName.c_str();
+                    
+                    RECT rc;
+                    GetWindowRect(band->hToolbar, &rc);
+                    rbbi.cxMinChild = rc.right - rc.left;
+                    rbbi.cyMinChild = rc.bottom - rc.top;
+                    rbbi.cx = rbbi.cxMinChild + 40;
+
+                    SendMessageW(hRebar, RB_INSERTBAND, (WPARAM)-1, (LPARAM)&rbbi);
+                    g_FolderBands.push_back(band);
+                } else {
+                    delete band;
+                }
+            }
+            cbValueName = 16384;
+            cbValueData = 16384;
+            dwIndex++;
+        }
+        RegCloseKey(hKey);
+    }
+}
+
 extern EliteTaskbarConfig g_Config;
 static bool s_UseSecondaryTrayWndAsFallback = false;
 
@@ -589,6 +864,28 @@ void UpdateTaskbarLayout(TaskbarInstance* inst) {
         int widthTaskSwitch = xNotifyStart - xTaskSwitch;
         if (widthTaskSwitch < 0) widthTaskSwitch = 0;
 
+        // Position Rebar control - Builder-Bob
+        if (inst->hRebar && SendMessageW(inst->hRebar, RB_GETBANDCOUNT, 0, 0) > 0) {
+            int xRebar = startButtonWidth + MulDiv(6, dpi, 96);
+            int wRebar = xNotifyStart - xRebar;
+            int rebarWidth = MulDiv(150, dpi, 96);
+            if (widthTaskSwitch > rebarWidth + MulDiv(20, dpi, 96)) {
+                widthTaskSwitch -= rebarWidth;
+                xRebar = xTaskSwitch + widthTaskSwitch + MulDiv(6, dpi, 96);
+                wRebar = rebarWidth - MulDiv(6, dpi, 96);
+            } else {
+                wRebar = 0;
+            }
+            if (wRebar > 0) {
+                SetWindowPos(inst->hRebar, NULL, xRebar, 0, wRebar, taskbarHeight, SWP_NOZORDER | SWP_NOACTIVATE);
+                ShowWindow(inst->hRebar, SW_SHOW);
+            } else {
+                ShowWindow(inst->hRebar, SW_HIDE);
+            }
+        } else if (inst->hRebar) {
+            ShowWindow(inst->hRebar, SW_HIDE);
+        }
+
         int switchHeight = taskbarHeight;
         int switchY = 0;
         if (inst->hTaskSwitch) {
@@ -601,6 +898,26 @@ void UpdateTaskbarLayout(TaskbarInstance* inst) {
         }
         SetWindowPos(inst->hTaskSwitch, NULL, xTaskSwitch, switchY, widthTaskSwitch, switchHeight, SWP_NOZORDER | SWP_NOACTIVATE);
         SendMessageW(inst->hTaskSwitch, TB_AUTOSIZE, 0, 0);
+    } else {
+        // If taskband is disabled, the Rebar can span the whole client space - Builder-Bob
+        HWND hOrb = inst->startButton ? inst->startButton->GetHwnd() : NULL;
+        int startButtonWidth = MulDiv(60, dpi, 96);
+        if (hOrb && IsWindow(hOrb)) {
+            RECT rcOrb;
+            GetWindowRect(hOrb, &rcOrb);
+            startButtonWidth = rcOrb.right - rcOrb.left;
+        }
+        int xNotifyStart = taskbarWidth - W_showDesktop - W_notify - MulDiv(10, dpi, 96);
+        if (inst->hRebar && SendMessageW(inst->hRebar, RB_GETBANDCOUNT, 0, 0) > 0) {
+            int xRebar = startButtonWidth + MulDiv(6, dpi, 96);
+            int wRebar = xNotifyStart - xRebar;
+            if (wRebar > 0) {
+                SetWindowPos(inst->hRebar, NULL, xRebar, 0, wRebar, taskbarHeight, SWP_NOZORDER | SWP_NOACTIVATE);
+                ShowWindow(inst->hRebar, SW_SHOW);
+            } else {
+                ShowWindow(inst->hRebar, SW_HIDE);
+            }
+        }
     }
 }
 
@@ -2467,6 +2784,26 @@ LRESULT CALLBACK WindowProc(HWND hwnd, UINT uMsg, WPARAM wParam, LPARAM lParam) 
     case WM_COMMAND: {
         int wmId = LOWORD(wParam);
         
+        if (wmId >= 3001 && wmId <= 3999) {
+            // Find target path in g_FolderBands buttons dwData - Builder-Bob
+            for (auto* band : g_FolderBands) {
+                if (band && band->hToolbar) {
+                    TBBUTTON btn = {0};
+                    int index = (int)SendMessageW(band->hToolbar, TB_COMMANDTOINDEX, wmId, 0);
+                    if (index >= 0) {
+                        if (SendMessageW(band->hToolbar, TB_GETBUTTON, index, (LPARAM)&btn)) {
+                            if (btn.dwData) {
+                                std::wstring* pPath = (std::wstring*)btn.dwData;
+                                ExecuteTarget(*pPath);
+                            }
+                        }
+                        break;
+                    }
+                }
+            }
+            return 0;
+        }
+        
         // Handle Toolbar buttons
         if (wmId >= 4000) {
             for (const auto& btn : g_TaskButtons) {
@@ -2697,9 +3034,22 @@ LRESULT CALLBACK WindowProc(HWND hwnd, UINT uMsg, WPARAM wParam, LPARAM lParam) 
                 }
                 g_TrayIcons.clear();
 
+                // Teardown folder bands - Builder-Bob
+                for (auto* band : g_FolderBands) {
+                    delete band;
+                }
+                g_FolderBands.clear();
+
                 QueryOperationalMode();
                 
                 for (auto* inst : g_Taskbars) {
+                    if (inst->hRebar) {
+                        int bandCount = (int)SendMessageW(inst->hRebar, RB_GETBANDCOUNT, 0, 0);
+                        for (int i = bandCount - 1; i >= 0; i--) {
+                            SendMessageW(inst->hRebar, RB_DELETEBAND, i, 0);
+                        }
+                        LoadFolderToolbars(inst->hRebar);
+                    }
                     if (inst->hTaskSwitch) {
                         int count = (int)SendMessageW(inst->hTaskSwitch, TB_BUTTONCOUNT, 0, 0);
                         for (int i = count - 1; i >= 0; i--) {
@@ -3139,6 +3489,24 @@ bool TaskbarWindow::Initialize(HINSTANCE hInstance) {
             SendMessageW(inst->hTaskSwitch, TB_SETIMAGELIST, 0, (LPARAM)inst->hImageList);
         }
 
+        inst->hRebar = NULL;
+        // Create Rebar control if toolbars are enabled - Builder-Bob
+        INITCOMMONCONTROLSEX iccex;
+        iccex.dwSize = sizeof(INITCOMMONCONTROLSEX);
+        iccex.dwICC = ICC_COOL_CLASSES;
+        InitCommonControlsEx(&iccex);
+
+        inst->hRebar = CreateWindowExW(
+            WS_EX_TOOLWINDOW,
+            REBARCLASSNAMEW, NULL,
+            WS_CHILD | WS_VISIBLE | WS_CLIPSIBLINGS | WS_CLIPCHILDREN | RBS_VARHEIGHT | CCS_NODIVIDER | CCS_NORESIZE | RBS_BANDBORDERS,
+            0, 0, 0, 0,
+            inst->hTaskbar, NULL, hInstance, NULL
+        );
+        if (inst->hRebar) {
+            LoadFolderToolbars(inst->hRebar);
+        }
+
         inst->hTrayNotify = NULL;
         inst->hSysPager = NULL;
         inst->hToolbar = NULL;
@@ -3313,6 +3681,11 @@ void TaskbarWindow::RunMessageLoop() {
 }
 
 void TaskbarWindow::Cleanup() {
+    for (auto* band : g_FolderBands) {
+        delete band;
+    }
+    g_FolderBands.clear();
+
     DesktopWindow::Cleanup();
     for (auto* inst : g_Taskbars) {
         APPBARDATA abd = {0};
