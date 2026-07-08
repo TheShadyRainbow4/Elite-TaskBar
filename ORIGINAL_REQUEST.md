@@ -283,6 +283,14 @@ The user has provided urgent corrections:
 1. **Dynamic Layout & Sizing**: Do not cut corners or use hard limits/guessing for UI layout, especially for the system tray area. The tray must adapt dynamically to its contents and monitor DPI without arbitrary boundaries.
 2. **Line Endings**: Ensure all file edits and creations preserve `CRLF` (Windows) line endings.
 
+## Follow-up — 2026-07-08T00:54:29Z
+
+The user has provided additional urgent feedback:
+1. **Portable Mode is FORBIDDEN**: The tools must no longer use portable mode via XML configuration files. The program MUST rely entirely on the Windows Registry (specifically the `HKLM\...\EliteSoftware` path).
+2. **win32explorer Config Fallback Bug**: Remove the fallback logic where `win32explorer` checks for an XML file and defaults to portable mode. It must strictly read/write to the registry regardless of XML file existence.
+3. **XML as Mirror / Exporting**: XML configuration files must only be generated as a mirror/backup of registry settings. Implement/fix Import and Export features to allow users to push XML settings to the registry or dump registry settings to XML, but the application itself must NOT read from the XML during normal operation.
+
+
 
 
 
