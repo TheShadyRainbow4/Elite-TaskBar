@@ -402,7 +402,10 @@ try {
     if (-not (Test-Path $regSettingsPath)) {
         New-Item -Path "HKLM:\Software\EliteSoftware\Win32Explorer" -Name "Advanced" -Force | Out-Null
     }
-    Set-ItemProperty -Path $regSettingsPath -Name "EnableEliteTaskbar" -Value 1 -Type DWord
+    Set-ItemProperty -Path $regSettingsPath -Name "EnableEliteTaskbar" -Value 1 -Type DWord -Force
+    Set-ItemProperty -Path $regSettingsPath -Name "TaskbarMode" -Value 1 -Type DWord -Force
+    Set-ItemProperty -Path $regSettingsPath -Name "DesktopReplacementEnabled" -Value 1 -Type DWord -Force
+    Set-ItemProperty -Path $regSettingsPath -Name "ForceProgmanAllDisplays" -Value 1 -Type DWord -Force
     Start-Sleep -Seconds 1
     
     # Rapidly click Apply button (ID 0x3021 / 12321) 3 times
