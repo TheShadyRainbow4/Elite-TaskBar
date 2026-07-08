@@ -2480,7 +2480,7 @@ LRESULT CALLBACK WindowProc(HWND hwnd, UINT uMsg, WPARAM wParam, LPARAM lParam) 
         if (lParam && wcscmp((LPCWSTR)lParam, L"TraySettings") == 0) {
             bool requiresRestart = false;
             HKEY hKey;
-            if (RegOpenKeyExW(HKEY_CURRENT_USER, L"Software\\EliteSoftware\\Win32Explorer\\Advanced", 0, KEY_READ, &hKey) == ERROR_SUCCESS) {
+            if (RegOpenKeyExW(HKEY_LOCAL_MACHINE, L"Software\\EliteSoftware\\Win32Explorer\\Advanced", 0, KEY_READ, &hKey) == ERROR_SUCCESS) {
                 DWORD dwValue = 0;
                 DWORD cbData = sizeof(DWORD);
                 if (RegQueryValueExW(hKey, L"TaskbarMode", NULL, NULL, (LPBYTE)&dwValue, &cbData) == ERROR_SUCCESS) {
@@ -2503,9 +2503,9 @@ LRESULT CALLBACK WindowProc(HWND hwnd, UINT uMsg, WPARAM wParam, LPARAM lParam) 
             if (requiresRestart) {
                 WCHAR exePath[MAX_PATH] = {0};
                 GetModuleFileNameW(NULL, exePath, MAX_PATH);
-
+ 
                 wchar_t psCmd[2048];
-                swprintf_s(psCmd, L"-NoProfile -WindowStyle Hidden -Command \"Start-Sleep -s 1; Stop-Process -Name explorer -Force; Start-Sleep -s 1; Start-Process explorer.exe; Start-Process -FilePath '%s'\"", exePath);
+                swprintf_s(psCmd, L"-NoProfile -WindowStyle Hidden -Command \"Start-Sleep -s 1; Stop-Process -Name EliteTaskbar -Force; Start-Sleep -Milliseconds 500; Start-Process -FilePath '%s'\"", exePath);
                 
                 ShellExecuteW(NULL, NULL, L"powershell.exe", psCmd, NULL, SW_HIDE);
                 PostMessageW(hwnd, WM_CLOSE, 0, 0);

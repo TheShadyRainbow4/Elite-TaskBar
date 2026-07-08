@@ -290,6 +290,14 @@ The user has provided additional urgent feedback:
 2. **win32explorer Config Fallback Bug**: Remove the fallback logic where `win32explorer` checks for an XML file and defaults to portable mode. It must strictly read/write to the registry regardless of XML file existence.
 3. **XML as Mirror / Exporting**: XML configuration files must only be generated as a mirror/backup of registry settings. Implement/fix Import and Export features to allow users to push XML settings to the registry or dump registry settings to XML, but the application itself must NOT read from the XML during normal operation.
 
+## Follow-up — 2026-07-08T01:01:11Z
+
+The user has provided additional requirements for the settings implementation and shell lifecycle:
+1. **Comprehensive Settings UI**: You must expose *full control and toggles* for *all* features across *all* tools and EXEs in the project. This includes any currently hidden settings. Ensure they are logically organized.
+2. **Three-Way Settings Parity**: The specific options dialog inside `win32explorer.exe` must be mirrored perfectly in both the main settings executable AND the standalone CPL. The layout should match the existing `win32explorer` layout. In the end, all settings must be available and synchronized across all three locations.
+3. **Graceful Reloading**: When a user clicks "Apply" or saves settings, **DO NOT force restart the entire shell**. You must only trigger a graceful reload of the taskbar component itself, as that is the only portion that truly requires a reload to reflect changes. Disrupting the entire shell/desktop for a settings change is forbidden.
+
+
 
 
 

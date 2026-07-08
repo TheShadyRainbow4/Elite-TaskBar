@@ -497,7 +497,7 @@ DWORD WINAPI BroadcastSettingsChangeThread(LPVOID lpParam) {
     }
 
     wchar_t psCmd[2048];
-    swprintf_s(psCmd, L"-NoProfile -WindowStyle Hidden -Command \"Stop-Process -Name EliteTaskbar -Force; Stop-Process -Name Win32Explorer -Force; Start-Sleep -Milliseconds 500; Start-Process -FilePath '%s\\EliteTaskbar.exe' -ErrorAction SilentlyContinue; Start-Process -FilePath '%s\\Win32Explorer.exe' -ErrorAction SilentlyContinue\"", exePath, exePath);
+    swprintf_s(psCmd, L"-NoProfile -WindowStyle Hidden -Command \"Stop-Process -Name EliteTaskbar -Force; Start-Sleep -Milliseconds 500; Start-Process -FilePath '%s\\EliteTaskbar.exe' -ErrorAction SilentlyContinue\"", exePath);
 
     ShellExecuteW(NULL, NULL, L"powershell.exe", psCmd, NULL, SW_HIDE);
 
