@@ -454,12 +454,27 @@ try {
         $dtIdx = $zOrder.IndexOf($hwndDesktop)
         
         $orderValid = ($tbIdx -lt $dtIdx)
-        $nextWnd = [Win32Helper]::GetWindow($hwndDesktop, 2) # GW_HWNDNEXT = 2
-        $isAtBottom = ($dtIdx -eq ($zOrder.Count - 1)) -or ($dtIdx -gt ($zOrder.Count * 0.9)) -or ($nextWnd -eq [IntPtr]::Zero)
+        
+        # Check if all windows below custom desktop are invisible (or other desktop windows) - Builder-Bob
+        $isAtBottom = $true
+        $next = [Win32Helper]::GetWindow($hwndDesktop, 2) # GW_HWNDNEXT = 2
+        while ($next -ne [IntPtr]::Zero) {
+            if ([Win32Helper]::IsWindowVisible($next)) {
+                $sbClass = New-Object System.Text.StringBuilder 260
+                [Win32Helper]::GetClassName($next, $sbClass, 260) | Out-Null
+                $clsName = $sbClass.ToString()
+                if ($clsName -ne "EliteDesktopSecondary" -and $clsName -ne "Progman" -and $clsName -ne "WorkerW") {
+                    $isAtBottom = $false
+                    Write-Host "Found visible window below desktop in Z-order: HWND=$next, Class=$clsName" -ForegroundColor Gray
+                    break
+                }
+            }
+            $next = [Win32Helper]::GetWindow($next, 2)
+        }
         
         if ($isTopmost -and $orderValid -and $isAtBottom) {
             $results["ZOrdering"] = "PASS"
-            Write-Host "[PASS] Taskbar is topmost ($isTopmost), custom desktop is below taskbar, and custom desktop is at the bottom." -ForegroundColor Green
+            Write-Host "[PASS] Taskbar is topmost ($isTopmost), custom desktop is below taskbar, and custom desktop is at the bottom of visible Z-order." -ForegroundColor Green
         } else {
             Write-Host "[FAIL] Z-ordering verification failed. Taskbar topmost: $isTopmost, Order valid: $orderValid, Desktop at bottom: $isAtBottom." -ForegroundColor Red
         }

@@ -342,6 +342,12 @@ The user reports a critical issue: "task bar has encountered a fatal existance f
 2. Investigate what broke the `EliteTaskbar` build/execution. Check compiler outputs, unhandled exceptions, broken window handles/Z-ordering logic.
 3. Restore the taskbar online.
 
+## Follow-up — 2026-07-08T02:27:46Z
+
+The user requests: "Tell them to make error messages from now on just as descriptive and specific as they are witty and funny."
+Ensure try/catch blocks and UI error prompts are both highly technical/specific (explaining exactly what broke) and intellectually witty/humorous in the classic EliteSoftware style.
+
+
 
 
 
