@@ -131,6 +131,11 @@
 #define IDC_EXPLORER_SHELLBAGS           384
 #define IDC_EXPLORER_NATIVE_SHELLVIEW    385
 
+// New configurations - Builder-Bob
+#define IDC_MANUAL_TRAY_WIDTH            390
+#define IDC_EXPLORER_FOLDER_VIEW_DEFAULT 391
+#define IDC_EXPLORER_THUMBNAIL_MIRROR_VIEWS 392
+
 
 
 

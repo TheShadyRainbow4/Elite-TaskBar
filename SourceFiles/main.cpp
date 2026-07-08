@@ -78,6 +78,15 @@ void QueryOperationalMode() {
         } else {
             g_Config.EnableTwoRowTray = true;
         }
+
+        // Load ManualTrayWidth setting - Builder-Bob
+        dwValue = 0;
+        bufferSize = sizeof(DWORD);
+        if (RegQueryValueExW(hKey, L"ManualTrayWidth", NULL, NULL, (LPBYTE)&dwValue, &bufferSize) == ERROR_SUCCESS) {
+            g_Config.ManualTrayWidth = (int)dwValue;
+        } else {
+            g_Config.ManualTrayWidth = 0;
+        }
         
         RegCloseKey(hKey);
     }

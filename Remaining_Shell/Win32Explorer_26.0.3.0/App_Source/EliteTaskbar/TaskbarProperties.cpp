@@ -673,6 +673,15 @@ INT_PTR CALLBACK TaskbarSettingsDlgProc(HWND hwndDlg, UINT uMsg, WPARAM wParam, 
             }
             SendDlgItemMessageW(hwndDlg, IDC_TWO_ROW_TRAY, BM_SETCHECK, enableTwoRow ? BST_CHECKED : BST_UNCHECKED, 0);
 
+            DWORD dwManualTrayWidth = 0;
+            cbData = sizeof(DWORD);
+            if (RegQueryValueExW(hKey, L"ManualTrayWidth", NULL, NULL, (LPBYTE)&dwManualTrayWidth, &cbData) == ERROR_SUCCESS) {
+                SetDlgItemInt(hwndDlg, IDC_MANUAL_TRAY_WIDTH, dwManualTrayWidth, FALSE);
+            } else {
+                SetDlgItemInt(hwndDlg, IDC_MANUAL_TRAY_WIDTH, 0, FALSE);
+            }
+            AddDlgTooltip(hwndDlg, IDC_MANUAL_TRAY_WIDTH, L"Enter custom width in pixels for the notification area tray (0 = automatic resizing).");
+
             WCHAR szThemePath[MAX_PATH] = {0};
             DWORD cbThemePath = sizeof(szThemePath);
             if (RegQueryValueExW(hKey, L"CustomThemePath", NULL, NULL, (LPBYTE)szThemePath, &cbThemePath) == ERROR_SUCCESS) {
@@ -730,6 +739,9 @@ INT_PTR CALLBACK TaskbarSettingsDlgProc(HWND hwndDlg, UINT uMsg, WPARAM wParam, 
                 
                 DWORD twoRow = (SendDlgItemMessageW(hwndDlg, IDC_TWO_ROW_TRAY, BM_GETCHECK, 0, 0) == BST_CHECKED) ? 1 : 0;
                 RegSetValueExW(hKey, L"EnableTwoRowTray", 0, REG_DWORD, (const BYTE*)&twoRow, sizeof(DWORD));
+
+                DWORD dwManualTrayWidth = GetDlgItemInt(hwndDlg, IDC_MANUAL_TRAY_WIDTH, NULL, FALSE);
+                RegSetValueExW(hKey, L"ManualTrayWidth", 0, REG_DWORD, (const BYTE*)&dwManualTrayWidth, sizeof(DWORD));
 
                 WCHAR szThemePath[MAX_PATH] = {0};
                 GetDlgItemTextW(hwndDlg, IDC_THEME_FOLDER_PATH, szThemePath, MAX_PATH);
@@ -2280,6 +2292,48 @@ INT_PTR CALLBACK ExplorerSettingsDlgProc(HWND hwndDlg, UINT uMsg, WPARAM wParam,
         SendDlgItemMessageW(hwndDlg, IDC_EXPLORER_SHELLBAGS, BM_SETCHECK, enableShellBagsSupport ? BST_CHECKED : BST_UNCHECKED, 0);
         SendDlgItemMessageW(hwndDlg, IDC_EXPLORER_NATIVE_SHELLVIEW, BM_SETCHECK, useNativeShellView ? BST_CHECKED : BST_UNCHECKED, 0);
 
+        HWND hwndCombo = GetDlgItem(hwndDlg, IDC_EXPLORER_FOLDER_VIEW_DEFAULT);
+        SendMessageW(hwndCombo, CB_RESETCONTENT, 0, 0);
+        int idx = (int)SendMessageW(hwndCombo, CB_ADDSTRING, 0, (LPARAM)L"Small Icon Tiles (Default)");
+        SendMessageW(hwndCombo, CB_SETITEMDATA, idx, (LPARAM)12);
+        idx = (int)SendMessageW(hwndCombo, CB_ADDSTRING, 0, (LPARAM)L"Tiles");
+        SendMessageW(hwndCombo, CB_SETITEMDATA, idx, (LPARAM)5);
+        idx = (int)SendMessageW(hwndCombo, CB_ADDSTRING, 0, (LPARAM)L"Details");
+        SendMessageW(hwndCombo, CB_SETITEMDATA, idx, (LPARAM)4);
+        idx = (int)SendMessageW(hwndCombo, CB_ADDSTRING, 0, (LPARAM)L"List");
+        SendMessageW(hwndCombo, CB_SETITEMDATA, idx, (LPARAM)3);
+        idx = (int)SendMessageW(hwndCombo, CB_ADDSTRING, 0, (LPARAM)L"Small Icons");
+        SendMessageW(hwndCombo, CB_SETITEMDATA, idx, (LPARAM)2);
+        idx = (int)SendMessageW(hwndCombo, CB_ADDSTRING, 0, (LPARAM)L"Icons");
+        SendMessageW(hwndCombo, CB_SETITEMDATA, idx, (LPARAM)1);
+        idx = (int)SendMessageW(hwndCombo, CB_ADDSTRING, 0, (LPARAM)L"Large Icons");
+        SendMessageW(hwndCombo, CB_SETITEMDATA, idx, (LPARAM)8);
+        idx = (int)SendMessageW(hwndCombo, CB_ADDSTRING, 0, (LPARAM)L"Extra Large Icons");
+        SendMessageW(hwndCombo, CB_SETITEMDATA, idx, (LPARAM)7);
+
+        DWORD defaultFolderView = 12;
+        DWORD defaultToThumbnailMirrors = 1;
+        if (RegOpenKeyExW(GetEliteRegistryRoot(), L"Software\\EliteSoftware\\Win32Explorer\\Advanced", 0, KEY_READ, &hKey) == ERROR_SUCCESS) {
+            cbData = sizeof(DWORD);
+            RegQueryValueExW(hKey, L"DefaultFolderView", NULL, NULL, (LPBYTE)&defaultFolderView, &cbData);
+            cbData = sizeof(DWORD);
+            RegQueryValueExW(hKey, L"DefaultToThumbnailMirrors", NULL, NULL, (LPBYTE)&defaultToThumbnailMirrors, &cbData);
+            RegCloseKey(hKey);
+        }
+
+        int count = (int)SendMessageW(hwndCombo, CB_GETCOUNT, 0, 0);
+        SendMessageW(hwndCombo, CB_SETCURSEL, 0, 0);
+        for (int i = 0; i < count; ++i) {
+            if ((DWORD)SendMessageW(hwndCombo, CB_GETITEMDATA, i, 0) == defaultFolderView) {
+                SendMessageW(hwndCombo, CB_SETCURSEL, i, 0);
+                break;
+            }
+        }
+
+        SendDlgItemMessageW(hwndDlg, IDC_EXPLORER_THUMBNAIL_MIRROR_VIEWS, BM_SETCHECK, defaultToThumbnailMirrors ? BST_CHECKED : BST_UNCHECKED, 0);
+        AddDlgTooltip(hwndDlg, IDC_EXPLORER_FOLDER_VIEW_DEFAULT, L"Select the default folder layout view style (e.g. tiles, details, list).");
+        AddDlgTooltip(hwndDlg, IDC_EXPLORER_THUMBNAIL_MIRROR_VIEWS, L"Toggle whether default folder layouts automatically render image/video thumbnails where possible.");
+
         return TRUE;
     }
     case WM_COMMAND: {
@@ -2289,7 +2343,8 @@ INT_PTR CALLBACK ExplorerSettingsDlgProc(HWND hwndDlg, UINT uMsg, WPARAM wParam,
             if (wID == IDC_EXPLORER_HIDDEN_FILES || wID == IDC_EXPLORER_EXTENSIONS ||
                 wID == IDC_EXPLORER_ENABLE_TASKBAR || wID == IDC_EXPLORER_ENABLE_STARTMENU ||
                 wID == IDC_EXPLORER_DEFAULT_GROUPBYTYPE || wID == IDC_EXPLORER_NATIVE_VIEWMODE ||
-                wID == IDC_EXPLORER_SHELLBAGS || wID == IDC_EXPLORER_NATIVE_SHELLVIEW) {
+                wID == IDC_EXPLORER_SHELLBAGS || wID == IDC_EXPLORER_NATIVE_SHELLVIEW ||
+                wID == IDC_EXPLORER_THUMBNAIL_MIRROR_VIEWS || wID == IDC_EXPLORER_FOLDER_VIEW_DEFAULT) {
                 SendMessageW(GetParent(hwndDlg), PSM_CHANGED, (WPARAM)hwndDlg, 0);
             }
             else if (wID == IDC_EXPLORER_BACKUP) {
@@ -2331,6 +2386,18 @@ INT_PTR CALLBACK ExplorerSettingsDlgProc(HWND hwndDlg, UINT uMsg, WPARAM wParam,
                 RegSetValueExW(hKey, L"EnableNativeViewMode", 0, REG_DWORD, (const BYTE*)&enableNativeViewMode, sizeof(DWORD));
                 RegSetValueExW(hKey, L"EnableShellBagsSupport", 0, REG_DWORD, (const BYTE*)&enableShellBagsSupport, sizeof(DWORD));
                 RegSetValueExW(hKey, L"UseNativeShellView", 0, REG_DWORD, (const BYTE*)&useNativeShellView, sizeof(DWORD));
+
+                HWND hwndCombo = GetDlgItem(hwndDlg, IDC_EXPLORER_FOLDER_VIEW_DEFAULT);
+                int sel = (int)SendMessageW(hwndCombo, CB_GETCURSEL, 0, 0);
+                DWORD defaultFolderView = 12;
+                if (sel != CB_ERR) {
+                    defaultFolderView = (DWORD)SendMessageW(hwndCombo, CB_GETITEMDATA, sel, 0);
+                }
+                RegSetValueExW(hKey, L"DefaultFolderView", 0, REG_DWORD, (const BYTE*)&defaultFolderView, sizeof(DWORD));
+
+                DWORD defaultToThumbnailMirrors = (SendDlgItemMessageW(hwndDlg, IDC_EXPLORER_THUMBNAIL_MIRROR_VIEWS, BM_GETCHECK, 0, 0) == BST_CHECKED) ? 1 : 0;
+                RegSetValueExW(hKey, L"DefaultToThumbnailMirrors", 0, REG_DWORD, (const BYTE*)&defaultToThumbnailMirrors, sizeof(DWORD));
+
                 RegCloseKey(hKey);
             }
 

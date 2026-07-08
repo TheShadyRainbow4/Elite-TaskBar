@@ -52,7 +52,72 @@ struct EliteTrayIcon {
 
 std::vector<EliteTrayIcon> g_TrayIcons;
 
+// Helper to get DPI for a window - Builder-Bob
+int GetDpiForWindowHelper(HWND hwnd) {
+    UINT dpi = 96;
+    HMODULE hShcore = LoadLibraryW(L"shcore.dll");
+    if (hShcore) {
+        typedef HRESULT(STDAPICALLTYPE* GetDpiForMonitorFn)(HMONITOR, int, UINT*, UINT*);
+        GetDpiForMonitorFn fn = (GetDpiForMonitorFn)GetProcAddress(hShcore, "GetDpiForMonitor");
+        if (fn) {
+            HMONITOR hMon = MonitorFromWindow(hwnd, MONITOR_DEFAULTTONEAREST);
+            UINT dpiX = 96, dpiY = 96;
+            fn(hMon, 0, &dpiX, &dpiY);
+            dpi = dpiX;
+        }
+        FreeLibrary(hShcore);
+    } else {
+        HDC hdc = GetDC(NULL);
+        if (hdc) {
+            dpi = GetDeviceCaps(hdc, LOGPIXELSX);
+            ReleaseDC(NULL, hdc);
+        }
+    }
+    return dpi;
+}
+
+// Calculate the number of icons that fit in the tray - Builder-Bob
+int GetTrayVisibleLimit(HWND hwndTrayNotify, int dpi, int totalVisible) {
+    bool bIsWin7Mode = (g_Config.OverflowMode == TrayOverflowMode::Win7Flyout);
+    bool bIsExpanded = (GetPropW(hwndTrayNotify, L"TrayExpanded") != NULL);
+    
+    if (g_Config.ManualTrayWidth > 0) {
+        int W_tray = MulDiv(g_Config.ManualTrayWidth, dpi, 96);
+        if (g_Config.EnableTwoRowTray) {
+            int colWidth = MulDiv(18, dpi, 96);
+            int cols = W_tray / colWidth;
+            if (cols < 1) cols = 1;
+            return cols * 2;
+        } else {
+            int btnWidth = MulDiv(24, dpi, 96);
+            int cols = W_tray / btnWidth;
+            if (cols < 1) cols = 1;
+            return cols;
+        }
+    } else {
+        if (bIsWin7Mode) {
+            return TRAY_LIMIT;
+        } else {
+            if (bIsExpanded) {
+                return totalVisible;
+            } else {
+                return g_Config.EnableTwoRowTray ? 8 : 5;
+            }
+        }
+    }
+}
+
 void UpdateTrayToolbarFromIndependent(TaskbarInstance* inst) {
+    // Filter out non-existent windows/threads - Builder-Bob
+    for (auto it = g_TrayIcons.begin(); it != g_TrayIcons.end(); ) {
+        if (it->hWnd && !IsWindow(it->hWnd)) {
+            if (it->hIcon) DestroyIcon(it->hIcon);
+            it = g_TrayIcons.erase(it);
+        } else {
+            ++it;
+        }
+    }
+
     std::vector<ScrapedTrayIcon> icons;
     for (const auto& icon : g_TrayIcons) {
         if (icon.hIcon && !(icon.dwState & NIS_HIDDEN)) {
@@ -129,6 +194,25 @@ LRESULT CALLBACK TrayToolbarSubclassProc(HWND hWnd, UINT uMsg, WPARAM wParam, LP
         GetClientRect(hWnd, &rc);
         DrawThemeParentBackground(hWnd, hdc, &rc);
         return TRUE;
+    }
+    case WM_PAINT: {
+        PAINTSTRUCT ps;
+        HDC hdc = BeginPaint(hWnd, &ps);
+        if (hdc) {
+            RECT rc;
+            GetClientRect(hWnd, &rc);
+            DrawThemeParentBackground(hWnd, hdc, &rc);
+            SendMessageW(hWnd, WM_PRINTCLIENT, (WPARAM)hdc, PRF_CLIENT);
+        }
+        EndPaint(hWnd, &ps);
+        return 0;
+    }
+    case WM_PRINTCLIENT: {
+        HDC hdc = (HDC)wParam;
+        RECT rc;
+        GetClientRect(hWnd, &rc);
+        DrawThemeParentBackground(hWnd, hdc, &rc);
+        break; // Let default procedure draw buttons/icons - Builder-Bob
     }
     case WM_LBUTTONDOWN:
     case WM_LBUTTONUP:
@@ -418,7 +502,20 @@ void UpdateTaskbarLayout(TaskbarInstance* inst) {
         bool enableClock = (inst->hTrayClock != NULL);
         bool enableTray = (inst->hSysPager != NULL);
 
-        if (inst->hToolbar && enableTray) { // Compute tray layout width dynamically - Builder-Bob
+        int totalVisible = (int)g_CurrentTrayIcons.size();
+        if (g_Config.Mode == TaskbarMode::Independent) {
+            totalVisible = 0;
+            for (const auto& icon : g_TrayIcons) {
+                if (icon.hIcon && !(icon.dwState & NIS_HIDDEN)) totalVisible++;
+            }
+        }
+
+        int limit = GetTrayVisibleLimit(inst->hTrayNotify, dpi, totalVisible);
+        bool hasOverflow = (totalVisible > limit);
+
+        if (g_Config.ManualTrayWidth > 0) {
+            W_tray = MulDiv(g_Config.ManualTrayWidth, dpi, 96);
+        } else if (inst->hToolbar && enableTray) { // Compute tray layout width dynamically - Builder-Bob
             SendMessageW(inst->hToolbar, TB_AUTOSIZE, 0, 0);
             int btnCount = (int)SendMessageW(inst->hToolbar, TB_BUTTONCOUNT, 0, 0);
             if (btnCount > 0) {
@@ -449,13 +546,15 @@ void UpdateTaskbarLayout(TaskbarInstance* inst) {
             W_tray = 0;
         }
 
-        W_notify = W_tray + (enableClock ? W_clock : 0);
+        int W_overflowBtn = MulDiv(18, dpi, 96);
+        W_notify = W_tray + (hasOverflow ? W_overflowBtn : 0) + (enableClock ? W_clock : 0);
 
         int xNotify = taskbarWidth - W_showDesktop - W_notify;
         SetWindowPos(inst->hTrayNotify, NULL, xNotify, 0, W_notify, taskbarHeight, SWP_NOZORDER | SWP_NOACTIVATE);
 
         if (enableTray && inst->hSysPager) {
-            SetWindowPos(inst->hSysPager, NULL, 0, 0, W_tray, taskbarHeight, SWP_NOZORDER | SWP_NOACTIVATE);
+            int pagerX = hasOverflow ? W_overflowBtn : 0;
+            SetWindowPos(inst->hSysPager, NULL, pagerX, 0, W_tray, taskbarHeight, SWP_NOZORDER | SWP_NOACTIVATE);
             if (inst->hToolbar) {
                 if (g_Config.EnableTwoRowTray) {
                     int tbHeight = MulDiv(26, dpi, 96);
@@ -467,7 +566,8 @@ void UpdateTaskbarLayout(TaskbarInstance* inst) {
             }
         }
         if (enableClock && inst->hTrayClock) {
-            SetWindowPos(inst->hTrayClock, NULL, W_tray, 0, W_clock, taskbarHeight, SWP_NOZORDER | SWP_NOACTIVATE);
+            int clockX = (hasOverflow ? W_overflowBtn : 0) + W_tray;
+            SetWindowPos(inst->hTrayClock, NULL, clockX, 0, W_clock, taskbarHeight, SWP_NOZORDER | SWP_NOACTIVATE);
         }
         
         InvalidateRect(inst->hTrayNotify, NULL, TRUE);
@@ -1166,6 +1266,10 @@ LRESULT CALLBACK TrayFlyoutProc(HWND hwnd, UINT uMsg, WPARAM wParam, LPARAM lPar
 }
 
 LRESULT CALLBACK TrayNotifyProc(HWND hwnd, UINT uMsg, WPARAM wParam, LPARAM lParam) {
+    static bool s_bResizingTray = false;
+    static int s_dragStartScreenX = 0;
+    static int s_dragStartWTray = 0;
+
     switch (uMsg) {
     case WM_PRINTCLIENT:
     case WM_ERASEBKGND: {
@@ -1181,12 +1285,38 @@ LRESULT CALLBACK TrayNotifyProc(HWND hwnd, UINT uMsg, WPARAM wParam, LPARAM lPar
         RECT rcClient;
         GetClientRect(hwnd, &rcClient);
         DrawThemeParentBackground(hwnd, hdc, &rcClient);
+
+        int dpi = GetDpiForWindowHelper(hwnd);
+        int totalVisible = (int)g_CurrentTrayIcons.size();
+        if (g_Config.Mode == TaskbarMode::Independent) {
+            totalVisible = 0;
+            for (const auto& icon : g_TrayIcons) {
+                if (icon.hIcon && !(icon.dwState & NIS_HIDDEN)) totalVisible++;
+            }
+        }
+        int limit = GetTrayVisibleLimit(hwnd, dpi, totalVisible);
+        if (totalVisible > limit) {
+            RECT rcBtn = { 0, 0, MulDiv(18, dpi, 96), rcClient.bottom };
+            DrawFrameControl(hdc, &rcBtn, DFC_BUTTON, DFCS_BUTTONPUSH);
+
+            bool bIsWin7Mode = (g_Config.OverflowMode == TrayOverflowMode::Win7Flyout);
+            bool bIsExpanded = (GetPropW(hwnd, L"TrayExpanded") != NULL);
+            LPCWSTR arrowText = L"▲";
+            if (!bIsWin7Mode) {
+                arrowText = bIsExpanded ? L"▶" : L"◀";
+            }
+
+            SetTextColor(hdc, RGB(0, 0, 0));
+            SetBkMode(hdc, TRANSPARENT);
+            DrawTextW(hdc, arrowText, -1, &rcBtn, DT_CENTER | DT_VCENTER | DT_SINGLELINE);
+        }
+
         EndPaint(hwnd, &ps);
         return 0;
     }
     case WM_COPYDATA: {
         COPYDATASTRUCT* pcds = (COPYDATASTRUCT*)lParam;
-        if (pcds->dwData == 1 && pcds->cbData >= 8) { // Tray notification
+        if ((pcds->dwData == 1 || pcds->dwData == 0x34753423) && pcds->cbData >= 8) { // Tray notification
             TRAYDATA* pTrayData = (TRAYDATA*)pcds->lpData;
             if (pTrayData->dwSignature == 0x34753423) {
                 DWORD dwMessage = pTrayData->dwMessage;
@@ -1245,18 +1375,99 @@ LRESULT CALLBACK TrayNotifyProc(HWND hwnd, UINT uMsg, WPARAM wParam, LPARAM lPar
         }
         return TRUE;
     }
+    case WM_SETCURSOR: {
+        POINT pt;
+        GetCursorPos(&pt);
+        ScreenToClient(hwnd, &pt);
+        if (pt.x >= 0 && pt.x <= 5) {
+            SetCursor(LoadCursor(NULL, IDC_SIZEWE));
+            return TRUE;
+        }
+        break;
+    }
+    case WM_CAPTURECHANGED: {
+        if (s_bResizingTray) {
+            s_bResizingTray = false;
+        }
+        break;
+    }
     case WM_MOUSEMOVE: {
+        // Prune dead/ghost icons on mouse move - Builder-Bob
+        bool anyPruned = false;
+        for (auto it = g_TrayIcons.begin(); it != g_TrayIcons.end(); ) {
+            if (it->hWnd && !IsWindow(it->hWnd)) {
+                if (it->hIcon) DestroyIcon(it->hIcon);
+                it = g_TrayIcons.erase(it);
+                anyPruned = true;
+            } else {
+                ++it;
+            }
+        }
+        if (anyPruned) {
+            InvalidateRect(hwnd, NULL, FALSE);
+            TaskbarInstance* inst = GetTaskbarInstance(hwnd);
+            if (inst) {
+                UpdateTaskbarLayout(inst);
+                if (inst->hToolbar) {
+                    if (g_Config.Mode == TaskbarMode::Independent) {
+                        UpdateTrayToolbarFromIndependent(inst);
+                    } else {
+                        std::vector<ScrapedTrayIcon> icons = ScrapeTrayIcons();
+                        UpdateTrayToolbar(inst->hToolbar, inst->hTrayImageList, icons);
+                    }
+                }
+            }
+        }
+
         int xPos = GET_X_LPARAM(lParam);
         int yPos = GET_Y_LPARAM(lParam);
-        
-        bool bIsWin7Mode = (g_Config.OverflowMode == TrayOverflowMode::Win7Flyout);
-        bool bIsExpanded = (GetPropW(hwnd, L"TrayExpanded") != NULL);
-        
+
+        if (s_bResizingTray) {
+            POINT ptScreen;
+            GetCursorPos(&ptScreen);
+            int deltaX = ptScreen.x - s_dragStartScreenX;
+            int newW = s_dragStartWTray - deltaX;
+            int minW = 24;
+            if (newW < minW) newW = minW;
+
+            g_Config.ManualTrayWidth = newW;
+            HKEY hKey;
+            if (RegCreateKeyExW(GetEliteRegistryRoot(), L"Software\\EliteSoftware\\Win32Explorer\\Advanced", 0, NULL, REG_OPTION_NON_VOLATILE, KEY_WRITE, NULL, &hKey, NULL) == ERROR_SUCCESS) {
+                DWORD dwVal = newW;
+                RegSetValueExW(hKey, L"ManualTrayWidth", 0, REG_DWORD, (const BYTE*)&dwVal, sizeof(DWORD));
+                RegCloseKey(hKey);
+            }
+
+            TaskbarInstance* inst = GetTaskbarInstance(hwnd);
+            if (inst) {
+                UpdateTaskbarLayout(inst);
+                if (inst->hToolbar) {
+                    if (g_Config.Mode == TaskbarMode::Independent) {
+                        UpdateTrayToolbarFromIndependent(inst);
+                    } else {
+                        std::vector<ScrapedTrayIcon> icons = ScrapeTrayIcons();
+                        UpdateTrayToolbar(inst->hToolbar, inst->hTrayImageList, icons);
+                    }
+                }
+            }
+            SetCursor(LoadCursor(NULL, IDC_SIZEWE));
+            return 0;
+        }
+
+        if (xPos >= 0 && xPos <= 5) {
+            SetCursor(LoadCursor(NULL, IDC_SIZEWE));
+        }
+
+        int dpi = GetDpiForWindowHelper(hwnd);
         int totalVisible = 0;
         for (const auto& icon : g_TrayIcons) {
             if (icon.hIcon && !(icon.dwState & NIS_HIDDEN)) totalVisible++;
         }
-        
+        int limit = GetTrayVisibleLimit(hwnd, dpi, totalVisible);
+        int W_overflowBtn = MulDiv(18, dpi, 96);
+        bool bIsWin7Mode = (g_Config.OverflowMode == TrayOverflowMode::Win7Flyout);
+        bool bIsExpanded = (GetPropW(hwnd, L"TrayExpanded") != NULL);
+
         bool bTracking = GetTooltipTracking(hwnd);
         if (!bTracking) {
             TRACKMOUSEEVENT tme = {0};
@@ -1269,7 +1480,7 @@ LRESULT CALLBACK TrayNotifyProc(HWND hwnd, UINT uMsg, WPARAM wParam, LPARAM lPar
 
         int iconIndex = -1;
         if (g_Config.EnableTwoRowTray) {
-            int iconOffset = (totalVisible > TRAY_LIMIT) ? 18 : 2;
+            int iconOffset = (totalVisible > limit) ? W_overflowBtn : 2;
             RECT rc;
             GetClientRect(hwnd, &rc);
             int height = rc.bottom - rc.top;
@@ -1286,8 +1497,8 @@ LRESULT CALLBACK TrayNotifyProc(HWND hwnd, UINT uMsg, WPARAM wParam, LPARAM lPar
                 }
             }
         } else {
-            if (!(totalVisible > TRAY_LIMIT && xPos < 18)) {
-                int iconOffset = (totalVisible > TRAY_LIMIT) ? 18 : 2;
+            if (!(totalVisible > limit && xPos < W_overflowBtn)) {
+                int iconOffset = (totalVisible > limit) ? W_overflowBtn : 2;
                 int tempIdx = (xPos - iconOffset) / 24;
                 if (tempIdx >= 0) {
                     RECT rc;
@@ -1303,12 +1514,12 @@ LRESULT CALLBACK TrayNotifyProc(HWND hwnd, UINT uMsg, WPARAM wParam, LPARAM lPar
         }
 
         int visibleDrawnCount = totalVisible;
-        if (totalVisible > TRAY_LIMIT) {
+        if (totalVisible > limit) {
             if (bIsWin7Mode) {
-                visibleDrawnCount = TRAY_LIMIT;
+                visibleDrawnCount = limit;
             } else {
                 if (!bIsExpanded) {
-                    visibleDrawnCount = TRAY_LIMIT;
+                    visibleDrawnCount = limit;
                 }
             }
         }
@@ -1325,14 +1536,14 @@ LRESULT CALLBACK TrayNotifyProc(HWND hwnd, UINT uMsg, WPARAM wParam, LPARAM lPar
                 int drawn = 0;
                 for (const auto& icon : g_TrayIcons) {
                     if (icon.hIcon && !(icon.dwState & NIS_HIDDEN)) {
-                        if (totalVisible > TRAY_LIMIT) {
+                        if (totalVisible > limit) {
                             if (bIsWin7Mode) {
-                                if (current < totalVisible - TRAY_LIMIT) { current++; continue; }
+                                if (current < totalVisible - limit) { current++; continue; }
                             } else {
-                                if (!bIsExpanded && current < totalVisible - TRAY_LIMIT) { current++; continue; }
+                                if (!bIsExpanded && current < totalVisible - limit) { current++; continue; }
                             }
                         }
-                        
+
                         if (drawn == iconIndex) {
                             std::wstring tip = icon.szTip;
                             if (!tip.empty()) {
@@ -1363,11 +1574,11 @@ LRESULT CALLBACK TrayNotifyProc(HWND hwnd, UINT uMsg, WPARAM wParam, LPARAM lPar
             int drawn = 0;
             for (const auto& icon : g_TrayIcons) {
                 if (icon.hIcon && !(icon.dwState & NIS_HIDDEN)) {
-                    if (totalVisible > TRAY_LIMIT) {
+                    if (totalVisible > limit) {
                         if (bIsWin7Mode) {
-                            if (current < totalVisible - TRAY_LIMIT) { current++; continue; }
+                            if (current < totalVisible - limit) { current++; continue; }
                         } else {
-                            if (!bIsExpanded && current < totalVisible - TRAY_LIMIT) { current++; continue; }
+                            if (!bIsExpanded && current < totalVisible - limit) { current++; continue; }
                         }
                     }
                     if (drawn == iconIndex) {
@@ -1396,16 +1607,44 @@ LRESULT CALLBACK TrayNotifyProc(HWND hwnd, UINT uMsg, WPARAM wParam, LPARAM lPar
     case WM_RBUTTONDBLCLK: {
         int xPos = GET_X_LPARAM(lParam);
         int yPos = GET_Y_LPARAM(lParam);
-        
+
+        if (uMsg == WM_LBUTTONDOWN && xPos >= 0 && xPos <= 5) {
+            s_bResizingTray = true;
+            SetCapture(hwnd);
+            POINT ptScreen;
+            GetCursorPos(&ptScreen);
+            s_dragStartScreenX = ptScreen.x;
+
+            TaskbarInstance* inst = GetTaskbarInstance(hwnd);
+            int currentW = 100;
+            if (inst && inst->hSysPager) {
+                RECT rcPager;
+                GetClientRect(inst->hSysPager, &rcPager);
+                currentW = rcPager.right - rcPager.left;
+            }
+            s_dragStartWTray = currentW;
+            return 0;
+        }
+
+        if (uMsg == WM_LBUTTONUP && s_bResizingTray) {
+            s_bResizingTray = false;
+            ReleaseCapture();
+            return 0;
+        }
+
         bool bIsWin7Mode = (g_Config.OverflowMode == TrayOverflowMode::Win7Flyout);
         bool bIsExpanded = (GetPropW(hwnd, L"TrayExpanded") != NULL);
-        
+
         int totalVisible = 0;
         for (const auto& icon : g_TrayIcons) {
             if (icon.hIcon && !(icon.dwState & NIS_HIDDEN)) totalVisible++;
         }
-        
-        if (totalVisible > TRAY_LIMIT && xPos < 18) {
+
+        int dpi = GetDpiForWindowHelper(hwnd);
+        int limit = GetTrayVisibleLimit(hwnd, dpi, totalVisible);
+        int W_overflowBtn = MulDiv(18, dpi, 96);
+
+        if (totalVisible > limit && xPos < W_overflowBtn) {
             if (uMsg == WM_LBUTTONDOWN) {
                 if (bIsWin7Mode) {
                     if (!g_hTrayFlyout) {
@@ -1417,17 +1656,27 @@ LRESULT CALLBACK TrayNotifyProc(HWND hwnd, UINT uMsg, WPARAM wParam, LPARAM lPar
                 } else {
                     if (bIsExpanded) RemovePropW(hwnd, L"TrayExpanded");
                     else SetPropW(hwnd, L"TrayExpanded", (HANDLE)1);
-                    
+
                     TaskbarInstance* inst = GetTaskbarInstance(hwnd);
-                    if (inst) UpdateTaskbarLayout(inst);
+                    if (inst) {
+                        UpdateTaskbarLayout(inst);
+                        if (inst->hToolbar) {
+                            if (g_Config.Mode == TaskbarMode::Independent) {
+                                UpdateTrayToolbarFromIndependent(inst);
+                            } else {
+                                std::vector<ScrapedTrayIcon> icons = ScrapeTrayIcons();
+                                UpdateTrayToolbar(inst->hToolbar, inst->hTrayImageList, icons);
+                            }
+                        }
+                    }
                 }
             }
             return 0;
         }
-        
+
         int iconIndex = -1;
         if (g_Config.EnableTwoRowTray) {
-            int iconOffset = (totalVisible > TRAY_LIMIT) ? 18 : 2;
+            int iconOffset = (totalVisible > limit) ? W_overflowBtn : 2;
             RECT rc;
             GetClientRect(hwnd, &rc);
             int height = rc.bottom - rc.top;
@@ -1444,7 +1693,7 @@ LRESULT CALLBACK TrayNotifyProc(HWND hwnd, UINT uMsg, WPARAM wParam, LPARAM lPar
                 }
             }
         } else {
-            int iconOffset = (totalVisible > TRAY_LIMIT) ? 18 : 2;
+            int iconOffset = (totalVisible > limit) ? W_overflowBtn : 2;
             int tempIdx = (xPos - iconOffset) / 24;
             if (tempIdx >= 0) {
                 RECT rc;
@@ -1459,31 +1708,31 @@ LRESULT CALLBACK TrayNotifyProc(HWND hwnd, UINT uMsg, WPARAM wParam, LPARAM lPar
         }
 
         int visibleDrawnCount = totalVisible;
-        if (totalVisible > TRAY_LIMIT) {
+        if (totalVisible > limit) {
             if (bIsWin7Mode) {
-                visibleDrawnCount = TRAY_LIMIT;
+                visibleDrawnCount = limit;
             } else {
                 if (!bIsExpanded) {
-                    visibleDrawnCount = TRAY_LIMIT;
+                    visibleDrawnCount = limit;
                 }
             }
         }
         if (iconIndex < 0 || iconIndex >= visibleDrawnCount) {
             return 0;
         }
-        
+
         int current = 0;
         int drawn = 0;
         for (const auto& icon : g_TrayIcons) {
             if (icon.hIcon && !(icon.dwState & NIS_HIDDEN)) {
-                if (totalVisible > TRAY_LIMIT) {
+                if (totalVisible > limit) {
                     if (bIsWin7Mode) {
-                        if (current < totalVisible - TRAY_LIMIT) { current++; continue; }
+                        if (current < totalVisible - limit) { current++; continue; }
                     } else {
-                        if (!bIsExpanded && current < totalVisible - TRAY_LIMIT) { current++; continue; }
+                        if (!bIsExpanded && current < totalVisible - limit) { current++; continue; }
                     }
                 }
-                
+
                 if (drawn == iconIndex) {
                     PostMessageW(icon.hWnd, icon.uCallbackMessage, icon.uID, uMsg);
                     break;
@@ -2790,7 +3039,7 @@ bool TaskbarWindow::Initialize(HINSTANCE hInstance) {
         }
 
         inst->hTaskbar = CreateWindowExW(
-            WS_EX_TOOLWINDOW,
+            0,
             szClassName, L"", WS_POPUP | WS_VISIBLE | WS_CLIPSIBLINGS | WS_CLIPCHILDREN,
             xPos, yPos, screenWidth, inst->taskbarHeight,
             NULL, NULL, hInstance, NULL
@@ -2799,6 +3048,15 @@ bool TaskbarWindow::Initialize(HINSTANCE hInstance) {
         if (!inst->hTaskbar) {
             delete inst;
             continue;
+        }
+
+        // Hide window from native taskbar using ITaskbarList - Builder-Bob
+        ITaskbarList* pTaskList = NULL;
+        HRESULT hr = CoCreateInstance(CLSID_TaskbarList, NULL, CLSCTX_INPROC_SERVER, IID_ITaskbarList, (void**)&pTaskList);
+        if (SUCCEEDED(hr) && pTaskList) {
+            pTaskList->HrInit();
+            pTaskList->DeleteTab(inst->hTaskbar);
+            pTaskList->Release();
         }
 
         if (!bHookRegistered) {

@@ -29,6 +29,7 @@ struct EliteTaskbarConfig {
     bool ShowPreviews;
     bool UseNativeTaskBand;
     bool EnableTwoRowTray;
+    int ManualTrayWidth; // Manual width in pixels - Builder-Bob
     std::vector<HMONITOR> MonitorTargets;
 };
 

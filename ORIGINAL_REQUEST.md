@@ -347,6 +347,35 @@ The user reports a critical issue: "task bar has encountered a fatal existance f
 The user requests: "Tell them to make error messages from now on just as descriptive and specific as they are witty and funny."
 Ensure try/catch blocks and UI error prompts are both highly technical/specific (explaining exactly what broke) and intellectually witty/humorous in the classic EliteSoftware style.
 
+## Follow-up — 2026-07-08T03:52:35Z
+
+The user has reviewed the build and provided new requirements and bug fixes. Resume development:
+### Taskbar & System Tray:
+1. **Manual Tray Resizing**: Drag tray from active side (not clock side) to manually resize horizontally. Shrinking it pushes hidden icons into a flyout menu.
+2. **Transparency Bug**: Fix tray background acting strange; eliminate solid white bar/background behind icons.
+3. **Ghost Icons**: Implement a refresh mechanism to remove icons of closed programs (mimic native Windows).
+4. **Overflow Flyout Style**: Tray overflow must mimic Windows via flyout window (like Win 7) or shrinking/expanding outward (like Vista/XP).
+
+### Win32Explorer View Modes & Shellbags:
+5. **Default Folder Views**: "small tiles" everywhere except "This PC" (Computer) which defaults to "full tiles".
+6. **Default Grouping**: Default to "Group by type".
+7. **Shellbags**: Use native Windows `shellbags` to determine layout options and save folder states.
+8. **Thumbnail Mirrors**: Mirror every non-thumbnail view mode as a new view mode WITH thumbnails (e.g. "Thumbnail Tiles"). These variants should be default, do not remove original non-thumbnail views.
+
+### Misc:
+- Never use "OK" in dialogs/prompts; it must always be "Okay".
+
+## Follow-up — 2026-07-08T04:09:56Z
+
+The user provided the exact Win32/COM architecture to fix taskbar/tray bugs:
+1. **Hiding icons from native taskbar**: Do NOT use `WS_EX_TOOLWINDOW`. Instantiate `ITaskbarList`, call `HrInit()`, and use its methods (e.g. `DeleteTab`) to ignore handles.
+2. **Duplicate Tray Icons**: Filter tray messages (`NIM_ADD`, `NIM_MODIFY`, `NIM_DELETE`), unique match by `hWnd` and `uID`. `NIM_ADD` of existing is modify; `NIM_MODIFY` updates properties; `NIM_DELETE` erases.
+3. **Ghost Tray Icons**: In `WM_MOUSEMOVE` or refresh loop, iterate icons and check `!IsWindow(icon.hWnd)`. If dead, `DestroyIcon` and erase.
+4. **True Standalone System Tray**: When explorer is dead: (A) Register master class as `Shell_TrayWnd`. (B) Intercept `WM_COPYDATA` (dwData == 1 or 0x34753423) and process `NIM_*` commands. (C) `RegisterWindowMessage(L"TaskbarCreated")` and broadcast it to force apps to re-send icons.
+5. **Tray Context Menus**: Send uCallbackMessage back to originating hWnd with mouse event parameters on click events (e.g. `WM_RBUTTONUP`). Do not draw custom menus.
+
+
+
 
 
 

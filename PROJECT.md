@@ -11,16 +11,16 @@ Data flows through registry keys located at `HKCU\Software\EliteSoftware\Win32Ex
 ## Milestones
 | # | Name | Scope | Dependencies | Status |
 |---|------|-------|-------------|--------|
-| 1 | R6: Portable Mirror Mode & R3: Settings Sync | Save config to XML file / HKLM, CPL repair, Replace Explorer toggles and fix stuck logic. | None | DONE |
-| 2 | R2: System Tray & R5: Custom Icon Theming | Add system tray icons and Quit option to Taskbar/Explorer. Custom Icon Theme Importer. | M1 | DONE |
-| 3 | R1: Deep Metadata & R4: View Modes & Grouping | Display extended metadata (Ratings/Authors/Dimensions) in details. Thumbnail Tiles and Group by Type. | M1 | DONE |
-| 4 | E2E Testing Track | Design and implement comprehensive E2E test suite; write verify_final_polish.ps1 and compile tests. | None | DONE |
-| 5 | Milestone 1: Multi-Monitor & Tray/Flyout Fixes | Dynamic primary display spoofing, clock/tray gap, two-row tray, tray actions. | M3 | DONE |
-| 6 | Milestone 2: Settings UI, About Dialog, & Migration Cleanup | Start tab hover bug, About dialog close buttons, reload explorer window bug, *old*.exe cleanup. | M3 | DONE |
-| 7 | Milestone 3: Advanced Desktop & Theme Configuration | Progman multi-display render, Desktop Background tab, Span/Per-monitor, slideshow, default checked tray on all displays, transparent desktop icon backgrounds (no white outlines), toggleable desktop thumbnails, massive Settings UI extension, re-enable CAB backups via build.ps1 utilizing backup.ps1 -BuildOutputOnly. | M3 | IN_PROGRESS |
-| 8 | Milestone 4: Global Keyboard Hooks & Shell Fallbacks | Compile OpenShell.sln to EliteStartMenu.exe with -monitor/-rect arguments support (StartMenu.cpp command-line parser), read/inherit from official native Open-Shell registry path, WH_KEYBOARD_LL hooks and RegisterHotKey for Win+R. | M3 | PLANNED |
-| 9 | Milestone 5: Taskbar Features & View Modes | Launch EliteStartMenu with monitor arguments, clock seconds, show desktop hover, resizable Quick Launch, view modes. | M3 | PLANNED |
-| 10| Final Milestone: Pass E2E Tests & Hardening | Run all E2E tests, debug and fix failures, run white-box adversarial testing. | M4, M5, M6, M7, M8, M9 | PLANNED |
+| 1 | Milestone 1: Shell Behavior, Z-Ordering & HKLM Registry Alignment | GetEliteRegistryRoot redirected to HKLM, win32explorer config XML fallback removed, topmost/bottommost window pos locks, fallback Shell_SecondaryTrayWnd. | None | DONE |
+| 2 | Milestone 2: Interactive Desktop & Multi-Monitor Support | Custom IShellBrowser hosting IShellView created via SHCreateShellFolderView under registry toggle, secondary desktop monitor backgrounds, start button spoofing. | M1 | DONE |
+| 3 | Milestone 3: Independent System Tray & Start Menu | Tray icons routed through common hToolbar, click callbacks subclass, hSysPager tooltips, dynamic tray width calculation. | M2 | DONE |
+| 4 | Milestone 4: Settings Completeness & Options Mirroring | Mirror win32explorer options to properties dialog and CPL, Explorer selection/hover modernized. | M3 | DONE |
+| 5 | Milestone 5: E2E Verification & Forensic Audit | Compile via build.ps1, E2E tests, Forensic Auditor integrity check. | M4 | DONE |
+| 6 | Milestone 6: Resolve ODR Violation & Startup Crash | Resolve ODR collision (MonitorEnumProc) causing crash under Replace mode. | M5 | DONE |
+| 7 | Milestone 7: Expand E2E Verification Test Scope & Window Retention | Add topmost lock, tray controls, monitor counts, and HKLM folder options to E2E tests with 5-second sleep pauses. Resolve MonitorInfo struct ODR collision. | M6 | DONE |
+| 8 | Milestone 8: Taskbar & System Tray Enhancements | Implement manual tray resizing from active side (with flyout fallback), fix transparency/white bar bug, implement closed program ghost icon refresh mechanism, and support overflow flyout style toggle. | M7 | PLANNED |
+| 9 | Milestone 9: Win32Explorer View Modes & Shellbags | Default global view mode to "small tiles" (except "This PC" which uses "full tiles"), default "Group by type" grouping, native shellbags integration for layouts/positions, mirror all non-thumbnail views as new thumbnail-enabled variants. | M7 | PLANNED |
+| 10 | Milestone 10: Technical Polish & Okay Dialog Update | Replace all "OK" prompts/dialogs with "Okay" (including exception handling), run E2E verification, and perform Forensic Integrity Audit. | M8, M9 | PLANNED |
 
 ## Interface Contracts
 ### EliteSettings ↔ Win32Explorer / EliteTaskbar

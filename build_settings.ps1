@@ -35,7 +35,8 @@ $cplRCx86 = $cplRC -replace 'EliteSettings.exe', 'EliteSettings_x86.exe'
 Set-Content "$SourceDir\settings_cpl_x86.rc" -Value $cplRCx86
 
 $libs = "user32.lib shell32.lib shlwapi.lib comctl32.lib advapi32.lib uxtheme.lib gdi32.lib ole32.lib gdiplus.lib"
-$srcSettings = "`"$SourceDir\EliteSettingsStub.cpp`" `"$SourceDir\TaskbarProperties.cpp`""
+# Add Logger.cpp to settings compile sources to resolve EliteMessageBoxW - Builder-Bob
+$srcSettings = "`"$SourceDir\EliteSettingsStub.cpp`" `"$SourceDir\TaskbarProperties.cpp`" `"$SourceDir\Logger.cpp`""
 
 $stubCompileCmd64 = "cl.exe /FS /EHsc /MTd /D_DEBUG /Fe`"$BuildDir\EliteSettings.exe`" /Fo`"$BuildDir\ObjectFiles/`" $srcSettings `"$BuildDir\ResourceFiles\settings_resources.res`" $libs /link /MANIFEST:EMBED /MANIFESTINPUT:`"$SourceDir\cpl.manifest`" /MANIFESTUAC:NO"
 $stubCompileCmd86 = "cl.exe /FS /EHsc /MTd /D_DEBUG /Fe`"$BuildDirx86\EliteSettings_x86.exe`" /Fo`"$BuildDirx86\ObjectFiles/`" $srcSettings `"$BuildDirx86\ResourceFiles\settings_resources.res`" $libs /link /MANIFEST:EMBED /MANIFESTINPUT:`"$SourceDir\cpl.manifest`" /MANIFESTUAC:NO"

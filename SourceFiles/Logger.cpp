@@ -55,3 +55,33 @@ void Logger::LogError(const std::wstring& message, DWORD errorCode) {
     ss << message << L" (Hex Error Code: 0x" << std::hex << errorCode << L")";
     Log(ss.str());
 }
+
+// Hook to change OK button text to Okay - Builder-Bob
+static HHOOK g_hMsgBoxHook = NULL;
+static LRESULT CALLBACK MsgBoxCbtHookProc(int nCode, WPARAM wParam, LPARAM lParam) {
+    if (nCode == HCBT_ACTIVATE) {
+        HWND hwndMsgBox = (HWND)wParam;
+        HWND hOk = GetDlgItem(hwndMsgBox, IDOK);
+        if (hOk) {
+            SetWindowTextW(hOk, L"Okay");
+        }
+    }
+    return CallNextHookEx(g_hMsgBoxHook, nCode, wParam, lParam);
+}
+
+int RealMessageBoxW(HWND hWnd, LPCWSTR lpText, LPCWSTR lpCaption, UINT uType) {
+#undef MessageBoxW
+    return ::MessageBoxW(hWnd, lpText, lpCaption, uType);
+#define MessageBoxW EliteMessageBoxW
+}
+
+int EliteMessageBoxW(HWND hWnd, LPCWSTR lpText, LPCWSTR lpCaption, UINT uType) {
+    g_hMsgBoxHook = SetWindowsHookExW(WH_CBT, MsgBoxCbtHookProc, NULL, GetCurrentThreadId());
+    int result = RealMessageBoxW(hWnd, lpText, lpCaption, uType);
+    if (g_hMsgBoxHook) {
+        UnhookWindowsHookEx(g_hMsgBoxHook);
+        g_hMsgBoxHook = NULL;
+    }
+    return result;
+}
+

@@ -134,6 +134,20 @@ void ScrapeTrayIconsFromToolbar(HWND hToolbar, std::vector<ScrapedTrayIcon>& ico
                     }
                     
                     if (iconHwnd) {
+                        if (!IsWindow(iconHwnd)) {
+                            // Ghost icon detected: trigger native cleanup - Builder-Bob
+                            RECT rcItem = {0};
+                            if (SendMessageW(hToolbar, TB_GETITEMRECT, i, (LPARAM)pRemoteTbb)) {
+                                SIZE_T br = 0;
+                                ReadProcessMemory(hProcess, pRemoteTbb, &rcItem, sizeof(RECT), &br);
+                                if (br == sizeof(RECT)) {
+                                    int centerX = rcItem.left + (rcItem.right - rcItem.left) / 2;
+                                    int centerY = rcItem.top + (rcItem.bottom - rcItem.top) / 2;
+                                    PostMessageW(hToolbar, WM_MOUSEMOVE, 0, MAKELPARAM(centerX, centerY));
+                                }
+                            }
+                            continue;
+                        }
                         ScrapedTrayIcon icon = {0};
                         icon.hwnd = iconHwnd;
                         icon.uCallbackMessage = iconCallbackMessage;
@@ -204,6 +218,10 @@ std::vector<ScrapedTrayIcon> ScrapeTrayIcons() {
     return icons;
 }
 
+extern int GetDpiForWindowHelper(HWND hwnd);
+extern int GetTrayVisibleLimit(HWND hwndTrayNotify, int dpi, int totalVisible);
+#include "Config.h"
+
 void UpdateTrayToolbar(HWND hToolbar, HIMAGELIST hImageList, const std::vector<ScrapedTrayIcon>& icons) {
     bool changed = false;
     if (icons.size() != g_CurrentTrayIcons.size()) {
@@ -241,12 +259,24 @@ void UpdateTrayToolbar(HWND hToolbar, HIMAGELIST hImageList, const std::vector<S
     }
     ImageList_RemoveAll(hImageList);
 
+    HWND hTrayNotify = GetParent(GetParent(hToolbar));
+    int dpi = GetDpiForWindowHelper(hToolbar);
+    int totalVisible = (int)g_CurrentTrayIcons.size();
+    int limit = totalVisible;
+    if (hTrayNotify) {
+        limit = GetTrayVisibleLimit(hTrayNotify, dpi, totalVisible);
+    }
+
     for (size_t i = 0; i < g_CurrentTrayIcons.size(); ++i) {
         int imgIndex = ImageList_AddIcon(hImageList, g_CurrentTrayIcons[i].hIcon);
         TBBUTTON btn = {0};
         btn.iBitmap = imgIndex;
         btn.idCommand = (int)i; // index
         btn.fsState = TBSTATE_ENABLED;
+        // Hide icons that exceed the visible tray limit - Builder-Bob
+        if (totalVisible > limit && i < (size_t)(totalVisible - limit)) {
+            btn.fsState = TBSTATE_HIDDEN;
+        }
         btn.fsStyle = BTNS_BUTTON;
         SendMessageW(hToolbar, TB_ADDBUTTONS, 1, (LPARAM)&btn);
     }

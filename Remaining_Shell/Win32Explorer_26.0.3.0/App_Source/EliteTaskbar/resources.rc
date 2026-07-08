@@ -12,7 +12,7 @@ IDB_START_ORB_SAPPHIRE RCDATA "EliteTaskbar\\Resources\\StartOrb\\sapphire.png"
 IDB_START_ORB_URANUS RCDATA "EliteTaskbar\\Resources\\StartOrb\\uranus.png"
 IDB_START_ORB_VIENNABOTTOM RCDATA "EliteTaskbar\\Resources\\StartOrb\\vienna bottom.png"
 
-IDD_TASKBAR_PROPS DIALOGEX 0, 0, 252, 233
+IDD_TASKBAR_PROPS DIALOGEX 0, 0, 252, 245
 STYLE DS_SETFONT | WS_CHILD | WS_DISABLED | WS_CAPTION | DS_CONTROL
 CAPTION "Taskbar"
 FONT 8, "Segoe UI Semibold", 600, 0, 0x1
@@ -33,11 +33,14 @@ BEGIN
     CONTROL         "Enable Portable Mirror Mode", IDC_PORTABLE_MIRROR, "Button", BS_AUTOCHECKBOX | WS_TABSTOP, 14, 118, 200, 10
     CONTROL         "Enable Two-Row Notification Tray", IDC_TWO_ROW_TRAY, "Button", BS_AUTOCHECKBOX | WS_TABSTOP, 14, 133, 200, 10
 
-    GROUPBOX        "Custom Icon Theme Folder", IDC_STATIC, 7, 153, 238, 75
+    GROUPBOX        "Custom Icon Theme Folder", IDC_STATIC, 7, 153, 238, 85
     LTEXT           "Theme Path:", IDC_STATIC, 14, 168, 45, 8
     EDITTEXT        IDC_THEME_FOLDER_PATH, 65, 166, 120, 12, ES_AUTOHSCROLL | WS_TABSTOP
     PUSHBUTTON      "Browse...", IDC_THEME_FOLDER_BROWSE, 190, 165, 50, 14, WS_TABSTOP
-    CONTROL         "Enable Dark Mode", IDC_ENABLE_DARK_MODE, "Button", BS_AUTOCHECKBOX | WS_DISABLED | WS_TABSTOP, 14, 190, 150, 10
+    CONTROL         "Enable Dark Mode", IDC_ENABLE_DARK_MODE, "Button", BS_AUTOCHECKBOX | WS_DISABLED | WS_TABSTOP, 14, 185, 150, 10
+    LTEXT           "Manual Tray Width:", IDC_STATIC, 14, 202, 65, 8
+    EDITTEXT        IDC_MANUAL_TRAY_WIDTH, 85, 200, 40, 12, ES_NUMBER | WS_TABSTOP
+    LTEXT           "px (0 = Auto)", IDC_STATIC, 130, 202, 50, 8
 END
 
 IDD_NATIVE_PROPS DIALOGEX 0, 0, 252, 218
@@ -147,7 +150,7 @@ BEGIN
     LTEXT           "Undocumented RunDLL32 Export Discovery Tool.", IDC_STATIC, 7, 7, 238, 10
 END
 
-IDD_EXPLORER_PROPS DIALOGEX 0, 0, 252, 218
+IDD_EXPLORER_PROPS DIALOGEX 0, 0, 252, 228
 STYLE DS_SETFONT | WS_CHILD | WS_DISABLED | WS_CAPTION | DS_CONTROL
 CAPTION "Explorer Settings"
 FONT 8, "Segoe UI Semibold", 600, 0, 0x1
@@ -156,17 +159,21 @@ BEGIN
     CONTROL         "Show hidden files, folders, and drives", IDC_EXPLORER_HIDDEN_FILES, "Button", BS_AUTOCHECKBOX | WS_TABSTOP, 14, 18, 220, 10
     CONTROL         "Hide file extensions for known file types", IDC_EXPLORER_EXTENSIONS, "Button", BS_AUTOCHECKBOX | WS_TABSTOP, 14, 30, 220, 10
     
-    GROUPBOX        "Elite Integration Options", IDC_STATIC, 7, 65, 238, 90
+    GROUPBOX        "Elite Integration Options", IDC_STATIC, 7, 65, 238, 122
     CONTROL         "Enable Elite Taskbar", IDC_EXPLORER_ENABLE_TASKBAR, "Button", BS_AUTOCHECKBOX | WS_TABSTOP, 14, 76, 220, 10
     CONTROL         "Enable Elite Start Menu", IDC_EXPLORER_ENABLE_STARTMENU, "Button", BS_AUTOCHECKBOX | WS_TABSTOP, 14, 88, 220, 10
     CONTROL         "Group by Type by Default", IDC_EXPLORER_DEFAULT_GROUPBYTYPE, "Button", BS_AUTOCHECKBOX | WS_TABSTOP, 14, 100, 220, 10
     CONTROL         "Enable Native View Mode", IDC_EXPLORER_NATIVE_VIEWMODE, "Button", BS_AUTOCHECKBOX | WS_TABSTOP, 14, 112, 220, 10
     CONTROL         "Enable Shell Bags Support", IDC_EXPLORER_SHELLBAGS, "Button", BS_AUTOCHECKBOX | WS_TABSTOP, 14, 124, 220, 10
     CONTROL         "Use Native Desktop Shell View", IDC_EXPLORER_NATIVE_SHELLVIEW, "Button", BS_AUTOCHECKBOX | WS_TABSTOP, 14, 136, 220, 10
+    
+    LTEXT           "Default Folder View:", IDC_STATIC, 14, 152, 70, 8
+    COMBOBOX        IDC_EXPLORER_FOLDER_VIEW_DEFAULT, 85, 150, 150, 100, CBS_DROPDOWNLIST | WS_VSCROLL | WS_TABSTOP
+    CONTROL         "Mirror non-thumbnail view modes as thumbnails", IDC_EXPLORER_THUMBNAIL_MIRROR_VIEWS, "Button", BS_AUTOCHECKBOX | WS_TABSTOP, 14, 170, 220, 10
 
-    GROUPBOX        "Configuration Backup & Restore", IDC_STATIC, 7, 160, 238, 48
-    PUSHBUTTON      "Backup Configuration...", IDC_EXPLORER_BACKUP, 14, 175, 100, 14
-    PUSHBUTTON      "Restore Configuration...", IDC_EXPLORER_RESTORE, 125, 175, 100, 14
+    GROUPBOX        "Configuration Backup & Restore", IDC_STATIC, 7, 192, 238, 30
+    PUSHBUTTON      "Backup Config...", IDC_EXPLORER_BACKUP, 14, 202, 100, 14
+    PUSHBUTTON      "Restore Config...", IDC_EXPLORER_RESTORE, 125, 202, 100, 14
 END
 
 IDD_DWM_PROPS DIALOGEX 0, 0, 252, 218
