@@ -1,0 +1,19 @@
+Windows Registry Editor Version 5.00
+
+; Remove custom Win32Explorer verbs
+[-HKEY_CURRENT_USER\Software\Classes\Directory\shell\openinWin32Explorer]
+[-HKEY_CURRENT_USER\Software\Classes\Folder\shell\openinWin32Explorer]
+[-HKEY_LOCAL_MACHINE\Software\Classes\Directory\shell\openinWin32Explorer]
+[-HKEY_LOCAL_MACHINE\Software\Classes\Folder\shell\openinWin32Explorer]
+
+; Restore Directory shell default to "none" in HKCU
+[HKEY_CURRENT_USER\Software\Classes\Directory\shell]
+@="none"
+
+; Delete Folder shell default in HKCU so it falls back to HKLM native
+[HKEY_CURRENT_USER\Software\Classes\Folder\shell]
+@=-
+
+; Failsafe: Ensure the native folder open command delegate is present in HKCR
+[HKEY_CLASSES_ROOT\Folder\shell\open\command]
+"DelegateExecute"="{11dbb47c-a525-400b-9e80-a54615a090c0}"

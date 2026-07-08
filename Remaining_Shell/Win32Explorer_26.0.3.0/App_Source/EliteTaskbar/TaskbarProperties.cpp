@@ -416,7 +416,7 @@ void UpdateOrbPreview(HWND hwndDlg, DWORD orbId) {
 
 void SaveToNativeRegistry(LPCWSTR valueName, DWORD value) {
     HKEY hKey;
-    if (RegCreateKeyExW(HKEY_CURRENT_USER, L"Software\\Microsoft\\Windows\\CurrentVersion\\Explorer\\Advanced", 0, NULL, REG_OPTION_NON_VOLATILE, KEY_READ | KEY_WRITE, NULL, &hKey, NULL) == ERROR_SUCCESS) {
+    if (RegCreateKeyExW(HKEY_LOCAL_MACHINE, L"Software\\Microsoft\\Windows\\CurrentVersion\\Explorer\\Advanced", 0, NULL, REG_OPTION_NON_VOLATILE, KEY_READ | KEY_WRITE, NULL, &hKey, NULL) == ERROR_SUCCESS) {
         RegSetValueExW(hKey, valueName, 0, REG_DWORD, (const BYTE*)&value, sizeof(DWORD));
         RegCloseKey(hKey);
     }
@@ -432,8 +432,8 @@ void SetDefaultFileManagerCPP(DWORD mode) {
     }
 
     // Unconditional cleanup to fix being stuck
-    SHDeleteKeyW(HKEY_CURRENT_USER, L"Software\\Classes\\Directory\\shell\\openinWin32Explorer");
-    if (RegOpenKeyExW(HKEY_CURRENT_USER, L"Software\\Classes\\Directory\\shell", 0, KEY_READ | KEY_WRITE, &hKey) == ERROR_SUCCESS) {
+    SHDeleteKeyW(HKEY_LOCAL_MACHINE, L"Software\\Classes\\Directory\\shell\\openinWin32Explorer");
+    if (RegOpenKeyExW(HKEY_LOCAL_MACHINE, L"Software\\Classes\\Directory\\shell", 0, KEY_READ | KEY_WRITE, &hKey) == ERROR_SUCCESS) {
         DWORD cbData = sizeof(WCHAR) * 40;
         WCHAR val[40] = {0};
         if (RegQueryValueExW(hKey, L"", NULL, NULL, (LPBYTE)val, &cbData) == ERROR_SUCCESS) {
@@ -444,8 +444,8 @@ void SetDefaultFileManagerCPP(DWORD mode) {
         RegCloseKey(hKey);
     }
 
-    SHDeleteKeyW(HKEY_CURRENT_USER, L"Software\\Classes\\Folder\\shell\\openinWin32Explorer");
-    if (RegOpenKeyExW(HKEY_CURRENT_USER, L"Software\\Classes\\Folder\\shell", 0, KEY_READ | KEY_WRITE, &hKey) == ERROR_SUCCESS) {
+    SHDeleteKeyW(HKEY_LOCAL_MACHINE, L"Software\\Classes\\Folder\\shell\\openinWin32Explorer");
+    if (RegOpenKeyExW(HKEY_LOCAL_MACHINE, L"Software\\Classes\\Folder\\shell", 0, KEY_READ | KEY_WRITE, &hKey) == ERROR_SUCCESS) {
         DWORD cbData = sizeof(WCHAR) * 40;
         WCHAR val[40] = {0};
         if (RegQueryValueExW(hKey, L"", NULL, NULL, (LPBYTE)val, &cbData) == ERROR_SUCCESS) {
@@ -462,7 +462,7 @@ void SetDefaultFileManagerCPP(DWORD mode) {
         WCHAR commandKeyPath[256];
         wsprintfW(commandKeyPath, L"%s\\openinWin32Explorer", rootSubKey);
         
-        if (RegCreateKeyExW(HKEY_CURRENT_USER, commandKeyPath, 0, NULL, REG_OPTION_NON_VOLATILE, KEY_WRITE, NULL, &hKey, NULL) == ERROR_SUCCESS) {
+        if (RegCreateKeyExW(HKEY_LOCAL_MACHINE, commandKeyPath, 0, NULL, REG_OPTION_NON_VOLATILE, KEY_WRITE, NULL, &hKey, NULL) == ERROR_SUCCESS) {
             RegSetValueExW(hKey, L"", 0, REG_SZ, (const BYTE*)L"Open in Win32Explorer", sizeof(L"Open in Win32Explorer"));
             HKEY hCmdKey;
             if (RegCreateKeyExW(hKey, L"command", 0, NULL, REG_OPTION_NON_VOLATILE, KEY_WRITE, NULL, &hCmdKey, NULL) == ERROR_SUCCESS) {
@@ -473,7 +473,7 @@ void SetDefaultFileManagerCPP(DWORD mode) {
             }
             RegCloseKey(hKey);
         }
-        if (RegOpenKeyExW(HKEY_CURRENT_USER, rootSubKey, 0, KEY_WRITE, &hKey) == ERROR_SUCCESS) {
+        if (RegOpenKeyExW(HKEY_LOCAL_MACHINE, rootSubKey, 0, KEY_WRITE, &hKey) == ERROR_SUCCESS) {
             RegSetValueExW(hKey, L"", 0, REG_SZ, (const BYTE*)L"openinWin32Explorer", sizeof(L"openinWin32Explorer"));
             RegCloseKey(hKey);
         }
@@ -514,7 +514,7 @@ void SyncAdvancedToMasterAndNative() {
     }
     
     HKEY hMasterKey = NULL;
-    RegCreateKeyExW(HKEY_CURRENT_USER, L"Software\\EliteSoftware\\Win32Explorer\\Master", 0, NULL, REG_OPTION_NON_VOLATILE, KEY_WRITE, NULL, &hMasterKey, NULL);
+    RegCreateKeyExW(HKEY_LOCAL_MACHINE, L"Software\\EliteSoftware\\Win32Explorer\\Master", 0, NULL, REG_OPTION_NON_VOLATILE, KEY_WRITE, NULL, &hMasterKey, NULL);
     
     DWORD dwIndex = 0;
     wchar_t valueName[16384];
@@ -532,14 +532,14 @@ void SyncAdvancedToMasterAndNative() {
         // 2. Sync to native Windows registry paths
         if (_wcsicmp(valueName, L"Hidden") == 0) {
             HKEY hNative = NULL;
-            if (RegCreateKeyExW(HKEY_CURRENT_USER, L"Software\\Microsoft\\Windows\\CurrentVersion\\Explorer\\Advanced", 0, NULL, REG_OPTION_NON_VOLATILE, KEY_WRITE, NULL, &hNative, NULL) == ERROR_SUCCESS) {
+            if (RegCreateKeyExW(HKEY_LOCAL_MACHINE, L"Software\\Microsoft\\Windows\\CurrentVersion\\Explorer\\Advanced", 0, NULL, REG_OPTION_NON_VOLATILE, KEY_WRITE, NULL, &hNative, NULL) == ERROR_SUCCESS) {
                 RegSetValueExW(hNative, L"Hidden", 0, dwType, valData, cbValData);
                 RegCloseKey(hNative);
             }
         }
         else if (_wcsicmp(valueName, L"HideFileExt") == 0) {
             HKEY hNative = NULL;
-            if (RegCreateKeyExW(HKEY_CURRENT_USER, L"Software\\Microsoft\\Windows\\CurrentVersion\\Explorer\\Advanced", 0, NULL, REG_OPTION_NON_VOLATILE, KEY_WRITE, NULL, &hNative, NULL) == ERROR_SUCCESS) {
+            if (RegCreateKeyExW(HKEY_LOCAL_MACHINE, L"Software\\Microsoft\\Windows\\CurrentVersion\\Explorer\\Advanced", 0, NULL, REG_OPTION_NON_VOLATILE, KEY_WRITE, NULL, &hNative, NULL) == ERROR_SUCCESS) {
                 RegSetValueExW(hNative, L"HideFileExt", 0, dwType, valData, cbValData);
                 RegCloseKey(hNative);
             }
@@ -574,7 +574,7 @@ void SyncAdvancedToMasterAndNative() {
         }
         else if (_wcsicmp(valueName, L"DesktopIconsEnabled") == 0) {
             HKEY hNative = NULL;
-            if (RegCreateKeyExW(HKEY_CURRENT_USER, L"Software\\Microsoft\\Windows\\CurrentVersion\\Explorer\\Advanced", 0, NULL, REG_OPTION_NON_VOLATILE, KEY_WRITE, NULL, &hNative, NULL) == ERROR_SUCCESS) {
+            if (RegCreateKeyExW(HKEY_LOCAL_MACHINE, L"Software\\Microsoft\\Windows\\CurrentVersion\\Explorer\\Advanced", 0, NULL, REG_OPTION_NON_VOLATILE, KEY_WRITE, NULL, &hNative, NULL) == ERROR_SUCCESS) {
                 DWORD val = *(DWORD*)valData;
                 DWORD hideVal = val ? 0 : 1;
                 RegSetValueExW(hNative, L"HideIcons", 0, REG_DWORD, (const BYTE*)&hideVal, sizeof(DWORD));
@@ -702,13 +702,13 @@ INT_PTR CALLBACK TaskbarSettingsDlgProc(HWND hwndDlg, UINT uMsg, WPARAM wParam, 
                 RegSetValueExW(hKeyBoth, L"EnablePortableMirror", 0, REG_DWORD, (const BYTE*)&portable, sizeof(DWORD));
                 RegCloseKey(hKeyBoth);
             }
-            if (RegCreateKeyExW(HKEY_CURRENT_USER, L"Software\\EliteSoftware\\Win32Explorer\\Advanced", 0, NULL, REG_OPTION_NON_VOLATILE, KEY_READ | KEY_WRITE, NULL, &hKeyBoth, NULL) == ERROR_SUCCESS) {
+            if (RegCreateKeyExW(HKEY_LOCAL_MACHINE, L"Software\\EliteSoftware\\Win32Explorer\\Advanced", 0, NULL, REG_OPTION_NON_VOLATILE, KEY_READ | KEY_WRITE, NULL, &hKeyBoth, NULL) == ERROR_SUCCESS) {
                 RegSetValueExW(hKeyBoth, L"EnablePortableMirror", 0, REG_DWORD, (const BYTE*)&portable, sizeof(DWORD));
                 RegCloseKey(hKeyBoth);
             }
 
             HKEY hKey;
-            HKEY hKeyRoot = (portable == 1) ? HKEY_LOCAL_MACHINE : HKEY_CURRENT_USER;
+            HKEY hKeyRoot = HKEY_LOCAL_MACHINE;
             if (RegCreateKeyExW(hKeyRoot, L"Software\\EliteSoftware\\Win32Explorer\\Advanced", 0, NULL, REG_OPTION_NON_VOLATILE, KEY_READ | KEY_WRITE, NULL, &hKey, NULL) == ERROR_SUCCESS) {
                 DWORD mode = 0;
                 if (SendDlgItemMessageW(hwndDlg, IDC_MODE_REPLACE, BM_GETCHECK, 0, 0) == BST_CHECKED) mode = 1;
@@ -764,6 +764,22 @@ INT_PTR CALLBACK NativeSettingsDlgProc(HWND hwndDlg, UINT uMsg, WPARAM wParam, L
         AddDlgTooltip(hwndDlg, IDC_REPLACE_EXPLORER_ALL, L"Completely hijack folder browsing. Let Win32Explorer do all the heavy lifting!");
         AddDlgTooltip(hwndDlg, IDC_IMPORT_SETTINGS, L"Import settings from an external registry file. Hopefully from a trusted source...");
         AddDlgTooltip(hwndDlg, IDC_EXPORT_SETTINGS, L"Export settings to a registry file so you can share your questionable design choices.");
+        AddDlgTooltip(hwndDlg, IDC_PRIMARY_SHELL_MODE, L"Run EliteTaskbar as primary Windows shell replacement. Control the main desktop lifecycle.");
+
+        HKEY hWinlogon;
+        bool isShellReplacement = false;
+        if (RegOpenKeyExW(HKEY_LOCAL_MACHINE, L"SOFTWARE\\Microsoft\\Windows NT\\CurrentVersion\\Winlogon", 0, KEY_READ, &hWinlogon) == ERROR_SUCCESS) {
+            WCHAR shellVal[MAX_PATH] = {0};
+            DWORD cbShellVal = sizeof(shellVal);
+            if (RegQueryValueExW(hWinlogon, L"Shell", NULL, NULL, (LPBYTE)shellVal, &cbShellVal) == ERROR_SUCCESS) {
+                if (wcsstr(shellVal, L"EliteTaskbar.exe") != NULL) {
+                    isShellReplacement = true;
+                }
+            }
+            RegCloseKey(hWinlogon);
+        }
+        SendDlgItemMessageW(hwndDlg, IDC_PRIMARY_SHELL_MODE, BM_SETCHECK, isShellReplacement ? BST_CHECKED : BST_UNCHECKED, 0);
+
         HKEY hKey;
         if (RegOpenKeyExW(GetEliteRegistryRoot(), L"Software\\EliteSoftware\\Win32Explorer\\Advanced", 0, KEY_READ, &hKey) == ERROR_SUCCESS) {
             DWORD dwValue = 0, cbData = sizeof(DWORD);
@@ -792,7 +808,7 @@ INT_PTR CALLBACK NativeSettingsDlgProc(HWND hwndDlg, UINT uMsg, WPARAM wParam, L
             }
             RegCloseKey(hKey);
         }
-        if (RegOpenKeyExW(HKEY_CURRENT_USER, L"Software\\Microsoft\\Windows\\CurrentVersion\\Explorer\\Advanced", 0, KEY_READ, &hKey) == ERROR_SUCCESS) {
+        if (RegOpenKeyExW(HKEY_LOCAL_MACHINE, L"Software\\Microsoft\\Windows\\CurrentVersion\\Explorer\\Advanced", 0, KEY_READ, &hKey) == ERROR_SUCCESS) {
             DWORD dwValue = 0, cbData = sizeof(DWORD);
             if (RegQueryValueExW(hKey, L"TaskbarSizeMove", NULL, NULL, (LPBYTE)&dwValue, &cbData) == ERROR_SUCCESS)
                 SendDlgItemMessageW(hwndDlg, IDC_LOCK_TASKBAR, BM_SETCHECK, (dwValue == 0) ? BST_CHECKED : BST_UNCHECKED, 0);
@@ -802,7 +818,7 @@ INT_PTR CALLBACK NativeSettingsDlgProc(HWND hwndDlg, UINT uMsg, WPARAM wParam, L
                 SendDlgItemMessageW(hwndDlg, IDC_SMALL_ICONS, BM_SETCHECK, dwValue ? BST_CHECKED : BST_UNCHECKED, 0);
             RegCloseKey(hKey);
         }
-        if (RegOpenKeyExW(HKEY_CURRENT_USER, L"Software\\Microsoft\\Windows\\CurrentVersion\\Explorer\\StuckRects3", 0, KEY_READ, &hKey) == ERROR_SUCCESS) {
+        if (RegOpenKeyExW(HKEY_LOCAL_MACHINE, L"Software\\Microsoft\\Windows\\CurrentVersion\\Explorer\\StuckRects3", 0, KEY_READ, &hKey) == ERROR_SUCCESS) {
             BYTE blob[64];
             DWORD cbData = sizeof(blob);
             if (RegQueryValueExW(hKey, L"Settings", NULL, NULL, blob, &cbData) == ERROR_SUCCESS && cbData >= 9) {
@@ -867,10 +883,10 @@ INT_PTR CALLBACK NativeSettingsDlgProc(HWND hwndDlg, UINT uMsg, WPARAM wParam, L
                         }
                     };
 
-                    WriteKey(HKEY_CURRENT_USER, L"Software\\EliteSoftware\\Win32Explorer\\Advanced", L"HKEY_CURRENT_USER\\Software\\EliteSoftware\\Win32Explorer\\Advanced");
-                    WriteVal(HKEY_CURRENT_USER, L"Software\\Microsoft\\Windows\\CurrentVersion\\Explorer\\Advanced", L"HKEY_CURRENT_USER\\Software\\Microsoft\\Windows\\CurrentVersion\\Explorer\\Advanced", L"TaskbarSizeMove");
-                    WriteVal(HKEY_CURRENT_USER, L"Software\\Microsoft\\Windows\\CurrentVersion\\Explorer\\Advanced", L"HKEY_CURRENT_USER\\Software\\Microsoft\\Windows\\CurrentVersion\\Explorer\\Advanced", L"TaskbarSmallIcons");
-                    WriteVal(HKEY_CURRENT_USER, L"Software\\Microsoft\\Windows\\CurrentVersion\\Explorer\\StuckRects3", L"HKEY_CURRENT_USER\\Software\\Microsoft\\Windows\\CurrentVersion\\Explorer\\StuckRects3", L"Settings");
+                    WriteKey(HKEY_LOCAL_MACHINE, L"Software\\EliteSoftware\\Win32Explorer\\Advanced", L"HKEY_LOCAL_MACHINE\\Software\\EliteSoftware\\Win32Explorer\\Advanced");
+                    WriteVal(HKEY_LOCAL_MACHINE, L"Software\\Microsoft\\Windows\\CurrentVersion\\Explorer\\Advanced", L"HKEY_LOCAL_MACHINE\\Software\\Microsoft\\Windows\\CurrentVersion\\Explorer\\Advanced", L"TaskbarSizeMove");
+                    WriteVal(HKEY_LOCAL_MACHINE, L"Software\\Microsoft\\Windows\\CurrentVersion\\Explorer\\Advanced", L"HKEY_LOCAL_MACHINE\\Software\\Microsoft\\Windows\\CurrentVersion\\Explorer\\Advanced", L"TaskbarSmallIcons");
+                    WriteVal(HKEY_LOCAL_MACHINE, L"Software\\Microsoft\\Windows\\CurrentVersion\\Explorer\\StuckRects3", L"HKEY_LOCAL_MACHINE\\Software\\Microsoft\\Windows\\CurrentVersion\\Explorer\\StuckRects3", L"Settings");
                     fclose(f);
                     MessageBoxW(hwndDlg, L"Settings exported successfully.", L"Success", MB_ICONINFORMATION);
                 }
@@ -924,13 +940,29 @@ INT_PTR CALLBACK NativeSettingsDlgProc(HWND hwndDlg, UINT uMsg, WPARAM wParam, L
 
                 SetDefaultFileManagerCPP(replaceMode);
             }
+
+            HKEY hWinlogon;
+            if (RegOpenKeyExW(HKEY_LOCAL_MACHINE, L"SOFTWARE\\Microsoft\\Windows NT\\CurrentVersion\\Winlogon", 0, KEY_SET_VALUE, &hWinlogon) == ERROR_SUCCESS) {
+                if (SendDlgItemMessageW(hwndDlg, IDC_PRIMARY_SHELL_MODE, BM_GETCHECK, 0, 0) == BST_CHECKED) {
+                    WCHAR exePath[MAX_PATH];
+                    GetModuleFileNameW(NULL, exePath, MAX_PATH);
+                    WCHAR* lastSlash = wcsrchr(exePath, L'\\');
+                    if (lastSlash) {
+                        wcscpy_s(lastSlash + 1, MAX_PATH - (lastSlash + 1 - exePath), L"EliteTaskbar.exe");
+                    }
+                    RegSetValueExW(hWinlogon, L"Shell", 0, REG_SZ, (const BYTE*)exePath, (DWORD)(wcslen(exePath) + 1) * sizeof(WCHAR));
+                } else {
+                    RegSetValueExW(hWinlogon, L"Shell", 0, REG_SZ, (const BYTE*)L"explorer.exe", sizeof(L"explorer.exe"));
+                }
+                RegCloseKey(hWinlogon);
+            }
             
             DWORD locked = (SendDlgItemMessageW(hwndDlg, IDC_LOCK_TASKBAR, BM_GETCHECK, 0, 0) == BST_CHECKED) ? 0 : 1;
             SaveToNativeRegistry(L"TaskbarSizeMove", locked);
             DWORD smallIcons = (SendDlgItemMessageW(hwndDlg, IDC_SMALL_ICONS, BM_GETCHECK, 0, 0) == BST_CHECKED) ? 1 : 0;
             SaveToNativeRegistry(L"TaskbarSmallIcons", smallIcons);
             
-            if (RegCreateKeyExW(HKEY_CURRENT_USER, L"Software\\Microsoft\\Windows\\CurrentVersion\\Explorer\\StuckRects3", 0, NULL, REG_OPTION_NON_VOLATILE, KEY_READ | KEY_WRITE, NULL, &hKey, NULL) == ERROR_SUCCESS) {
+            if (RegCreateKeyExW(HKEY_LOCAL_MACHINE, L"Software\\Microsoft\\Windows\\CurrentVersion\\Explorer\\StuckRects3", 0, NULL, REG_OPTION_NON_VOLATILE, KEY_READ | KEY_WRITE, NULL, &hKey, NULL) == ERROR_SUCCESS) {
                 BYTE blob[64];
                 DWORD cbData = sizeof(blob);
                 if (RegQueryValueExW(hKey, L"Settings", NULL, NULL, blob, &cbData) == ERROR_SUCCESS && cbData >= 9) {
@@ -2199,7 +2231,7 @@ INT_PTR CALLBACK ExplorerSettingsDlgProc(HWND hwndDlg, UINT uMsg, WPARAM wParam,
         DWORD hiddenVal = 2; // Default to hide (2)
         DWORD extVal = 1;    // Default to hide extensions (1)
         DWORD cbData = sizeof(DWORD);
-        if (RegOpenKeyExW(HKEY_CURRENT_USER, L"Software\\Microsoft\\Windows\\CurrentVersion\\Explorer\\Advanced", 0, KEY_READ, &hKey) == ERROR_SUCCESS) {
+        if (RegOpenKeyExW(HKEY_LOCAL_MACHINE, L"Software\\Microsoft\\Windows\\CurrentVersion\\Explorer\\Advanced", 0, KEY_READ, &hKey) == ERROR_SUCCESS) {
             cbData = sizeof(DWORD);
             RegQueryValueExW(hKey, L"Hidden", NULL, NULL, (LPBYTE)&hiddenVal, &cbData);
             cbData = sizeof(DWORD);
@@ -2232,7 +2264,7 @@ INT_PTR CALLBACK ExplorerSettingsDlgProc(HWND hwndDlg, UINT uMsg, WPARAM wParam,
         LPNMHDR lpnm = (LPNMHDR)lParam;
         if (lpnm->code == PSN_APPLY) {
             HKEY hKey;
-            if (RegOpenKeyExW(HKEY_CURRENT_USER, L"Software\\Microsoft\\Windows\\CurrentVersion\\Explorer\\Advanced", 0, KEY_WRITE, &hKey) == ERROR_SUCCESS) {
+            if (RegOpenKeyExW(HKEY_LOCAL_MACHINE, L"Software\\Microsoft\\Windows\\CurrentVersion\\Explorer\\Advanced", 0, KEY_WRITE, &hKey) == ERROR_SUCCESS) {
                 DWORD hiddenVal = (SendDlgItemMessageW(hwndDlg, IDC_EXPLORER_HIDDEN_FILES, BM_GETCHECK, 0, 0) == BST_CHECKED) ? 1 : 2;
                 DWORD extVal = (SendDlgItemMessageW(hwndDlg, IDC_EXPLORER_EXTENSIONS, BM_GETCHECK, 0, 0) == BST_CHECKED) ? 1 : 0;
                 RegSetValueExW(hKey, L"Hidden", 0, REG_DWORD, (const BYTE*)&hiddenVal, sizeof(DWORD));

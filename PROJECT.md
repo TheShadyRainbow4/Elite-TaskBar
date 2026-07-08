@@ -47,3 +47,12 @@ To resolve build lock collisions and race conditions:
 2. **No Direct Builds**: Worker agents are strictly prohibited from running `build.ps1` directly.
 3. **Concurrent and Sequential Builds**: The BUILDER agent is authorized to run individual component builds (e.g. `build.ps1 -Target "Win32Explorer"`, etc.) concurrently to speed up compilation. However, the final master build must be queued and executed sequentially at the very end.
 4. **Validation Handoff**: Once the build succeeds, control is handed back to the testing/validation swarm for verification.
+
+## Win32Explorer Registry & Configuration Rules
+1. **Disable Portable Default**: Win32Explorer must NEVER default to portable mode. It must always default to registry-based configuration.
+2. **Concurrent XML Mirroring**: Despite defaulting to the registry, it must concurrently mirror all configuration and settings to the XML file in its local directory.
+3. **HKLM Global Registry Only (No HKCU)**: Win32Explorer must save and load ALL of its configuration to/from the master `EliteSoftware` path visible to all users under `HKEY_LOCAL_MACHINE\SOFTWARE\EliteSoftware\Win32Explorer` (or `HKEY_LOCAL_MACHINE\SOFTWARE\EliteSoftware\Win32Explorer\Master`). Usage of per-user `HKEY_CURRENT_USER` configurations is strictly forbidden!
+
+## COM Hijacking & Restoration Rules
+1. **Graceful COM Restoration**: In `Win32Explorer.exe` and `EliteTaskbar` graceful exit paths, or when toggling the default file manager settings, all native COM classes (Folder, Directory, CabinetWClass, and other CLSID hijackings) MUST be actively restored and re-registered back to the native `explorer.exe` (no stranded keys allowed).
+2. **XML Import Support**: Win32Explorer must support parsing and importing configuration settings from the local XML configuration file.

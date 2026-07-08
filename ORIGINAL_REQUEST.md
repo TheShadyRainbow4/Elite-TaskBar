@@ -212,3 +212,77 @@ Integrity mode: development
 - [ ] The taskbar correctly renders the Quick Launch shortcuts on the left and wraps the system tray icons tightly on the right.
 - [ ] The Win32Explorer built-in view modes successfully apply "Tiles with thumbnails" and "Small tiles with thumbnails".
 - [ ] The workspace root is entirely free of leftover `*old*.exe` files after the build and apply process.
+
+## Follow-up — 2026-07-07T20:34:20-04:00
+
+Refactor and enhance the Elite-TaskBar shell replacement to operate independently from the native Windows shell, fixing multi-monitor rendering, desktop icon interactivity, system tray behavior, shell switching, and settings completeness based on provided screenshots.
+
+Working directory: C:\Users\Administrator\Desktop\Elite-TaskBar
+Integrity mode: development
+
+## Requirements
+
+### R1. Shell Behavior & Z-Ordering
+The taskbar must dynamically support acting as a primary shell or a companion (via settings toggle). The custom desktop must draw at the bottom of the z-order (below regular windows), while the custom taskbar draws at the top. The shell must gracefully allow switching back to the native explorer.exe shell without issues. Opening a native file browser window should not summon extra taskbars or break z-ordering.
+
+### R2. Interactive Desktop & Multi-Monitor Support
+Host a native IShellFolderView object to replicate exact Windows desktop behavior. Icons must be freely movable (not stuck in a rigid grid), and right-clicking the desktop or icons must open the standard native Windows context menu. The desktop must render correctly across all active monitors, not just the left-most monitor. Start menus invoked on monitor 2 must appear on monitor 2.
+
+### R3. Independent System Tray
+Implement a system tray that functions fully independently of explorer.exe (by reverse-engineering or adapting open-source implementations like ReactOS). The tray must support correct individual icon rendering (removing the solid white bar) and implement flyouts matching legacy Vista/7 behavior. All start menu implementations must be fixed to work properly.
+
+### R4. Settings Completeness
+Expand the settings UI to include all missing file explorer and taskbar options shown in the provided reference screenshots. As per project rules, all settings must be mirrored in both the settings executable and the standalone CPL. Do not obliterate old features; wrap legacy paths in toggles.
+
+## Verification Resources
+The user indicated there are existing UI tests and scripts in the repository. 
+- Read the master list of files and review the codebase to find past testing scripts.
+- Document any findings regarding the test suite to assist future iterations.
+- Run `build.ps1` natively to verify compilation for all executables.
+
+## Acceptance Criteria
+
+### Shell & Z-Ordering
+- [ ] Setting toggle successfully switches between companion mode and primary shell mode.
+- [ ] Desktop correctly draws at the bottom of the z-order (below normal windows).
+- [ ] Taskbar correctly draws at the top of the z-order (above the real desktop and other windows).
+- [ ] Opening a new win32 file explorer window does not spawn extra taskbars or raise the shell unexpectedly.
+
+### Interactive Desktop
+- [ ] Desktop renders across all active monitors.
+- [ ] Icons can be freely moved out of a strict grid.
+- [ ] Right-clicking the desktop or an icon opens the standard native Windows context menu.
+
+### System Tray & Start Menu
+- [ ] System tray displays individual icons correctly (no solid white bar).
+- [ ] System tray icons and flyouts continue to function when explorer.exe is completely terminated.
+- [ ] Clicking start on monitor 2 opens the start menu on monitor 2.
+
+### Settings UI
+- [ ] TaskbarProperties.cpp and resources.rc contain UI toggles for all options shown in the reference screenshots (General, View, Search).
+- [ ] All newly added UI options map to appropriate registry keys or logic toggles.
+- [ ] Any old implementation code path that was replaced is preserved via a legacy toggle in the settings UI.
+
+## Follow-up — 2026-07-08T00:42:03Z
+
+The user has provided additional requirements and constraints for the project:
+1. `win32explorer.exe` has its own options dialog where features currently don't work correctly. You need to fix these features without changing the layout of the `win32explorer.exe` options window itself.
+2. Our custom settings executable and CPL must include all of the options from the `win32explorer` options dialog, organized into their own tabs (or sub-tabs).
+3. **CRITICAL REGISTRY CONSTRAINT**: All settings must be read from and written to a subfolder within the `EliteSoftware` registry key under `HKLM` (`HKEY_LOCAL_MACHINE`). 
+4. Never write anywhere else and never use per-user settings. `win32explorer.exe` and all shell settings must strictly use this one global path under HKLM.
+
+## Follow-up — 2026-07-08T00:47:10Z
+
+The user has provided additional requirements:
+1. **Win32Explorer Styling**: Update files in `win32explorer` to show styled hover and selection states exactly like native Windows (using proper theme classes). It is currently using an XP-style selection, which needs to be modernized to match the native OS theme.
+2. **Hybrid Mode Z-Ordering**: When running in hybrid mode (where the native Windows taskbar is still open and our custom taskbar is on secondary monitors), the native system taskbar MUST appear above our shell. Our shell must never hide or draw over the native taskbar in this mode.
+
+## Follow-up — 2026-07-08T00:49:52Z
+
+The user has provided urgent corrections:
+1. **Dynamic Layout & Sizing**: Do not cut corners or use hard limits/guessing for UI layout, especially for the system tray area. The tray must adapt dynamically to its contents and monitor DPI without arbitrary boundaries.
+2. **Line Endings**: Ensure all file edits and creations preserve `CRLF` (Windows) line endings.
+
+
+
+

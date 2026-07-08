@@ -28,6 +28,7 @@
 static void InvokeNativeRunDialog(HWND hwndOwner);
 
 extern EliteTaskbarConfig g_Config;
+static bool s_UseSecondaryTrayWndAsFallback = false;
 
 #include <string>
 #include <map>
@@ -1819,6 +1820,22 @@ LRESULT CALLBACK TrayShowDesktopButtonProc(HWND hwnd, UINT uMsg, WPARAM wParam, 
 }
 
 LRESULT CALLBACK WindowProc(HWND hwnd, UINT uMsg, WPARAM wParam, LPARAM lParam) {
+    if (uMsg == WM_WINDOWPOSCHANGING) {
+        WINDOWPOS* lpw = (WINDOWPOS*)lParam;
+        if (lpw) {
+            if (g_Config.Mode == TaskbarMode::Replace) {
+                lpw->hwndInsertAfter = HWND_TOPMOST;
+            } else {
+                if (g_hNativeTaskbar && IsWindow(g_hNativeTaskbar)) {
+                    lpw->hwndInsertAfter = g_hNativeTaskbar;
+                } else {
+                    lpw->hwndInsertAfter = HWND_TOPMOST;
+                }
+            }
+            lpw->flags &= ~SWP_NOZORDER;
+        }
+        return 0;
+    }
     if (uMsg == WM_DPICHANGED) {
         UINT newDpi = HIWORD(wParam);
         LPRECT lprcSuggested = (LPRECT)lParam;
@@ -2635,12 +2652,30 @@ bool TaskbarWindow::Initialize(HINSTANCE hInstance) {
     wc.hCursor = LoadCursor(NULL, IDC_ARROW);
     wc.hbrBackground = (HBRUSH)GetStockObject(BLACK_BRUSH);
     
-    if (!RegisterClassExW(&wc)) {
+    bool bRegistered = false;
+    if (g_Config.Mode == TaskbarMode::Replace) {
+        if (RegisterClassExW(&wc)) {
+            bRegistered = true;
+        } else {
+            Logger::Log(L"Failed to register Shell_TrayWnd, falling back to Shell_SecondaryTrayWnd.");
+            s_UseSecondaryTrayWndAsFallback = true;
+            wc.lpszClassName = SEC_CLASS_NAME;
+            if (RegisterClassExW(&wc)) {
+                bRegistered = true;
+            }
+        }
+    } else {
+        if (RegisterClassExW(&wc)) {
+            bRegistered = true;
+        }
+    }
+
+    if (!bRegistered) {
         Logger::Log(L"Failed to register taskbar window class.");
         return false;
     }
 
-    if (g_Config.Mode == TaskbarMode::Replace) {
+    if (g_Config.Mode == TaskbarMode::Replace && !s_UseSecondaryTrayWndAsFallback) {
         wc.lpszClassName = SEC_CLASS_NAME;
         RegisterClassExW(&wc);
         wc.lpszClassName = CLASS_NAME; // Restore original
@@ -2747,7 +2782,7 @@ bool TaskbarWindow::Initialize(HINSTANCE hInstance) {
 
         LPCWSTR szClassName = TRAY_CLASS_NAME;
         if (g_Config.Mode == TaskbarMode::Replace) {
-            szClassName = monData.isPrimary[i] ? CLASS_NAME : SEC_CLASS_NAME;
+            szClassName = (monData.isPrimary[i] && !s_UseSecondaryTrayWndAsFallback) ? CLASS_NAME : SEC_CLASS_NAME;
         }
 
         inst->hTaskbar = CreateWindowExW(

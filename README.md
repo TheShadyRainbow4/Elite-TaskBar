@@ -71,6 +71,7 @@ Elite-Taskbar is designed from the ground up to seamlessly blend into the Window
 <details>
 <summary><b>5. Added Features (Teamwork Update)</b></summary>
 
+* **Milestone 1: HKLM Registry Alignment & Shell Replacement**: Unconditionally aligned the suite to utilize `HKEY_LOCAL_MACHINE` registry keys for advanced and master configurations, preventing per-user config isolation. Implemented the primary shell replacement checkbox `IDC_PRIMARY_SHELL_MODE` ("Run EliteTaskbar as primary Windows shell replacement") in the "Native Settings" tab, mapped to HKLM's Winlogon Shell value. Added graceful fallback registration to `Shell_SecondaryTrayWnd` when `Shell_TrayWnd` registration fails. Added dynamic Z-order locking to force the taskbar window to remain `HWND_TOPMOST` and Progman to remain `HWND_BOTTOM` on `WM_WINDOWPOSCHANGING`.
 * **Small Icon Tiles View Mode (R1)**: A brand new view mode in Win32Explorer that displays small icons with right-aligned labels.
 * **Group by Type Default (R2)**: A new toggle in the Win32Explorer Options window setting the default grouping logic to Type.
 * **Independent Taskbar Mode (R3)**: Taskbar now defaults to co-existing with the native explorer taskbar rather than attempting to replace it on first launch.

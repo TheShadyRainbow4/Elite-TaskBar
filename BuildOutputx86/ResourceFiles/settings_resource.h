@@ -122,6 +122,7 @@
 #define IDC_COLORS_CLASSIC              361
 #define IDC_COLORS_WINDOWS_DARK         362
 #define IDC_COLORS_APP_DARK             363
+#define IDC_PRIMARY_SHELL_MODE          370
 
 
 
