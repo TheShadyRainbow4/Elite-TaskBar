@@ -399,6 +399,15 @@ The user provided the folder-based toolbar (Quick Launch) directive:
 4. **Registry Cache**: Cache layout state to `HKEY_LOCAL_MACHINE\SOFTWARE\EliteSoftware\Win32Explorer\Toolbars\Cache\<FolderName>` (overriding HKCU to obey the global HKLM-only settings constraint).
 5. **Execution**: Use `IShellLink` COM interface for shortcuts, and launch via `ShellExecuteEx`.
 
+## Follow-up — 2026-07-08T04:24:30Z
+
+The user provided the Replace Mode (absolute self-reliance) directive:
+1. **File Navigation & Dialog Hijacking (PRIORITY)**: Settings applet must overwrite `Folder` and `Directory` shell command keys in the registry (using HKLM registry paths `HKLM\Software\Classes\Directory\shell` and `HKLM\Software\Classes\Folder\shell` to obey the global HKLM-only settings constraint) so the OS hands folder paths straight to `Win32Explorer.exe`.
+2. **Global Hotkey Registrar**: Register hotkeys for Win+R (Run dialog), Win+E (Win32Explorer), and Win+D (Show Desktop) via `RegisterHotKey` during boot. Intercept `WM_HOTKEY` to execute.
+3. **Desktop & DWM Fallback**: Fallback to raw GDI/GDI+ when DWM/visual styles (`uxtheme.dll`) are missing. Instantiate borderless `Progman` window, draw fallback wallpaper directly to Device Context, and host `SysListView32` on top.
+4. **Master Notification Receiver**: Register `Shell_TrayWnd` and broadcast `TaskbarCreated` natively.
+
+
 
 
 

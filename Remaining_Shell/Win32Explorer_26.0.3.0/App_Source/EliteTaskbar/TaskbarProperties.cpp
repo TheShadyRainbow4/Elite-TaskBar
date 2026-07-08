@@ -456,11 +456,10 @@ void SetDefaultFileManagerCPP(DWORD mode) {
         RegCloseKey(hKey);
     }
 
-    // Write file manager registry associations based on mode (2=FileSystem, 3=All)
+    // Write file manager registry associations based on mode (2=FileSystem, 3=All) - Builder-Bob
     if (mode == 2 || mode == 3) {
-        LPCWSTR rootSubKey = (mode == 2) ? L"Software\\Classes\\Directory\\shell" : L"Software\\Classes\\Folder\\shell";
         WCHAR commandKeyPath[256];
-        wsprintfW(commandKeyPath, L"%s\\openinWin32Explorer", rootSubKey);
+        wsprintfW(commandKeyPath, L"Software\\Classes\\Directory\\shell\\openinWin32Explorer");
         
         if (RegCreateKeyExW(HKEY_LOCAL_MACHINE, commandKeyPath, 0, NULL, REG_OPTION_NON_VOLATILE, KEY_WRITE, NULL, &hKey, NULL) == ERROR_SUCCESS) {
             RegSetValueExW(hKey, L"", 0, REG_SZ, (const BYTE*)L"Open in Win32Explorer", sizeof(L"Open in Win32Explorer"));
@@ -473,9 +472,29 @@ void SetDefaultFileManagerCPP(DWORD mode) {
             }
             RegCloseKey(hKey);
         }
-        if (RegOpenKeyExW(HKEY_LOCAL_MACHINE, rootSubKey, 0, KEY_WRITE, &hKey) == ERROR_SUCCESS) {
+        if (RegOpenKeyExW(HKEY_LOCAL_MACHINE, L"Software\\Classes\\Directory\\shell", 0, KEY_WRITE, &hKey) == ERROR_SUCCESS) {
             RegSetValueExW(hKey, L"", 0, REG_SZ, (const BYTE*)L"openinWin32Explorer", sizeof(L"openinWin32Explorer"));
             RegCloseKey(hKey);
+        }
+
+        if (mode == 3) {
+            wsprintfW(commandKeyPath, L"Software\\Classes\\Folder\\shell\\openinWin32Explorer");
+            
+            if (RegCreateKeyExW(HKEY_LOCAL_MACHINE, commandKeyPath, 0, NULL, REG_OPTION_NON_VOLATILE, KEY_WRITE, NULL, &hKey, NULL) == ERROR_SUCCESS) {
+                RegSetValueExW(hKey, L"", 0, REG_SZ, (const BYTE*)L"Open in Win32Explorer", sizeof(L"Open in Win32Explorer"));
+                HKEY hCmdKey;
+                if (RegCreateKeyExW(hKey, L"command", 0, NULL, REG_OPTION_NON_VOLATILE, KEY_WRITE, NULL, &hCmdKey, NULL) == ERROR_SUCCESS) {
+                    WCHAR cmd[MAX_PATH + 10];
+                    wsprintfW(cmd, L"\"%s\" \"%%1\"", exePath);
+                    RegSetValueExW(hCmdKey, L"", 0, REG_SZ, (const BYTE*)cmd, (wcslen(cmd) + 1) * sizeof(WCHAR));
+                    RegCloseKey(hCmdKey);
+                }
+                RegCloseKey(hKey);
+            }
+            if (RegOpenKeyExW(HKEY_LOCAL_MACHINE, L"Software\\Classes\\Folder\\shell", 0, KEY_WRITE, &hKey) == ERROR_SUCCESS) {
+                RegSetValueExW(hKey, L"", 0, REG_SZ, (const BYTE*)L"openinWin32Explorer", sizeof(L"openinWin32Explorer"));
+                RegCloseKey(hKey);
+            }
         }
     }
 }

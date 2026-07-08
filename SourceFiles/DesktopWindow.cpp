@@ -12,8 +12,38 @@
 #pragma comment(lib, "gdiplus.lib")
 #pragma comment(lib, "shlwapi.lib")
 #pragma comment(lib, "uxtheme.lib")
+#pragma comment(lib, "dwmapi.lib")
 #include <uxtheme.h>
 #include <commoncontrols.h>
+#include <dwmapi.h>
+
+bool IsDwmOrThemeMissing() {
+    BOOL dwmEnabled = FALSE;
+    HRESULT hr = DwmIsCompositionEnabled(&dwmEnabled);
+    if (FAILED(hr) || !dwmEnabled) {
+        return true;
+    }
+    HMODULE hTheme = LoadLibraryW(L"uxtheme.dll");
+    if (!hTheme) {
+        return true;
+    }
+    typedef BOOL(WINAPI* IsThemeActiveFn)();
+    IsThemeActiveFn fn = (IsThemeActiveFn)GetProcAddress(hTheme, "IsThemeActive");
+    if (!fn || !fn()) {
+        FreeLibrary(hTheme);
+        return true;
+    }
+    FreeLibrary(hTheme);
+    return false;
+}
+
+void DrawFallbackWallpaper(HDC hdc, int scrW, int scrH) {
+    Gdiplus::Graphics graphics(hdc);
+    Gdiplus::Color color1(0, 128, 128);
+    Gdiplus::Color color2(0, 64, 64);
+    Gdiplus::LinearGradientBrush brush(Gdiplus::Rect(0, 0, scrW, scrH), color1, color2, Gdiplus::LinearGradientModeVertical);
+    graphics.FillRectangle(&brush, 0, 0, scrW, scrH);
+}
 
 #define WM_SHELLCHANGE (WM_USER + 101)
 #define WM_POPULATE_GRID (WM_USER + 102)
@@ -291,6 +321,9 @@ namespace DesktopWindow {
             }
             RegCloseKey(hKeyShell);
         }
+        if (IsDwmOrThemeMissing()) {
+            useNativeShellView = false;
+        }
 
         HINSTANCE hInst = GetModuleHandleW(NULL);
         
@@ -482,6 +515,9 @@ LRESULT CALLBACK ProgmanWndProc(HWND hwnd, UINT uMsg, WPARAM wParam, LPARAM lPar
                 useNativeShellView = (dwVal == 1);
             }
             RegCloseKey(hKeyShell);
+        }
+        if (IsDwmOrThemeMissing()) {
+            useNativeShellView = false;
         }
 
         CREATESTRUCTW* pcs = (CREATESTRUCTW*)lParam;
@@ -1222,6 +1258,10 @@ static BOOL CALLBACK DrawWallpaperMonitorProc(HMONITOR hMonitor, HDC hdcMonitor,
 }
 
 void DrawWallpaper(HWND hwnd, HDC hdc, int scrW, int scrH) {
+    if (IsDwmOrThemeMissing()) {
+        DrawFallbackWallpaper(hdc, scrW, scrH);
+        return;
+    }
     HKEY hKey;
     DWORD drawWallpaper = 1;
     DWORD cbData = sizeof(DWORD);

@@ -233,7 +233,7 @@ std::wstring ResolveShortcut(const std::wstring& shortcutPath) {
                 wchar_t szGotPath[MAX_PATH];
                 WIN32_FIND_DATAW wfd;
                 hr = psl->GetPath(szGotPath, MAX_PATH, &wfd, SLGP_UNCPRIORITY);
-                if (SUCCEEDED(hr) && wcsclen(szGotPath) > 0) {
+                if (SUCCEEDED(hr) && wcslen(szGotPath) > 0) {
                     targetPath = szGotPath;
                 }
             }
@@ -2507,6 +2507,24 @@ LRESULT CALLBACK WindowProc(HWND hwnd, UINT uMsg, WPARAM wParam, LPARAM lParam) 
     }
 
     switch (uMsg) {
+    case WM_HOTKEY: {
+        if (wParam == 1) { // Win+E
+            WCHAR exePath[MAX_PATH];
+            GetModuleFileNameW(NULL, exePath, MAX_PATH);
+            WCHAR* lastSlash = wcsrchr(exePath, L'\\');
+            if (lastSlash) {
+                wcscpy_s(lastSlash + 1, MAX_PATH - (lastSlash + 1 - exePath), L"Win32Explorer.exe");
+                ShellExecuteW(NULL, L"open", exePath, NULL, NULL, SW_SHOWNORMAL);
+            } else {
+                ShellExecuteW(NULL, L"open", L"Win32Explorer.exe", NULL, NULL, SW_SHOWNORMAL);
+            }
+        } else if (wParam == 2) { // Win+R
+            InvokeNativeRunDialog(hwnd);
+        } else if (wParam == 3) { // Win+D
+            SendMessageW(hwnd, WM_COMMAND, IDM_TASKBAR_SHOWDESKTOP, 0);
+        }
+        return 0;
+    }
     case WM_TRAY_CALLBACK_WIN32EXPLORER: {
         if (lParam == WM_LBUTTONUP) {
             extern void ShowAboutDialog(HWND hwndOwner);
@@ -3066,6 +3084,11 @@ LRESULT CALLBACK WindowProc(HWND hwnd, UINT uMsg, WPARAM wParam, LPARAM lParam) 
                 }
                 
                 InvalidateRect(hwnd, NULL, TRUE);
+                
+                if (g_uTaskbarCreatedMsg != 0) {
+                    PostMessageW(HWND_BROADCAST, g_uTaskbarCreatedMsg, 0, 0);
+                    SendNotifyMessageW(HWND_BROADCAST, g_uTaskbarCreatedMsg, 0, 0);
+                }
                 
                 if (s_szSettingChangeParam[0] != L'\0' && wcscmp(s_szSettingChangeParam, L"EliteTaskbarSettings") == 0) {
                     for (auto* inst : g_Taskbars) {
@@ -3666,6 +3689,7 @@ bool TaskbarWindow::Initialize(HINSTANCE hInstance) {
 
     if (g_uTaskbarCreatedMsg != 0) {
         PostMessageW(HWND_BROADCAST, g_uTaskbarCreatedMsg, 0, 0);
+        SendNotifyMessageW(HWND_BROADCAST, g_uTaskbarCreatedMsg, 0, 0);
     }
 
     return true;
