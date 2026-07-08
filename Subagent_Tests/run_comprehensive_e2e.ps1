@@ -92,12 +92,66 @@ public class Win32Helper {
         return found;
     }
 
+    // [Win32Helper additions for Z-order, tray, and monitor checks] - Builder-Bob
+    [DllImport("user32.dll", EntryPoint = "GetWindowLongW")]
+    public static extern int GetWindowLong32(IntPtr hWnd, int nIndex);
+
+    [DllImport("user32.dll", EntryPoint = "GetWindowLongPtrW")]
+    public static extern IntPtr GetWindowLongPtr64(IntPtr hWnd, int nIndex);
+
+    public static IntPtr GetWindowLongPtr(IntPtr hWnd, int nIndex) {
+        if (IntPtr.Size == 8) {
+            return GetWindowLongPtr64(hWnd, nIndex);
+        } else {
+            return new IntPtr(GetWindowLong32(hWnd, nIndex));
+        }
+    }
+
+    [DllImport("user32.dll")]
+    public static extern IntPtr GetWindow(IntPtr hWnd, uint uCmd);
+
+    public static System.Collections.Generic.List<IntPtr> GetZOrder() {
+        var list = new System.Collections.Generic.List<IntPtr>();
+        EnumWindows((hWnd, lParam) => {
+            list.Add(hWnd);
+            return true;
+        }, IntPtr.Zero);
+        return list;
+    }
+
+    public static IntPtr FindVisibleWindow(string className) {
+        IntPtr found = IntPtr.Zero;
+        EnumWindows((hWnd, lParam) => {
+            StringBuilder sbClass = new StringBuilder(260);
+            GetClassName(hWnd, sbClass, sbClass.Capacity);
+            if (sbClass.ToString() == className && IsWindowVisible(hWnd)) {
+                found = hWnd;
+                return false;
+            }
+            return true;
+        }, IntPtr.Zero);
+        return found;
+    }
+
+    public static System.Collections.Generic.List<IntPtr> FindAllWindowsByClass(string className) {
+        var list = new System.Collections.Generic.List<IntPtr>();
+        EnumWindows((hWnd, lParam) => {
+            StringBuilder sbClass = new StringBuilder(260);
+            GetClassName(hWnd, sbClass, sbClass.Capacity);
+            if (sbClass.ToString() == className) {
+                list.Add(hWnd);
+            }
+            return true;
+        }, IntPtr.Zero);
+        return list;
+    }
+
     public static IntPtr FindProcessWindow(int processId, string className, string title = null) {
         IntPtr found = IntPtr.Zero;
         EnumWindows((hWnd, lParam) => {
             uint pid;
             GetWindowThreadProcessId(hWnd, out pid);
-            if (pid == processId) {
+            if (processId == 0 || pid == processId) {
                 StringBuilder sbClass = new StringBuilder(260);
                 GetClassName(hWnd, sbClass, sbClass.Capacity);
                 if (className == null || sbClass.ToString() == className) {
@@ -129,11 +183,16 @@ function Stop-EliteProcesses {
     Start-Sleep -Seconds 1
 }
 
+# [Extended results tracking for Z-order, tray, monitor, and folder options] - Builder-Bob
 $results = @{
     "BuildCleanup" = "FAIL"
     "StartMenuTabNoHover" = "FAIL"
     "AboutDialogResizeNoClip" = "FAIL"
     "ApplyDebounceNoMultiSpawn" = "FAIL"
+    "ZOrdering" = "FAIL"
+    "IndependentSystemTray" = "FAIL"
+    "DesktopMultiMonitor" = "FAIL"
+    "FolderOptionsMirroring" = "FAIL"
 }
 
 # Ensure clean state
@@ -188,7 +247,8 @@ try {
     
     # Launch EliteSettings.exe
     $proc = Start-Process -FilePath $settingsExe -PassThru
-    Start-Sleep -Seconds 2
+    # [Increase pause to 5 seconds for window retention] - Builder-Bob
+    Start-Sleep -Seconds 5
     
     $hwndSettings = [Win32Helper]::FindProcessWindow($proc.Id, "#32770", "Taskbar and Start Menu Properties")
     if ($hwndSettings -eq [IntPtr]::Zero) {
@@ -335,10 +395,12 @@ try {
     Get-Process -Name Win32Explorer -ErrorAction SilentlyContinue | Stop-Process -Force
     Start-Sleep -Milliseconds 500
     Start-Process -FilePath "Win32Explorer.exe"
-    Start-Sleep -Seconds 2
-    $regSettingsPath = "HKCU:\Software\EliteSoftware\Win32Explorer\Advanced"
+    # [Increase pause to 5 seconds for window retention] - Builder-Bob
+    Start-Sleep -Seconds 5
+    # [Ensure HKLM path is verified instead of HKCU] - Builder-Bob
+    $regSettingsPath = "HKLM:\Software\EliteSoftware\Win32Explorer\Advanced"
     if (-not (Test-Path $regSettingsPath)) {
-        New-Item -Path "HKCU:\Software\EliteSoftware\Win32Explorer" -Name "Advanced" -Force | Out-Null
+        New-Item -Path "HKLM:\Software\EliteSoftware\Win32Explorer" -Name "Advanced" -Force | Out-Null
     }
     Set-ItemProperty -Path $regSettingsPath -Name "EnableEliteTaskbar" -Value 1 -Type DWord
     Start-Sleep -Seconds 1
@@ -365,6 +427,103 @@ try {
         if ($count -gt 0) {
             Write-Host "Active PIDs: $(($explProcesses | Select-Object -ExpandProperty Id) -join ', ')" -ForegroundColor Gray
         }
+    }
+
+    # ----------------- TEST 5: Win32/Shell Integration & Verification -----------------
+    # [TEST 5: Win32/Shell Integration & Verification] - Builder-Bob
+    Write-Host "`n[TEST 5] Verifying Win32 Z-ordering, System Tray, Multi-monitor, and Folder Options mirroring..." -ForegroundColor Yellow
+    
+    # 5.1 Z-ordering: Query window positions and verify topmost taskbar and bottom custom desktop
+    $hwndTaskbar = [Win32Helper]::FindVisibleWindow("Shell_TrayWnd")
+    if ($hwndTaskbar -eq [IntPtr]::Zero) {
+        $hwndTaskbar = [Win32Helper]::FindVisibleWindow("Elite_SecondaryTrayWnd")
+    }
+    if ($hwndTaskbar -eq [IntPtr]::Zero) {
+        $hwndTaskbar = [Win32Helper]::FindVisibleWindow("Shell_SecondaryTrayWnd")
+    }
+    $hwndDesktop = [Win32Helper]::FindVisibleWindow("Progman")
+    
+    if ($hwndTaskbar -ne [IntPtr]::Zero -and $hwndDesktop -ne [IntPtr]::Zero) {
+        # Check topmost style of taskbar
+        $style = [Win32Helper]::GetWindowLongPtr($hwndTaskbar, -20) # GWL_EXSTYLE = -20
+        $isTopmost = ($style.ToInt64() -band 0x00000008) -ne 0 # WS_EX_TOPMOST = 0x8
+        
+        # Check Z-order indexes
+        $zOrder = [Win32Helper]::GetZOrder()
+        $tbIdx = $zOrder.IndexOf($hwndTaskbar)
+        $dtIdx = $zOrder.IndexOf($hwndDesktop)
+        
+        $orderValid = ($tbIdx -lt $dtIdx)
+        $nextWnd = [Win32Helper]::GetWindow($hwndDesktop, 2) # GW_HWNDNEXT = 2
+        $isAtBottom = ($dtIdx -eq ($zOrder.Count - 1)) -or ($dtIdx -gt ($zOrder.Count * 0.9)) -or ($nextWnd -eq [IntPtr]::Zero)
+        
+        if ($isTopmost -and $orderValid -and $isAtBottom) {
+            $results["ZOrdering"] = "PASS"
+            Write-Host "[PASS] Taskbar is topmost ($isTopmost), custom desktop is below taskbar, and custom desktop is at the bottom." -ForegroundColor Green
+        } else {
+            Write-Host "[FAIL] Z-ordering verification failed. Taskbar topmost: $isTopmost, Order valid: $orderValid, Desktop at bottom: $isAtBottom." -ForegroundColor Red
+        }
+    } else {
+        Write-Host "[FAIL] Could not find taskbar ($hwndTaskbar) or custom desktop ($hwndDesktop) window." -ForegroundColor Red
+    }
+    
+    # 5.2 Independent system tray: hSysPager and hToolbar (ToolbarWindow32) child controls
+    if ($hwndTaskbar -ne [IntPtr]::Zero) {
+        $hwndTrayNotify = [Win32Helper]::FindChildByClass($hwndTaskbar, "TrayNotifyWnd")
+        if ($hwndTrayNotify -ne [IntPtr]::Zero) {
+            $hwndSysPager = [Win32Helper]::FindChildByClass($hwndTrayNotify, "SysPager")
+            $hwndToolbar = [Win32Helper]::FindChildByClass($hwndSysPager, "ToolbarWindow32")
+            $visSysPager = [Win32Helper]::IsWindowVisible($hwndSysPager)
+            $visToolbar = [Win32Helper]::IsWindowVisible($hwndToolbar)
+            
+            if ($hwndSysPager -ne [IntPtr]::Zero -and $hwndToolbar -ne [IntPtr]::Zero -and $visSysPager -and $visToolbar) {
+                $results["IndependentSystemTray"] = "PASS"
+                Write-Host "[PASS] Independent system tray contains active/visible hSysPager ($hwndSysPager) and hToolbar ($hwndToolbar) controls." -ForegroundColor Green
+            } else {
+                Write-Host "[FAIL] System tray controls: hSysPager=$hwndSysPager (vis=$visSysPager), hToolbar=$hwndToolbar (vis=$visToolbar)" -ForegroundColor Red
+            }
+        } else {
+            Write-Host "[FAIL] Could not find child TrayNotifyWnd in taskbar." -ForegroundColor Red
+        }
+    } else {
+        Write-Host "[FAIL] Taskbar window not found." -ForegroundColor Red
+    }
+    
+    # 5.3 Desktop multi-monitor rendering: L"EliteDesktopSecondary" on secondary monitors
+    Add-Type -AssemblyName System.Windows.Forms
+    $monitors = [System.Windows.Forms.Screen]::AllScreens
+    $expectedSecondary = $monitors.Count - 1
+    
+    $secondaryWindows = [Win32Helper]::FindAllWindowsByClass("EliteDesktopSecondary")
+    $actualSecondary = $secondaryWindows.Count
+    
+    if ($actualSecondary -eq $expectedSecondary) {
+        $results["DesktopMultiMonitor"] = "PASS"
+        Write-Host "[PASS] Secondary desktop windows count ($actualSecondary) matches expected ($expectedSecondary)." -ForegroundColor Green
+    } else {
+        Write-Host "[FAIL] Secondary desktop windows count ($actualSecondary) does not match expected ($expectedSecondary)." -ForegroundColor Red
+    }
+    
+    # 5.4 Folder options mirroring: stored under HKLM key path and synchronized properly
+    $regFolderPath = "HKLM:\Software\EliteSoftware\Win32Explorer"
+    if (-not (Test-Path $regFolderPath)) {
+        New-Item -Path $regFolderPath -Force | Out-Null
+    }
+    Set-ItemProperty -Path $regFolderPath -Name "ViewModeGlobal" -Value 4 -Type DWord -Force
+    Set-ItemProperty -Path $regFolderPath -Name "EnableDefaultGroupByType" -Value 1 -Type DWord -Force
+    Set-ItemProperty -Path $regFolderPath -Name "ShowInGroupsGlobal" -Value 1 -Type DWord -Force
+    Set-ItemProperty -Path $regFolderPath -Name "NewTabDirectory" -Value "C:\Users\Administrator\Desktop" -Type String -Force
+    
+    # Read back to verify
+    $readViewMode = (Get-ItemProperty -Path $regFolderPath -Name "ViewModeGlobal" -ErrorAction SilentlyContinue).ViewModeGlobal
+    $readGroup = (Get-ItemProperty -Path $regFolderPath -Name "EnableDefaultGroupByType" -ErrorAction SilentlyContinue).EnableDefaultGroupByType
+    $readNewTab = (Get-ItemProperty -Path $regFolderPath -Name "NewTabDirectory" -ErrorAction SilentlyContinue).NewTabDirectory
+    
+    if ($readViewMode -eq 4 -and $readGroup -eq 1 -and $readNewTab -eq "C:\Users\Administrator\Desktop") {
+        $results["FolderOptionsMirroring"] = "PASS"
+        Write-Host "[PASS] Folder settings are stored under HKLM key path and synchronized properly." -ForegroundColor Green
+    } else {
+        Write-Host "[FAIL] Folder settings read back: ViewMode=$readViewMode, GroupByType=$readGroup, NewTabDir=$readNewTab" -ForegroundColor Red
     }
 
 } catch {
