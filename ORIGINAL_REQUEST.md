@@ -374,6 +374,20 @@ The user provided the exact Win32/COM architecture to fix taskbar/tray bugs:
 4. **True Standalone System Tray**: When explorer is dead: (A) Register master class as `Shell_TrayWnd`. (B) Intercept `WM_COPYDATA` (dwData == 1 or 0x34753423) and process `NIM_*` commands. (C) `RegisterWindowMessage(L"TaskbarCreated")` and broadcast it to force apps to re-send icons.
 5. **Tray Context Menus**: Send uCallbackMessage back to originating hWnd with mouse event parameters on click events (e.g. `WM_RBUTTONUP`). Do not draw custom menus.
 
+## Follow-up — 2026-07-08T04:15:33Z
+
+The user provided the shell lifecycle and tray layout directive:
+1. **Teardown Logic (WM_SETTINGCHANGE)**: Prioritize debounced teardown/rebuild sequence. Settings broadcasts `WM_SETTINGCHANGE`; shell hooks it using 1000ms debounce timer. Teardown must safely `DestroyIcon` scraped handles (prevent GDI leaks) and release active COM pointers (like `IExplorerBrowser`). Re-initialize with new parameters (failsafe defaults if missing).
+2. **Tray Layout Toggle (EnableTwoRowTray)**:
+   - **Single-Row (Default)**: Omit `TBSTYLE_WRAPABLE`. Dynamically expand bounds left.
+   - **Two-Row**: Apply `TBSTYLE_WRAPABLE`. Scale icons to 12x12. Lock horizontal width.
+3. **Mode Parity**:
+   - **Hybrid**: Double-scrape `Shell_TrayWnd` and overflow. Use `ITaskbarList` to hide running apps natively.
+   - **Replace**: Register class `Shell_TrayWnd`. Receive `NOTIFYICONDATA` natively.
+   - **Custom**: Skip taskbar instantiation entirely based on settings (Desktop-only mode).
+4. **Memory Leak Prevention**: Prevent GDI leaks during teardown.
+
+
 
 
 

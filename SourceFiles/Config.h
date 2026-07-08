@@ -30,6 +30,7 @@ struct EliteTaskbarConfig {
     bool UseNativeTaskBand;
     bool EnableTwoRowTray;
     int ManualTrayWidth; // Manual width in pixels - Builder-Bob
+    bool EnableEliteTaskbar; // Toggle to skip taskbar instantiation - Builder-Bob
     std::vector<HMONITOR> MonitorTargets;
 };
 

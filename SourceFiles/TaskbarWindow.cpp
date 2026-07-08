@@ -516,25 +516,25 @@ void UpdateTaskbarLayout(TaskbarInstance* inst) {
         if (g_Config.ManualTrayWidth > 0) {
             W_tray = MulDiv(g_Config.ManualTrayWidth, dpi, 96);
         } else if (inst->hToolbar && enableTray) { // Compute tray layout width dynamically - Builder-Bob
-            SendMessageW(inst->hToolbar, TB_AUTOSIZE, 0, 0);
             int btnCount = (int)SendMessageW(inst->hToolbar, TB_BUTTONCOUNT, 0, 0);
             if (btnCount > 0) {
-                RECT rcLast = { 0 };
-                if (SendMessageW(inst->hToolbar, TB_GETITEMRECT, btnCount - 1, (LPARAM)&rcLast)) {
-                    int maxWidth = rcLast.right;
-                    for (int idx = 0; idx < btnCount - 1; ++idx) {
-                        RECT rcItem = { 0 };
-                        if (SendMessageW(inst->hToolbar, TB_GETITEMRECT, idx, (LPARAM)&rcItem)) {
-                            if (rcItem.right > maxWidth) {
-                                maxWidth = rcItem.right;
+                if (g_Config.EnableTwoRowTray) {
+                    int colCount = (btnCount + 1) / 2;
+                    W_tray = colCount * MulDiv(15, dpi, 96) + 4; // 15px per column in two-row mode
+                } else {
+                    SendMessageW(inst->hToolbar, TB_AUTOSIZE, 0, 0);
+                    RECT rcLast = { 0 };
+                    if (SendMessageW(inst->hToolbar, TB_GETITEMRECT, btnCount - 1, (LPARAM)&rcLast)) {
+                        int maxWidth = rcLast.right;
+                        for (int idx = 0; idx < btnCount - 1; ++idx) {
+                            RECT rcItem = { 0 };
+                            if (SendMessageW(inst->hToolbar, TB_GETITEMRECT, idx, (LPARAM)&rcItem)) {
+                                if (rcItem.right > maxWidth) {
+                                    maxWidth = rcItem.right;
+                                }
                             }
                         }
-                    }
-                    W_tray = maxWidth + 4;
-                } else {
-                    if (g_Config.EnableTwoRowTray) {
-                        int colCount = (btnCount + 1) / 2;
-                        W_tray = colCount * MulDiv(18, dpi, 96);
+                        W_tray = maxWidth + 4;
                     } else {
                         W_tray = btnCount * MulDiv(24, dpi, 96);
                     }
@@ -2071,6 +2071,7 @@ LRESULT CALLBACK TrayShowDesktopButtonProc(HWND hwnd, UINT uMsg, WPARAM wParam, 
 }
 
 LRESULT CALLBACK WindowProc(HWND hwnd, UINT uMsg, WPARAM wParam, LPARAM lParam) {
+    static WCHAR s_szSettingChangeParam[256] = {0};
     if (uMsg == WM_WINDOWPOSCHANGING) {
         WINDOWPOS* lpw = (WINDOWPOS*)lParam;
         if (lpw) {
@@ -2652,6 +2653,85 @@ LRESULT CALLBACK WindowProc(HWND hwnd, UINT uMsg, WPARAM wParam, LPARAM lParam) 
         return 0;
     }
     case WM_TIMER: {
+        if (wParam == 555) {
+            KillTimer(hwnd, 555);
+            // Execute debounced teardown and re-initialization - Builder-Bob
+            bool requiresRestart = false;
+            HKEY hKey;
+            if (RegOpenKeyExW(HKEY_LOCAL_MACHINE, L"Software\\EliteSoftware\\Win32Explorer\\Advanced", 0, KEY_READ, &hKey) == ERROR_SUCCESS) {
+                DWORD dwValue = 0;
+                DWORD cbData = sizeof(DWORD);
+                if (RegQueryValueExW(hKey, L"TaskbarMode", NULL, NULL, (LPBYTE)&dwValue, &cbData) == ERROR_SUCCESS) {
+                    bool newIsReplace = (dwValue == 1);
+                    bool oldIsReplace = (g_Config.Mode == TaskbarMode::Replace);
+                    if (newIsReplace != oldIsReplace) {
+                        requiresRestart = true;
+                    }
+                }
+                cbData = sizeof(DWORD);
+                if (RegQueryValueExW(hKey, L"UseNativeTaskBand", NULL, NULL, (LPBYTE)&dwValue, &cbData) == ERROR_SUCCESS) {
+                    bool newIsNative = (dwValue == 1);
+                    if (newIsNative != g_Config.UseNativeTaskBand) {
+                        requiresRestart = true;
+                    }
+                }
+                RegCloseKey(hKey);
+            }
+            
+            if (requiresRestart) {
+                WCHAR exePath[MAX_PATH] = {0};
+                GetModuleFileNameW(NULL, exePath, MAX_PATH);
+
+                wchar_t psCmd[2048];
+                swprintf_s(psCmd, L"-NoProfile -WindowStyle Hidden -Command \"Start-Sleep -s 1; Stop-Process -Name EliteTaskbar -Force; Start-Sleep -Milliseconds 500; Start-Process -FilePath '%s'\"", exePath);
+                
+                ShellExecuteW(NULL, NULL, L"powershell.exe", psCmd, NULL, SW_HIDE);
+                PostMessageW(hwnd, WM_CLOSE, 0, 0);
+            } else {
+                // Teardown: Safely call DestroyIcon on scraped handles to prevent GDI leaks - Builder-Bob
+                for (auto& icon : g_TrayIcons) {
+                    if (icon.hIcon) {
+                        DestroyIcon(icon.hIcon);
+                        icon.hIcon = NULL;
+                    }
+                }
+                g_TrayIcons.clear();
+
+                QueryOperationalMode();
+                
+                for (auto* inst : g_Taskbars) {
+                    if (inst->hTaskSwitch) {
+                        int count = (int)SendMessageW(inst->hTaskSwitch, TB_BUTTONCOUNT, 0, 0);
+                        for (int i = count - 1; i >= 0; i--) {
+                            SendMessageW(inst->hTaskSwitch, TB_DELETEBUTTON, i, 0);
+                        }
+                    }
+                    if (inst->hTrayNotify) {
+                        InvalidateRect(inst->hTrayNotify, NULL, TRUE);
+                    }
+                }
+                
+                for (auto& btn : g_TaskButtons) {
+                    AddTaskButton(btn);
+                }
+                
+                InvalidateRect(hwnd, NULL, TRUE);
+                
+                if (s_szSettingChangeParam[0] != L'\0' && wcscmp(s_szSettingChangeParam, L"EliteTaskbarSettings") == 0) {
+                    for (auto* inst : g_Taskbars) {
+                        if (inst->hTaskbar == hwnd && inst->startButton && inst->startButton->GetHwnd()) {
+                            inst->startButton->ReloadOrbImage(GetModuleHandleW(NULL), inst->monitorIndex);
+                            
+                            RECT rcWindow;
+                            GetWindowRect(hwnd, &rcWindow);
+                            inst->startButton->Show(rcWindow.left, rcWindow.top, rcWindow.bottom - rcWindow.top);
+                            break;
+                        }
+                    }
+                }
+            }
+            return 0;
+        }
         if (wParam == 1001) {
             TaskbarInstance* inst = GetTaskbarInstance(hwnd);
             if (inst && inst->hToolbar) {
@@ -2728,71 +2808,13 @@ LRESULT CALLBACK WindowProc(HWND hwnd, UINT uMsg, WPARAM wParam, LPARAM lParam) 
         return 0;
     }
     case WM_SETTINGCHANGE: {
-        if (lParam && wcscmp((LPCWSTR)lParam, L"TraySettings") == 0) {
-            bool requiresRestart = false;
-            HKEY hKey;
-            if (RegOpenKeyExW(HKEY_LOCAL_MACHINE, L"Software\\EliteSoftware\\Win32Explorer\\Advanced", 0, KEY_READ, &hKey) == ERROR_SUCCESS) {
-                DWORD dwValue = 0;
-                DWORD cbData = sizeof(DWORD);
-                if (RegQueryValueExW(hKey, L"TaskbarMode", NULL, NULL, (LPBYTE)&dwValue, &cbData) == ERROR_SUCCESS) {
-                    bool newIsReplace = (dwValue == 1);
-                    bool oldIsReplace = (g_Config.Mode == TaskbarMode::Replace);
-                    if (newIsReplace != oldIsReplace) {
-                        requiresRestart = true;
-                    }
-                }
-                cbData = sizeof(DWORD);
-                if (RegQueryValueExW(hKey, L"UseNativeTaskBand", NULL, NULL, (LPBYTE)&dwValue, &cbData) == ERROR_SUCCESS) {
-                    bool newIsNative = (dwValue == 1);
-                    if (newIsNative != g_Config.UseNativeTaskBand) {
-                        requiresRestart = true;
-                    }
-                }
-                RegCloseKey(hKey);
-            }
-            
-            if (requiresRestart) {
-                WCHAR exePath[MAX_PATH] = {0};
-                GetModuleFileNameW(NULL, exePath, MAX_PATH);
- 
-                wchar_t psCmd[2048];
-                swprintf_s(psCmd, L"-NoProfile -WindowStyle Hidden -Command \"Start-Sleep -s 1; Stop-Process -Name EliteTaskbar -Force; Start-Sleep -Milliseconds 500; Start-Process -FilePath '%s'\"", exePath);
-                
-                ShellExecuteW(NULL, NULL, L"powershell.exe", psCmd, NULL, SW_HIDE);
-                PostMessageW(hwnd, WM_CLOSE, 0, 0);
-            } else {
-                QueryOperationalMode();
-                
-                for (auto* inst : g_Taskbars) {
-                    if (inst->hTaskSwitch) {
-                        int count = SendMessageW(inst->hTaskSwitch, TB_BUTTONCOUNT, 0, 0);
-                        for (int i = count - 1; i >= 0; i--) {
-                            SendMessageW(inst->hTaskSwitch, TB_DELETEBUTTON, i, 0);
-                        }
-                    }
-                    if (inst->hTrayNotify) {
-                        InvalidateRect(inst->hTrayNotify, NULL, TRUE);
-                    }
-                }
-                
-                for (auto& btn : g_TaskButtons) {
-                    AddTaskButton(btn);
-                }
-                
-                InvalidateRect(hwnd, NULL, TRUE);
-            }
-        } else if (lParam && wcscmp((LPCWSTR)lParam, L"EliteTaskbarSettings") == 0) {
-            for (auto* inst : g_Taskbars) {
-                if (inst->hTaskbar == hwnd && inst->startButton && inst->startButton->GetHwnd()) {
-                    inst->startButton->ReloadOrbImage(GetModuleHandleW(NULL), inst->monitorIndex);
-                    
-                    RECT rcWindow;
-                    GetWindowRect(hwnd, &rcWindow);
-                    inst->startButton->Show(rcWindow.left, rcWindow.top, rcWindow.bottom - rcWindow.top);
-                    break;
-                }
-            }
+        // Debounce Settings Change (1000ms delay) to prevent rapid-fire multi-spawns - Builder-Bob
+        s_szSettingChangeParam[0] = L'\0';
+        if (lParam) {
+            wcscpy_s(s_szSettingChangeParam, (LPCWSTR)lParam);
         }
+        KillTimer(hwnd, 555);
+        SetTimer(hwnd, 555, 1000, NULL);
         return 0;
     }
     case WM_DESTROY:
@@ -2845,6 +2867,12 @@ BOOL CALLBACK TaskbarMonitorEnumProc(HMONITOR hMonitor, HDC hdcMonitor, LPRECT l
 }
 
 bool TaskbarWindow::Initialize(HINSTANCE hInstance) {
+    if (!g_Config.EnableEliteTaskbar) {
+        Logger::Log(L"Elite Taskbar is disabled by setting. Skipping taskbar window creation, initializing Desktop only. - Builder-Bob");
+        DesktopWindow::Initialize();
+        return true;
+    }
+
     g_uTaskbarCreatedMsg = RegisterWindowMessageW(L"TaskbarCreated");
     g_uShellHookMsg = RegisterWindowMessageW(L"SHELLHOOK");
 

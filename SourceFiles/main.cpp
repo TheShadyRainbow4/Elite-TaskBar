@@ -14,7 +14,7 @@
 #pragma comment(lib, "shell32.lib")
 #pragma comment(lib, "comctl32.lib")
 
-EliteTaskbarConfig g_Config = { L"", TaskbarMode::Independent, ButtonWidthMode::Auto, TrayOverflowMode::Win7Flyout, 1, false, false, true, {} };
+EliteTaskbarConfig g_Config = { L"", TaskbarMode::Independent, ButtonWidthMode::Auto, TrayOverflowMode::Win7Flyout, 1, false, false, true, 0, true, {} };
 HINSTANCE g_hInstance = NULL;
 
 void QueryOperationalMode() {
@@ -86,6 +86,15 @@ void QueryOperationalMode() {
             g_Config.ManualTrayWidth = (int)dwValue;
         } else {
             g_Config.ManualTrayWidth = 0;
+        }
+
+        // Load EnableEliteTaskbar setting - Builder-Bob
+        dwValue = 1;
+        bufferSize = sizeof(DWORD);
+        if (RegQueryValueExW(hKey, L"EnableEliteTaskbar", NULL, NULL, (LPBYTE)&dwValue, &bufferSize) == ERROR_SUCCESS) {
+            g_Config.EnableEliteTaskbar = (dwValue == 1);
+        } else {
+            g_Config.EnableEliteTaskbar = true;
         }
         
         RegCloseKey(hKey);
