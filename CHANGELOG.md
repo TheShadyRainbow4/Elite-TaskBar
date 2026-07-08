@@ -4,6 +4,9 @@ All notable changes to this project will be documented in this file.
 
 
 ## [Unreleased]
+### Fixed
+- **Resolve ODR Violation and Startup Crash**: Renamed the monitor enumeration callbacks to `TaskbarMonitorEnumProc` in `TaskbarWindow.cpp` and `DesktopMonitorEnumProc` in `DesktopWindow.cpp` to prevent linking/definition collisions (ODR violation) and resolve startup crash. - Builder-Bob
+
 ### Added
 - **Erase Manual Tray Icon Drawing**: Removed the legacy custom GDI icon rendering loops from `TrayNotifyProc`'s `WM_PAINT` handler, relying completely on the subclassed native `hToolbar` control for pixel-perfect system visual style drawing in all taskbar modes. - Builder-Bob
 - **Dynamic Tray Width Computation**: Replaced hardcoded tray width estimations with dynamic client-space queries (`TB_GETITEMRECT`) over the toolbar's button structures in `UpdateTaskbarLayout`, automatically adapting to different DPIs and two-row tray configurations. - Builder-Bob

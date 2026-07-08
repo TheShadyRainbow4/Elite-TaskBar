@@ -209,7 +209,8 @@ struct MonitorInfo {
     bool isPrimary;
 };
 
-static BOOL CALLBACK MonitorEnumProc(HMONITOR hMonitor, HDC hdcMonitor, LPRECT lprcMonitor, LPARAM dwData) {
+// Rename callback to DesktopMonitorEnumProc to resolve ODR violation - Builder-Bob
+static BOOL CALLBACK DesktopMonitorEnumProc(HMONITOR hMonitor, HDC hdcMonitor, LPRECT lprcMonitor, LPARAM dwData) {
     auto* monitors = reinterpret_cast<std::vector<MonitorInfo>*>(dwData);
     MONITORINFOEXW mi;
     mi.cbSize = sizeof(MONITORINFOEXW);
@@ -356,7 +357,8 @@ namespace DesktopWindow {
 
         // Enumerate displays - Builder-Bob
         std::vector<MonitorInfo> monitors;
-        EnumDisplayMonitors(NULL, NULL, MonitorEnumProc, (LPARAM)&monitors);
+        // Update reference to DesktopMonitorEnumProc - Builder-Bob
+        EnumDisplayMonitors(NULL, NULL, DesktopMonitorEnumProc, (LPARAM)&monitors);
 
         MonitorInfo primaryMon;
         primaryMon.isPrimary = true;
@@ -544,7 +546,8 @@ LRESULT CALLBACK ProgmanWndProc(HWND hwnd, UINT uMsg, WPARAM wParam, LPARAM lPar
     }
     case WM_DISPLAYCHANGE: {
         std::vector<MonitorInfo> monitors;
-        EnumDisplayMonitors(NULL, NULL, MonitorEnumProc, (LPARAM)&monitors);
+        // Update reference to DesktopMonitorEnumProc - Builder-Bob
+        EnumDisplayMonitors(NULL, NULL, DesktopMonitorEnumProc, (LPARAM)&monitors);
 
         MonitorInfo primaryMon;
         primaryMon.isPrimary = true;

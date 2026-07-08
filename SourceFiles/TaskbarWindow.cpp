@@ -2582,7 +2582,8 @@ struct MonitorEnumData {
     std::vector<bool> isPrimary;
 };
 
-BOOL CALLBACK MonitorEnumProc(HMONITOR hMonitor, HDC hdcMonitor, LPRECT lprcMonitor, LPARAM dwData) {
+// Rename callback to TaskbarMonitorEnumProc to resolve ODR violation - Builder-Bob
+BOOL CALLBACK TaskbarMonitorEnumProc(HMONITOR hMonitor, HDC hdcMonitor, LPRECT lprcMonitor, LPARAM dwData) {
     MonitorEnumData* data = (MonitorEnumData*)dwData;
     MONITORINFO mi = {0};
     mi.cbSize = sizeof(MONITORINFO);
@@ -2708,7 +2709,8 @@ bool TaskbarWindow::Initialize(HINSTANCE hInstance) {
     RegisterClassExW(&wcChild);
 
     MonitorEnumData monData;
-    EnumDisplayMonitors(NULL, NULL, MonitorEnumProc, (LPARAM)&monData);
+    // Update reference to TaskbarMonitorEnumProc - Builder-Bob
+    EnumDisplayMonitors(NULL, NULL, TaskbarMonitorEnumProc, (LPARAM)&monData);
     
     bool bHookRegistered = false;
     for (size_t i = 0; i < monData.monitors.size(); i++) {
