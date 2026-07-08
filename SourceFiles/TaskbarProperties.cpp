@@ -2251,6 +2251,42 @@ void ImportSettingsFromXML(HWND hwndOwner) {
     }
 }
 
+void ImportSettingsFromXMLPathSilently(const wchar_t* xmlPath) {
+    FILE* f = nullptr;
+    if (_wfopen_s(&f, xmlPath, L"r, ccs=UTF-8") == 0 && f) {
+        HKEY hKey;
+        if (RegCreateKeyExW(HKEY_LOCAL_MACHINE, L"Software\\EliteSoftware\\Win32Explorer\\Advanced", 0, NULL, REG_OPTION_NON_VOLATILE, KEY_WRITE, NULL, &hKey, NULL) == ERROR_SUCCESS) {
+            wchar_t line[2048];
+            while (fgetws(line, 2048, f)) {
+                std::wstring str(line);
+                size_t posName = str.find(L"name=\"");
+                if (posName != std::wstring::npos) {
+                    size_t posNameEnd = str.find(L"\"", posName + 6);
+                    std::wstring name = str.substr(posName + 6, posNameEnd - (posName + 6));
+
+                    size_t posType = str.find(L"type=\"");
+                    size_t posTypeEnd = str.find(L"\"", posType + 6);
+                    std::wstring type = str.substr(posType + 6, posTypeEnd - (posType + 6));
+
+                    size_t posValueStart = str.find(L">", posTypeEnd);
+                    size_t posValueEnd = str.find(L"</Setting>", posValueStart);
+                    std::wstring value = str.substr(posValueStart + 1, posValueEnd - (posValueStart + 1));
+
+                    if (type == L"DWORD") {
+                        DWORD dwVal = (DWORD)_wtoi(value.c_str());
+                        RegSetValueExW(hKey, name.c_str(), 0, REG_DWORD, (const BYTE*)&dwVal, sizeof(DWORD));
+                    }
+                    else if (type == L"SZ") {
+                        RegSetValueExW(hKey, name.c_str(), 0, REG_SZ, (const BYTE*)value.c_str(), (DWORD)(value.length() + 1) * sizeof(wchar_t));
+                    }
+                }
+            }
+            RegCloseKey(hKey);
+        }
+        fclose(f);
+    }
+}
+
 INT_PTR CALLBACK ExplorerSettingsDlgProc(HWND hwndDlg, UINT uMsg, WPARAM wParam, LPARAM lParam) {
     switch (uMsg) {
     case WM_INITDIALOG: {

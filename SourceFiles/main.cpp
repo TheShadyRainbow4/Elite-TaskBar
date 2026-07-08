@@ -296,6 +296,13 @@ int WINAPI WinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, LPSTR lpCmdLine
     _CrtSetDbgFlag(_CRTDBG_ALLOC_MEM_DF | _CRTDBG_LEAK_CHECK_DF);
 #endif
 
+    // [Command Line Import Option] - Builder-Bob
+    if (__argc >= 3 && _wcsicmp(__wargv[1], L"/import") == 0) {
+        ImportSettingsFromXMLPathSilently(__wargv[2]);
+        NotifySettingsChange();
+        return 0;
+    }
+
     // 8. Add structured exception handling (__try / __except)
     __try {
         RunApplication(hInstance);

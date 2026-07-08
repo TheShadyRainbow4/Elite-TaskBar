@@ -417,6 +417,18 @@ The user provided the HKLM "God Mode" & UAC directives:
    - **On Save**: Write to HKLM, then simultaneously overwrite local `config.xml` to keep the backup synced.
 4. **Purge Legacy User Cruft**: Write a one-time cleanup routine in the bootstrapper calling `RegDeleteTreeW` on `HKCU\Software\EliteSoftware` to permanently destroy legacy per-user configurations.
 
+## Follow-up — 2026-07-08T04:05:37Z
+
+The user provided the CPL Elevation Parity directive:
+- **CPL Elevation Parity**: `EliteSettings.cpl` (which runs inside `rundll32.exe`) must detect HKLM write permissions. If running without administrator privileges, it must trigger UAC elevation dynamically (e.g. using `ShellExecute` with the `runas` verb on itself/rundll32 or a helper elevated executable) or use `psexec` logic to ensure 100% elevation parity with `EliteSettings.exe`.
+
+## Follow-up — 2026-07-08T04:20:21Z
+
+The user provided the Win32Explorer Options Elevation directive:
+- **Win32Explorer Options Dialog Elevation**: The options dialog inside `Win32Explorer.exe` must follow the same UAC/HKLM rules. Because `Win32Explorer.exe` acts as the primary shell, the main process cannot run elevated by default. When the user clicks "Apply" in the options dialog, the app must use COM elevation monikers, the `runas` verb on a helper, or the `psexec` fallback to write those specific changes to HKLM without requiring the entire shell to run as Administrator. This ensures 100% parity across `EliteSettings.exe`, `EliteSettings.cpl`, and the `Win32Explorer.exe` internal options dialog.
+
+
+
 
 
 
