@@ -4,6 +4,16 @@ All notable changes to this project will be documented in this file.
 
 
 ## [Unreleased]
+### Added
+- **Quick Launch Folder Toolbars (Rebar)**: Implemented full folder-based deskband toolbars (Quick Launch) using the `FolderBand` C++ helper class. Spawns a native `ReBarWindow32` container, parses folder targets (`.lnk`, `.url`, `.exe`), extracts high-res icons via shell APIs, and populates `ToolbarWindow32` child bands. Added settings cache mapping to global HKLM registry paths, custom shortcut execution using `IShellLink` COM interface and `ShellExecuteEx`, and toggles for Show Title (`RB_SETBANDINFO`/`RBBS_HIDETITLE`), Show Text (`TBSTYLE_LIST`), and Large/Small Icons (`TB_SETIMAGELIST`/`TB_SETBITMAPSIZE`/`TB_SETBUTTONSIZE`). - Builder-Bob
+- **Directory & Folder Association Hijacks**: Overwrote global HKLM classes keys for both `Directory\shell` and `Folder\shell` to launch `Win32Explorer.exe "%1"` when opening folders from external apps, fulfilling HKLM-only path constraints. - Builder-Bob
+- **WinPE & Server Core Fallback Rendering**: Implemented dynamic `IsDwmOrThemeMissing` helper and GDI+ direct `DrawFallbackWallpaper` rendering routine for environments lacking DWM and visual styles. Forces fallback to custom GDI+ desktop views and hosts `SysListView32` on top. - Builder-Bob
+- **Aggressive Shell Tray Broadcasts**: Enhanced the `TaskbarCreated` shell broadcast using both `PostMessageW` and `SendNotifyMessageW` to force background apps to reload their tray icons upon shell startup and settings changes. - Builder-Bob
+- **Global Replacement Mode Hotkeys**: Implemented primary window hotkey hook (`WM_HOTKEY`) for Win+E (launching `Win32Explorer.exe`), Win+R, and Win+D. - Builder-Bob
+- **Taskbar Modularity Bypass**: Added the `EnableEliteTaskbar` bypass check in `TaskbarWindow::Initialize` to skip taskbar window creation when disabled, supporting pure desktop-only shell modes. - Builder-Bob
+- **Debounced Settings Change & GDI Teardown**: Intercepted `WM_SETTINGCHANGE` messages using a 1000ms debounce timer (timer ID `555`) to prevent spawner loops. The teardown sequence safely calls `DestroyIcon` on active icon handles in `g_TrayIcons` and releases COM instances to prevent GDI resource leaks. - Builder-Bob
+- **EnableTwoRowTray & Width Locking**: Added `EnableTwoRowTray` support to create a wrapping tray toolbar using smaller 12x12 icons, and locked the horizontal layout width in `UpdateTaskbarLayout` to force wrapping when active. - Builder-Bob
+
 ### Fixed
 - **Resolve ODR Violation and Startup Crash**: Renamed the monitor enumeration callbacks to `TaskbarMonitorEnumProc` in `TaskbarWindow.cpp` and `DesktopMonitorEnumProc` in `DesktopWindow.cpp` to prevent linking/definition collisions (ODR violation) and resolve startup crash. - Builder-Bob
 

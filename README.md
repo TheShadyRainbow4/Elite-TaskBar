@@ -99,6 +99,12 @@ Elite-Taskbar is designed from the ground up to seamlessly blend into the Window
 * **Desktop Icon Placement Persistence (Milestone 7)**: Position coordinate coordinates are serialized to a custom registry key (`DesktopIconPositions`) upon refresh (`WM_SHELLCHANGE`) or exit, and automatically loaded and restored on startup.
 * **System Tray Multi-Monitor Defaults (Milestone 7)**: System tray clock, icons, and tasks now default to rendering on all displays out-of-the-box (defaulting to enabled/checked when registry configuration keys do not exist).
 * **Massive Settings Dialog Extensions (Milestone 7)**: Added three comprehensive new tabs with Aero-compliant layouts (Explorer Settings, DWM Settings, and Colors & Themes) to manage folder options, DWM animations and glass transparency, highlight colors, and dark theme modes. Features full XML-based configuration backup and restore functionality.
+* **Quick Launch Folder Toolbars (Milestones 8, 9, 10)**: Dynamic folder-based toolbar parsing engine (Rebar container) that resolves shortcuts (.lnk) and executables using `IShellLink` and SHGetFileInfo, caching configurations to HKLM registry, with toggles for titles, text, and Large/Small icon sizes.
+* **File Manager Dialog Hijacking (Milestones 8, 9, 10)**: Overwrites `Directory\shell` and `Folder\shell` registry entries under HKLM to route folder opening events directly to `Win32Explorer.exe`.
+* **WinPE & Server Core Fallback Rendering (Milestones 8, 9, 10)**: Dynamic DWM/Theme detection that falls back to custom borderless GDI+ desktop views and renders hardcoded wallpapers when uxtheme and DWM are missing.
+* **Settings Timer Debounce & GDI Cleanup (Milestones 8, 9, 10)**: Implemented a 1000ms debounce timer for `WM_SETTINGCHANGE` to prevent spawner loops, alongside strict GDI icon handle deletion and COM interface releases to prevent leaks.
+* **Two-Row System Tray Layout (Milestones 8, 9, 10)**: Implemented wrapping and width locking for two-row tray configurations using 12x12 icons.
+* **Global Replacement Hotkeys & Broadcasts (Milestones 8, 9, 10)**: Intercepts Win+E, Win+R, and Win+D hotkeys in Replace Mode and sends aggressive TaskbarCreated broadcasts to force tray icon reloading.
 
 </details>
 

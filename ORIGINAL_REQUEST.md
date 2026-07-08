@@ -407,6 +407,17 @@ The user provided the Replace Mode (absolute self-reliance) directive:
 3. **Desktop & DWM Fallback**: Fallback to raw GDI/GDI+ when DWM/visual styles (`uxtheme.dll`) are missing. Instantiate borderless `Progman` window, draw fallback wallpaper directly to Device Context, and host `SysListView32` on top.
 4. **Master Notification Receiver**: Register `Shell_TrayWnd` and broadcast `TaskbarCreated` natively.
 
+## Follow-up — 2026-07-08T04:04:18Z
+
+The user provided the HKLM "God Mode" & UAC directives:
+1. **Gut Dynamic Root Logic & Hardcode HKLM**: Delete any dynamic root logic like `GetEliteRegistryRoot()` in `Config.h`. Hardcode all `RegOpenKeyExW` and `RegCreateKeyExW` calls to strictly target `HKEY_LOCAL_MACHINE\SOFTWARE\EliteSoftware`.
+2. **Handle the Privilege Wall (UAC & PsExec)**: Embed manifest in `EliteSettings.exe` with `<requestedExecutionLevel level="requireAdministrator" />` to trigger UAC prompts. Use `psexec.exe` or `psexec64.exe` (first local directory, then system path) as a fallback elevation tool if needed.
+3. **Global XML Fallback & Sync**: Local `config.xml` must live next to the executable.
+   - **On Boot**: If HKLM is missing, read local `config.xml` and provision the HKLM keys.
+   - **On Save**: Write to HKLM, then simultaneously overwrite local `config.xml` to keep the backup synced.
+4. **Purge Legacy User Cruft**: Write a one-time cleanup routine in the bootstrapper calling `RegDeleteTreeW` on `HKCU\Software\EliteSoftware` to permanently destroy legacy per-user configurations.
+
+
 
 
 
