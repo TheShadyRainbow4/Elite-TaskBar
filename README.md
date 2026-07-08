@@ -105,6 +105,7 @@ Elite-Taskbar is designed from the ground up to seamlessly blend into the Window
 * **Settings Timer Debounce & GDI Cleanup (Milestones 8, 9, 10)**: Implemented a 1000ms debounce timer for `WM_SETTINGCHANGE` to prevent spawner loops, alongside strict GDI icon handle deletion and COM interface releases to prevent leaks.
 * **Two-Row System Tray Layout (Milestones 8, 9, 10)**: Implemented wrapping and width locking for two-row tray configurations using 12x12 icons.
 * **Global Replacement Hotkeys & Broadcasts (Milestones 8, 9, 10)**: Intercepts Win+E, Win+R, and Win+D hotkeys in Replace Mode and sends aggressive TaskbarCreated broadcasts to force tray icon reloading.
+* **Win32Explorer Options Dialog Elevation Sync (Milestones 8, 9, 10)**: Triggers UAC dialog on Apply in Win32Explorer options dialog by launching `EliteSettings.exe /import` elevated via `"runas"` verb. Silently parses XML configurations and writes them to the HKLM registry, guaranteeing complete elevation parity while allowing the main file manager window to run as standard user.
 
 </details>
 
