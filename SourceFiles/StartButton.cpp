@@ -319,6 +319,16 @@ LRESULT CALLBACK OrbWndProc(HWND hwnd, UINT uMsg, WPARAM wParam, LPARAM lParam) 
                     RegCloseKey(hKey);
                 }
 
+                HMONITOR hMon = MonitorFromWindow(pThis->GetParentTaskbar(), MONITOR_DEFAULTTONULL);
+                bool isSecondary = false;
+                if (hMon) {
+                    HWND hPrimary = FindWindowW(L"Shell_TrayWnd", NULL);
+                    HMONITOR hPrimaryMon = MonitorFromWindow(hPrimary, MONITOR_DEFAULTTOPRIMARY);
+                    if (hMon != hPrimaryMon) {
+                        isSecondary = true;
+                    }
+                }
+
                 bool isShiftDown = (GetAsyncKeyState(VK_SHIFT) & 0x8000) != 0;
 
                 DWORD fallbackEnabled = 1;
@@ -330,7 +340,23 @@ LRESULT CALLBACK OrbWndProc(HWND hwnd, UINT uMsg, WPARAM wParam, LPARAM lParam) 
                 }
 
                 if (fallbackEnabled && g_Config.Mode == TaskbarMode::Replace) {
-                    if (LaunchOpenShellMenu()) {
+                    HWND hShellTrayWnd = FindWindowW(L"Shell_TrayWnd", NULL);
+                    RECT rcOriginal = { 0 };
+                    if (isSecondary && hShellTrayWnd) { // Start Menu Placement Shift - Builder-Bob
+                        GetWindowRect(hShellTrayWnd, &rcOriginal);
+                        RECT rcSecondary;
+                        GetWindowRect(pThis->GetParentTaskbar(), &rcSecondary);
+                        SetWindowPos(hShellTrayWnd, NULL, rcSecondary.left, rcSecondary.top, rcSecondary.right - rcSecondary.left, rcSecondary.bottom - rcSecondary.top, SWP_NOZORDER | SWP_NOACTIVATE);
+                    }
+
+                    bool launched = LaunchOpenShellMenu();
+
+                    if (isSecondary && hShellTrayWnd) { // Restore Shell_TrayWnd position - Builder-Bob
+                        Sleep(50);
+                        SetWindowPos(hShellTrayWnd, NULL, rcOriginal.left, rcOriginal.top, rcOriginal.right - rcOriginal.left, rcOriginal.bottom - rcOriginal.top, SWP_NOZORDER | SWP_NOACTIVATE);
+                    }
+
+                    if (launched) {
                         return 0;
                     } else {
                         Logger::Log(L"Warning: Fallback Start Menu enabled but StartMenu.exe was not found. Falling back to native simulation.");
@@ -338,14 +364,9 @@ LRESULT CALLBACK OrbWndProc(HWND hwnd, UINT uMsg, WPARAM wParam, LPARAM lParam) 
                 }
 
                 HWND hNativeTarget = NULL;
-                HMONITOR hMon = MonitorFromWindow(pThis->GetParentTaskbar(), MONITOR_DEFAULTTONULL);
-                bool isSecondary = false;
                 if (hMon) {
                     HWND hPrimary = FindWindowW(L"Shell_TrayWnd", NULL);
                     HMONITOR hPrimaryMon = MonitorFromWindow(hPrimary, MONITOR_DEFAULTTOPRIMARY);
-                    if (hMon != hPrimaryMon) {
-                        isSecondary = true;
-                    }
                     if (MonitorFromWindow(hPrimary, MONITOR_DEFAULTTONULL) == hMon) {
                         hNativeTarget = hPrimary;
                     } else {

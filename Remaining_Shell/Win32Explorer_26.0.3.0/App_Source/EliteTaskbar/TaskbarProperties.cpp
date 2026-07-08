@@ -2224,6 +2224,12 @@ INT_PTR CALLBACK ExplorerSettingsDlgProc(HWND hwndDlg, UINT uMsg, WPARAM wParam,
     case WM_INITDIALOG: {
         AddDlgTooltip(hwndDlg, IDC_EXPLORER_HIDDEN_FILES, L"Toggle visibility of files hidden by developers or system internals. Use with caution.");
         AddDlgTooltip(hwndDlg, IDC_EXPLORER_EXTENSIONS, L"Toggle visibility of file extensions. Keep unchecked if you actually want to know what kind of file you're clicking.");
+        AddDlgTooltip(hwndDlg, IDC_EXPLORER_ENABLE_TASKBAR, L"Enable or disable the custom Elite Taskbar shell extension.");
+        AddDlgTooltip(hwndDlg, IDC_EXPLORER_ENABLE_STARTMENU, L"Enable or disable the custom Elite Start Menu launcher integration.");
+        AddDlgTooltip(hwndDlg, IDC_EXPLORER_DEFAULT_GROUPBYTYPE, L"Enable grouping of folder items by file type as the default view arrangement.");
+        AddDlgTooltip(hwndDlg, IDC_EXPLORER_NATIVE_VIEWMODE, L"Toggle between custom high-density listview and Windows native folder views.");
+        AddDlgTooltip(hwndDlg, IDC_EXPLORER_SHELLBAGS, L"Enable tracking of individual folder visual preferences using Shell Bags registry storage.");
+        AddDlgTooltip(hwndDlg, IDC_EXPLORER_NATIVE_SHELLVIEW, L"Toggle hosting the native IShellView desktop or falling back to the legacy SysListView32 grid.");
         AddDlgTooltip(hwndDlg, IDC_EXPLORER_BACKUP, L"Export current taskbar configuration to XML. Prepare for digital time travel.");
         AddDlgTooltip(hwndDlg, IDC_EXPLORER_RESTORE, L"Import taskbar configuration from XML. Restoring previous timeline configurations.");
 
@@ -2241,13 +2247,48 @@ INT_PTR CALLBACK ExplorerSettingsDlgProc(HWND hwndDlg, UINT uMsg, WPARAM wParam,
 
         SendDlgItemMessageW(hwndDlg, IDC_EXPLORER_HIDDEN_FILES, BM_SETCHECK, (hiddenVal == 1) ? BST_CHECKED : BST_UNCHECKED, 0);
         SendDlgItemMessageW(hwndDlg, IDC_EXPLORER_EXTENSIONS, BM_SETCHECK, (extVal == 1) ? BST_CHECKED : BST_UNCHECKED, 0);
+
+        // Load Elite Integration settings - Builder-Bob
+        DWORD enableEliteTaskbar = 1;
+        DWORD enableEliteStartMenu = 1;
+        DWORD enableDefaultGroupByType = 1;
+        DWORD enableNativeViewMode = 1;
+        DWORD enableShellBagsSupport = 0;
+        DWORD useNativeShellView = 1;
+
+        if (RegOpenKeyExW(GetEliteRegistryRoot(), L"Software\\EliteSoftware\\Win32Explorer\\Advanced", 0, KEY_READ, &hKey) == ERROR_SUCCESS) {
+            cbData = sizeof(DWORD);
+            RegQueryValueExW(hKey, L"EnableEliteTaskbar", NULL, NULL, (LPBYTE)&enableEliteTaskbar, &cbData);
+            cbData = sizeof(DWORD);
+            RegQueryValueExW(hKey, L"EnableEliteStartMenu", NULL, NULL, (LPBYTE)&enableEliteStartMenu, &cbData);
+            cbData = sizeof(DWORD);
+            RegQueryValueExW(hKey, L"EnableDefaultGroupByType", NULL, NULL, (LPBYTE)&enableDefaultGroupByType, &cbData);
+            cbData = sizeof(DWORD);
+            RegQueryValueExW(hKey, L"EnableNativeViewMode", NULL, NULL, (LPBYTE)&enableNativeViewMode, &cbData);
+            cbData = sizeof(DWORD);
+            RegQueryValueExW(hKey, L"EnableShellBagsSupport", NULL, NULL, (LPBYTE)&enableShellBagsSupport, &cbData);
+            cbData = sizeof(DWORD);
+            RegQueryValueExW(hKey, L"UseNativeShellView", NULL, NULL, (LPBYTE)&useNativeShellView, &cbData);
+            RegCloseKey(hKey);
+        }
+
+        SendDlgItemMessageW(hwndDlg, IDC_EXPLORER_ENABLE_TASKBAR, BM_SETCHECK, enableEliteTaskbar ? BST_CHECKED : BST_UNCHECKED, 0);
+        SendDlgItemMessageW(hwndDlg, IDC_EXPLORER_ENABLE_STARTMENU, BM_SETCHECK, enableEliteStartMenu ? BST_CHECKED : BST_UNCHECKED, 0);
+        SendDlgItemMessageW(hwndDlg, IDC_EXPLORER_DEFAULT_GROUPBYTYPE, BM_SETCHECK, enableDefaultGroupByType ? BST_CHECKED : BST_UNCHECKED, 0);
+        SendDlgItemMessageW(hwndDlg, IDC_EXPLORER_NATIVE_VIEWMODE, BM_SETCHECK, enableNativeViewMode ? BST_CHECKED : BST_UNCHECKED, 0);
+        SendDlgItemMessageW(hwndDlg, IDC_EXPLORER_SHELLBAGS, BM_SETCHECK, enableShellBagsSupport ? BST_CHECKED : BST_UNCHECKED, 0);
+        SendDlgItemMessageW(hwndDlg, IDC_EXPLORER_NATIVE_SHELLVIEW, BM_SETCHECK, useNativeShellView ? BST_CHECKED : BST_UNCHECKED, 0);
+
         return TRUE;
     }
     case WM_COMMAND: {
         WORD wNotifyCode = HIWORD(wParam);
         WORD wID = LOWORD(wParam);
         if (wNotifyCode == BN_CLICKED) {
-            if (wID == IDC_EXPLORER_HIDDEN_FILES || wID == IDC_EXPLORER_EXTENSIONS) {
+            if (wID == IDC_EXPLORER_HIDDEN_FILES || wID == IDC_EXPLORER_EXTENSIONS ||
+                wID == IDC_EXPLORER_ENABLE_TASKBAR || wID == IDC_EXPLORER_ENABLE_STARTMENU ||
+                wID == IDC_EXPLORER_DEFAULT_GROUPBYTYPE || wID == IDC_EXPLORER_NATIVE_VIEWMODE ||
+                wID == IDC_EXPLORER_SHELLBAGS || wID == IDC_EXPLORER_NATIVE_SHELLVIEW) {
                 SendMessageW(GetParent(hwndDlg), PSM_CHANGED, (WPARAM)hwndDlg, 0);
             }
             else if (wID == IDC_EXPLORER_BACKUP) {
@@ -2273,6 +2314,25 @@ INT_PTR CALLBACK ExplorerSettingsDlgProc(HWND hwndDlg, UINT uMsg, WPARAM wParam,
 
                 SHChangeNotify(SHCNE_ASSOCCHANGED, SHCNF_FLUSHNOWAIT, NULL, NULL);
             }
+
+            // Save Elite Integration settings - Builder-Bob
+            if (RegCreateKeyExW(GetEliteRegistryRoot(), L"Software\\EliteSoftware\\Win32Explorer\\Advanced", 0, NULL, REG_OPTION_NON_VOLATILE, KEY_WRITE, NULL, &hKey, NULL) == ERROR_SUCCESS) {
+                DWORD enableEliteTaskbar = (SendDlgItemMessageW(hwndDlg, IDC_EXPLORER_ENABLE_TASKBAR, BM_GETCHECK, 0, 0) == BST_CHECKED) ? 1 : 0;
+                DWORD enableEliteStartMenu = (SendDlgItemMessageW(hwndDlg, IDC_EXPLORER_ENABLE_STARTMENU, BM_GETCHECK, 0, 0) == BST_CHECKED) ? 1 : 0;
+                DWORD enableDefaultGroupByType = (SendDlgItemMessageW(hwndDlg, IDC_EXPLORER_DEFAULT_GROUPBYTYPE, BM_GETCHECK, 0, 0) == BST_CHECKED) ? 1 : 0;
+                DWORD enableNativeViewMode = (SendDlgItemMessageW(hwndDlg, IDC_EXPLORER_NATIVE_VIEWMODE, BM_GETCHECK, 0, 0) == BST_CHECKED) ? 1 : 0;
+                DWORD enableShellBagsSupport = (SendDlgItemMessageW(hwndDlg, IDC_EXPLORER_SHELLBAGS, BM_GETCHECK, 0, 0) == BST_CHECKED) ? 1 : 0;
+                DWORD useNativeShellView = (SendDlgItemMessageW(hwndDlg, IDC_EXPLORER_NATIVE_SHELLVIEW, BM_GETCHECK, 0, 0) == BST_CHECKED) ? 1 : 0;
+
+                RegSetValueExW(hKey, L"EnableEliteTaskbar", 0, REG_DWORD, (const BYTE*)&enableEliteTaskbar, sizeof(DWORD));
+                RegSetValueExW(hKey, L"EnableEliteStartMenu", 0, REG_DWORD, (const BYTE*)&enableEliteStartMenu, sizeof(DWORD));
+                RegSetValueExW(hKey, L"EnableDefaultGroupByType", 0, REG_DWORD, (const BYTE*)&enableDefaultGroupByType, sizeof(DWORD));
+                RegSetValueExW(hKey, L"EnableNativeViewMode", 0, REG_DWORD, (const BYTE*)&enableNativeViewMode, sizeof(DWORD));
+                RegSetValueExW(hKey, L"EnableShellBagsSupport", 0, REG_DWORD, (const BYTE*)&enableShellBagsSupport, sizeof(DWORD));
+                RegSetValueExW(hKey, L"UseNativeShellView", 0, REG_DWORD, (const BYTE*)&useNativeShellView, sizeof(DWORD));
+                RegCloseKey(hKey);
+            }
+
             SetWindowLongPtr(hwndDlg, DWLP_MSGRESULT, PSNRET_NOERROR);
             return TRUE;
         }

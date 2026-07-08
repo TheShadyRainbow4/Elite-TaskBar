@@ -130,10 +130,137 @@ static void AdvanceSlideshow(HWND hwnd) {
 
 LRESULT CALLBACK ProgmanWndProc(HWND hwnd, UINT uMsg, WPARAM wParam, LPARAM lParam);
 LRESULT CALLBACK DefViewWndProc(HWND hwnd, UINT uMsg, WPARAM wParam, LPARAM lParam);
+LRESULT CALLBACK SecondaryProgmanWndProc(HWND hwnd, UINT uMsg, WPARAM wParam, LPARAM lParam);
 void PopulateDesktopGrid(HWND hwndListView);
 void SaveIconPositions(HWND hwndListView);
 ULONG RegisterDesktopChangeWatcher(HWND hwndTarget);
 void DrawWallpaper(HWND hwnd, HDC hdc, int scrW, int scrH);
+
+class CDesktopShellBrowser : public IShellBrowser {
+private:
+    HWND m_hwnd;
+    ULONG m_refCount;
+
+public:
+    CDesktopShellBrowser(HWND hwnd) : m_hwnd(hwnd), m_refCount(1) {}
+    virtual ~CDesktopShellBrowser() {}
+
+    // IUnknown methods
+    STDMETHODIMP QueryInterface(REFIID riid, void **ppv) override {
+        if (!ppv) return E_POINTER;
+        if (riid == IID_IUnknown || riid == IID_IOleWindow || riid == IID_IShellBrowser) {
+            *ppv = static_cast<IShellBrowser*>(this);
+            AddRef();
+            return S_OK;
+        }
+        *ppv = nullptr;
+        return E_NOINTERFACE;
+    }
+
+    STDMETHODIMP_(ULONG) AddRef() override {
+        return InterlockedIncrement(&m_refCount);
+    }
+
+    STDMETHODIMP_(ULONG) Release() override {
+        ULONG ref = InterlockedDecrement(&m_refCount);
+        if (ref == 0) {
+            delete this;
+        }
+        return ref;
+    }
+
+    // IOleWindow methods
+    STDMETHODIMP GetWindow(HWND *phwnd) override {
+        if (!phwnd) return E_POINTER;
+        *phwnd = m_hwnd;
+        return S_OK;
+    }
+
+    STDMETHODIMP ContextSensitiveHelp(BOOL fEnterMode) override {
+        return E_NOTIMPL;
+    }
+
+    // IShellBrowser methods
+    STDMETHODIMP InsertMenusSB(HMENU hmenuShared, LPOLEMENUGROUPWIDTHS lpMenuWidths) override { return E_NOTIMPL; }
+    STDMETHODIMP SetMenuSB(HMENU hmenuShared, HOLEMENU holemenuRes, HWND hwndActiveObject) override { return E_NOTIMPL; }
+    STDMETHODIMP RemoveMenusSB(HMENU hmenuShared) override { return E_NOTIMPL; }
+    STDMETHODIMP SetStatusTextSB(LPCOLESTR pszStatusText) override { return E_NOTIMPL; }
+    STDMETHODIMP EnableModelessSB(BOOL fEnable) override { return E_NOTIMPL; }
+    STDMETHODIMP TranslateAcceleratorSB(MSG *pmsg, WORD wID) override { return E_NOTIMPL; }
+    STDMETHODIMP BrowseObject(LPCITEMIDLIST pidl, UINT wFlags) override { return E_NOTIMPL; }
+    STDMETHODIMP GetViewStateStream(DWORD grfMode, IStream **ppStrm) override { return E_NOTIMPL; }
+    STDMETHODIMP GetControlWindow(UINT id, HWND *phwnd) override {
+        if (phwnd) *phwnd = NULL;
+        return E_NOTIMPL;
+    }
+    STDMETHODIMP SendControlMsg(UINT id, UINT uMsg, WPARAM wParam, LPARAM lParam, LRESULT *pret) override { return E_NOTIMPL; }
+    STDMETHODIMP QueryActiveShellView(IShellView **ppshv) override {
+        if (ppshv) *ppshv = NULL;
+        return E_NOTIMPL;
+    }
+    STDMETHODIMP OnViewWindowActive(IShellView *pshv) override {
+        return S_OK;
+    }
+    STDMETHODIMP SetToolbarItems(LPTBBUTTONSB lpButtons, UINT nButtons, UINT uFlags) override { return E_NOTIMPL; }
+};
+
+struct MonitorInfo {
+    RECT rect;
+    bool isPrimary;
+};
+
+static BOOL CALLBACK MonitorEnumProc(HMONITOR hMonitor, HDC hdcMonitor, LPRECT lprcMonitor, LPARAM dwData) {
+    auto* monitors = reinterpret_cast<std::vector<MonitorInfo>*>(dwData);
+    MONITORINFOEXW mi;
+    mi.cbSize = sizeof(MONITORINFOEXW);
+    if (GetMonitorInfoW(hMonitor, &mi)) {
+        MonitorInfo info;
+        info.rect = mi.rcMonitor;
+        info.isPrimary = (mi.dwFlags & MONITORINFOF_PRIMARY) != 0;
+        monitors->push_back(info);
+    }
+    return TRUE;
+}
+
+LRESULT CALLBACK SecondaryProgmanWndProc(HWND hwnd, UINT uMsg, WPARAM wParam, LPARAM lParam) {
+    switch (uMsg) {
+    case WM_MOUSEACTIVATE:
+        return MA_NOACTIVATE;
+
+    case WM_WINDOWPOSCHANGING: {
+        WINDOWPOS* lpw = (WINDOWPOS*)lParam;
+        lpw->hwndInsertAfter = HWND_BOTTOM;
+        lpw->flags &= ~SWP_NOZORDER;
+        break;
+    }
+    case WM_ERASEBKGND: {
+        HDC hdc = (HDC)wParam;
+        RECT rc;
+        GetClientRect(hwnd, &rc);
+        DrawWallpaper(hwnd, hdc, rc.right - rc.left, rc.bottom - rc.top);
+        return TRUE;
+    }
+    case WM_PAINT: {
+        PAINTSTRUCT ps;
+        HDC hdc = BeginPaint(hwnd, &ps);
+        RECT rc;
+        GetClientRect(hwnd, &rc);
+        DrawWallpaper(hwnd, hdc, rc.right - rc.left, rc.bottom - rc.top);
+        EndPaint(hwnd, &ps);
+        return 0;
+    }
+    case WM_SETTINGCHANGE: {
+        InvalidateRect(hwnd, NULL, TRUE);
+        break;
+    }
+    }
+    return DefWindowProcW(hwnd, uMsg, wParam, lParam);
+}
+
+static IShellView* s_pDesktopView = nullptr;
+static CDesktopShellBrowser* s_pDesktopBrowser = nullptr;
+static HWND s_hwndDesktopView = NULL;
+static std::vector<HWND> s_secondaryDesktopWnds;
 
 namespace DesktopWindow {
     bool Initialize() {
@@ -151,6 +278,18 @@ namespace DesktopWindow {
         }
         Logger::Log(forceProgman ? L"ForceProgmanAllDisplays is active." : L"ForceProgmanAllDisplays is inactive.");
         
+        // Load UseNativeShellView setting - Builder-Bob
+        bool useNativeShellView = true;
+        HKEY hKeyShell;
+        if (RegOpenKeyExW(GetEliteRegistryRoot(), L"Software\\EliteSoftware\\Win32Explorer\\Advanced", 0, KEY_READ, &hKeyShell) == ERROR_SUCCESS) {
+            DWORD dwVal = 1;
+            DWORD cbData = sizeof(DWORD);
+            if (RegQueryValueExW(hKeyShell, L"UseNativeShellView", NULL, NULL, (LPBYTE)&dwVal, &cbData) == ERROR_SUCCESS) {
+                useNativeShellView = (dwVal == 1);
+            }
+            RegCloseKey(hKeyShell);
+        }
+
         HINSTANCE hInst = GetModuleHandleW(NULL);
         
         // Coexistence: find and hide native desktop windows
@@ -184,25 +323,61 @@ namespace DesktopWindow {
             Logger::Log(L"Warning: Progman class registration failed or already exists.");
         }
 
-        // Register custom DefView class
-        WNDCLASSEXW wcDefView = { 0 };
-        wcDefView.cbSize = sizeof(WNDCLASSEXW);
-        wcDefView.style = CS_DBLCLKS;
-        wcDefView.lpfnWndProc = DefViewWndProc;
-        wcDefView.hInstance = hInst;
-        wcDefView.hCursor = LoadCursorW(NULL, (LPCWSTR)IDC_ARROW);
-        wcDefView.hbrBackground = NULL;
-        wcDefView.lpszClassName = L"SHELLDLL_DefView";
-        
-        if (!RegisterClassExW(&wcDefView)) {
-            Logger::Log(L"Warning: SHELLDLL_DefView class registration failed or already exists.");
+        // Class Registration Collision prevention: only register custom DefView if not native - Builder-Bob
+        if (!useNativeShellView) {
+            // Register custom DefView class
+            WNDCLASSEXW wcDefView = { 0 };
+            wcDefView.cbSize = sizeof(WNDCLASSEXW);
+            wcDefView.style = CS_DBLCLKS;
+            wcDefView.lpfnWndProc = DefViewWndProc;
+            wcDefView.hInstance = hInst;
+            wcDefView.hCursor = LoadCursorW(NULL, (LPCWSTR)IDC_ARROW);
+            wcDefView.hbrBackground = NULL;
+            wcDefView.lpszClassName = L"SHELLDLL_DefView";
+            
+            if (!RegisterClassExW(&wcDefView)) {
+                Logger::Log(L"Warning: SHELLDLL_DefView class registration failed or already exists.");
+            }
         }
 
-        // Get full virtual screen dimensions to span all monitors
-        int x = GetSystemMetrics(SM_XVIRTUALSCREEN);
-        int y = GetSystemMetrics(SM_YVIRTUALSCREEN);
-        int cx = GetSystemMetrics(SM_CXVIRTUALSCREEN);
-        int cy = GetSystemMetrics(SM_CYVIRTUALSCREEN);
+        // Register custom EliteDesktopSecondary class - Builder-Bob
+        WNDCLASSEXW wcSecondary = { 0 };
+        wcSecondary.cbSize = sizeof(WNDCLASSEXW);
+        wcSecondary.style = CS_DBLCLKS;
+        wcSecondary.lpfnWndProc = SecondaryProgmanWndProc;
+        wcSecondary.hInstance = hInst;
+        wcSecondary.hCursor = LoadCursorW(NULL, (LPCWSTR)IDC_ARROW);
+        wcSecondary.hbrBackground = NULL;
+        wcSecondary.lpszClassName = L"EliteDesktopSecondary";
+        
+        if (!RegisterClassExW(&wcSecondary)) {
+            Logger::Log(L"Warning: EliteDesktopSecondary class registration failed or already exists.");
+        }
+
+        // Enumerate displays - Builder-Bob
+        std::vector<MonitorInfo> monitors;
+        EnumDisplayMonitors(NULL, NULL, MonitorEnumProc, (LPARAM)&monitors);
+
+        MonitorInfo primaryMon;
+        primaryMon.isPrimary = true;
+        primaryMon.rect.left = 0;
+        primaryMon.rect.top = 0;
+        primaryMon.rect.right = GetSystemMetrics(SM_CXSCREEN);
+        primaryMon.rect.bottom = GetSystemMetrics(SM_CYSCREEN);
+
+        std::vector<MonitorInfo> secondaryMons;
+        for (const auto& m : monitors) {
+            if (m.isPrimary) {
+                primaryMon = m;
+            } else {
+                secondaryMons.push_back(m);
+            }
+        }
+
+        int x = primaryMon.rect.left;
+        int y = primaryMon.rect.top;
+        int cx = primaryMon.rect.right - primaryMon.rect.left;
+        int cy = primaryMon.rect.bottom - primaryMon.rect.top;
 
         s_hProgman = CreateWindowExW(
             WS_EX_TOOLWINDOW,
@@ -220,6 +395,26 @@ namespace DesktopWindow {
 
         // Force bottom Z-order positioning
         SetWindowPos(s_hProgman, HWND_BOTTOM, x, y, cx, cy, SWP_SHOWWINDOW | SWP_NOACTIVATE);
+
+        // Spawn secondary desktop windows for multi-monitor wallpaper painting - Builder-Bob
+        for (const auto& m : secondaryMons) {
+            HWND hwndSec = CreateWindowExW(
+                WS_EX_TOOLWINDOW,
+                L"EliteDesktopSecondary",
+                L"Secondary Program Manager",
+                WS_POPUP | WS_VISIBLE | WS_CLIPCHILDREN | WS_CLIPSIBLINGS,
+                m.rect.left, m.rect.top,
+                m.rect.right - m.rect.left, m.rect.bottom - m.rect.top,
+                NULL, NULL, hInst, NULL
+            );
+            if (hwndSec) {
+                SetWindowPos(hwndSec, HWND_BOTTOM, m.rect.left, m.rect.top,
+                    m.rect.right - m.rect.left, m.rect.bottom - m.rect.top,
+                    SWP_SHOWWINDOW | SWP_NOACTIVATE);
+                s_secondaryDesktopWnds.push_back(hwndSec);
+            }
+        }
+
         Logger::Log(L"Custom Progman window initialized successfully.");
         return true;
     }
@@ -241,9 +436,18 @@ namespace DesktopWindow {
             s_hProgman = NULL;
         }
 
+        // Destroy secondary desktop windows - Builder-Bob
+        for (HWND hwndSec : s_secondaryDesktopWnds) {
+            if (IsWindow(hwndSec)) {
+                DestroyWindow(hwndSec);
+            }
+        }
+        s_secondaryDesktopWnds.clear();
+
         HINSTANCE hInst = GetModuleHandleW(NULL);
         UnregisterClassW(L"Progman", hInst);
         UnregisterClassW(L"SHELLDLL_DefView", hInst);
+        UnregisterClassW(L"EliteDesktopSecondary", hInst);
 
         // Restore native desktop windows if hidden
         if (s_hNativeProgman && IsWindow(s_hNativeProgman)) {
@@ -265,12 +469,60 @@ LRESULT CALLBACK ProgmanWndProc(HWND hwnd, UINT uMsg, WPARAM wParam, LPARAM lPar
     static HWND hwndDefView = NULL;
     switch (uMsg) {
     case WM_CREATE: {
+        // Load UseNativeShellView setting - Builder-Bob
+        bool useNativeShellView = true;
+        HKEY hKeyShell;
+        if (RegOpenKeyExW(GetEliteRegistryRoot(), L"Software\\EliteSoftware\\Win32Explorer\\Advanced", 0, KEY_READ, &hKeyShell) == ERROR_SUCCESS) {
+            DWORD dwVal = 1;
+            DWORD cbData = sizeof(DWORD);
+            if (RegQueryValueExW(hKeyShell, L"UseNativeShellView", NULL, NULL, (LPBYTE)&dwVal, &cbData) == ERROR_SUCCESS) {
+                useNativeShellView = (dwVal == 1);
+            }
+            RegCloseKey(hKeyShell);
+        }
+
         CREATESTRUCTW* pcs = (CREATESTRUCTW*)lParam;
-        hwndDefView = CreateWindowExW(
-            0, L"SHELLDLL_DefView", L"",
-            WS_CHILD | WS_VISIBLE | WS_CLIPCHILDREN | WS_CLIPSIBLINGS,
-            0, 0, pcs->cx, pcs->cy, hwnd, (HMENU)100, pcs->hInstance, NULL
-        );
+
+        if (useNativeShellView) { // Spawn native shell view bound to desktop - Builder-Bob
+            IShellFolder* pDesktopFolder = nullptr;
+            HRESULT hr = SHGetDesktopFolder(&pDesktopFolder);
+            if (SUCCEEDED(hr)) {
+                SFV_CREATE sfvc = { sizeof(sfvc) };
+                sfvc.pshf = pDesktopFolder;
+                
+                IShellView* pShellView = nullptr;
+                hr = SHCreateShellFolderView(&sfvc, &pShellView);
+                if (SUCCEEDED(hr)) {
+                    s_pDesktopBrowser = new CDesktopShellBrowser(hwnd);
+                    
+                    FOLDERSETTINGS fs;
+                    fs.ViewMode = FVM_ICON;
+                    fs.fFlags = FWF_DESKTOP | FWF_NOCLIENTEDGE;
+                    
+                    RECT rcClient = { 0, 0, pcs->cx, pcs->cy };
+                    
+                    HWND hwndView = nullptr;
+                    hr = pShellView->CreateViewWindow(NULL, &fs, s_pDesktopBrowser, &rcClient, &hwndView);
+                    if (SUCCEEDED(hr)) {
+                        pShellView->UIActivate(SVUIA_ACTIVATE_FOCUS);
+                        hwndDefView = hwndView;
+                        s_pDesktopView = pShellView;
+                        s_hwndDesktopView = hwndView;
+                    } else {
+                        pShellView->Release();
+                        delete s_pDesktopBrowser;
+                        s_pDesktopBrowser = nullptr;
+                    }
+                }
+                pDesktopFolder->Release();
+            }
+        } else {
+            hwndDefView = CreateWindowExW(
+                0, L"SHELLDLL_DefView", L"",
+                WS_CHILD | WS_VISIBLE | WS_CLIPCHILDREN | WS_CLIPSIBLINGS,
+                0, 0, pcs->cx, pcs->cy, hwnd, (HMENU)100, pcs->hInstance, NULL
+            );
+        }
         return 0;
     }
     case WM_SIZE: {
@@ -291,13 +543,60 @@ LRESULT CALLBACK ProgmanWndProc(HWND hwnd, UINT uMsg, WPARAM wParam, LPARAM lPar
         break;
     }
     case WM_DISPLAYCHANGE: {
-        int x = GetSystemMetrics(SM_XVIRTUALSCREEN);
-        int y = GetSystemMetrics(SM_YVIRTUALSCREEN);
-        int cx = GetSystemMetrics(SM_CXVIRTUALSCREEN);
-        int cy = GetSystemMetrics(SM_CYVIRTUALSCREEN);
+        std::vector<MonitorInfo> monitors;
+        EnumDisplayMonitors(NULL, NULL, MonitorEnumProc, (LPARAM)&monitors);
+
+        MonitorInfo primaryMon;
+        primaryMon.isPrimary = true;
+        primaryMon.rect.left = 0;
+        primaryMon.rect.top = 0;
+        primaryMon.rect.right = GetSystemMetrics(SM_CXSCREEN);
+        primaryMon.rect.bottom = GetSystemMetrics(SM_CYSCREEN);
+
+        std::vector<MonitorInfo> secondaryMons;
+        for (const auto& m : monitors) {
+            if (m.isPrimary) {
+                primaryMon = m;
+            } else {
+                secondaryMons.push_back(m);
+            }
+        }
+
+        int x = primaryMon.rect.left;
+        int y = primaryMon.rect.top;
+        int cx = primaryMon.rect.right - primaryMon.rect.left;
+        int cy = primaryMon.rect.bottom - primaryMon.rect.top;
+
         SetWindowPos(hwnd, HWND_BOTTOM, x, y, cx, cy, SWP_NOACTIVATE | SWP_SHOWWINDOW);
         if (hwndDefView) {
             SetWindowPos(hwndDefView, NULL, 0, 0, cx, cy, SWP_NOZORDER | SWP_NOACTIVATE);
+        }
+
+        // Recreate secondary windows - Builder-Bob
+        for (HWND hwndSec : s_secondaryDesktopWnds) {
+            if (IsWindow(hwndSec)) {
+                DestroyWindow(hwndSec);
+            }
+        }
+        s_secondaryDesktopWnds.clear();
+
+        HINSTANCE hInst = GetModuleHandleW(NULL);
+        for (const auto& m : secondaryMons) {
+            HWND hwndSec = CreateWindowExW(
+                WS_EX_TOOLWINDOW,
+                L"EliteDesktopSecondary",
+                L"Secondary Program Manager",
+                WS_POPUP | WS_VISIBLE | WS_CLIPCHILDREN | WS_CLIPSIBLINGS,
+                m.rect.left, m.rect.top,
+                m.rect.right - m.rect.left, m.rect.bottom - m.rect.top,
+                NULL, NULL, hInst, NULL
+            );
+            if (hwndSec) {
+                SetWindowPos(hwndSec, HWND_BOTTOM, m.rect.left, m.rect.top,
+                    m.rect.right - m.rect.left, m.rect.bottom - m.rect.top,
+                    SWP_SHOWWINDOW | SWP_NOACTIVATE);
+                s_secondaryDesktopWnds.push_back(hwndSec);
+            }
         }
         return 0;
     }
@@ -346,6 +645,18 @@ LRESULT CALLBACK ProgmanWndProc(HWND hwnd, UINT uMsg, WPARAM wParam, LPARAM lPar
         break;
     }
     case WM_DESTROY:
+        if (s_pDesktopView) { // Clean up native desktop shell view - Builder-Bob
+            s_pDesktopView->UIActivate(SVUIA_DEACTIVATE);
+            s_pDesktopView->DestroyViewWindow();
+            s_pDesktopView->Release();
+            s_pDesktopView = nullptr;
+        }
+        if (s_pDesktopBrowser) {
+            s_pDesktopBrowser->Release();
+            s_pDesktopBrowser = nullptr;
+        }
+        s_hwndDesktopView = NULL;
+        hwndDefView = NULL;
         KillTimer(hwnd, TIMER_SLIDESHOW);
         s_hProgman = NULL;
         break;
@@ -1123,16 +1434,8 @@ void DrawWallpaper(HWND hwnd, HDC hdc, int scrW, int scrH) {
         }
     }
 
-    if (wallpaperModeVal == 1) {
-        MonitorWallpaperData data;
-        data.hdc = hdc;
-        data.pBitmap = s_pCachedWallpaper;
-        data.style = s_cachedStyle;
-        data.tile = s_cachedTile;
-        data.bgColor = GetSysColor(COLOR_BACKGROUND);
-        
-        EnumDisplayMonitors(NULL, NULL, DrawWallpaperMonitorProc, (LPARAM)&data);
-    } else {
+    if (wallpaperModeVal == 1) { // Per-Monitor mode - Builder-Bob
+        // Paint the wallpaper centered/stretched/fit/filled to the local window DC (scrW, scrH)
         int imgW = s_pCachedWallpaper->GetWidth();
         int imgH = s_pCachedWallpaper->GetHeight();
 
@@ -1151,76 +1454,104 @@ void DrawWallpaper(HWND hwnd, HDC hdc, int scrW, int scrH) {
             double imgAspect = (double)imgW / imgH;
             double scrAspect = (double)scrW / scrH;
 
-            // If UseNativeWallpaperEngine is enabled and we are in Span mode (style == 22), stretch it.
-            // Under style == 22, it behaves like Stretch (destW = scrW, destH = scrH).
-            if (useNativeWallpaperVal == 1 && s_cachedStyle == 22) {
-                destX = 0; destY = 0; destW = scrW; destH = scrH;
-            } else {
-                switch (s_cachedStyle) {
-                    case 0: // Center
-                        if (imgW <= scrW) {
-                            destX = (scrW - imgW) / 2;
-                            destW = imgW;
-                        } else {
-                            destX = 0;
-                            destW = scrW;
-                            srcX = (imgW - scrW) / 2;
-                            srcW = scrW;
-                        }
-                        if (imgH <= scrH) {
-                            destY = (scrH - imgH) / 2;
-                            destH = imgH;
-                        } else {
-                            destY = 0;
-                            destH = scrH;
-                            srcY = (imgH - scrH) / 2;
-                            srcH = scrH;
-                        }
-                        graphics.Clear(Gdiplus::Color(GetRValue(GetSysColor(COLOR_BACKGROUND)), 
-                                                      GetGValue(GetSysColor(COLOR_BACKGROUND)), 
-                                                      GetBValue(GetSysColor(COLOR_BACKGROUND))));
-                        break;
-                    case 2: // Stretch
-                        destX = 0; destY = 0;
-                        destW = scrW; destH = scrH;
-                        break;
-                    case 6: // Fit
-                        if (imgAspect > scrAspect) {
-                            destW = scrW;
-                            destH = (int)(scrW / imgAspect);
-                            destX = 0;
-                            destY = (scrH - destH) / 2;
-                        } else {
-                            destH = scrH;
-                            destW = (int)(scrH * imgAspect);
-                            destY = 0;
-                            destX = (scrW - destW) / 2;
-                        }
-                        graphics.Clear(Gdiplus::Color(GetRValue(GetSysColor(COLOR_BACKGROUND)), 
-                                                      GetGValue(GetSysColor(COLOR_BACKGROUND)), 
-                                                      GetBValue(GetSysColor(COLOR_BACKGROUND))));
-                        break;
-                    case 10: // Fill
-                    default:
-                        if (imgAspect > scrAspect) {
-                            destH = scrH;
-                            destW = (int)(scrH * imgAspect);
-                            destY = 0;
-                            destX = (scrW - destW) / 2;
-                        } else {
-                            destW = scrW;
-                            destH = (int)(scrW / imgAspect);
-                            destX = 0;
-                            destY = (scrH - destH) / 2;
-                        }
-                        break;
-                    case 22: // Span
-                        destX = 0; destY = 0;
-                        destW = scrW; destH = scrH;
-                        break;
-                }
+            switch (s_cachedStyle) {
+                case 0: // Center
+                    if (imgW <= scrW) {
+                        destX = (scrW - imgW) / 2;
+                        destW = imgW;
+                    } else {
+                        destX = 0;
+                        destW = scrW;
+                        srcX = (imgW - scrW) / 2;
+                        srcW = scrW;
+                    }
+                    if (imgH <= scrH) {
+                        destY = (scrH - imgH) / 2;
+                        destH = imgH;
+                    } else {
+                        destY = 0;
+                        destH = scrH;
+                        srcY = (imgH - scrH) / 2;
+                        srcH = scrH;
+                    }
+                    graphics.Clear(Gdiplus::Color(GetRValue(GetSysColor(COLOR_BACKGROUND)), 
+                                                  GetGValue(GetSysColor(COLOR_BACKGROUND)), 
+                                                  GetBValue(GetSysColor(COLOR_BACKGROUND))));
+                    break;
+                case 2: // Stretch
+                    destX = 0; destY = 0;
+                    destW = scrW; destH = scrH;
+                    break;
+                case 6: // Fit
+                    if (imgAspect > scrAspect) {
+                        destW = scrW;
+                        destH = (int)(scrW / imgAspect);
+                        destX = 0;
+                        destY = (scrH - destH) / 2;
+                    } else {
+                        destH = scrH;
+                        destW = (int)(scrH * imgAspect);
+                        destY = 0;
+                        destX = (scrW - destW) / 2;
+                    }
+                    graphics.Clear(Gdiplus::Color(GetRValue(GetSysColor(COLOR_BACKGROUND)), 
+                                                  GetGValue(GetSysColor(COLOR_BACKGROUND)), 
+                                                  GetBValue(GetSysColor(COLOR_BACKGROUND))));
+                    break;
+                case 10: // Fill
+                default:
+                    if (imgAspect > scrAspect) {
+                        destH = scrH;
+                        destW = (int)(scrH * imgAspect);
+                        destY = 0;
+                        destX = (scrW - destW) / 2;
+                    } else {
+                        destW = scrW;
+                        destH = (int)(scrW / imgAspect);
+                        destX = 0;
+                        destY = (scrH - destH) / 2;
+                    }
+                    break;
             }
 
+            graphics.DrawImage(s_pCachedWallpaper, 
+                Gdiplus::Rect(destX, destY, destW, destH),
+                srcX, srcY, srcW, srcH, 
+                Gdiplus::UnitPixel);
+        }
+    } else { // Span mode - Builder-Bob
+        // Draw the wallpaper spanning the entire virtual screen, shifted by the window's offset
+        int virtualX = GetSystemMetrics(SM_XVIRTUALSCREEN);
+        int virtualY = GetSystemMetrics(SM_YVIRTUALSCREEN);
+        int virtualW = GetSystemMetrics(SM_CXVIRTUALSCREEN);
+        int virtualH = GetSystemMetrics(SM_CYVIRTUALSCREEN);
+
+        RECT rcWnd;
+        GetWindowRect(hwnd, &rcWnd);
+        int wndLeft = rcWnd.left - virtualX;
+        int wndTop = rcWnd.top - virtualY;
+
+        int imgW = s_pCachedWallpaper->GetWidth();
+        int imgH = s_pCachedWallpaper->GetHeight();
+
+        Gdiplus::Graphics graphics(hdc);
+        graphics.SetInterpolationMode(Gdiplus::InterpolationModeHighQualityBicubic);
+        graphics.SetPixelOffsetMode(Gdiplus::PixelOffsetModeHighQuality);
+
+        if (s_cachedTile) {
+            Gdiplus::TextureBrush brush(s_pCachedWallpaper);
+            brush.SetWrapMode(Gdiplus::WrapModeTile);
+            brush.TranslateTransform((Gdiplus::REAL)-wndLeft, (Gdiplus::REAL)-wndTop);
+            graphics.FillRectangle(&brush, 0, 0, scrW, scrH);
+        } else {
+            // Draw the whole virtual screen background, but offset so only this window's part is seen
+            int destX = -wndLeft;
+            int destY = -wndTop;
+            int destW = virtualW;
+            int destH = virtualH;
+            int srcX = 0, srcY = 0, srcW = imgW, srcH = imgH;
+
+            // In Span mode, stretch it across the entire virtual screen
             graphics.DrawImage(s_pCachedWallpaper, 
                 Gdiplus::Rect(destX, destY, destW, destH),
                 srcX, srcY, srcW, srcH, 

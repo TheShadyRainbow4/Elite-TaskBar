@@ -152,13 +152,21 @@ STYLE DS_SETFONT | WS_CHILD | WS_DISABLED | WS_CAPTION | DS_CONTROL
 CAPTION "Explorer Settings"
 FONT 8, "Segoe UI Semibold", 600, 0, 0x1
 BEGIN
-    GROUPBOX        "Folder Options", IDC_STATIC, 7, 7, 238, 60
-    CONTROL         "Show hidden files, folders, and drives", IDC_EXPLORER_HIDDEN_FILES, "Button", BS_AUTOCHECKBOX | WS_TABSTOP, 14, 20, 220, 10
-    CONTROL         "Hide file extensions for known file types", IDC_EXPLORER_EXTENSIONS, "Button", BS_AUTOCHECKBOX | WS_TABSTOP, 14, 32, 220, 10
+    GROUPBOX        "Folder Options", IDC_STATIC, 7, 7, 238, 55
+    CONTROL         "Show hidden files, folders, and drives", IDC_EXPLORER_HIDDEN_FILES, "Button", BS_AUTOCHECKBOX | WS_TABSTOP, 14, 18, 220, 10
+    CONTROL         "Hide file extensions for known file types", IDC_EXPLORER_EXTENSIONS, "Button", BS_AUTOCHECKBOX | WS_TABSTOP, 14, 30, 220, 10
     
-    GROUPBOX        "Configuration Backup & Restore", IDC_STATIC, 7, 75, 238, 50
-    PUSHBUTTON      "Backup Configuration...", IDC_EXPLORER_BACKUP, 14, 90, 100, 14
-    PUSHBUTTON      "Restore Configuration...", IDC_EXPLORER_RESTORE, 125, 90, 100, 14
+    GROUPBOX        "Elite Integration Options", IDC_STATIC, 7, 65, 238, 90
+    CONTROL         "Enable Elite Taskbar", IDC_EXPLORER_ENABLE_TASKBAR, "Button", BS_AUTOCHECKBOX | WS_TABSTOP, 14, 76, 220, 10
+    CONTROL         "Enable Elite Start Menu", IDC_EXPLORER_ENABLE_STARTMENU, "Button", BS_AUTOCHECKBOX | WS_TABSTOP, 14, 88, 220, 10
+    CONTROL         "Group by Type by Default", IDC_EXPLORER_DEFAULT_GROUPBYTYPE, "Button", BS_AUTOCHECKBOX | WS_TABSTOP, 14, 100, 220, 10
+    CONTROL         "Enable Native View Mode", IDC_EXPLORER_NATIVE_VIEWMODE, "Button", BS_AUTOCHECKBOX | WS_TABSTOP, 14, 112, 220, 10
+    CONTROL         "Enable Shell Bags Support", IDC_EXPLORER_SHELLBAGS, "Button", BS_AUTOCHECKBOX | WS_TABSTOP, 14, 124, 220, 10
+    CONTROL         "Use Native Desktop Shell View", IDC_EXPLORER_NATIVE_SHELLVIEW, "Button", BS_AUTOCHECKBOX | WS_TABSTOP, 14, 136, 220, 10
+
+    GROUPBOX        "Configuration Backup & Restore", IDC_STATIC, 7, 160, 238, 48
+    PUSHBUTTON      "Backup Configuration...", IDC_EXPLORER_BACKUP, 14, 175, 100, 14
+    PUSHBUTTON      "Restore Configuration...", IDC_EXPLORER_RESTORE, 125, 175, 100, 14
 END
 
 IDD_DWM_PROPS DIALOGEX 0, 0, 252, 218
