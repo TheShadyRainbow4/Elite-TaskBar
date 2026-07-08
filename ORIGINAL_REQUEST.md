@@ -329,6 +329,13 @@ The user is complaining that we are continuously closing their entire shell, ste
 2. **STATUS REPORT REQUIRED**: Report exactly what is currently compiling/testing that is throwing all these error dialogs, and status of the requirements (Shell z-order, Tray independence, Settings mirroring).
 3. **Reminder**: Sign all code edits in comments with 90s personas.
 
+## Follow-up — 2026-07-08T02:16:55Z
+
+The user has cleared testing the GUI/shell, with corrections:
+1. **Window retention**: Don't instantly close windows/shell immediately after launching a test; allow them to stay open briefly so they don't rapidly flash and disappear.
+2. **Expand test scope**: Expand testing from trivial settings app pages to core requirements (Z-ordering, independent system tray, desktop multi-monitor rendering, mirrored folder options).
+
+
 
 
 
