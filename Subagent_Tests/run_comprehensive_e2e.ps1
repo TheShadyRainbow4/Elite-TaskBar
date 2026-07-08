@@ -331,8 +331,11 @@ try {
     # ----------------- TEST 4: Apply Button Debounce (No Multi-Spawn) -----------------
     Write-Host "`n[TEST 4] Verifying Apply button debounce and Win32Explorer process count..." -ForegroundColor Yellow
     
-    # Kill any running Win32Explorer instances first to get a clean baseline
+    # Kill any running Win32Explorer instances first, then start exactly one to set a baseline
     Get-Process -Name Win32Explorer -ErrorAction SilentlyContinue | Stop-Process -Force
+    Start-Sleep -Milliseconds 500
+    Start-Process -FilePath "Win32Explorer.exe"
+    Start-Sleep -Seconds 2
     $regSettingsPath = "HKCU:\Software\EliteSoftware\Win32Explorer\Advanced"
     if (-not (Test-Path $regSettingsPath)) {
         New-Item -Path "HKCU:\Software\EliteSoftware\Win32Explorer" -Name "Advanced" -Force | Out-Null
