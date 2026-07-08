@@ -322,6 +322,14 @@ The user has specified exactly how personas must operate:
 3. **Code Signatures**:
    - When any agent makes an edit to the codebase, they MUST sign their edits in the code comments using their custom persona name (e.g. `// Fixed z-order bug - Super-Susan`).
 
+## Follow-up — 2026-07-08T02:04:09Z
+
+The user is complaining that we are continuously closing their entire shell, stealing window focus, and spawning a plethora of error dialogs.
+1. **STOP DISRUPTIVE GUI TESTING**: Cease any testing/compilation behavior that kills active shell or steals focus. Run tests in background or gracefully.
+2. **STATUS REPORT REQUIRED**: Report exactly what is currently compiling/testing that is throwing all these error dialogs, and status of the requirements (Shell z-order, Tray independence, Settings mirroring).
+3. **Reminder**: Sign all code edits in comments with 90s personas.
+
+
 
 
 
