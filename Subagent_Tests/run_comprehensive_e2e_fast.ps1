@@ -351,6 +351,8 @@ try {
     # Kill any running Win32Explorer instances first to get a clean baseline
     Get-Process -Name Win32Explorer -ErrorAction SilentlyContinue | Stop-Process -Force
     Start-Sleep -Seconds 1
+    Start-Process -FilePath "Win32Explorer.exe"
+    Start-Sleep -Seconds 5 # - Draftsman-Dan
     
     # Rapidly click Apply button (ID 0x3021 / 12321) 3 times
     Write-Host "Sending rapid Apply commands..." -ForegroundColor Cyan
