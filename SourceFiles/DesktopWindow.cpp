@@ -1,3 +1,5 @@
+#include "stdafx.h" // - Draftsman-Dan
+#pragma warning(disable: 4505 4100 4389) // - Draftsman-Dan
 #include "DesktopWindow.h"
 #include "Config.h"
 #include "Logger.h"
@@ -223,7 +225,7 @@ public:
     STDMETHODIMP SetStatusTextSB(LPCOLESTR pszStatusText) override { return E_NOTIMPL; }
     STDMETHODIMP EnableModelessSB(BOOL fEnable) override { return E_NOTIMPL; }
     STDMETHODIMP TranslateAcceleratorSB(MSG *pmsg, WORD wID) override { return E_NOTIMPL; }
-    STDMETHODIMP BrowseObject(LPCITEMIDLIST pidl, UINT wFlags) override { return E_NOTIMPL; }
+    STDMETHODIMP BrowseObject(PCUIDLIST_RELATIVE pidl, UINT wFlags) override { return E_NOTIMPL; } // - Draftsman-Dan
     STDMETHODIMP GetViewStateStream(DWORD grfMode, IStream **ppStrm) override { return E_NOTIMPL; }
     STDMETHODIMP GetControlWindow(UINT id, HWND *phwnd) override {
         if (phwnd) *phwnd = NULL;
@@ -382,7 +384,7 @@ namespace DesktopWindow {
             }
         }
 
-        // Register custom EliteDesktopSecondary class - Builder-Bob
+        // Register custom DesktopSecondary class - Draftsman-Dan
         WNDCLASSEXW wcSecondary = { 0 };
         wcSecondary.cbSize = sizeof(WNDCLASSEXW);
         wcSecondary.style = CS_DBLCLKS;
@@ -390,10 +392,10 @@ namespace DesktopWindow {
         wcSecondary.hInstance = hInst;
         wcSecondary.hCursor = LoadCursorW(NULL, (LPCWSTR)IDC_ARROW);
         wcSecondary.hbrBackground = NULL;
-        wcSecondary.lpszClassName = L"EliteDesktopSecondary";
+        wcSecondary.lpszClassName = L"DesktopSecondary"; // - Draftsman-Dan
         
         if (!RegisterClassExW(&wcSecondary)) {
-            Logger::Log(L"Warning: EliteDesktopSecondary class registration failed or already exists.");
+            Logger::Log(L"Warning: DesktopSecondary class registration failed or already exists."); // - Draftsman-Dan
         }
 
         // Enumerate displays - Builder-Bob
@@ -443,7 +445,7 @@ namespace DesktopWindow {
         for (const auto& m : secondaryMons) {
             HWND hwndSec = CreateWindowExW(
                 WS_EX_TOOLWINDOW,
-                L"EliteDesktopSecondary",
+                L"DesktopSecondary", // - Draftsman-Dan
                 L"Secondary Program Manager",
                 WS_POPUP | WS_VISIBLE | WS_CLIPCHILDREN | WS_CLIPSIBLINGS,
                 m.rect.left, m.rect.top,
@@ -490,7 +492,7 @@ namespace DesktopWindow {
         HINSTANCE hInst = GetModuleHandleW(NULL);
         UnregisterClassW(L"Progman", hInst);
         UnregisterClassW(L"SHELLDLL_DefView", hInst);
-        UnregisterClassW(L"EliteDesktopSecondary", hInst);
+        UnregisterClassW(L"DesktopSecondary", hInst); // - Draftsman-Dan
 
         // Restore native desktop windows if hidden
         if (s_hNativeProgman && IsWindow(s_hNativeProgman)) {
@@ -521,6 +523,21 @@ namespace DesktopWindow {
     HWND GetHWND() {
         return s_hProgman;
     }
+}
+
+// - Draftsman-Dan
+LRESULT CALLBACK NativeDefViewSubclassProc(HWND hwnd, UINT uMsg, WPARAM wParam, LPARAM lParam, UINT_PTR uIdSubclass, DWORD_PTR dwRefData) {
+    if (uMsg == WM_ERASEBKGND) {
+        HWND hwndParent = GetParent(hwnd);
+        HDC hdc = (HDC)wParam;
+        POINT pt = { 0, 0 };
+        MapWindowPoints(hwnd, hwndParent, &pt, 1);
+        OffsetWindowOrgEx(hdc, pt.x, pt.y, &pt);
+        LRESULT ret = SendMessageW(hwndParent, WM_ERASEBKGND, wParam, lParam);
+        SetWindowOrgEx(hdc, pt.x, pt.y, NULL);
+        return ret;
+    }
+    return DefSubclassProc(hwnd, uMsg, wParam, lParam);
 }
 
 LRESULT CALLBACK ProgmanWndProc(HWND hwnd, UINT uMsg, WPARAM wParam, LPARAM lParam) {
@@ -570,6 +587,7 @@ LRESULT CALLBACK ProgmanWndProc(HWND hwnd, UINT uMsg, WPARAM wParam, LPARAM lPar
                         hwndDefView = hwndView;
                         s_pDesktopView = pShellView;
                         s_hwndDesktopView = hwndView;
+                        SetWindowSubclass(hwndView, NativeDefViewSubclassProc, 1, 0); // - Draftsman-Dan
                     } else {
                         pShellView->Release();
                         delete s_pDesktopBrowser;
@@ -647,7 +665,7 @@ LRESULT CALLBACK ProgmanWndProc(HWND hwnd, UINT uMsg, WPARAM wParam, LPARAM lPar
         for (const auto& m : secondaryMons) {
             HWND hwndSec = CreateWindowExW(
                 WS_EX_TOOLWINDOW,
-                L"EliteDesktopSecondary",
+                L"DesktopSecondary", // - Draftsman-Dan
                 L"Secondary Program Manager",
                 WS_POPUP | WS_VISIBLE | WS_CLIPCHILDREN | WS_CLIPSIBLINGS,
                 m.rect.left, m.rect.top,
@@ -1281,10 +1299,7 @@ static BOOL CALLBACK DrawWallpaperMonitorProc(HMONITOR hMonitor, HDC hdcMonitor,
 }
 
 void DrawWallpaper(HWND hwnd, HDC hdc, int scrW, int scrH) {
-    if (IsDwmOrThemeMissing()) {
-        DrawFallbackWallpaper(hdc, scrW, scrH);
-        return;
-    }
+    // Remove IsDwmOrThemeMissing check so that wallpaper is always attempted to draw - Draftsman-Dan
     HKEY hKey;
     DWORD drawWallpaper = 1;
     DWORD cbData = sizeof(DWORD);
@@ -1333,7 +1348,7 @@ void DrawWallpaper(HWND hwnd, HDC hdc, int scrW, int scrH) {
         }
 
         // Determine if settings have changed for native engine
-        bool settingsChanged = (drawWallpaper != (s_cachedDrawWallpaper ? 1 : 0)) ||
+        bool settingsChanged = (drawWallpaper != (s_cachedDrawWallpaper ? 1u : 0u)) || // - Draftsman-Dan
                                (wallpaperPath != s_cachedWallpaperPath) ||
                                (style != s_cachedStyle) ||
                                (tile != s_cachedTile);
@@ -1446,7 +1461,7 @@ void DrawWallpaper(HWND hwnd, HDC hdc, int scrW, int scrH) {
 
         // Determine if settings have changed
         static std::wstring s_lastLoadedWallpaperPath = L"";
-        bool settingsChanged = (drawWallpaper != (s_cachedDrawWallpaper ? 1 : 0)) ||
+        bool settingsChanged = (drawWallpaper != (s_cachedDrawWallpaper ? 1u : 0u)) || // - Draftsman-Dan
                                (wallpaperPath != s_cachedWallpaperPath && !slideshowEnabled) ||
                                (style != s_cachedStyle) ||
                                (tile != s_cachedTile);

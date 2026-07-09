@@ -1,3 +1,4 @@
+#include "stdafx.h" // - Draftsman-Dan
 #pragma warning(disable: 4100 4244 4267 4189 4312)
 #include <windows.h>
 #include "TaskbarWindow.h"
@@ -985,7 +986,15 @@ void UpdateTaskbarLayout(TaskbarInstance* inst) {
         }
 
         int switchHeight = taskbarHeight;
-        int switchY = 0; // - Draftsman-Dan
+        int switchY = 0;
+        if (inst->hTaskSwitch) {
+            DWORD dwBtnSize = (DWORD)SendMessageW(inst->hTaskSwitch, TB_GETBUTTONSIZE, 0, 0);
+            int btnHeight = HIWORD(dwBtnSize);
+            if (btnHeight > 0 && btnHeight < taskbarHeight) {
+                switchHeight = btnHeight;
+                switchY = (taskbarHeight - btnHeight) / 2;
+            }
+        } // - Draftsman-Dan
         SetWindowPos(inst->hTaskSwitch, NULL, xTaskSwitch, switchY, widthTaskSwitch, switchHeight, SWP_NOZORDER | SWP_NOACTIVATE);
         SendMessageW(inst->hTaskSwitch, TB_AUTOSIZE, 0, 0);
     } else {
@@ -1234,7 +1243,7 @@ BOOL ShowLegacyClockExperience(HWND hWnd) {
 }
 
 #define CLASS_NAME L"Shell_TrayWnd"
-#define TRAY_CLASS_NAME L"Elite_SecondaryTrayWnd"
+#define TRAY_CLASS_NAME L"Shell_SecondaryTrayWnd" // - Draftsman-Dan
 #define SEC_CLASS_NAME L"Shell_SecondaryTrayWnd"
 
 #define IDM_TASKBAR_TOOLBARS        3001
@@ -2943,84 +2952,8 @@ LRESULT CALLBACK WindowProc(HWND hwnd, UINT uMsg, WPARAM wParam, LPARAM lParam) 
                 if (lpNMCustomDraw->nmcd.dwDrawStage == CDDS_PREPAINT) {
                     return CDRF_NOTIFYITEMDRAW;
                 } else if (lpNMCustomDraw->nmcd.dwDrawStage == CDDS_ITEMPREPAINT) {
-                    if (lpNMCustomDraw->nmcd.hdr.hwndFrom == inst->hTaskSwitch) { // - Draftsman-Dan
-                        HDC hdc = lpNMCustomDraw->nmcd.hdc;
-                        RECT rcItem = lpNMCustomDraw->nmcd.rc;
-                        DWORD_PTR dwItemSpec = lpNMCustomDraw->nmcd.dwItemSpec;
-                        UINT itemState = lpNMCustomDraw->nmcd.uItemState;
-
-                        int iState = 1; // Normal
-                        if (itemState & CDIS_SELECTED) {
-                            iState = 3; // Pressed
-                        } else if (itemState & CDIS_CHECKED) {
-                            iState = 3; // Active
-                        } else if (itemState & CDIS_HOT) {
-                            iState = 2; // Hot
-                        }
-
-                        int btnIndex = (int)SendMessageW(inst->hTaskSwitch, TB_COMMANDTOINDEX, dwItemSpec, 0);
-                        wchar_t btnText[256] = {0};
-                        TBBUTTONINFOW wInfo = { sizeof(TBBUTTONINFOW) };
-                        wInfo.dwMask = TBIF_TEXT | TBIF_IMAGE;
-                        wInfo.pszText = btnText;
-                        wInfo.cchText = 256;
-                        SendMessageW(inst->hTaskSwitch, TB_GETBUTTONINFOW, dwItemSpec, (LPARAM)&wInfo);
-
-                        BP_PAINTPARAMS paintParams = { sizeof(BP_PAINTPARAMS) };
-                        paintParams.dwFlags = BPPF_ERASE;
-                        HDC hdcBuffer = NULL;
-                        HPAINTBUFFER hBufferedPaint = BeginBufferedPaint(hdc, &rcItem, BPBF_TOPDOWNDIB, &paintParams, &hdcBuffer);
-                        if (hBufferedPaint) {
-                            DrawThemeParentBackground(inst->hTaskSwitch, hdcBuffer, &rcItem);
-
-                            HTHEME hTheme = OpenThemeData(inst->hTaskSwitch, L"Taskbar");
-                            if (hTheme) {
-                                HTHEME hThemeTaskBand = OpenThemeData(inst->hTaskSwitch, L"TaskBand");
-                                HTHEME hThemeToUse = hThemeTaskBand ? hThemeTaskBand : hTheme;
-                                int partId = 1; // TDP_BUTTON
-                                DrawThemeBackground(hThemeToUse, hdcBuffer, partId, iState, &rcItem, NULL);
-
-                                if (wInfo.iImage >= 0) {
-                                    HIMAGELIST hImgList = (HIMAGELIST)SendMessageW(inst->hTaskSwitch, TB_GETIMAGELIST, 0, 0);
-                                    if (hImgList) {
-                                        int iconDim = 16;
-                                        int iconY = rcItem.top + (rcItem.bottom - rcItem.top - iconDim) / 2;
-                                        int iconX = rcItem.left + 6;
-                                        ImageList_Draw(hImgList, wInfo.iImage, hdcBuffer, iconX, iconY, ILD_TRANSPARENT);
-                                    }
-                                }
-
-                                RECT rcText = rcItem;
-                                rcText.left += 26;
-                                rcText.right -= 6;
-
-                                DTTOPTS dttOpts = { sizeof(DTTOPTS) };
-                                dttOpts.dwFlags = DTT_COMPOSITED | DTT_TEXTCOLOR;
-                                dttOpts.crText = RGB(255, 255, 255);
-
-                                LOGFONTW lf = {0};
-                                HFONT hFont = NULL, hOldFont = NULL;
-                                int dpi = GetDpiForWindowHelper(inst->hTaskSwitch);
-                                lf.lfHeight = MulDiv(-11, dpi, 96);
-                                lf.lfWeight = FW_NORMAL;
-                                wcscpy_s(lf.lfFaceName, L"Segoe UI");
-                                hFont = CreateFontIndirectW(&lf);
-                                if (hFont) hOldFont = (HFONT)SelectObject(hdcBuffer, hFont);
-
-                                DrawThemeTextEx(hThemeToUse, hdcBuffer, partId, iState, btnText, -1, DT_LEFT | DT_VCENTER | DT_SINGLELINE | DT_END_ELLIPSIS, &rcText, &dttOpts);
-
-                                if (hOldFont) SelectObject(hdcBuffer, hOldFont);
-                                if (hFont) DeleteObject(hFont);
-
-                                if (hThemeTaskBand) CloseThemeData(hThemeTaskBand);
-                                CloseThemeData(hTheme);
-                            }
-                            EndBufferedPaint(hBufferedPaint, TRUE);
-                        }
-                        return CDRF_SKIPDEFAULT;
-                    }
                     lpNMCustomDraw->clrText = RGB(255, 255, 255);
-                    return CDRF_DODEFAULT;
+                    return CDRF_DODEFAULT; // - Draftsman-Dan
                 }
             }
         }
@@ -3131,7 +3064,7 @@ LRESULT CALLBACK WindowProc(HWND hwnd, UINT uMsg, WPARAM wParam, LPARAM lParam) 
     case WM_COMMAND: {
         int wmId = LOWORD(wParam);
         
-        if (wmId >= 3001 && wmId <= 3999) {
+        if (wmId >= 3001 && wmId <= 3999 && wmId != IDM_EXIT_ELITETASKBAR && wmId != IDM_EXIT_ALL_ELITETASKBAR) { // - Draftsman-Dan
             // Find target path in g_FolderBands buttons dwData - Builder-Bob
             for (auto* band : g_FolderBands) {
                 if (band && band->hToolbar) {
@@ -3463,7 +3396,7 @@ LRESULT CALLBACK WindowProc(HWND hwnd, UINT uMsg, WPARAM wParam, LPARAM lParam) 
             g_PreviewTimer = 0;
             if (g_Config.ShowPreviews && IsWindow(g_PreviewTargetHwnd)) {
                 if (!g_hPreviewWindow) {
-                    g_hPreviewWindow = CreateWindowExW(WS_EX_TOPMOST | WS_EX_TOOLWINDOW | WS_EX_LAYERED, L"EliteTaskbarPreview", L"", WS_POPUP | WS_CLIPCHILDREN, 0, 0, 200, 150, hwnd, NULL, GetModuleHandle(NULL), NULL);
+                    g_hPreviewWindow = CreateWindowExW(WS_EX_TOPMOST | WS_EX_TOOLWINDOW | WS_EX_LAYERED, L"TaskbarPreview", L"", WS_POPUP | WS_CLIPCHILDREN, 0, 0, 200, 150, hwnd, NULL, GetModuleHandle(NULL), NULL); // - Draftsman-Dan
                 }
                 
                 SetWindowLongPtrW(g_hPreviewWindow, GWLP_USERDATA, (LONG_PTR)g_PreviewTargetHwnd);
@@ -3574,7 +3507,7 @@ bool TaskbarWindow::Initialize(HINSTANCE hInstance) {
     wcPrev.lpfnWndProc = PreviewWndProc;
     wcPrev.hInstance = hInstance;
     wcPrev.hbrBackground = (HBRUSH)(COLOR_WINDOW + 1);
-    wcPrev.lpszClassName = L"EliteTaskbarPreview";
+    wcPrev.lpszClassName = L"TaskbarPreview"; // - Draftsman-Dan
     RegisterClassW(&wcPrev);
 
     int taskbarHeight = 40; // Default fallback
@@ -3686,7 +3619,10 @@ bool TaskbarWindow::Initialize(HINSTANCE hInstance) {
     bool bHookRegistered = false;
     for (size_t i = 0; i < monData.monitors.size(); i++) {
         if (g_Config.Mode == TaskbarMode::SecondaryOnly && monData.isPrimary[i]) {
-            continue; // Skip primary monitor in SecondaryOnly mode
+            HWND hNativeTray = FindWindowW(L"Shell_TrayWnd", NULL);
+            if (hNativeTray != NULL && IsWindowVisible(hNativeTray)) {
+                continue; // Skip primary monitor in SecondaryOnly mode only if native taskbar is running and visible - Draftsman-Dan
+            }
         }
         
         TaskbarInstance* inst = new TaskbarInstance();
@@ -3817,7 +3753,7 @@ bool TaskbarWindow::Initialize(HINSTANCE hInstance) {
                 MulDiv(60, dpi, 96), 0, screenWidth - MulDiv(315, dpi, 96), inst->taskbarHeight, inst->hTaskbar, (HMENU)2000, hInstance, NULL);
             SetWindowSubclass(inst->hTaskSwitch, TaskSwitchSubclassProc, 1, 0);
             SendMessageW(inst->hTaskSwitch, TB_BUTTONSTRUCTSIZE, sizeof(TBBUTTON), 0);
-            SendMessageW(inst->hTaskSwitch, TB_SETBUTTONSIZE, 0, MAKELPARAM(160, inst->taskbarHeight)); // - Draftsman-Dan
+            // SendMessageW(inst->hTaskSwitch, TB_SETBUTTONSIZE, 0, MAKELPARAM(160, inst->taskbarHeight)); // Removed - Draftsman-Dan
             SendMessageW(inst->hTaskSwitch, TB_SETPADDING, 0, MAKELPARAM(10, 4));
             if (g_Config.ButtonWidth == ButtonWidthMode::Fixed) {
                 int width = 160;

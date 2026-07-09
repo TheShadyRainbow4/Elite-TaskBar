@@ -546,6 +546,46 @@ Your SOLE and EXCLUSIVE priorities are to fix the regressions you caused:
 
 Do not proceed to any other task until these two regressions are resolved and verified.
 
+## Follow-up — 2026-07-09T03:45:59Z
+
+USER REQUEST VERBATIM: "the agents and orchestrator are no longer allowed to summarize information they must literally read the entire prompts from me and you should as well. no summarizing what I said to the agents they must see it how I said it."
+
+From now on, do not paraphrase or summarize user instructions in your internal handoff docs or orchestrator directives. Pass the user's raw text verbatim.
+
+## Follow-up — 2026-07-09T03:47:34Z
+
+USER REQUEST VERBATIM: "well secondary monitors still need secondary monitor classes even when native shell does not support them. thats how this works. otherwise they would all be the SAME EXACT taskbar would they not?"
+
+## Follow-up — 2026-07-09T03:52:55Z
+
+USER REQUEST VERBATIM: "hopefully This actually works well again like it did in the beginning.. even though we started with a minimal shell it still was more reliable somehow. its like everyone is lazy now."
+
+Take this to heart. Your recent changes caused severe regressions because you were not testing properly and were making assumptions outside of the documented blueprints. Stop being lazy. Test your code. Revert your regressions. Build a stable shell.
+
+## Follow-up — 2026-07-09T03:55:08Z
+
+USER BUG REPORT VERBATIM: "where did my native shell go like the windows one. it just closed"
+
+Critical Issue: The native Windows shell (explorer.exe) was just terminated when Elite-TaskBar launched.
+
+Action Required:
+1. Check the wWinMain initialization logic in TaskbarWindow.cpp.
+2. You were instructed: "Modify the initialization logic so that the taskbar defaults to SecondaryOnly mode if it detects the native Windows shell (explorer.exe) is already running."
+3. It appears your code is forcefully terminating explorer.exe or triggering a state where it crashes/closes. Ensure there is NO code that automatically calls TerminateProcessByName(L"explorer.exe") on startup.
+4. The shell replacement MUST coexist peacefully as a secondary overlay if the native shell is detected. Fix the initialization sequence immediately!
+
+## Follow-up — 2026-07-09T03:57:22Z
+
+USER REQUEST VERBATIM: "not co exist as overlay co exist as in only draw taskbar on monitors that dont have one meaning non primary. as an extension of native shell though desktop is all or nothing the taskbar literally should not be on primary display unless configured by user in settings to do so or if native taskbar was not running it could then draw a taskbar on primary display as well. this was very clear and literally HOW IT USED TO WORK"
+
+**CRITICAL ARCHITECTURAL CLARIFICATION:**
+1. **SecondaryOnly Mode:** This does NOT mean drawing an overlay on top of the native taskbar. It means you **do not create a custom taskbar on the primary monitor AT ALL**. You only instantiate custom taskbars on the secondary monitors. 
+2. **Primary Display Takeover:** The ONLY times Elite-TaskBar should draw a taskbar on the primary monitor are:
+   a) `explorer.exe` (native shell) is completely dead/not running.
+   b) The user explicitly toggled a setting to force it.
+
+Fix the initialization logic in `TaskbarWindow.cpp` to correctly skip the primary monitor during taskbar creation if the native shell is alive and running!
+
 
 
 

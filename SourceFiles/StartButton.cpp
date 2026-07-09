@@ -1,3 +1,4 @@
+#include "stdafx.h" // - Draftsman-Dan
 #include "StartButton.h"
 #include "Config.h"
 #include "Logger.h"
@@ -114,14 +115,14 @@ bool StartButton::Initialize(HINSTANCE hInstance, HWND hParentTaskbar, int monit
     wc.cbSize = sizeof(WNDCLASSEXW);
     wc.lpfnWndProc = OrbWndProc;
     wc.hInstance = hInstance;
-    wc.lpszClassName = L"Elite_StartOrbWnd";
+    wc.lpszClassName = L"StartButtonWnd"; // - Draftsman-Dan
     wc.hCursor = LoadCursor(NULL, IDC_ARROW);
     // Ignore register errors if class already exists
     RegisterClassExW(&wc);
     
     m_hOrbWnd = CreateWindowExW(
         WS_EX_LAYERED | WS_EX_TOOLWINDOW | WS_EX_TOPMOST,
-        L"Elite_StartOrbWnd", L"",
+        L"StartButtonWnd", L"", // - Draftsman-Dan
         WS_POPUP,
         0, 0, 54, 54,
         NULL, NULL, hInstance, this
@@ -370,7 +371,7 @@ LRESULT CALLBACK OrbWndProc(HWND hwnd, UINT uMsg, WPARAM wParam, LPARAM lParam) 
                 HWND hNativeTarget = NULL;
                 if (hMon) {
                     HWND hPrimary = FindWindowW(L"Shell_TrayWnd", NULL);
-                    HMONITOR hPrimaryMon = MonitorFromWindow(hPrimary, MONITOR_DEFAULTTOPRIMARY);
+                    // HMONITOR hPrimaryMon = MonitorFromWindow(hPrimary, MONITOR_DEFAULTTOPRIMARY); // - Draftsman-Dan
                     if (MonitorFromWindow(hPrimary, MONITOR_DEFAULTTONULL) == hMon) {
                         hNativeTarget = hPrimary;
                     } else {

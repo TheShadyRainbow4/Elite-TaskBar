@@ -693,3 +693,22 @@ All notable changes to this project will be documented in this file.
 - Fixed system tray flyout coordinate math by dynamically mapping the native TrayNotifyWnd position, ensuring flyouts spawn on the correct monitor.
 - Removed the massive white bar / vertical scroll arrows bug by applying the PGS_HORZ style to the paginator (SysPager).
 - Eliminated massive visual gaps between the tray and the clock by correctly filtering hidden buttons during the horizontal tray space calculation.
+
+### Regression and Audit Fixes (Draftsman-Dan)
+- **TaskbarWindow.cpp**:
+  - Reverted taskbar button clickable area custom drawing blocks in `CDDS_ITEMPREPAINT` under `WM_NOTIFY` -> `NM_CUSTOMDRAW`, setting text color to white and returning default drawing stage.
+  - Removed `TB_SETBUTTONSIZE` message call on `hTaskSwitch` under `TaskbarWindow::Initialize`.
+  - Restored original vertical centering and height calculation math for `hTaskSwitch` inside `UpdateTaskbarLayout`.
+  - Renamed custom class name `EliteTaskbarPreview` to `TaskbarPreview` and secondary tray class name macro `Elite_SecondaryTrayWnd` to `Shell_SecondaryTrayWnd`.
+  - Excluded exit commands `IDM_EXIT_ELITETASKBAR` (3010) and `IDM_EXIT_ALL_ELITETASKBAR` (3014) from the folder bands handler block inside `WM_COMMAND`.
+- **StartButton.cpp**:
+  - Renamed start orb class name `Elite_StartOrbWnd` to `StartButtonWnd`.
+- **DesktopWindow.cpp**:
+  - Implemented subclass procedure `NativeDefViewSubclassProc` to map and forward `WM_ERASEBKGND` messages to parent window for transparency.
+  - Registered `NativeDefViewSubclassProc` subclass on `hwndView` under `ProgmanWndProc` when `useNativeShellView` is true.
+  - Removed `IsDwmOrThemeMissing` composition check from `DrawWallpaper` to ensure wallpaper is always attempted to be drawn.
+  - Renamed secondary desktop class name `EliteDesktopSecondary` to `DesktopSecondary`.
+- **build.ps1**:
+  - Updated pre-build sync phase to copy `TaskbarWindow.cpp`, `StartButton.cpp`, and `Config.h` to both submodule directories.
+- **verify_final_polish.ps1**:
+  - Assigned `EnumWindows` callback scriptblock to a local variable delegate `$callback` to prevent garbage-collection crash.

@@ -106,6 +106,7 @@ Elite-Taskbar is designed from the ground up to seamlessly blend into the Window
 * **Two-Row System Tray Layout (Milestones 8, 9, 10)**: Implemented wrapping and width locking for two-row tray configurations using 12x12 icons.
 * **Global Replacement Hotkeys & Broadcasts (Milestones 8, 9, 10)**: Intercepts Win+E, Win+R, and Win+D hotkeys in Replace Mode and sends aggressive TaskbarCreated broadcasts to force tray icon reloading.
 * **Win32Explorer Options Dialog Elevation Sync (Milestones 8, 9, 10)**: Triggers UAC dialog on Apply in Win32Explorer options dialog by launching `EliteSettings.exe /import` elevated via `"runas"` verb. Silently parses XML configurations and writes them to the HKLM registry, guaranteeing complete elevation parity while allowing the main file manager window to run as standard user.
+* **Regression & Audit Fixes (Draftsman-Dan)**: Reverted taskbar button clickable area custom drawing blocks, removed custom button size override, and restored original task switch vertical centering. Renamed custom window classes (`EliteTaskbarPreview` to `TaskbarPreview`, `Elite_SecondaryTrayWnd` to `Shell_SecondaryTrayWnd`, `Elite_StartOrbWnd` to `StartButtonWnd`, and `EliteDesktopSecondary` to `DesktopSecondary`). Implemented a transparent subclass callback for native IShellView to forward WM_ERASEBKGND to Progman. Excluded exit commands from folder band parsing. Assigned EnumWindows callback in verify_final_polish.ps1 to a local variable to prevent GC crash.
 
 </details>
 

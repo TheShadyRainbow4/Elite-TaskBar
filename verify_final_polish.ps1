@@ -278,7 +278,7 @@ try {
     
     # A. Search for Progman desktop window class
     $hwndProgman = [IntPtr]::Zero
-    [Win32Helper]::EnumWindows([Win32Helper+EnumWindowsProc]{
+    $callback = [Win32Helper+EnumWindowsProc]{ # - Draftsman-Dan
         param($hWnd, $lParam)
         $sbClass = New-Object System.Text.StringBuilder 260
         [Win32Helper]::GetClassNameW($hWnd, $sbClass, $sbClass.Capacity) | Out-Null
@@ -290,7 +290,8 @@ try {
             }
         }
         return $true
-    }, [IntPtr]::Zero) | Out-Null
+    }
+    [Win32Helper]::EnumWindows($callback, [IntPtr]::Zero) | Out-Null # - Draftsman-Dan
 
     if ($hwndProgman -eq [IntPtr]::Zero) {
         throw "Could not find custom desktop replacement window (class 'Progman') belonging to EliteTaskbar PID $($proc.Id)."
@@ -361,6 +362,11 @@ try {
     Set-ItemProperty -Path $regHKCU -Name "DesktopWallpaperEnabled" -Value 0 -Type DWord
     Set-ItemProperty -Path $regHKCU -Name "TaskbarMode" -Value 0 -Type DWord
 
+    # Ensure native shell is restored if not running - Draftsman-Dan
+    if (-not (Get-Process -Name explorer -ErrorAction SilentlyContinue)) {
+        Start-Process explorer.exe
+    }
+
     Write-Host "`n==========================================================" -ForegroundColor Green
     Write-Host "  VERIFICATION SUCCESSFUL - ALL TESTS PASSED (EXIT 0)" -ForegroundColor Green
     Write-Host "==========================================================" -ForegroundColor Green
@@ -375,5 +381,11 @@ try {
     if ($null -ne $proc) {
         $proc | Stop-Process -Force -ErrorAction SilentlyContinue
     }
+
+    # Ensure native shell is restored if not running - Draftsman-Dan
+    if (-not (Get-Process -Name explorer -ErrorAction SilentlyContinue)) {
+        Start-Process explorer.exe
+    }
+
     exit 1
 }
