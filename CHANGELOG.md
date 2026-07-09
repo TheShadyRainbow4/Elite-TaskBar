@@ -679,3 +679,7 @@ All notable changes to this project will be documented in this file.
 - **TaskbarProperties.cpp & EliteSettings.ps1**: Completely rebuilt the Advanced Appearance color and font pickers using native Win32 ChooseColorW and ChooseFontW to mimic classic Windows UI customization. Re-routed all backend read/write logic strictly to HKLM to ensure the settings apply globally as an OS appliance.
 - **main.cpp**: Patched the backend configuration initialization to query HKLM instead of HKCU. Changed the default out-of-the-box configuration from Independent mode to SecondaryOnly (Hybrid) mode, restoring the native taskbar to the primary monitor while ensuring the custom desktop layer safely initiates across all screens.
 
+### UI Layout Fixes (Layout Engineer)
+- Fixed system tray flyout coordinate math by dynamically mapping the native TrayNotifyWnd position, ensuring flyouts spawn on the correct monitor.
+- Removed the massive white bar / vertical scroll arrows bug by applying the PGS_HORZ style to the paginator (SysPager).
+- Eliminated massive visual gaps between the tray and the clock by correctly filtering hidden buttons during the horizontal tray space calculation.
