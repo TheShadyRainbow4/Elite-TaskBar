@@ -427,6 +427,81 @@ The user provided the CPL Elevation Parity directive:
 The user provided the Win32Explorer Options Elevation directive:
 - **Win32Explorer Options Dialog Elevation**: The options dialog inside `Win32Explorer.exe` must follow the same UAC/HKLM rules. Because `Win32Explorer.exe` acts as the primary shell, the main process cannot run elevated by default. When the user clicks "Apply" in the options dialog, the app must use COM elevation monikers, the `runas` verb on a helper, or the `psexec` fallback to write those specific changes to HKLM without requiring the entire shell to run as Administrator. This ensures 100% parity across `EliteSettings.exe`, `EliteSettings.cpl`, and the `Win32Explorer.exe` internal options dialog.
 
+## Follow-up — 2026-07-09T03:19:01Z
+
+<USER_REQUEST>
+Refactor and fix UI rendering, interaction, and process management issues in the Elite-TaskBar shell replacement project, strictly avoiding PowerShell for native operations.
+
+Working directory: C:\Users\Administrator\Desktop\Elite-TaskBar
+Integrity mode: development
+
+## Requirements
+
+### R1. System Tray & Clock Layout
+The system tray must be resizable by dragging when the taskbar is unlocked. Remove the solid white UP arrow completely. Implement a standard left-facing arrow that temporarily expands the tray overflow into the taskbar. Fix the layout math to eliminate the massive empty gap between the system tray icons and the clock.
+
+### R2. Text Rendering & Clickable Areas
+Fix glitchy and unclear GDI text rendering on the main monitor. For all interactive elements (Taskbar buttons, Start Menu items, Tray icons), the entire themed hover area must be clickable, not just the text label. 
+
+### R3. Default Shell Mode Logic
+Modify the initialization logic so that the taskbar defaults to `SecondaryOnly` mode if it detects the native Windows shell (`explorer.exe`) is already running. It should only default to `Replace` mode (primary shell) if the native shell is not present. This must be the out-of-the-box default before any user settings are applied.
+
+### R4. Native Process Management (Strictly No PowerShell)
+Powershell must NEVER be utilized in the shell directly for restarts or any other operational logic; it should only be used in the build chain. Remove all instances of `powershell.exe` being invoked via `ShellExecute` or similar methods within the C++ codebase (such as in `TaskbarWindow.cpp` for restarting the taskbar). Replace these with native C++ Win32 process management APIs (`CreateProcess`, `TerminateProcess`, etc.) to restart the shell independently. All settings logic must remain exclusively in the native C++ CPL and EXE (`EliteSettingsStub.cpp`, `TaskbarProperties.cpp`, etc.).
+
+## Acceptance Criteria
+
+### System Tray
+- [ ] Tray can be resized by dragging when taskbar is unlocked.
+- [ ] Solid white UP arrow is gone.
+- [ ] Overflow is hidden behind a left-facing arrow that expands horizontally.
+- [ ] The large gap between the tray icons and the clock is removed.
+
+### UI Interaction & Rendering
+- [ ] Text rendering on the primary taskbar is crisp and not glitchy.
+- [ ] Clicking anywhere within the hover-highlighted bounding box of a taskbar button or start menu item successfully triggers its action.
+
+### Shell Mode & Process Management
+- [ ] Launching the taskbar while `explorer.exe` is running defaults it to `SecondaryOnly` mode on first run.
+- [ ] No `powershell.exe` references exist in the C++ codebase for restarting processes.
+- [ ] The taskbar can successfully restart itself using purely native Win32 APIs.
+</USER_REQUEST>
+
+## Follow-up — 2026-07-09T03:21:01Z
+
+The user has requested a change to the architecture for the settings app.
+
+User Request: "how about we make it so settings cpl is the only settings location entirely and stop relying on 2 so no exe just use cpl and it literally works the same way anyway you just double click it to open it. this would make more sense"
+
+Please ensure that:
+1. `EliteSettings.exe` is no longer built or distributed.
+2. `EliteSettingsCpl.cpp` (the wrapper that extracts the EXE) is deleted or ignored.
+3. `EliteSettingsStub.cpp` (which already has both `wWinMain` and `CPlApplet`) is compiled DIRECTLY as `EliteSettings.cpl` (a DLL) and used exclusively for settings.
+4. Update `build_settings.ps1` and `build.ps1` to reflect these changes.
+
+## Follow-up — 2026-07-09T03:23:10Z
+
+The user has provided two critical follow-up instructions regarding the transition to the CPL-only settings architecture:
+
+1. **Deployment Cleanup:** "remove the original settings exe from system folders as our hardlink system will not know that the original existed thus keeping it in the folder."
+   *Action Required:* Ensure `deploy_hardlinks.ps1` (or the cleanup phase of `build.ps1`) actively deletes `EliteSettings.exe` and `EliteSettings_x86.exe` from any system destination folders (like System32) to clean up legacy artifacts.
+
+2. **Context Menu Update:** "that also means that right clicking the taskbar and opening our custom settings should now use cpl file instead of original method if not already doing this."
+   *Action Required:* Check `TaskbarWindow.cpp` (or relevant files handling the taskbar context menu) and ensure the "Settings" context menu option launches `EliteSettings.cpl` natively (e.g., via `ShellExecute` or `Control_RunDLL`) rather than `EliteSettings.exe`.
+
+3. **Documentation:** "DOCUMENT LITERALLY EVERYTHING AND EVERY FILE"
+   *Action Required:* Extensively document these architectural changes and cleanup steps in the `CHANGELOG.md` and `PROJECT_SOURCE_MAP.md`.
+
+## Follow-up — 2026-07-09T03:26:05Z
+
+ATTENTION ALL AGENTS: The user is extremely frustrated that agents are ignoring the extensive documentation they spent hours writing.
+
+I have just updated `GEMINI.md` with a massive, bold warning.
+**STOP GUESSING WHERE FILES ARE.** 
+You MUST physically read the mapping files (e.g., `PROJECT_SOURCE_MAP.md`, `SourceMap_And_Architecture.md`, `BuildRequirements.md`, etc.) in the `Documentation` folder BEFORE doing any searches or guessing file locations. The files are laid out exactly as documented. If you ignore the documentation, you waste time and break the project.
+
+Please acknowledge and ensure all workers are consulting the documentation maps for every step.
+
 
 
 

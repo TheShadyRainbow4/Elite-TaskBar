@@ -38,11 +38,8 @@ $libs = "user32.lib shell32.lib shlwapi.lib comctl32.lib advapi32.lib uxtheme.li
 # Add Logger.cpp to settings compile sources to resolve EliteMessageBoxW - Builder-Bob
 $srcSettings = "`"$SourceDir\EliteSettingsStub.cpp`" `"$SourceDir\TaskbarProperties.cpp`" `"$SourceDir\Logger.cpp`""
 
-$stubCompileCmd64 = "cl.exe /FS /EHsc /MTd /D_DEBUG /Fe`"$BuildDir\EliteSettings.exe`" /Fo`"$BuildDir\ObjectFiles/`" $srcSettings `"$BuildDir\ResourceFiles\settings_resources.res`" $libs /link /MANIFEST:EMBED /MANIFESTINPUT:`"$SourceDir\cpl.manifest`" /MANIFESTUAC:NO"
-$stubCompileCmd86 = "cl.exe /FS /EHsc /MTd /D_DEBUG /Fe`"$BuildDirx86\EliteSettings_x86.exe`" /Fo`"$BuildDirx86\ObjectFiles/`" $srcSettings `"$BuildDirx86\ResourceFiles\settings_resources.res`" $libs /link /MANIFEST:EMBED /MANIFESTINPUT:`"$SourceDir\cpl.manifest`" /MANIFESTUAC:NO"
-
-$stubCPLCompileCmd64 = "cl.exe /FS /LD /EHsc /MTd /D_DEBUG /Fe`"$BuildDir\EliteSettings.cpl`" /Fo`"$BuildDir\ObjectFiles/`" `"$SourceDir\EliteSettingsCpl.cpp`" `"$BuildDir\ResourceFiles\settings_cpl.res`" $libs /link /IMPLIB:`"$BuildDir\ObjectLibraryFiles\EliteSettings_cpl.lib`" /EXPORT:CPlApplet /MANIFEST:EMBED /MANIFESTINPUT:`"$SourceDir\cpl.manifest`" /MANIFESTUAC:NO"
-$stubCPLCompileCmd86 = "cl.exe /FS /LD /EHsc /MTd /D_DEBUG /Fe`"$BuildDirx86\EliteSettings_x86.cpl`" /Fo`"$BuildDirx86\ObjectFiles/`" `"$SourceDir\EliteSettingsCpl.cpp`" `"$BuildDirx86\ResourceFiles\settings_cpl.res`" $libs /link /IMPLIB:`"$BuildDirx86\ObjectLibraryFiles\EliteSettings_x86_cpl.lib`" /EXPORT:CPlApplet /MANIFEST:EMBED /MANIFESTINPUT:`"$SourceDir\cpl.manifest`" /MANIFESTUAC:NO"
+$stubCPLCompileCmd64 = "cl.exe /FS /LD /EHsc /MTd /D_DEBUG /Fe`"$BuildDir\EliteSettings.cpl`" /Fo`"$BuildDir\ObjectFiles/`" $srcSettings `"$BuildDir\ResourceFiles\settings_resources.res`" $libs /link /IMPLIB:`"$BuildDir\ObjectLibraryFiles\EliteSettings_cpl.lib`" /EXPORT:CPlApplet /MANIFEST:EMBED /MANIFESTINPUT:`"$SourceDir\cpl.manifest`" /MANIFESTUAC:NO"
+$stubCPLCompileCmd86 = "cl.exe /FS /LD /EHsc /MTd /D_DEBUG /Fe`"$BuildDirx86\EliteSettings_x86.cpl`" /Fo`"$BuildDirx86\ObjectFiles/`" $srcSettings `"$BuildDirx86\ResourceFiles\settings_resources.res`" $libs /link /IMPLIB:`"$BuildDirx86\ObjectLibraryFiles\EliteSettings_x86_cpl.lib`" /EXPORT:CPlApplet /MANIFEST:EMBED /MANIFESTINPUT:`"$SourceDir\cpl.manifest`" /MANIFESTUAC:NO"
 
 $everyCompileCmd64 = "cl.exe /FS /EHsc /MTd /D_DEBUG /Fe`"$BuildDir\EliteEverything.exe`" /Fo`"$BuildDir\ObjectFiles/`" `"$SourceDir\EliteEverythingStub.cpp`" `"$BuildDir\ResourceFiles\everything_resources.res`" user32.lib shell32.lib shlwapi.lib /link /MANIFEST:EMBED /MANIFESTINPUT:`"$SourceDir\cpl.manifest`" /MANIFESTUAC:NO"
 $everyCompileCmd86 = "cl.exe /FS /EHsc /MTd /D_DEBUG /Fe`"$BuildDirx86\EliteEverything_x86.exe`" /Fo`"$BuildDirx86\ObjectFiles/`" `"$SourceDir\EliteEverythingStub.cpp`" `"$BuildDirx86\ResourceFiles\everything_resources.res`" user32.lib shell32.lib shlwapi.lib /link /MANIFEST:EMBED /MANIFESTINPUT:`"$SourceDir\cpl.manifest`" /MANIFESTUAC:NO"
@@ -56,14 +53,6 @@ $ErrorActionPreference = 'Continue'
 # --- x64 Build Steps ---
 cmd.exe /c "cd /d `"$BuildDir`" && call `"$VsDevCmd`" -arch=x64 && rc.exe /fo `"$BuildDir\ResourceFiles\settings_resources.res`" `"$BuildDir\ResourceFiles\settings_resources.rc`""
 if ($LASTEXITCODE -ne 0) { throw "Stubs x64 RC settings_resources failed" }
-
-cmd.exe /c "cd /d `"$BuildDir`" && call `"$VsDevCmd`" -arch=x64 && $stubCompileCmd64"
-if ($LASTEXITCODE -ne 0) { throw "Stubs x64 cl EliteSettings.exe failed" }
-
-Start-Sleep -Seconds 2
-
-cmd.exe /c "cd /d `"$BuildDir`" && call `"$VsDevCmd`" -arch=x64 && rc.exe /fo `"$BuildDir\ResourceFiles\settings_cpl.res`" `"$SourceDir\settings_cpl.rc`""
-if ($LASTEXITCODE -ne 0) { throw "Stubs x64 RC settings_cpl failed" }
 
 cmd.exe /c "cd /d `"$BuildDir`" && call `"$VsDevCmd`" -arch=x64 && $stubCPLCompileCmd64"
 if ($LASTEXITCODE -ne 0) { throw "Stubs x64 cl EliteSettings.cpl failed" }
@@ -83,14 +72,6 @@ if ($LASTEXITCODE -ne 0) { throw "Stubs x64 cl EliteDLLScanner.exe failed" }
 # --- x86 Build Steps ---
 cmd.exe /c "cd /d `"$BuildDirx86`" && call `"$VsDevCmd`" -arch=x86 && rc.exe /fo `"$BuildDirx86\ResourceFiles\settings_resources.res`" `"$BuildDirx86\ResourceFiles\settings_resources.rc`""
 if ($LASTEXITCODE -ne 0) { throw "Stubs x86 RC settings_resources failed" }
-
-cmd.exe /c "cd /d `"$BuildDirx86`" && call `"$VsDevCmd`" -arch=x86 && $stubCompileCmd86"
-if ($LASTEXITCODE -ne 0) { throw "Stubs x86 cl EliteSettings_x86.exe failed" }
-
-Start-Sleep -Seconds 2
-
-cmd.exe /c "cd /d `"$BuildDirx86`" && call `"$VsDevCmd`" -arch=x86 && rc.exe /fo `"$BuildDirx86\ResourceFiles\settings_cpl.res`" `"$SourceDir\settings_cpl_x86.rc`""
-if ($LASTEXITCODE -ne 0) { throw "Stubs x86 RC settings_cpl failed" }
 
 cmd.exe /c "cd /d `"$BuildDirx86`" && call `"$VsDevCmd`" -arch=x86 && $stubCPLCompileCmd86"
 if ($LASTEXITCODE -ne 0) { throw "Stubs x86 cl EliteSettings_x86.cpl failed" }

@@ -6,6 +6,22 @@ param(
 $sys32 = [Environment]::GetFolderPath("System")
 $sysWow = [Environment]::GetFolderPath("SystemX86")
 
+# Delete legacy EliteSettings.exe and EliteSettings_x86.exe from system destinations - Draftsman-Dan
+$subDir1 = "$PSScriptRoot\Win32Explorer_26.0.3.0"
+$subDir2 = "$PSScriptRoot\Remaining_Shell\Win32Explorer_26.0.3.0"
+$exesToDelete = @(
+    (Join-Path $sys32 "EliteSettings.exe"),
+    (Join-Path $sysWow "EliteSettings_x86.exe"),
+    (Join-Path $subDir1 "EliteSettings.exe"),
+    (Join-Path $subDir2 "EliteSettings.exe")
+)
+foreach ($file in $exesToDelete) {
+    if (Test-Path $file) {
+        Remove-Item -Path $file -Force -ErrorAction SilentlyContinue
+        Write-Host "Actively deleted legacy Settings executable: $file" -ForegroundColor Yellow
+    }
+}
+
 function Create-HardLink {
     param (
         [string]$SourcePath,
@@ -44,6 +60,18 @@ Write-Host "Deploying hardlinks to System32 and SysWOW64..." -ForegroundColor Cy
 if (Test-Path $BuildDir) {
     Get-ChildItem -Path $BuildDir -Filter "*.exe" -ErrorAction SilentlyContinue | ForEach-Object { Create-HardLink -SourcePath $_.FullName -DestDir $sys32 }
     Get-ChildItem -Path $BuildDir -Filter "*.cpl" -ErrorAction SilentlyContinue | ForEach-Object { Create-HardLink -SourcePath $_.FullName -DestDir $sys32 }
+    
+    # Mirror into Win32Explorer folders
+    $subDir1 = "$PSScriptRoot\Win32Explorer_26.0.3.0"
+    $subDir2 = "$PSScriptRoot\Remaining_Shell\Win32Explorer_26.0.3.0"
+    if (Test-Path $subDir1) {
+        Get-ChildItem -Path $BuildDir -Filter "*.exe" -ErrorAction SilentlyContinue | ForEach-Object { Create-HardLink -SourcePath $_.FullName -DestDir $subDir1 }
+        Get-ChildItem -Path $BuildDir -Filter "*.cpl" -ErrorAction SilentlyContinue | ForEach-Object { Create-HardLink -SourcePath $_.FullName -DestDir $subDir1 }
+    }
+    if (Test-Path $subDir2) {
+        Get-ChildItem -Path $BuildDir -Filter "*.exe" -ErrorAction SilentlyContinue | ForEach-Object { Create-HardLink -SourcePath $_.FullName -DestDir $subDir2 }
+        Get-ChildItem -Path $BuildDir -Filter "*.cpl" -ErrorAction SilentlyContinue | ForEach-Object { Create-HardLink -SourcePath $_.FullName -DestDir $subDir2 }
+    }
 }
 
 # Mirror x86 builds to SysWOW64

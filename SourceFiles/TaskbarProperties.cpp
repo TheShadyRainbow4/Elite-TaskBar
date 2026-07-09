@@ -515,11 +515,8 @@ DWORD WINAPI BroadcastSettingsChangeThread(LPVOID lpParam) {
         PathRemoveFileSpecW(exePath); // Get directory of the current settings CPL/EXE
     }
 
-    wchar_t psCmd[2048];
-    swprintf_s(psCmd, L"-NoProfile -WindowStyle Hidden -Command \"Stop-Process -Name EliteTaskbar -Force; Start-Sleep -Milliseconds 500; Start-Process -FilePath '%s\\EliteTaskbar.exe' -ErrorAction SilentlyContinue\"", exePath);
-
-    ShellExecuteW(NULL, NULL, L"powershell.exe", psCmd, NULL, SW_HIDE);
-
+    // Removed forceful restart via powershell; we rely entirely on WM_SETTINGCHANGE
+    // which TaskbarWindow handles natively to either update UI or restart itself.
     SendMessageTimeoutW(HWND_BROADCAST, WM_SETTINGCHANGE, 0, (LPARAM)L"TraySettings", SMTO_ABORTIFHUNG, 5000, NULL);
     SendMessageTimeoutW(HWND_BROADCAST, WM_SETTINGCHANGE, 0, (LPARAM)L"EliteTaskbarSettings", SMTO_ABORTIFHUNG, 500, NULL);
         
@@ -643,6 +640,8 @@ INT_PTR CALLBACK TaskbarSettingsDlgProc(HWND hwndDlg, UINT uMsg, WPARAM wParam, 
         AddDlgTooltip(hwndDlg, IDC_THEME_FOLDER_BROWSE, L"Open folder selector to find your icon folder. Hope your folders are clean!");
         AddDlgTooltip(hwndDlg, IDC_ENABLE_DARK_MODE, L"Permanently disabled because dark mode is forbidden by our design guidelines!");
         AddDlgTooltip(hwndDlg, IDC_TWO_ROW_TRAY, L"Display the notification area icons in two rows instead of one. Extra space for extra icons.");
+        AddDlgTooltip(hwndDlg, IDC_DYNAMIC_CLOCK_WIDTH, L"Dynamically size the tray clock based on the time text length. Don't waste precious taskbar pixels."); // - Draftsman-Dan
+        AddDlgTooltip(hwndDlg, IDC_HORIZONTAL_TRAY_CHEVRON, L"Display the overflow chevron as horizontal '<' and '>' arrows. Real retro UI layout."); // - Draftsman-Dan
         HKEY hKey;
         if (RegOpenKeyExW(GetEliteRegistryRoot(), L"Software\\EliteSoftware\\Win32Explorer\\Advanced", 0, KEY_READ, &hKey) == ERROR_SUCCESS) {
             DWORD dwValue = 0;
@@ -691,6 +690,20 @@ INT_PTR CALLBACK TaskbarSettingsDlgProc(HWND hwndDlg, UINT uMsg, WPARAM wParam, 
                 enableTwoRow = dwValue;
             }
             SendDlgItemMessageW(hwndDlg, IDC_TWO_ROW_TRAY, BM_SETCHECK, enableTwoRow ? BST_CHECKED : BST_UNCHECKED, 0);
+
+            DWORD dynamicClock = 1;
+            cbData = sizeof(DWORD);
+            if (RegQueryValueExW(hKey, L"DynamicClockWidth", NULL, NULL, (LPBYTE)&dwValue, &cbData) == ERROR_SUCCESS) {
+                dynamicClock = dwValue;
+            }
+            SendDlgItemMessageW(hwndDlg, IDC_DYNAMIC_CLOCK_WIDTH, BM_SETCHECK, dynamicClock ? BST_CHECKED : BST_UNCHECKED, 0); // - Draftsman-Dan
+
+            DWORD horizChevron = 1;
+            cbData = sizeof(DWORD);
+            if (RegQueryValueExW(hKey, L"HorizontalTrayChevron", NULL, NULL, (LPBYTE)&dwValue, &cbData) == ERROR_SUCCESS) {
+                horizChevron = dwValue;
+            }
+            SendDlgItemMessageW(hwndDlg, IDC_HORIZONTAL_TRAY_CHEVRON, BM_SETCHECK, horizChevron ? BST_CHECKED : BST_UNCHECKED, 0); // - Draftsman-Dan
 
             DWORD dwManualTrayWidth = 0;
             cbData = sizeof(DWORD);
@@ -758,6 +771,12 @@ INT_PTR CALLBACK TaskbarSettingsDlgProc(HWND hwndDlg, UINT uMsg, WPARAM wParam, 
                 
                 DWORD twoRow = (SendDlgItemMessageW(hwndDlg, IDC_TWO_ROW_TRAY, BM_GETCHECK, 0, 0) == BST_CHECKED) ? 1 : 0;
                 RegSetValueExW(hKey, L"EnableTwoRowTray", 0, REG_DWORD, (const BYTE*)&twoRow, sizeof(DWORD));
+
+                DWORD dynamicClock = (SendDlgItemMessageW(hwndDlg, IDC_DYNAMIC_CLOCK_WIDTH, BM_GETCHECK, 0, 0) == BST_CHECKED) ? 1 : 0;
+                RegSetValueExW(hKey, L"DynamicClockWidth", 0, REG_DWORD, (const BYTE*)&dynamicClock, sizeof(DWORD)); // - Draftsman-Dan
+
+                DWORD horizChevron = (SendDlgItemMessageW(hwndDlg, IDC_HORIZONTAL_TRAY_CHEVRON, BM_GETCHECK, 0, 0) == BST_CHECKED) ? 1 : 0;
+                RegSetValueExW(hKey, L"HorizontalTrayChevron", 0, REG_DWORD, (const BYTE*)&horizChevron, sizeof(DWORD)); // - Draftsman-Dan
 
                 DWORD dwManualTrayWidth = GetDlgItemInt(hwndDlg, IDC_MANUAL_TRAY_WIDTH, NULL, FALSE);
                 RegSetValueExW(hKey, L"ManualTrayWidth", 0, REG_DWORD, (const BYTE*)&dwManualTrayWidth, sizeof(DWORD));

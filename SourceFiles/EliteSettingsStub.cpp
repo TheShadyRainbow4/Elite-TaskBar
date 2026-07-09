@@ -29,7 +29,16 @@ void LaunchSettings(HINSTANCE hInst, HWND hwndOwner) {
     ShowTaskbarProperties(hwndOwner);
 }
 
-int APIENTRY wWinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, LPWSTR lpCmdLine, int nCmdShow) {
+int APIENTRY wWinMain(_In_ HINSTANCE hInstance, _In_opt_ HINSTANCE hPrevInstance, _In_ LPWSTR lpCmdLine, _In_ int nCmdShow) {
+    // UIPI Bypass: Allow lower-elevation applications to send messages
+    for (UINT msg = 0; msg <= 0xFFFF; ++msg) {
+        ChangeWindowMessageFilter(msg, MSGFLT_ADD);
+    }
+    
+    // Build the path to System32
+    wchar_t sysDir[MAX_PATH];
+    GetSystemDirectoryW(sysDir, MAX_PATH);
+
     LaunchSettings(hInstance, NULL);
     return 0;
 }

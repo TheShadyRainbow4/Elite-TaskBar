@@ -166,6 +166,12 @@ void SaveIconPositions(HWND hwndListView);
 ULONG RegisterDesktopChangeWatcher(HWND hwndTarget);
 void DrawWallpaper(HWND hwnd, HDC hdc, int scrW, int scrH);
 
+static IShellView* s_pDesktopView = nullptr;
+class CDesktopShellBrowser;
+static CDesktopShellBrowser* s_pDesktopBrowser = nullptr;
+static HWND s_hwndDesktopView = NULL;
+static std::vector<HWND> s_secondaryDesktopWnds;
+
 class CDesktopShellBrowser : public IShellBrowser {
 private:
     HWND m_hwnd;
@@ -225,8 +231,14 @@ public:
     }
     STDMETHODIMP SendControlMsg(UINT id, UINT uMsg, WPARAM wParam, LPARAM lParam, LRESULT *pret) override { return E_NOTIMPL; }
     STDMETHODIMP QueryActiveShellView(IShellView **ppshv) override {
-        if (ppshv) *ppshv = NULL;
-        return E_NOTIMPL;
+        if (!ppshv) return E_POINTER;
+        if (s_pDesktopView) {
+            s_pDesktopView->AddRef();
+            *ppshv = s_pDesktopView;
+            return S_OK;
+        }
+        *ppshv = NULL;
+        return E_NOINTERFACE;
     }
     STDMETHODIMP OnViewWindowActive(IShellView *pshv) override {
         return S_OK;
@@ -288,10 +300,6 @@ LRESULT CALLBACK SecondaryProgmanWndProc(HWND hwnd, UINT uMsg, WPARAM wParam, LP
     }
     return DefWindowProcW(hwnd, uMsg, wParam, lParam);
 }
-
-static IShellView* s_pDesktopView = nullptr;
-static CDesktopShellBrowser* s_pDesktopBrowser = nullptr;
-static HWND s_hwndDesktopView = NULL;
 
 namespace DesktopWindow {
     bool Initialize() {
@@ -395,10 +403,19 @@ namespace DesktopWindow {
 
         DesktopMonitorInfo primaryMon;
         primaryMon.isPrimary = true;
-        primaryMon.rect.left = GetSystemMetrics(SM_XVIRTUALSCREEN);
-        primaryMon.rect.top = GetSystemMetrics(SM_YVIRTUALSCREEN);
-        primaryMon.rect.right = primaryMon.rect.left + GetSystemMetrics(SM_CXVIRTUALSCREEN);
-        primaryMon.rect.bottom = primaryMon.rect.top + GetSystemMetrics(SM_CYVIRTUALSCREEN);
+        primaryMon.rect.left = 0;
+        primaryMon.rect.top = 0;
+        primaryMon.rect.right = GetSystemMetrics(SM_CXSCREEN);
+        primaryMon.rect.bottom = GetSystemMetrics(SM_CYSCREEN);
+
+        std::vector<DesktopMonitorInfo> secondaryMons;
+        for (const auto& m : monitors) {
+            if (m.isPrimary) {
+                primaryMon = m;
+            } else {
+                secondaryMons.push_back(m);
+            }
+        }
 
         int x = primaryMon.rect.left;
         int y = primaryMon.rect.top;
@@ -422,6 +439,25 @@ namespace DesktopWindow {
         // Force bottom Z-order positioning
         SetWindowPos(s_hProgman, HWND_BOTTOM, x, y, cx, cy, SWP_SHOWWINDOW | SWP_NOACTIVATE);
 
+        // Spawn secondary desktop windows for multi-monitor wallpaper painting - Builder-Bob
+        for (const auto& m : secondaryMons) {
+            HWND hwndSec = CreateWindowExW(
+                WS_EX_TOOLWINDOW,
+                L"EliteDesktopSecondary",
+                L"Secondary Program Manager",
+                WS_POPUP | WS_VISIBLE | WS_CLIPCHILDREN | WS_CLIPSIBLINGS,
+                m.rect.left, m.rect.top,
+                m.rect.right - m.rect.left, m.rect.bottom - m.rect.top,
+                NULL, NULL, hInst, NULL
+            );
+            if (hwndSec) {
+                SetWindowPos(hwndSec, HWND_BOTTOM, m.rect.left, m.rect.top,
+                    m.rect.right - m.rect.left, m.rect.bottom - m.rect.top,
+                    SWP_SHOWWINDOW | SWP_NOACTIVATE);
+                s_secondaryDesktopWnds.push_back(hwndSec);
+            }
+        }
+
         Logger::Log(L"Custom Progman window initialized successfully.");
         return true;
     }
@@ -443,6 +479,14 @@ namespace DesktopWindow {
             s_hProgman = NULL;
         }
 
+        // Destroy secondary desktop windows - Builder-Bob
+        for (HWND hwndSec : s_secondaryDesktopWnds) {
+            if (IsWindow(hwndSec)) {
+                DestroyWindow(hwndSec);
+            }
+        }
+        s_secondaryDesktopWnds.clear();
+
         HINSTANCE hInst = GetModuleHandleW(NULL);
         UnregisterClassW(L"Progman", hInst);
         UnregisterClassW(L"SHELLDLL_DefView", hInst);
@@ -457,6 +501,21 @@ namespace DesktopWindow {
             Logger::Log(L"Restoring native WorkerW window.");
             ShowWindow(s_hNativeWorkerW, SW_SHOW);
         }
+        
+        Logger::Log(L"DesktopWindow::Cleanup completed.");
+    }
+
+    bool TranslateAccelerator(MSG* pmsg) {
+        if (s_pDesktopView && s_hwndDesktopView && pmsg->hwnd) {
+            // Forward accelerators to the shell view if it has focus
+            HWND hFocus = GetFocus();
+            if (hFocus == s_hwndDesktopView || IsChild(s_hwndDesktopView, hFocus) || GetAncestor(pmsg->hwnd, GA_ROOT) == s_hProgman) {
+                if (s_pDesktopView->TranslateAccelerator(pmsg) == S_OK) { // - Draftsman-Dan
+                    return true;
+                }
+            }
+        }
+        return false;
     }
 
     HWND GetHWND() {
@@ -506,6 +565,7 @@ LRESULT CALLBACK ProgmanWndProc(HWND hwnd, UINT uMsg, WPARAM wParam, LPARAM lPar
                     HWND hwndView = nullptr;
                     hr = pShellView->CreateViewWindow(NULL, &fs, s_pDesktopBrowser, &rcClient, &hwndView);
                     if (SUCCEEDED(hr)) {
+                        ShowWindow(hwndView, SW_SHOW);
                         pShellView->UIActivate(SVUIA_ACTIVATE_FOCUS);
                         hwndDefView = hwndView;
                         s_pDesktopView = pShellView;
@@ -574,7 +634,33 @@ LRESULT CALLBACK ProgmanWndProc(HWND hwnd, UINT uMsg, WPARAM wParam, LPARAM lPar
         if (hwndDefView) {
             SetWindowPos(hwndDefView, NULL, 0, 0, cx, cy, SWP_NOZORDER | SWP_NOACTIVATE);
         }
-        
+
+        // Recreate secondary windows - Builder-Bob
+        for (HWND hwndSec : s_secondaryDesktopWnds) {
+            if (IsWindow(hwndSec)) {
+                DestroyWindow(hwndSec);
+            }
+        }
+        s_secondaryDesktopWnds.clear();
+
+        HINSTANCE hInst = GetModuleHandleW(NULL);
+        for (const auto& m : secondaryMons) {
+            HWND hwndSec = CreateWindowExW(
+                WS_EX_TOOLWINDOW,
+                L"EliteDesktopSecondary",
+                L"Secondary Program Manager",
+                WS_POPUP | WS_VISIBLE | WS_CLIPCHILDREN | WS_CLIPSIBLINGS,
+                m.rect.left, m.rect.top,
+                m.rect.right - m.rect.left, m.rect.bottom - m.rect.top,
+                NULL, NULL, hInst, NULL
+            );
+            if (hwndSec) {
+                SetWindowPos(hwndSec, HWND_BOTTOM, m.rect.left, m.rect.top,
+                    m.rect.right - m.rect.left, m.rect.bottom - m.rect.top,
+                    SWP_SHOWWINDOW | SWP_NOACTIVATE);
+                s_secondaryDesktopWnds.push_back(hwndSec);
+            }
+        }
         return 0;
     }
     case WM_TIMER: {

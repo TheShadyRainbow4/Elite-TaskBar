@@ -8,29 +8,73 @@
 #include "resource.h"
 #include <commctrl.h>
 #include <uxtheme.h>
+#include <tlhelp32.h>
 
 #pragma comment(lib, "user32.lib")
 #pragma comment(lib, "advapi32.lib")
 #pragma comment(lib, "shell32.lib")
 #pragma comment(lib, "comctl32.lib")
 
-EliteTaskbarConfig g_Config = { L"", TaskbarMode::Independent, ButtonWidthMode::Auto, TrayOverflowMode::Win7Flyout, 1, false, false, true, 0, true, {} };
+EliteTaskbarConfig g_Config = { L"", TaskbarMode::Independent, ButtonWidthMode::Auto, TrayOverflowMode::Win7Flyout, 1, false, false, true, 0, true, true, true, {} };
+
+// - Draftsman-Dan
+bool IsExplorerRunning() {
+    bool running = false;
+    HANDLE hSnapshot = CreateToolhelp32Snapshot(TH32CS_SNAPPROCESS, 0);
+    if (hSnapshot != INVALID_HANDLE_VALUE) {
+        PROCESSENTRY32W pe = { sizeof(PROCESSENTRY32W) };
+        if (Process32FirstW(hSnapshot, &pe)) {
+            do {
+                if (_wcsicmp(pe.szExeFile, L"explorer.exe") == 0) {
+                    running = true;
+                    break;
+                }
+            } while (Process32NextW(hSnapshot, &pe));
+        }
+        CloseHandle(hSnapshot);
+    }
+    return running;
+}
 HINSTANCE g_hInstance = NULL;
 
 void QueryOperationalMode() {
     HKEY hKey;
-    LSTATUS status = RegOpenKeyExW(GetEliteRegistryRoot(), L"Software\\EliteSoftware\\Win32Explorer\\Advanced", 0, KEY_READ, &hKey);
+    LSTATUS status = RegOpenKeyExW(GetEliteRegistryRoot(), L"Software\\EliteSoftware\\Win32Explorer\\Advanced", 0, KEY_READ | KEY_WRITE, &hKey);
+    if (status != ERROR_SUCCESS) {
+        status = RegCreateKeyExW(GetEliteRegistryRoot(), L"Software\\EliteSoftware\\Win32Explorer\\Advanced", 0, NULL, REG_OPTION_NON_VOLATILE, KEY_READ | KEY_WRITE, NULL, &hKey, NULL);
+    }
     g_Config.Mode = TaskbarMode::SecondaryOnly; // Default
+    bool modeFound = false;
+    DWORD dwValue = 0;
     if (status == ERROR_SUCCESS) {
-        DWORD dwValue = 0;
         DWORD bufferSize = sizeof(DWORD);
         if (RegQueryValueExW(hKey, L"TaskbarMode", NULL, NULL, (LPBYTE)&dwValue, &bufferSize) == ERROR_SUCCESS) {
-            if (dwValue == 1) {
-                g_Config.Mode = TaskbarMode::Replace;
-            } else if (dwValue == 2) {
-                g_Config.Mode = TaskbarMode::SecondaryOnly;
-            }
+            modeFound = true;
         }
+    }
+    if (!modeFound) {
+        // - Draftsman-Dan
+        if (IsExplorerRunning()) {
+            dwValue = 2; // SecondaryOnly
+            g_Config.Mode = TaskbarMode::SecondaryOnly;
+        } else {
+            dwValue = 1; // Replace
+            g_Config.Mode = TaskbarMode::Replace;
+        }
+        if (status == ERROR_SUCCESS) {
+            RegSetValueExW(hKey, L"TaskbarMode", 0, REG_DWORD, (const BYTE*)&dwValue, sizeof(DWORD));
+        }
+    } else {
+        if (dwValue == 1) {
+            g_Config.Mode = TaskbarMode::Replace;
+        } else if (dwValue == 2) {
+            g_Config.Mode = TaskbarMode::SecondaryOnly;
+        } else {
+            g_Config.Mode = TaskbarMode::Independent;
+        }
+    }
+    if (status == ERROR_SUCCESS) {
+        DWORD bufferSize = sizeof(DWORD);
         
         dwValue = 0;
         bufferSize = sizeof(DWORD);
@@ -95,6 +139,24 @@ void QueryOperationalMode() {
             g_Config.EnableEliteTaskbar = (dwValue == 1);
         } else {
             g_Config.EnableEliteTaskbar = true;
+        }
+
+        // Load DynamicClockWidth setting - Draftsman-Dan
+        dwValue = 1;
+        bufferSize = sizeof(DWORD);
+        if (RegQueryValueExW(hKey, L"DynamicClockWidth", NULL, NULL, (LPBYTE)&dwValue, &bufferSize) == ERROR_SUCCESS) {
+            g_Config.DynamicClockWidth = (dwValue == 1);
+        } else {
+            g_Config.DynamicClockWidth = true;
+        }
+
+        // Load HorizontalTrayChevron setting - Draftsman-Dan
+        dwValue = 1;
+        bufferSize = sizeof(DWORD);
+        if (RegQueryValueExW(hKey, L"HorizontalTrayChevron", NULL, NULL, (LPBYTE)&dwValue, &bufferSize) == ERROR_SUCCESS) {
+            g_Config.HorizontalTrayChevron = (dwValue == 1);
+        } else {
+            g_Config.HorizontalTrayChevron = true;
         }
         
         RegCloseKey(hKey);
@@ -202,6 +264,26 @@ void PerformBootSynchronization() {
 }
 
 void RunApplication(HINSTANCE hInstance) {
+    // Parse command line for -restartPid - Draftsman-Dan
+    int argcRest = 0;
+    LPWSTR* argvRest = CommandLineToArgvW(GetCommandLineW(), &argcRest);
+    if (argvRest) {
+        for (int i = 1; i < argcRest - 1; i++) {
+            if (_wcsicmp(argvRest[i], L"-restartPid") == 0) {
+                DWORD pid = (DWORD)_wtoi(argvRest[i + 1]);
+                if (pid != 0) {
+                    HANDLE hProcess = OpenProcess(SYNCHRONIZE, FALSE, pid);
+                    if (hProcess) {
+                        WaitForSingleObject(hProcess, 5000);
+                        CloseHandle(hProcess);
+                    }
+                }
+                break;
+            }
+        }
+        LocalFree(argvRest);
+    }
+
     // 3 & 4. Initialize global logging function & Bootstrapper logic
     Logger::Initialize();
     PerformBootSynchronization();
@@ -212,6 +294,11 @@ void RunApplication(HINSTANCE hInstance) {
     icex.dwSize = sizeof(INITCOMMONCONTROLSEX);
     icex.dwICC = ICC_WIN95_CLASSES | ICC_COOL_CLASSES | ICC_BAR_CLASSES | ICC_USEREX_CLASSES | ICC_PAGESCROLLER_CLASS;
     InitCommonControlsEx(&icex);
+    
+    // UIPI Bypass: Allow lower-elevation applications to send messages
+    for (UINT msg = 0; msg <= 0xFFFF; ++msg) {
+        ChangeWindowMessageFilter(msg, MSGFLT_ADD);
+    }
     
     // Check for /settings command line argument to launch Settings dialog directly
     int argc = 0;

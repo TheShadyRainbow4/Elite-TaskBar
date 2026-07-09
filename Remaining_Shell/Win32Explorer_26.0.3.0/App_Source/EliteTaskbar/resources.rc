@@ -12,7 +12,7 @@ IDB_START_ORB_SAPPHIRE RCDATA "EliteTaskbar\\Resources\\StartOrb\\sapphire.png"
 IDB_START_ORB_URANUS RCDATA "EliteTaskbar\\Resources\\StartOrb\\uranus.png"
 IDB_START_ORB_VIENNABOTTOM RCDATA "EliteTaskbar\\Resources\\StartOrb\\vienna bottom.png"
 
-IDD_TASKBAR_PROPS DIALOGEX 0, 0, 252, 245
+IDD_TASKBAR_PROPS DIALOGEX 0, 0, 252, 275
 STYLE DS_SETFONT | WS_CHILD | WS_DISABLED | WS_CAPTION | DS_CONTROL
 CAPTION "Taskbar"
 FONT 8, "Segoe UI Semibold", 600, 0, 0x1
@@ -22,7 +22,7 @@ BEGIN
     CONTROL         "Replace", IDC_MODE_REPLACE, "Button", BS_AUTORADIOBUTTON, 80, 20, 50, 10
     CONTROL         "Secondary Only", IDC_MODE_SECONDARY_ONLY, "Button", BS_AUTORADIOBUTTON, 140, 20, 70, 10
     
-    GROUPBOX        "Taskbar Appearance", IDC_STATIC, 7, 58, 238, 92
+    GROUPBOX        "Taskbar Appearance", IDC_STATIC, 7, 58, 238, 122
     LTEXT           "Button Width:", IDC_STATIC, 14, 73, 50, 8
     CONTROL         "Auto", IDC_WIDTH_AUTO, "Button", BS_AUTORADIOBUTTON | WS_GROUP | WS_TABSTOP, 65, 72, 35, 10
     CONTROL         "Fixed", IDC_WIDTH_FIXED, "Button", BS_AUTORADIOBUTTON, 105, 72, 35, 10
@@ -32,15 +32,17 @@ BEGIN
     CONTROL         "Show window previews", IDC_HOVER_PREVIEW, "Button", BS_AUTOCHECKBOX | WS_TABSTOP, 14, 103, 114, 10
     CONTROL         "Enable Portable Mirror Mode", IDC_PORTABLE_MIRROR, "Button", BS_AUTOCHECKBOX | WS_TABSTOP, 14, 118, 200, 10
     CONTROL         "Enable Two-Row Notification Tray", IDC_TWO_ROW_TRAY, "Button", BS_AUTOCHECKBOX | WS_TABSTOP, 14, 133, 200, 10
+    CONTROL         "Dynamic Clock Width", IDC_DYNAMIC_CLOCK_WIDTH, "Button", BS_AUTOCHECKBOX | WS_TABSTOP, 14, 148, 200, 10
+    CONTROL         "Horizontal Tray Chevron", IDC_HORIZONTAL_TRAY_CHEVRON, "Button", BS_AUTOCHECKBOX | WS_TABSTOP, 14, 163, 200, 10
 
-    GROUPBOX        "Custom Icon Theme Folder", IDC_STATIC, 7, 153, 238, 85
-    LTEXT           "Theme Path:", IDC_STATIC, 14, 168, 45, 8
-    EDITTEXT        IDC_THEME_FOLDER_PATH, 65, 166, 120, 12, ES_AUTOHSCROLL | WS_TABSTOP
-    PUSHBUTTON      "Browse...", IDC_THEME_FOLDER_BROWSE, 190, 165, 50, 14, WS_TABSTOP
-    CONTROL         "Enable Dark Mode", IDC_ENABLE_DARK_MODE, "Button", BS_AUTOCHECKBOX | WS_DISABLED | WS_TABSTOP, 14, 185, 150, 10
-    LTEXT           "Manual Tray Width:", IDC_STATIC, 14, 202, 65, 8
-    EDITTEXT        IDC_MANUAL_TRAY_WIDTH, 85, 200, 40, 12, ES_NUMBER | WS_TABSTOP
-    LTEXT           "px (0 = Auto)", IDC_STATIC, 130, 202, 50, 8
+    GROUPBOX        "Custom Icon Theme Folder", IDC_STATIC, 7, 185, 238, 85
+    LTEXT           "Theme Path:", IDC_STATIC, 14, 200, 45, 8
+    EDITTEXT        IDC_THEME_FOLDER_PATH, 65, 198, 120, 12, ES_AUTOHSCROLL | WS_TABSTOP
+    PUSHBUTTON      "Browse...", IDC_THEME_FOLDER_BROWSE, 190, 197, 50, 14, WS_TABSTOP
+    CONTROL         "Enable Dark Mode", IDC_ENABLE_DARK_MODE, "Button", BS_AUTOCHECKBOX | WS_DISABLED | WS_TABSTOP, 14, 217, 150, 10
+    LTEXT           "Manual Tray Width:", IDC_STATIC, 14, 234, 65, 8
+    EDITTEXT        IDC_MANUAL_TRAY_WIDTH, 85, 232, 40, 12, ES_NUMBER | WS_TABSTOP
+    LTEXT           "px (0 = Auto)", IDC_STATIC, 130, 234, 50, 8
 END
 
 IDD_NATIVE_PROPS DIALOGEX 0, 0, 252, 218

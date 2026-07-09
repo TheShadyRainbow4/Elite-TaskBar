@@ -40,6 +40,7 @@ static bool LaunchOpenShellMenu() {
     GetModuleFileNameW(NULL, localPath, MAX_PATH);
     PathRemoveFileSpecW(localPath);
     std::wstring localStr = localPath;
+    paths.push_back(localStr + L"\\EliteStartMenu.exe");
     paths.push_back(localStr + L"\\StartMenu.exe");
     paths.push_back(localStr + L"\\StartMenu_PE\\StartMenu.exe");
     
@@ -268,6 +269,9 @@ LRESULT CALLBACK OrbWndProc(HWND hwnd, UINT uMsg, WPARAM wParam, LPARAM lParam) 
     if (!pThis) return DefWindowProcW(hwnd, uMsg, wParam, lParam);
 
     switch (uMsg) {
+        case WM_NCHITTEST: {
+            return HTCLIENT; // - Draftsman-Dan
+        }
         case WM_MOUSEMOVE: {
             if (!pThis->IsTracking()) {
                 TRACKMOUSEEVENT tme = {0};

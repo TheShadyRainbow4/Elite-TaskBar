@@ -166,6 +166,12 @@ void SaveIconPositions(HWND hwndListView);
 ULONG RegisterDesktopChangeWatcher(HWND hwndTarget);
 void DrawWallpaper(HWND hwnd, HDC hdc, int scrW, int scrH);
 
+static IShellView* s_pDesktopView = nullptr;
+class CDesktopShellBrowser;
+static CDesktopShellBrowser* s_pDesktopBrowser = nullptr;
+static HWND s_hwndDesktopView = NULL;
+static std::vector<HWND> s_secondaryDesktopWnds;
+
 class CDesktopShellBrowser : public IShellBrowser {
 private:
     HWND m_hwnd;
@@ -225,8 +231,14 @@ public:
     }
     STDMETHODIMP SendControlMsg(UINT id, UINT uMsg, WPARAM wParam, LPARAM lParam, LRESULT *pret) override { return E_NOTIMPL; }
     STDMETHODIMP QueryActiveShellView(IShellView **ppshv) override {
-        if (ppshv) *ppshv = NULL;
-        return E_NOTIMPL;
+        if (!ppshv) return E_POINTER;
+        if (s_pDesktopView) {
+            s_pDesktopView->AddRef();
+            *ppshv = s_pDesktopView;
+            return S_OK;
+        }
+        *ppshv = NULL;
+        return E_NOINTERFACE;
     }
     STDMETHODIMP OnViewWindowActive(IShellView *pshv) override {
         return S_OK;
@@ -288,11 +300,6 @@ LRESULT CALLBACK SecondaryProgmanWndProc(HWND hwnd, UINT uMsg, WPARAM wParam, LP
     }
     return DefWindowProcW(hwnd, uMsg, wParam, lParam);
 }
-
-static IShellView* s_pDesktopView = nullptr;
-static CDesktopShellBrowser* s_pDesktopBrowser = nullptr;
-static HWND s_hwndDesktopView = NULL;
-static std::vector<HWND> s_secondaryDesktopWnds;
 
 namespace DesktopWindow {
     bool Initialize() {
@@ -494,6 +501,21 @@ namespace DesktopWindow {
             Logger::Log(L"Restoring native WorkerW window.");
             ShowWindow(s_hNativeWorkerW, SW_SHOW);
         }
+        
+        Logger::Log(L"DesktopWindow::Cleanup completed.");
+    }
+
+    bool TranslateAccelerator(MSG* pmsg) {
+        if (s_pDesktopView && s_hwndDesktopView && pmsg->hwnd) {
+            // Forward accelerators to the shell view if it has focus
+            HWND hFocus = GetFocus();
+            if (hFocus == s_hwndDesktopView || IsChild(s_hwndDesktopView, hFocus) || GetAncestor(pmsg->hwnd, GA_ROOT) == s_hProgman) {
+                if (s_pDesktopView->TranslateAccelerator(pmsg) == S_OK) { // - Draftsman-Dan
+                    return true;
+                }
+            }
+        }
+        return false;
     }
 
     HWND GetHWND() {
@@ -543,6 +565,7 @@ LRESULT CALLBACK ProgmanWndProc(HWND hwnd, UINT uMsg, WPARAM wParam, LPARAM lPar
                     HWND hwndView = nullptr;
                     hr = pShellView->CreateViewWindow(NULL, &fs, s_pDesktopBrowser, &rcClient, &hwndView);
                     if (SUCCEEDED(hr)) {
+                        ShowWindow(hwndView, SW_SHOW);
                         pShellView->UIActivate(SVUIA_ACTIVATE_FOCUS);
                         hwndDefView = hwndView;
                         s_pDesktopView = pShellView;

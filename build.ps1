@@ -245,7 +245,6 @@ if (-not $failed -and ($Target -eq "All" -or $Target -eq "PostBuild")) {
     }
 
     if (Test-Path "$BuildDir\EliteTaskbar.exe") { Copy-Item "$BuildDir\EliteTaskbar.exe" "$ScriptDir\EliteTaskbar.exe" -Force }
-    if (Test-Path "$BuildDir\EliteSettings.exe") { Copy-Item "$BuildDir\EliteSettings.exe" "$ScriptDir\EliteSettings.exe" -Force }
     if (Test-Path "$BuildDir\EliteSettings.cpl") { Copy-Item "$BuildDir\EliteSettings.cpl" "$ScriptDir\EliteSettings.cpl" -Force }
     if (Test-Path "$BuildDir\EliteEverything.exe") { Copy-Item "$BuildDir\EliteEverything.exe" "$ScriptDir\EliteEverything.exe" -Force }
     if (Test-Path "$BuildDir\EliteDLLScanner.exe") { Copy-Item "$BuildDir\EliteDLLScanner.exe" "$ScriptDir\EliteDLLScanner.exe" -Force }
