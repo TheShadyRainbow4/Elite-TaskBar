@@ -502,6 +502,27 @@ You MUST physically read the mapping files (e.g., `PROJECT_SOURCE_MAP.md`, `Sour
 
 Please acknowledge and ensure all workers are consulting the documentation maps for every step.
 
+## Follow-up — 2026-07-09T03:36:18Z
+
+The user has reported a critical issue with the current tray implementation draft:
+
+1. **Visual Glitch (White Box):** "the new tray I just saw does not use native styling or anything I saw a non styled or non transparent white box behind some of it. which should literally never ever exist."
+   *Action Required:* Ensure the tray area (and any child controls like the overflow arrow or clock) are using `DrawThemeParentBackground` and `DrawThemeBackground` correctly. There must be NO hardcoded white backgrounds or unstyled controls. Everything must be seamlessly transparent/themed.
+
+2. **Native Impersonation:** "our taskbars should impersonate using native classes and everything not make up their own like I want an environment that has no explorer to be able to use our shell and have all other programs and features just see our shell as if it was the normal shell in literally every way"
+   *Action Required:* Review the window classes being registered for the shell. The main taskbar must be `Shell_TrayWnd`. The tray notify area must be `TrayNotifyWnd`. The tray toolbar must be `ToolbarWindow32`. The clock must be `TrayClockWClass`. Do not use custom "Elite" class names for these core components; other software expects the native class hierarchy to exist in a shell replacement environment. Make sure all subclasses and custom drawing are applied directly to these impersonated classes.
+
+## Follow-up — 2026-07-09T03:40:19Z
+
+CRITICAL BUG REPORT FROM USER: "active applications are now unstyled why are they breaking fully working features we already had"
+
+**Root Cause:** In the recent edits to `TaskbarWindow.cpp`, Draftsman-Dan added a massive custom `CDDS_ITEMPREPAINT` block inside `TaskSwitchSubclassProc` to manually call `DrawThemeBackground` using `OpenThemeData(..., L"TaskBand")` and `partId = 1`. This completely botched the native styling for the active taskbar buttons. 
+
+**Action Required Immediately:**
+1. **REVERT** that custom `CDDS_ITEMPREPAINT` drawing block in `TaskSwitchSubclassProc`. Do not try to manually draw the taskbar buttons if it breaks their native appearance.
+2. If your goal was to make the entire bounding box clickable, you must accomplish that through standard Toolbar hit-testing, margin/padding adjustments (`TB_SETPADDING`), or `WM_LBUTTONDOWN` coordinate forwarding—**not** by hijacking the entire paint cycle and destroying the working native styles.
+3. Fix the active application button styles back to how they originally looked.
+
 
 
 
