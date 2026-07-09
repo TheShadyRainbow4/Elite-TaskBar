@@ -326,7 +326,11 @@ struct EliteTrayIcon {
     HICON hIcon;
     WCHAR szTip[128];
     DWORD dwState;
+    GUID guidItem; // - Draftsman-Dan
+    bool bUseGUID; // - Draftsman-Dan
 };
+
+
 
 std::vector<EliteTrayIcon> g_TrayIcons;
 
@@ -1887,8 +1891,15 @@ LRESULT CALLBACK TrayNotifyProc(HWND hwnd, UINT uMsg, WPARAM wParam, LPARAM lPar
 
                 if (dwMessage == NIM_ADD || dwMessage == NIM_MODIFY) {
                     bool found = false;
+                    bool nidUseGUID = ((nid->uFlags & NIF_GUID) != 0);
                     for (auto& icon : g_TrayIcons) {
-                        if (icon.hWnd == nid->hWnd && icon.uID == nid->uID) {
+                        bool match = false;
+                        if (nidUseGUID && icon.bUseGUID) {
+                            match = (icon.guidItem == nid->guidItem);
+                        } else {
+                            match = (icon.hWnd == nid->hWnd && icon.uID == nid->uID);
+                        }
+                        if (match) {
                             if (nid->uFlags & NIF_ICON) {
                                 if (icon.hIcon) DestroyIcon(icon.hIcon);
                                 icon.hIcon = CopyIcon(nid->hIcon);
@@ -1896,6 +1907,10 @@ LRESULT CALLBACK TrayNotifyProc(HWND hwnd, UINT uMsg, WPARAM wParam, LPARAM lPar
                             if (nid->uFlags & NIF_TIP) wcscpy_s(icon.szTip, nid->szTip);
                             if (nid->uFlags & NIF_MESSAGE) icon.uCallbackMessage = nid->uCallbackMessage;
                             if (nid->uFlags & NIF_STATE) icon.dwState = nid->dwState;
+                            if (nidUseGUID) {
+                                icon.guidItem = nid->guidItem;
+                                icon.bUseGUID = true;
+                            }
                             found = true;
                             break;
                         }
@@ -1908,14 +1923,25 @@ LRESULT CALLBACK TrayNotifyProc(HWND hwnd, UINT uMsg, WPARAM wParam, LPARAM lPar
                         if (nid->uFlags & NIF_TIP) wcscpy_s(newIcon.szTip, nid->szTip);
                         if (nid->uFlags & NIF_MESSAGE) newIcon.uCallbackMessage = nid->uCallbackMessage;
                         if (nid->uFlags & NIF_STATE) newIcon.dwState = nid->dwState;
+                        if (nidUseGUID) {
+                            newIcon.guidItem = nid->guidItem;
+                            newIcon.bUseGUID = true;
+                        }
                         g_TrayIcons.push_back(newIcon);
                     }
                     updated = true;
                     InvalidateRect(hwnd, NULL, FALSE);
                 }
                 else if (dwMessage == NIM_DELETE) {
+                    bool nidUseGUID = ((nid->uFlags & NIF_GUID) != 0);
                     for (auto it = g_TrayIcons.begin(); it != g_TrayIcons.end(); ++it) {
-                        if (it->hWnd == nid->hWnd && it->uID == nid->uID) {
+                        bool match = false;
+                        if (nidUseGUID && it->bUseGUID) {
+                            match = (it->guidItem == nid->guidItem);
+                        } else {
+                            match = (it->hWnd == nid->hWnd && it->uID == nid->uID);
+                        }
+                        if (match) {
                             if (it->hIcon) DestroyIcon(it->hIcon);
                             g_TrayIcons.erase(it);
                             break;
@@ -1994,7 +2020,7 @@ LRESULT CALLBACK TrayNotifyProc(HWND hwnd, UINT uMsg, WPARAM wParam, LPARAM lPar
 
             g_Config.ManualTrayWidth = newW;
             HKEY hKey;
-            if (RegCreateKeyExW(GetEliteRegistryRoot(), L"Software\\EliteSoftware\\Win32Explorer\\Advanced", 0, NULL, REG_OPTION_NON_VOLATILE, KEY_WRITE, NULL, &hKey, NULL) == ERROR_SUCCESS) {
+            if (RegCreateKeyExW(GetEliteRegistryRoot(), L"Software\\EliteSoftware\\Win32Explorer\\Settings", 0, NULL, REG_OPTION_NON_VOLATILE, KEY_WRITE, NULL, &hKey, NULL) == ERROR_SUCCESS) { // - Draftsman-Dan
                 DWORD dwVal = newW;
                 RegSetValueExW(hKey, L"ManualTrayWidth", 0, REG_DWORD, (const BYTE*)&dwVal, sizeof(DWORD));
                 RegCloseKey(hKey);
@@ -2499,7 +2525,7 @@ LRESULT CALLBACK TrayClockProc(HWND hwnd, UINT uMsg, WPARAM wParam, LPARAM lPara
     case WM_LBUTTONDOWN: {
         DWORD trayMode = 0;
         HKEY hKey;
-        if (RegOpenKeyExW(HKEY_CURRENT_USER, L"Software\\EliteSoftware\\Win32Explorer\\Advanced", 0, KEY_READ, &hKey) == ERROR_SUCCESS) {
+        if (RegOpenKeyExW(HKEY_CURRENT_USER, L"Software\\EliteSoftware\\Win32Explorer\\Settings", 0, KEY_READ, &hKey) == ERROR_SUCCESS) { // - Draftsman-Dan
             DWORD cbData = sizeof(DWORD);
             RegQueryValueExW(hKey, L"TrayMode", NULL, NULL, (LPBYTE)&trayMode, &cbData);
             RegCloseKey(hKey);
@@ -2847,7 +2873,7 @@ LRESULT CALLBACK WindowProc(HWND hwnd, UINT uMsg, WPARAM wParam, LPARAM lParam) 
             HMENU hMenu = CreatePopupMenu();
             bool desktopReplaceEnabled = true;
             HKEY hKey;
-            if (RegOpenKeyExW(GetEliteRegistryRoot(), L"Software\\EliteSoftware\\Win32Explorer\\Advanced", 0, KEY_READ, &hKey) == ERROR_SUCCESS) {
+            if (RegOpenKeyExW(GetEliteRegistryRoot(), L"Software\\EliteSoftware\\Win32Explorer\\Settings", 0, KEY_READ, &hKey) == ERROR_SUCCESS) { // - Draftsman-Dan
                 DWORD dwVal = 1;
                 DWORD cbData = sizeof(DWORD);
                 if (RegQueryValueExW(hKey, L"DesktopReplacementEnabled", NULL, NULL, (LPBYTE)&dwVal, &cbData) == ERROR_SUCCESS) {
@@ -2869,7 +2895,7 @@ LRESULT CALLBACK WindowProc(HWND hwnd, UINT uMsg, WPARAM wParam, LPARAM lParam) 
             if (cmd == 10001) {
                 desktopReplaceEnabled = !desktopReplaceEnabled;
                 HKEY hKeyWrite;
-                if (RegCreateKeyExW(GetEliteRegistryRoot(), L"Software\\EliteSoftware\\Win32Explorer\\Advanced", 0, NULL, REG_OPTION_NON_VOLATILE, KEY_WRITE, NULL, &hKeyWrite, NULL) == ERROR_SUCCESS) {
+                if (RegCreateKeyExW(GetEliteRegistryRoot(), L"Software\\EliteSoftware\\Win32Explorer\\Settings", 0, NULL, REG_OPTION_NON_VOLATILE, KEY_WRITE, NULL, &hKeyWrite, NULL) == ERROR_SUCCESS) { // - Draftsman-Dan
                     DWORD dwVal = desktopReplaceEnabled ? 1 : 0;
                     RegSetValueExW(hKeyWrite, L"DesktopReplacementEnabled", 0, REG_DWORD, (const BYTE*)&dwVal, sizeof(DWORD));
                     RegCloseKey(hKeyWrite);
@@ -3270,7 +3296,7 @@ LRESULT CALLBACK WindowProc(HWND hwnd, UINT uMsg, WPARAM wParam, LPARAM lParam) 
             // Execute debounced teardown and re-initialization - Builder-Bob
             bool requiresRestart = false;
             HKEY hKey;
-            if (RegOpenKeyExW(HKEY_LOCAL_MACHINE, L"Software\\EliteSoftware\\Win32Explorer\\Advanced", 0, KEY_READ, &hKey) == ERROR_SUCCESS) {
+            if (RegOpenKeyExW(HKEY_LOCAL_MACHINE, L"Software\\EliteSoftware\\Win32Explorer\\Settings", 0, KEY_READ, &hKey) == ERROR_SUCCESS) { // - Draftsman-Dan
                 DWORD dwValue = 0;
                 DWORD cbData = sizeof(DWORD);
                 if (RegQueryValueExW(hKey, L"TaskbarMode", NULL, NULL, (LPBYTE)&dwValue, &cbData) == ERROR_SUCCESS) {
@@ -3726,7 +3752,7 @@ bool TaskbarWindow::Initialize(HINSTANCE hInstance) {
         DWORD enableClock = 1;
         DWORD enableTaskBtns = 1;
         HKEY hKeyAdv;
-        if (RegOpenKeyExW(GetEliteRegistryRoot(), L"Software\\EliteSoftware\\Win32Explorer\\Advanced", 0, KEY_READ, &hKeyAdv) == ERROR_SUCCESS) {
+        if (RegOpenKeyExW(GetEliteRegistryRoot(), L"Software\\EliteSoftware\\Win32Explorer\\Settings", 0, KEY_READ, &hKeyAdv) == ERROR_SUCCESS) { // - Draftsman-Dan
             DWORD cbData = sizeof(DWORD);
             WCHAR valName[64];
             wsprintfW(valName, L"EnableTray_Mon%d", (int)i);
@@ -3915,7 +3941,7 @@ bool TaskbarWindow::Initialize(HINSTANCE hInstance) {
 
     bool desktopReplaceEnabled = false;
     HKEY hKeyDesktop;
-    if (RegOpenKeyExW(GetEliteRegistryRoot(), L"Software\\EliteSoftware\\Win32Explorer\\Advanced", 0, KEY_READ, &hKeyDesktop) == ERROR_SUCCESS) {
+    if (RegOpenKeyExW(GetEliteRegistryRoot(), L"Software\\EliteSoftware\\Win32Explorer\\Settings", 0, KEY_READ, &hKeyDesktop) == ERROR_SUCCESS) { // - Draftsman-Dan
         DWORD dwVal = 0;
         DWORD cbData = sizeof(DWORD);
         if (RegQueryValueExW(hKeyDesktop, L"DesktopReplacementEnabled", NULL, NULL, (LPBYTE)&dwVal, &cbData) == ERROR_SUCCESS) {
@@ -3926,7 +3952,7 @@ bool TaskbarWindow::Initialize(HINSTANCE hInstance) {
 
     bool forceProgman = false;
     HKEY hKeyForce;
-    if (RegOpenKeyExW(GetEliteRegistryRoot(), L"Software\\EliteSoftware\\Win32Explorer\\Advanced", 0, KEY_READ, &hKeyForce) == ERROR_SUCCESS) {
+    if (RegOpenKeyExW(GetEliteRegistryRoot(), L"Software\\EliteSoftware\\Win32Explorer\\Settings", 0, KEY_READ, &hKeyForce) == ERROR_SUCCESS) { // - Draftsman-Dan
         DWORD dwVal = 0;
         DWORD cbData = sizeof(DWORD);
         if (RegQueryValueExW(hKeyForce, L"ForceProgmanAllDisplays", NULL, NULL, (LPBYTE)&dwVal, &cbData) == ERROR_SUCCESS) {

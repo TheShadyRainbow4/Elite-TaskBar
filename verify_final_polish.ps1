@@ -85,8 +85,8 @@ public class Win32Helper {
 Add-Type -TypeDefinition $code -ErrorAction SilentlyContinue
 
 # Target registry keys
-$regHKCU = "HKCU:\Software\EliteSoftware\Win32Explorer\Advanced"
-$regHKLM = "HKLM:\Software\EliteSoftware\Win32Explorer\Advanced"
+$regHKCU = "HKCU:\Software\EliteSoftware\Win32Explorer\Settings" # - Draftsman-Dan
+$regHKLM = "HKLM:\Software\EliteSoftware\Win32Explorer\Settings" # - Draftsman-Dan
 
 # Config XML paths
 $xmlRootPath = Join-Path $ScriptDir "config.xml"

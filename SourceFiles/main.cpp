@@ -39,9 +39,9 @@ HINSTANCE g_hInstance = NULL;
 
 void QueryOperationalMode() {
     HKEY hKey;
-    LSTATUS status = RegOpenKeyExW(GetEliteRegistryRoot(), L"Software\\EliteSoftware\\Win32Explorer\\Advanced", 0, KEY_READ | KEY_WRITE, &hKey);
+    LSTATUS status = RegOpenKeyExW(GetEliteRegistryRoot(), L"Software\\EliteSoftware\\Win32Explorer\\Settings", 0, KEY_READ | KEY_WRITE, &hKey); // - Draftsman-Dan
     if (status != ERROR_SUCCESS) {
-        status = RegCreateKeyExW(GetEliteRegistryRoot(), L"Software\\EliteSoftware\\Win32Explorer\\Advanced", 0, NULL, REG_OPTION_NON_VOLATILE, KEY_READ | KEY_WRITE, NULL, &hKey, NULL);
+        status = RegCreateKeyExW(GetEliteRegistryRoot(), L"Software\\EliteSoftware\\Win32Explorer\\Settings", 0, NULL, REG_OPTION_NON_VOLATILE, KEY_READ | KEY_WRITE, NULL, &hKey, NULL); // - Draftsman-Dan
     }
     g_Config.Mode = TaskbarMode::SecondaryOnly; // Default
     bool modeFound = false;
@@ -184,7 +184,7 @@ void PerformBootSynchronization() {
     }
     
     HKEY hAdvancedKey = NULL;
-    RegCreateKeyExW(GetEliteRegistryRoot(), L"Software\\EliteSoftware\\Win32Explorer\\Advanced", 0, NULL, REG_OPTION_NON_VOLATILE, KEY_WRITE, NULL, &hAdvancedKey, NULL);
+    RegCreateKeyExW(GetEliteRegistryRoot(), L"Software\\EliteSoftware\\Win32Explorer\\Settings", 0, NULL, REG_OPTION_NON_VOLATILE, KEY_WRITE, NULL, &hAdvancedKey, NULL); // - Draftsman-Dan
     
     DWORD dwIndex = 0;
     wchar_t valueName[16384];

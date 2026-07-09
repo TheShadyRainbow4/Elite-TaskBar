@@ -1,3 +1,5 @@
+#include "stdafx.h" // - Draftsman-Dan
+#pragma warning(disable: 4244 4100) // - Draftsman-Dan
 #include <windows.h>
 #include <commctrl.h>
 #include <vector>
@@ -228,7 +230,9 @@ void UpdateTrayToolbar(HWND hToolbar, HIMAGELIST hImageList, const std::vector<S
         changed = true;
     } else {
         for (size_t i = 0; i < icons.size(); ++i) {
-            if (icons[i].hwnd != g_CurrentTrayIcons[i].hwnd || icons[i].uID != g_CurrentTrayIcons[i].uID) {
+            if (icons[i].hwnd != g_CurrentTrayIcons[i].hwnd || 
+                icons[i].uID != g_CurrentTrayIcons[i].uID ||
+                icons[i].hIcon != g_CurrentTrayIcons[i].hIcon) { // Detect icon handle changes - Draftsman-Dan
                 changed = true;
                 break;
             }
@@ -251,7 +255,7 @@ void UpdateTrayToolbar(HWND hToolbar, HIMAGELIST hImageList, const std::vector<S
     }
     
     // Always update the toolbar if it's empty but we have icons, in case this is a new taskbar
-    int btnCount = SendMessageW(hToolbar, TB_BUTTONCOUNT, 0, 0);
+    int btnCount = (int)SendMessageW(hToolbar, TB_BUTTONCOUNT, 0, 0); // - Draftsman-Dan
     if (!changed && (btnCount > 0 || icons.empty())) return;
 
     while (SendMessageW(hToolbar, TB_BUTTONCOUNT, 0, 0) > 0) {

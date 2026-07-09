@@ -525,7 +525,7 @@ DWORD WINAPI BroadcastSettingsChangeThread(LPVOID lpParam) {
 
 void SyncAdvancedToMasterAndNative() {
     HKEY hAdvancedKey = NULL;
-    if (RegOpenKeyExW(GetEliteRegistryRoot(), L"Software\\EliteSoftware\\Win32Explorer\\Advanced", 0, KEY_READ, &hAdvancedKey) != ERROR_SUCCESS) {
+    if (RegOpenKeyExW(GetEliteRegistryRoot(), L"Software\\EliteSoftware\\Win32Explorer\\Settings", 0, KEY_READ, &hAdvancedKey) != ERROR_SUCCESS) {
         return;
     }
     
@@ -643,7 +643,7 @@ INT_PTR CALLBACK TaskbarSettingsDlgProc(HWND hwndDlg, UINT uMsg, WPARAM wParam, 
         AddDlgTooltip(hwndDlg, IDC_DYNAMIC_CLOCK_WIDTH, L"Dynamically size the tray clock based on the time text length. Don't waste precious taskbar pixels."); // - Draftsman-Dan
         AddDlgTooltip(hwndDlg, IDC_HORIZONTAL_TRAY_CHEVRON, L"Display the overflow chevron as horizontal '<' and '>' arrows. Real retro UI layout."); // - Draftsman-Dan
         HKEY hKey;
-        if (RegOpenKeyExW(GetEliteRegistryRoot(), L"Software\\EliteSoftware\\Win32Explorer\\Advanced", 0, KEY_READ, &hKey) == ERROR_SUCCESS) {
+        if (RegOpenKeyExW(GetEliteRegistryRoot(), L"Software\\EliteSoftware\\Win32Explorer\\Settings", 0, KEY_READ, &hKey) == ERROR_SUCCESS) {
             DWORD dwValue = 0;
             DWORD cbData = sizeof(DWORD);
             
@@ -739,18 +739,18 @@ INT_PTR CALLBACK TaskbarSettingsDlgProc(HWND hwndDlg, UINT uMsg, WPARAM wParam, 
             DWORD portable = (SendDlgItemMessageW(hwndDlg, IDC_PORTABLE_MIRROR, BM_GETCHECK, 0, 0) == BST_CHECKED) ? 1 : 0;
             HKEY hKeyBoth;
             // Write EnablePortableMirror to HKLM and HKCU
-            if (RegCreateKeyExW(HKEY_LOCAL_MACHINE, L"Software\\EliteSoftware\\Win32Explorer\\Advanced", 0, NULL, REG_OPTION_NON_VOLATILE, KEY_READ | KEY_WRITE, NULL, &hKeyBoth, NULL) == ERROR_SUCCESS) {
+            if (RegCreateKeyExW(HKEY_LOCAL_MACHINE, L"Software\\EliteSoftware\\Win32Explorer\\Settings", 0, NULL, REG_OPTION_NON_VOLATILE, KEY_READ | KEY_WRITE, NULL, &hKeyBoth, NULL) == ERROR_SUCCESS) {
                 RegSetValueExW(hKeyBoth, L"EnablePortableMirror", 0, REG_DWORD, (const BYTE*)&portable, sizeof(DWORD));
                 RegCloseKey(hKeyBoth);
             }
-            if (RegCreateKeyExW(HKEY_LOCAL_MACHINE, L"Software\\EliteSoftware\\Win32Explorer\\Advanced", 0, NULL, REG_OPTION_NON_VOLATILE, KEY_READ | KEY_WRITE, NULL, &hKeyBoth, NULL) == ERROR_SUCCESS) {
+            if (RegCreateKeyExW(HKEY_LOCAL_MACHINE, L"Software\\EliteSoftware\\Win32Explorer\\Settings", 0, NULL, REG_OPTION_NON_VOLATILE, KEY_READ | KEY_WRITE, NULL, &hKeyBoth, NULL) == ERROR_SUCCESS) {
                 RegSetValueExW(hKeyBoth, L"EnablePortableMirror", 0, REG_DWORD, (const BYTE*)&portable, sizeof(DWORD));
                 RegCloseKey(hKeyBoth);
             }
 
             HKEY hKey;
             HKEY hKeyRoot = HKEY_LOCAL_MACHINE;
-            if (RegCreateKeyExW(hKeyRoot, L"Software\\EliteSoftware\\Win32Explorer\\Advanced", 0, NULL, REG_OPTION_NON_VOLATILE, KEY_READ | KEY_WRITE, NULL, &hKey, NULL) == ERROR_SUCCESS) {
+            if (RegCreateKeyExW(hKeyRoot, L"Software\\EliteSoftware\\Win32Explorer\\Settings", 0, NULL, REG_OPTION_NON_VOLATILE, KEY_READ | KEY_WRITE, NULL, &hKey, NULL) == ERROR_SUCCESS) {
                 DWORD mode = 0;
                 if (SendDlgItemMessageW(hwndDlg, IDC_MODE_REPLACE, BM_GETCHECK, 0, 0) == BST_CHECKED) mode = 1;
                 else if (SendDlgItemMessageW(hwndDlg, IDC_MODE_SECONDARY_ONLY, BM_GETCHECK, 0, 0) == BST_CHECKED) mode = 2;
@@ -831,7 +831,7 @@ INT_PTR CALLBACK NativeSettingsDlgProc(HWND hwndDlg, UINT uMsg, WPARAM wParam, L
         SendDlgItemMessageW(hwndDlg, IDC_PRIMARY_SHELL_MODE, BM_SETCHECK, isShellReplacement ? BST_CHECKED : BST_UNCHECKED, 0);
 
         HKEY hKey;
-        if (RegOpenKeyExW(GetEliteRegistryRoot(), L"Software\\EliteSoftware\\Win32Explorer\\Advanced", 0, KEY_READ, &hKey) == ERROR_SUCCESS) {
+        if (RegOpenKeyExW(GetEliteRegistryRoot(), L"Software\\EliteSoftware\\Win32Explorer\\Settings", 0, KEY_READ, &hKey) == ERROR_SUCCESS) {
             DWORD dwValue = 0, cbData = sizeof(DWORD);
             if (RegQueryValueExW(hKey, L"NativeRegistryMode", NULL, NULL, (LPBYTE)&dwValue, &cbData) == ERROR_SUCCESS)
                 SendDlgItemMessageW(hwndDlg, IDC_NATIVE_REGISTRY_MODE, BM_SETCHECK, dwValue ? BST_CHECKED : BST_UNCHECKED, 0);
@@ -933,7 +933,7 @@ INT_PTR CALLBACK NativeSettingsDlgProc(HWND hwndDlg, UINT uMsg, WPARAM wParam, L
                         }
                     };
 
-                    WriteKey(HKEY_LOCAL_MACHINE, L"Software\\EliteSoftware\\Win32Explorer\\Advanced", L"HKEY_LOCAL_MACHINE\\Software\\EliteSoftware\\Win32Explorer\\Advanced");
+                    WriteKey(HKEY_LOCAL_MACHINE, L"Software\\EliteSoftware\\Win32Explorer\\Settings", L"HKEY_LOCAL_MACHINE\\Software\\EliteSoftware\\Win32Explorer\\Advanced");
                     WriteVal(HKEY_LOCAL_MACHINE, L"Software\\Microsoft\\Windows\\CurrentVersion\\Explorer\\Advanced", L"HKEY_LOCAL_MACHINE\\Software\\Microsoft\\Windows\\CurrentVersion\\Explorer\\Advanced", L"TaskbarSizeMove");
                     WriteVal(HKEY_LOCAL_MACHINE, L"Software\\Microsoft\\Windows\\CurrentVersion\\Explorer\\Advanced", L"HKEY_LOCAL_MACHINE\\Software\\Microsoft\\Windows\\CurrentVersion\\Explorer\\Advanced", L"TaskbarSmallIcons");
                     WriteVal(HKEY_LOCAL_MACHINE, L"Software\\Microsoft\\Windows\\CurrentVersion\\Explorer\\StuckRects3", L"HKEY_LOCAL_MACHINE\\Software\\Microsoft\\Windows\\CurrentVersion\\Explorer\\StuckRects3", L"Settings");
@@ -972,7 +972,7 @@ INT_PTR CALLBACK NativeSettingsDlgProc(HWND hwndDlg, UINT uMsg, WPARAM wParam, L
         LPNMHDR lpnm = (LPNMHDR)lParam;
         if (lpnm->code == PSN_APPLY) {
             HKEY hKey;
-            if (RegCreateKeyExW(GetEliteRegistryRoot(), L"Software\\EliteSoftware\\Win32Explorer\\Advanced", 0, NULL, REG_OPTION_NON_VOLATILE, KEY_READ | KEY_WRITE, NULL, &hKey, NULL) == ERROR_SUCCESS) {
+            if (RegCreateKeyExW(GetEliteRegistryRoot(), L"Software\\EliteSoftware\\Win32Explorer\\Settings", 0, NULL, REG_OPTION_NON_VOLATILE, KEY_READ | KEY_WRITE, NULL, &hKey, NULL) == ERROR_SUCCESS) {
                 DWORD nativeSync = (SendDlgItemMessageW(hwndDlg, IDC_NATIVE_REGISTRY_MODE, BM_GETCHECK, 0, 0) == BST_CHECKED) ? 1 : 0;
                 RegSetValueExW(hKey, L"NativeRegistryMode", 0, REG_DWORD, (const BYTE*)&nativeSync, sizeof(DWORD));
                 
@@ -1159,13 +1159,13 @@ INT_PTR CALLBACK MultiMonSettingsDlgProc(HWND hwndDlg, UINT uMsg, WPARAM wParam,
         
         HKEY hKey;
         DWORD migrateStartMenu = 1; // Default to 1
-        if (RegOpenKeyExW(GetEliteRegistryRoot(), L"Software\\EliteSoftware\\Win32Explorer\\Advanced", 0, KEY_READ, &hKey) == ERROR_SUCCESS) {
+        if (RegOpenKeyExW(GetEliteRegistryRoot(), L"Software\\EliteSoftware\\Win32Explorer\\Settings", 0, KEY_READ, &hKey) == ERROR_SUCCESS) {
             DWORD cbData = sizeof(DWORD);
             RegQueryValueExW(hKey, L"MigrateStartMenuSettings", NULL, NULL, (LPBYTE)&migrateStartMenu, &cbData);
             RegCloseKey(hKey);
         }
 
-        RegOpenKeyExW(GetEliteRegistryRoot(), L"Software\\EliteSoftware\\Win32Explorer\\Advanced", 0, KEY_READ, &hKey);
+        RegOpenKeyExW(GetEliteRegistryRoot(), L"Software\\EliteSoftware\\Win32Explorer\\Settings", 0, KEY_READ, &hKey);
         
         for (const auto& mon : g_Monitors) {
             WCHAR title[64];
@@ -1313,13 +1313,13 @@ INT_PTR CALLBACK MultiMonSettingsDlgProc(HWND hwndDlg, UINT uMsg, WPARAM wParam,
         if (lpnm->code == PSN_APPLY) {
             HKEY hKey;
             DWORD migrateStartMenu = 1; // Default to 1
-            if (RegOpenKeyExW(GetEliteRegistryRoot(), L"Software\\EliteSoftware\\Win32Explorer\\Advanced", 0, KEY_READ, &hKey) == ERROR_SUCCESS) {
+            if (RegOpenKeyExW(GetEliteRegistryRoot(), L"Software\\EliteSoftware\\Win32Explorer\\Settings", 0, KEY_READ, &hKey) == ERROR_SUCCESS) {
                 DWORD cbData = sizeof(DWORD);
                 RegQueryValueExW(hKey, L"MigrateStartMenuSettings", NULL, NULL, (LPBYTE)&migrateStartMenu, &cbData);
                 RegCloseKey(hKey);
             }
 
-            if (RegCreateKeyExW(GetEliteRegistryRoot(), L"Software\\EliteSoftware\\Win32Explorer\\Advanced", 0, NULL, REG_OPTION_NON_VOLATILE, KEY_READ | KEY_WRITE, NULL, &hKey, NULL) == ERROR_SUCCESS) {
+            if (RegCreateKeyExW(GetEliteRegistryRoot(), L"Software\\EliteSoftware\\Win32Explorer\\Settings", 0, NULL, REG_OPTION_NON_VOLATILE, KEY_READ | KEY_WRITE, NULL, &hKey, NULL) == ERROR_SUCCESS) {
                 for (const auto& mon : g_Monitors) {
                     HWND hT = GetDlgItem(hScroll, ID_BASE_MM_TRAY + mon.index);
                     HWND hC = GetDlgItem(hScroll, ID_BASE_MM_CLOCK + mon.index);
@@ -1434,7 +1434,7 @@ INT_PTR CALLBACK StartMenuSettingsDlgProc(HWND hwndDlg, UINT uMsg, WPARAM wParam
         DWORD fallbackValue = 1; // Default to 1
         DWORD migrateValue = 1;  // Default to 1
         
-        if (RegOpenKeyExW(GetEliteRegistryRoot(), L"Software\\EliteSoftware\\Win32Explorer\\Advanced", 0, KEY_READ, &hKey) == ERROR_SUCCESS) {
+        if (RegOpenKeyExW(GetEliteRegistryRoot(), L"Software\\EliteSoftware\\Win32Explorer\\Settings", 0, KEY_READ, &hKey) == ERROR_SUCCESS) {
             DWORD cbData = sizeof(DWORD);
             RegQueryValueExW(hKey, L"FallbackStartMenuEnabled", NULL, NULL, (LPBYTE)&fallbackValue, &cbData);
             cbData = sizeof(DWORD);
@@ -1451,7 +1451,7 @@ INT_PTR CALLBACK StartMenuSettingsDlgProc(HWND hwndDlg, UINT uMsg, WPARAM wParam
             int y = 5;
             HFONT hFont = (HFONT)SendMessageW(hwndDlg, WM_GETFONT, 0, 0);
             
-            RegOpenKeyExW(GetEliteRegistryRoot(), L"Software\\EliteSoftware\\Win32Explorer\\Advanced", 0, KEY_READ, &hKey);
+            RegOpenKeyExW(GetEliteRegistryRoot(), L"Software\\EliteSoftware\\Win32Explorer\\Settings", 0, KEY_READ, &hKey);
             
             for (const auto& mon : g_Monitors) {
                 WCHAR title[64];
@@ -1565,7 +1565,7 @@ INT_PTR CALLBACK StartMenuSettingsDlgProc(HWND hwndDlg, UINT uMsg, WPARAM wParam
         if (lpnm->code == PSN_APPLY) {
             HKEY hKey;
             HKEY hKeyRoot = GetEliteRegistryRoot();
-            if (RegCreateKeyExW(hKeyRoot, L"Software\\EliteSoftware\\Win32Explorer\\Advanced", 0, NULL, REG_OPTION_NON_VOLATILE, KEY_READ | KEY_WRITE, NULL, &hKey, NULL) == ERROR_SUCCESS) {
+            if (RegCreateKeyExW(hKeyRoot, L"Software\\EliteSoftware\\Win32Explorer\\Settings", 0, NULL, REG_OPTION_NON_VOLATILE, KEY_READ | KEY_WRITE, NULL, &hKey, NULL) == ERROR_SUCCESS) {
                 DWORD fallbackVal = (SendDlgItemMessageW(hwndDlg, IDC_FALLBACK_STARTMENU_ENABLED, BM_GETCHECK, 0, 0) == BST_CHECKED) ? 1 : 0;
                 DWORD migrateVal = (SendDlgItemMessageW(hwndDlg, IDC_MIGRATE_START_MENU_SETTINGS, BM_GETCHECK, 0, 0) == BST_CHECKED) ? 1 : 0;
                 
@@ -1930,7 +1930,7 @@ INT_PTR CALLBACK DesktopSettingsDlgProc(HWND hwndDlg, UINT uMsg, WPARAM wParam, 
         DWORD thumbnailsVal = 1;
         DWORD cbData = sizeof(DWORD);
         
-        if (RegOpenKeyExW(GetEliteRegistryRoot(), L"Software\\EliteSoftware\\Win32Explorer\\Advanced", 0, KEY_READ, &hKey) == ERROR_SUCCESS) {
+        if (RegOpenKeyExW(GetEliteRegistryRoot(), L"Software\\EliteSoftware\\Win32Explorer\\Settings", 0, KEY_READ, &hKey) == ERROR_SUCCESS) {
             cbData = sizeof(DWORD);
             RegQueryValueExW(hKey, L"DesktopThumbnailsEnabled", NULL, NULL, (LPBYTE)&thumbnailsVal, &cbData);
             cbData = sizeof(DWORD);
@@ -2057,7 +2057,7 @@ INT_PTR CALLBACK DesktopSettingsDlgProc(HWND hwndDlg, UINT uMsg, WPARAM wParam, 
         if (lpnm->code == PSN_APPLY) {
             HKEY hKey;
             HKEY hKeyRoot = GetEliteRegistryRoot();
-            if (RegCreateKeyExW(hKeyRoot, L"Software\\EliteSoftware\\Win32Explorer\\Advanced", 0, NULL, REG_OPTION_NON_VOLATILE, KEY_READ | KEY_WRITE, NULL, &hKey, NULL) == ERROR_SUCCESS) {
+            if (RegCreateKeyExW(hKeyRoot, L"Software\\EliteSoftware\\Win32Explorer\\Settings", 0, NULL, REG_OPTION_NON_VOLATILE, KEY_READ | KEY_WRITE, NULL, &hKey, NULL) == ERROR_SUCCESS) {
                 DWORD replaceVal = (SendDlgItemMessageW(hwndDlg, IDC_DESKTOP_REPLACE_ENABLED, BM_GETCHECK, 0, 0) == BST_CHECKED) ? 1 : 0;
                 DWORD wallpaperVal = (SendDlgItemMessageW(hwndDlg, IDC_DESKTOP_WALLPAPER_ENABLED, BM_GETCHECK, 0, 0) == BST_CHECKED) ? 1 : 0;
                 DWORD iconsVal = (SendDlgItemMessageW(hwndDlg, IDC_DESKTOP_ICONS_ENABLED, BM_GETCHECK, 0, 0) == BST_CHECKED) ? 1 : 0;
@@ -2186,7 +2186,7 @@ void ExportSettingsToXML(HWND hwndOwner) {
             fwprintf(f, L"<EliteTaskbarSettings>\n");
 
             HKEY hKey;
-            if (RegOpenKeyExW(GetEliteRegistryRoot(), L"Software\\EliteSoftware\\Win32Explorer\\Advanced", 0, KEY_READ, &hKey) == ERROR_SUCCESS) {
+            if (RegOpenKeyExW(GetEliteRegistryRoot(), L"Software\\EliteSoftware\\Win32Explorer\\Settings", 0, KEY_READ, &hKey) == ERROR_SUCCESS) {
                 WCHAR valName[MAX_PATH];
                 DWORD cbValName = MAX_PATH;
                 DWORD dwType = 0;
@@ -2232,7 +2232,7 @@ void ImportSettingsFromXML(HWND hwndOwner) {
         FILE* f = nullptr;
         if (_wfopen_s(&f, szFile, L"r, ccs=UTF-8") == 0 && f) {
             HKEY hKey;
-            if (RegCreateKeyExW(GetEliteRegistryRoot(), L"Software\\EliteSoftware\\Win32Explorer\\Advanced", 0, NULL, REG_OPTION_NON_VOLATILE, KEY_WRITE, NULL, &hKey, NULL) == ERROR_SUCCESS) {
+            if (RegCreateKeyExW(GetEliteRegistryRoot(), L"Software\\EliteSoftware\\Win32Explorer\\Settings", 0, NULL, REG_OPTION_NON_VOLATILE, KEY_WRITE, NULL, &hKey, NULL) == ERROR_SUCCESS) {
                 wchar_t line[2048];
                 while (fgetws(line, 2048, f)) {
                     std::wstring str(line);
@@ -2274,7 +2274,7 @@ void ImportSettingsFromXMLPathSilently(const wchar_t* xmlPath) {
     FILE* f = nullptr;
     if (_wfopen_s(&f, xmlPath, L"r, ccs=UTF-8") == 0 && f) {
         HKEY hKey;
-        if (RegCreateKeyExW(HKEY_LOCAL_MACHINE, L"Software\\EliteSoftware\\Win32Explorer\\Advanced", 0, NULL, REG_OPTION_NON_VOLATILE, KEY_WRITE, NULL, &hKey, NULL) == ERROR_SUCCESS) {
+        if (RegCreateKeyExW(HKEY_LOCAL_MACHINE, L"Software\\EliteSoftware\\Win32Explorer\\Settings", 0, NULL, REG_OPTION_NON_VOLATILE, KEY_WRITE, NULL, &hKey, NULL) == ERROR_SUCCESS) {
             wchar_t line[2048];
             while (fgetws(line, 2048, f)) {
                 std::wstring str(line);
@@ -2343,7 +2343,7 @@ INT_PTR CALLBACK ExplorerSettingsDlgProc(HWND hwndDlg, UINT uMsg, WPARAM wParam,
         DWORD enableShellBagsSupport = 0;
         DWORD useNativeShellView = 1;
 
-        if (RegOpenKeyExW(GetEliteRegistryRoot(), L"Software\\EliteSoftware\\Win32Explorer\\Advanced", 0, KEY_READ, &hKey) == ERROR_SUCCESS) {
+        if (RegOpenKeyExW(GetEliteRegistryRoot(), L"Software\\EliteSoftware\\Win32Explorer\\Settings", 0, KEY_READ, &hKey) == ERROR_SUCCESS) {
             cbData = sizeof(DWORD);
             RegQueryValueExW(hKey, L"EnableEliteTaskbar", NULL, NULL, (LPBYTE)&enableEliteTaskbar, &cbData);
             cbData = sizeof(DWORD);
@@ -2389,7 +2389,7 @@ INT_PTR CALLBACK ExplorerSettingsDlgProc(HWND hwndDlg, UINT uMsg, WPARAM wParam,
 
         DWORD defaultFolderView = 12;
         DWORD defaultToThumbnailMirrors = 1;
-        if (RegOpenKeyExW(GetEliteRegistryRoot(), L"Software\\EliteSoftware\\Win32Explorer\\Advanced", 0, KEY_READ, &hKey) == ERROR_SUCCESS) {
+        if (RegOpenKeyExW(GetEliteRegistryRoot(), L"Software\\EliteSoftware\\Win32Explorer\\Settings", 0, KEY_READ, &hKey) == ERROR_SUCCESS) {
             cbData = sizeof(DWORD);
             RegQueryValueExW(hKey, L"DefaultFolderView", NULL, NULL, (LPBYTE)&defaultFolderView, &cbData);
             cbData = sizeof(DWORD);
@@ -2448,7 +2448,7 @@ INT_PTR CALLBACK ExplorerSettingsDlgProc(HWND hwndDlg, UINT uMsg, WPARAM wParam,
             }
 
             // Save Elite Integration settings - Builder-Bob
-            if (RegCreateKeyExW(GetEliteRegistryRoot(), L"Software\\EliteSoftware\\Win32Explorer\\Advanced", 0, NULL, REG_OPTION_NON_VOLATILE, KEY_WRITE, NULL, &hKey, NULL) == ERROR_SUCCESS) {
+            if (RegCreateKeyExW(GetEliteRegistryRoot(), L"Software\\EliteSoftware\\Win32Explorer\\Settings", 0, NULL, REG_OPTION_NON_VOLATILE, KEY_WRITE, NULL, &hKey, NULL) == ERROR_SUCCESS) {
                 DWORD enableEliteTaskbar = (SendDlgItemMessageW(hwndDlg, IDC_EXPLORER_ENABLE_TASKBAR, BM_GETCHECK, 0, 0) == BST_CHECKED) ? 1 : 0;
                 DWORD enableEliteStartMenu = (SendDlgItemMessageW(hwndDlg, IDC_EXPLORER_ENABLE_STARTMENU, BM_GETCHECK, 0, 0) == BST_CHECKED) ? 1 : 0;
                 DWORD enableDefaultGroupByType = (SendDlgItemMessageW(hwndDlg, IDC_EXPLORER_DEFAULT_GROUPBYTYPE, BM_GETCHECK, 0, 0) == BST_CHECKED) ? 1 : 0;
@@ -2508,7 +2508,7 @@ INT_PTR CALLBACK DWMSettingsDlgProc(HWND hwndDlg, UINT uMsg, WPARAM wParam, LPAR
         DWORD glassVal = 1;
         DWORD borderSizeVal = 4;
         DWORD cbData = sizeof(DWORD);
-        if (RegOpenKeyExW(GetEliteRegistryRoot(), L"Software\\EliteSoftware\\Win32Explorer\\Advanced", 0, KEY_READ, &hKey) == ERROR_SUCCESS) {
+        if (RegOpenKeyExW(GetEliteRegistryRoot(), L"Software\\EliteSoftware\\Win32Explorer\\Settings", 0, KEY_READ, &hKey) == ERROR_SUCCESS) {
             cbData = sizeof(DWORD);
             RegQueryValueExW(hKey, L"DwmAnimationsEnabled", NULL, NULL, (LPBYTE)&animationsVal, &cbData);
             cbData = sizeof(DWORD);
@@ -2541,7 +2541,7 @@ INT_PTR CALLBACK DWMSettingsDlgProc(HWND hwndDlg, UINT uMsg, WPARAM wParam, LPAR
         LPNMHDR lpnm = (LPNMHDR)lParam;
         if (lpnm->code == PSN_APPLY) {
             HKEY hKey;
-            if (RegCreateKeyExW(GetEliteRegistryRoot(), L"Software\\EliteSoftware\\Win32Explorer\\Advanced", 0, NULL, REG_OPTION_NON_VOLATILE, KEY_READ | KEY_WRITE, NULL, &hKey, NULL) == ERROR_SUCCESS) {
+            if (RegCreateKeyExW(GetEliteRegistryRoot(), L"Software\\EliteSoftware\\Win32Explorer\\Settings", 0, NULL, REG_OPTION_NON_VOLATILE, KEY_READ | KEY_WRITE, NULL, &hKey, NULL) == ERROR_SUCCESS) {
                 DWORD animationsVal = (SendDlgItemMessageW(hwndDlg, IDC_DWM_ANIMATIONS, BM_GETCHECK, 0, 0) == BST_CHECKED) ? 1 : 0;
                 DWORD glassVal = (SendDlgItemMessageW(hwndDlg, IDC_DWM_GLASS, BM_GETCHECK, 0, 0) == BST_CHECKED) ? 1 : 0;
                 
@@ -2653,7 +2653,7 @@ INT_PTR CALLBACK ColorsSettingsDlgProc(HWND hwndDlg, UINT uMsg, WPARAM wParam, L
         wchar_t highlightVal[32] = L"0078D7";
         DWORD classicColorsVal = 0;
         DWORD cbData = sizeof(classicColorsVal);
-        if (RegOpenKeyExW(GetEliteRegistryRoot(), L"Software\\EliteSoftware\\Win32Explorer\\Advanced", 0, KEY_READ, &hKey) == ERROR_SUCCESS) {
+        if (RegOpenKeyExW(GetEliteRegistryRoot(), L"Software\\EliteSoftware\\Win32Explorer\\Settings", 0, KEY_READ, &hKey) == ERROR_SUCCESS) {
             cbData = sizeof(classicColorsVal);
             RegQueryValueExW(hKey, L"ClassicColorsEnabled", NULL, NULL, (LPBYTE)&classicColorsVal, &cbData);
             cbData = sizeof(highlightVal);
@@ -2693,7 +2693,7 @@ INT_PTR CALLBACK ColorsSettingsDlgProc(HWND hwndDlg, UINT uMsg, WPARAM wParam, L
         LPNMHDR lpnm = (LPNMHDR)lParam;
         if (lpnm->code == PSN_APPLY) {
             HKEY hKey;
-            if (RegCreateKeyExW(GetEliteRegistryRoot(), L"Software\\EliteSoftware\\Win32Explorer\\Advanced", 0, NULL, REG_OPTION_NON_VOLATILE, KEY_READ | KEY_WRITE, NULL, &hKey, NULL) == ERROR_SUCCESS) {
+            if (RegCreateKeyExW(GetEliteRegistryRoot(), L"Software\\EliteSoftware\\Win32Explorer\\Settings", 0, NULL, REG_OPTION_NON_VOLATILE, KEY_READ | KEY_WRITE, NULL, &hKey, NULL) == ERROR_SUCCESS) {
                 wchar_t highlightVal[32] = { 0 };
                 GetDlgItemTextW(hwndDlg, IDC_COLORS_HIGHLIGHT, highlightVal, 32);
                 DWORD classicColorsVal = (SendDlgItemMessageW(hwndDlg, IDC_COLORS_CLASSIC, BM_GETCHECK, 0, 0) == BST_CHECKED) ? 1 : 0;
@@ -2817,7 +2817,7 @@ void ShowTaskbarProperties(HWND hwndOwner) {
     if (wcsstr(GetCommandLineW(), L"/devmode")) showDebugTabs = true;
     
     HKEY hKey;
-    if (RegOpenKeyExW(GetEliteRegistryRoot(), L"Software\\EliteSoftware\\Win32Explorer\\Advanced", 0, KEY_READ, &hKey) == ERROR_SUCCESS) {
+    if (RegOpenKeyExW(GetEliteRegistryRoot(), L"Software\\EliteSoftware\\Win32Explorer\\Settings", 0, KEY_READ, &hKey) == ERROR_SUCCESS) {
         DWORD dwValue = 0, cbData = sizeof(DWORD);
         if (RegQueryValueExW(hKey, L"EnableDebugTabs", NULL, NULL, (LPBYTE)&dwValue, &cbData) == ERROR_SUCCESS && dwValue == 1) showDebugTabs = true;
         RegCloseKey(hKey);

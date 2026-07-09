@@ -175,7 +175,7 @@ void StartButton::SetOrbImageFromResource(HINSTANCE hInstance, int resourceId) {
 void StartButton::ReloadOrbImage(HINSTANCE hInstance, int monitorIndex) {
     DWORD orbId = 103; // IDB_START_ORB
     HKEY hKey;
-    if (RegOpenKeyExW(GetEliteRegistryRoot(), L"Software\\EliteSoftware\\Win32Explorer\\Advanced", 0, KEY_READ, &hKey) == ERROR_SUCCESS) {
+    if (RegOpenKeyExW(GetEliteRegistryRoot(), L"Software\\EliteSoftware\\Win32Explorer\\Settings", 0, KEY_READ, &hKey) == ERROR_SUCCESS) { // - Draftsman-Dan
         DWORD cbData = sizeof(DWORD);
         
         bool found = false;
@@ -312,7 +312,7 @@ LRESULT CALLBACK OrbWndProc(HWND hwnd, UINT uMsg, WPARAM wParam, LPARAM lParam) 
                 
                 DWORD mode = 2;
                 HKEY hKey;
-                if (RegOpenKeyExW(GetEliteRegistryRoot(), L"Software\\EliteSoftware\\Win32Explorer\\Advanced", 0, KEY_READ, &hKey) == ERROR_SUCCESS) {
+                if (RegOpenKeyExW(GetEliteRegistryRoot(), L"Software\\EliteSoftware\\Win32Explorer\\Settings", 0, KEY_READ, &hKey) == ERROR_SUCCESS) { // - Draftsman-Dan
                     DWORD cbData = sizeof(DWORD);
                     wchar_t modeKey[32];
                     swprintf_s(modeKey, L"StartMenuMode_Mon%d", pThis->GetMonitorIndex());
@@ -338,7 +338,7 @@ LRESULT CALLBACK OrbWndProc(HWND hwnd, UINT uMsg, WPARAM wParam, LPARAM lParam) 
 
                 DWORD fallbackEnabled = 1;
                 HKEY hKeyFallback;
-                if (RegOpenKeyExW(GetEliteRegistryRoot(), L"Software\\EliteSoftware\\Win32Explorer\\Advanced", 0, KEY_READ, &hKeyFallback) == ERROR_SUCCESS) {
+                if (RegOpenKeyExW(GetEliteRegistryRoot(), L"Software\\EliteSoftware\\Win32Explorer\\Settings", 0, KEY_READ, &hKeyFallback) == ERROR_SUCCESS) { // - Draftsman-Dan
                     DWORD cbData = sizeof(DWORD);
                     RegQueryValueExW(hKeyFallback, L"FallbackStartMenuEnabled", NULL, NULL, (LPBYTE)&fallbackEnabled, &cbData);
                     RegCloseKey(hKeyFallback);

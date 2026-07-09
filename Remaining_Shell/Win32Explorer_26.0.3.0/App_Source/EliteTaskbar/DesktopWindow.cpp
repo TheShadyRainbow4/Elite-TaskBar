@@ -67,7 +67,7 @@ static std::wstring GetThemeDirectory() {
     HKEY hKey;
     wchar_t themePathVal[MAX_PATH] = {0};
     DWORD cbData = sizeof(themePathVal);
-    if (RegOpenKeyExW(GetEliteRegistryRoot(), L"Software\\EliteSoftware\\Win32Explorer\\Advanced", 0, KEY_READ, &hKey) == ERROR_SUCCESS) {
+    if (RegOpenKeyExW(GetEliteRegistryRoot(), L"Software\\EliteSoftware\\Win32Explorer\\Settings", 0, KEY_READ, &hKey) == ERROR_SUCCESS) { // - Draftsman-Dan
         RegQueryValueExW(hKey, L"DesktopThemePath", NULL, NULL, (LPBYTE)themePathVal, &cbData);
         RegCloseKey(hKey);
     }
@@ -309,7 +309,7 @@ namespace DesktopWindow {
         
         bool forceProgman = false;
         HKEY hKeyForce;
-        if (RegOpenKeyExW(GetEliteRegistryRoot(), L"Software\\EliteSoftware\\Win32Explorer\\Advanced", 0, KEY_READ, &hKeyForce) == ERROR_SUCCESS) {
+        if (RegOpenKeyExW(GetEliteRegistryRoot(), L"Software\\EliteSoftware\\Win32Explorer\\Settings", 0, KEY_READ, &hKeyForce) == ERROR_SUCCESS) { // - Draftsman-Dan
             DWORD dwVal = 0;
             DWORD cbData = sizeof(DWORD);
             if (RegQueryValueExW(hKeyForce, L"ForceProgmanAllDisplays", NULL, NULL, (LPBYTE)&dwVal, &cbData) == ERROR_SUCCESS) {
@@ -322,7 +322,7 @@ namespace DesktopWindow {
         // Load UseNativeShellView setting - Builder-Bob
         bool useNativeShellView = true;
         HKEY hKeyShell;
-        if (RegOpenKeyExW(GetEliteRegistryRoot(), L"Software\\EliteSoftware\\Win32Explorer\\Advanced", 0, KEY_READ, &hKeyShell) == ERROR_SUCCESS) {
+        if (RegOpenKeyExW(GetEliteRegistryRoot(), L"Software\\EliteSoftware\\Win32Explorer\\Settings", 0, KEY_READ, &hKeyShell) == ERROR_SUCCESS) { // - Draftsman-Dan
             DWORD dwVal = 1;
             DWORD cbData = sizeof(DWORD);
             if (RegQueryValueExW(hKeyShell, L"UseNativeShellView", NULL, NULL, (LPBYTE)&dwVal, &cbData) == ERROR_SUCCESS) {
@@ -547,7 +547,7 @@ LRESULT CALLBACK ProgmanWndProc(HWND hwnd, UINT uMsg, WPARAM wParam, LPARAM lPar
         // Load UseNativeShellView setting - Builder-Bob
         bool useNativeShellView = true;
         HKEY hKeyShell;
-        if (RegOpenKeyExW(GetEliteRegistryRoot(), L"Software\\EliteSoftware\\Win32Explorer\\Advanced", 0, KEY_READ, &hKeyShell) == ERROR_SUCCESS) {
+        if (RegOpenKeyExW(GetEliteRegistryRoot(), L"Software\\EliteSoftware\\Win32Explorer\\Settings", 0, KEY_READ, &hKeyShell) == ERROR_SUCCESS) { // - Draftsman-Dan
             DWORD dwVal = 1;
             DWORD cbData = sizeof(DWORD);
             if (RegQueryValueExW(hKeyShell, L"UseNativeShellView", NULL, NULL, (LPBYTE)&dwVal, &cbData) == ERROR_SUCCESS) {
@@ -708,7 +708,7 @@ LRESULT CALLBACK ProgmanWndProc(HWND hwnd, UINT uMsg, WPARAM wParam, LPARAM lPar
         HKEY hKey;
         DWORD useNativeWallpaperVal = 1;
         DWORD cbData = sizeof(DWORD);
-        if (RegOpenKeyExW(GetEliteRegistryRoot(), L"Software\\EliteSoftware\\Win32Explorer\\Advanced", 0, KEY_READ, &hKey) == ERROR_SUCCESS) {
+        if (RegOpenKeyExW(GetEliteRegistryRoot(), L"Software\\EliteSoftware\\Win32Explorer\\Settings", 0, KEY_READ, &hKey) == ERROR_SUCCESS) { // - Draftsman-Dan
             RegQueryValueExW(hKey, L"UseNativeWallpaperEngine", NULL, NULL, (LPBYTE)&useNativeWallpaperVal, &cbData);
             RegCloseKey(hKey);
         }
@@ -934,7 +934,7 @@ void SaveIconPositions(HWND hwndListView) {
     }
 
     HKEY hKeyPos;
-    if (RegCreateKeyExW(GetEliteRegistryRoot(), L"Software\\EliteSoftware\\Win32Explorer\\Advanced\\DesktopIconPositions", 0, NULL, REG_OPTION_NON_VOLATILE, KEY_WRITE, NULL, &hKeyPos, NULL) == ERROR_SUCCESS) {
+    if (RegCreateKeyExW(GetEliteRegistryRoot(), L"Software\\EliteSoftware\\Win32Explorer\\Settings\\DesktopIconPositions", 0, NULL, REG_OPTION_NON_VOLATILE, KEY_WRITE, NULL, &hKeyPos, NULL) == ERROR_SUCCESS) { // - Draftsman-Dan
         for (const auto& sp : savedPositions) {
             DWORD val = (sp.pt.x << 16) | (sp.pt.y & 0xFFFF);
             RegSetValueExW(hKeyPos, sp.name.c_str(), 0, REG_DWORD, (const BYTE*)&val, sizeof(DWORD));
@@ -948,7 +948,7 @@ void PopulateDesktopGrid(HWND hwndListView) {
     bool desktopIconsEnabled = true;
     bool desktopThumbnailsEnabled = true;
     HKEY hKeySettings;
-    if (RegOpenKeyExW(GetEliteRegistryRoot(), L"Software\\EliteSoftware\\Win32Explorer\\Advanced", 0, KEY_READ, &hKeySettings) == ERROR_SUCCESS) {
+    if (RegOpenKeyExW(GetEliteRegistryRoot(), L"Software\\EliteSoftware\\Win32Explorer\\Settings", 0, KEY_READ, &hKeySettings) == ERROR_SUCCESS) { // - Draftsman-Dan
         DWORD dwVal = 1;
         DWORD cbData = sizeof(DWORD);
         if (RegQueryValueExW(hKeySettings, L"DesktopIconsEnabled", NULL, NULL, (LPBYTE)&dwVal, &cbData) == ERROR_SUCCESS) {
@@ -975,7 +975,7 @@ void PopulateDesktopGrid(HWND hwndListView) {
     // Load saved positions from registry
     std::vector<SavedPos> savedPositions;
     HKEY hKeyPos;
-    if (RegOpenKeyExW(GetEliteRegistryRoot(), L"Software\\EliteSoftware\\Win32Explorer\\Advanced\\DesktopIconPositions", 0, KEY_READ, &hKeyPos) == ERROR_SUCCESS) {
+    if (RegOpenKeyExW(GetEliteRegistryRoot(), L"Software\\EliteSoftware\\Win32Explorer\\Settings\\DesktopIconPositions", 0, KEY_READ, &hKeyPos) == ERROR_SUCCESS) { // - Draftsman-Dan
         WCHAR valName[MAX_PATH];
         DWORD cbValName = MAX_PATH;
         DWORD dwType = 0;
@@ -1303,7 +1303,7 @@ void DrawWallpaper(HWND hwnd, HDC hdc, int scrW, int scrH) {
     HKEY hKey;
     DWORD drawWallpaper = 1;
     DWORD cbData = sizeof(DWORD);
-    if (RegOpenKeyExW(GetEliteRegistryRoot(), L"Software\\EliteSoftware\\Win32Explorer\\Advanced", 0, KEY_READ, &hKey) == ERROR_SUCCESS) {
+    if (RegOpenKeyExW(GetEliteRegistryRoot(), L"Software\\EliteSoftware\\Win32Explorer\\Settings", 0, KEY_READ, &hKey) == ERROR_SUCCESS) { // - Draftsman-Dan
         RegQueryValueExW(hKey, L"DesktopWallpaperEnabled", NULL, NULL, (LPBYTE)&drawWallpaper, &cbData);
         RegCloseKey(hKey);
     }
@@ -1311,7 +1311,7 @@ void DrawWallpaper(HWND hwnd, HDC hdc, int scrW, int scrH) {
     // Retrieve UseNativeWallpaperEngine
     DWORD useNativeWallpaperVal = 1;
     cbData = sizeof(DWORD);
-    if (RegOpenKeyExW(GetEliteRegistryRoot(), L"Software\\EliteSoftware\\Win32Explorer\\Advanced", 0, KEY_READ, &hKey) == ERROR_SUCCESS) {
+    if (RegOpenKeyExW(GetEliteRegistryRoot(), L"Software\\EliteSoftware\\Win32Explorer\\Settings", 0, KEY_READ, &hKey) == ERROR_SUCCESS) { // - Draftsman-Dan
         RegQueryValueExW(hKey, L"UseNativeWallpaperEngine", NULL, NULL, (LPBYTE)&useNativeWallpaperVal, &cbData);
         RegCloseKey(hKey);
     }
@@ -1395,7 +1395,7 @@ void DrawWallpaper(HWND hwnd, HDC hdc, int scrW, int scrH) {
 
         // Check slideshow settings and start/stop timer dynamically
         HKEY hKeySlide;
-        if (RegOpenKeyExW(GetEliteRegistryRoot(), L"Software\\EliteSoftware\\Win32Explorer\\Advanced", 0, KEY_READ, &hKeySlide) == ERROR_SUCCESS) {
+        if (RegOpenKeyExW(GetEliteRegistryRoot(), L"Software\\EliteSoftware\\Win32Explorer\\Settings", 0, KEY_READ, &hKeySlide) == ERROR_SUCCESS) { // - Draftsman-Dan
             DWORD cb = sizeof(DWORD);
             RegQueryValueExW(hKeySlide, L"DesktopSlideshowEnabled", NULL, NULL, (LPBYTE)&slideshowEnabled, &cb);
             cb = sizeof(DWORD);
@@ -1509,7 +1509,7 @@ void DrawWallpaper(HWND hwnd, HDC hdc, int scrW, int scrH) {
         wallpaperModeVal = (s_cachedStyle == 22) ? 0 : 1;
     } else {
         HKEY hKeyMode;
-        if (RegOpenKeyExW(GetEliteRegistryRoot(), L"Software\\EliteSoftware\\Win32Explorer\\Advanced", 0, KEY_READ, &hKeyMode) == ERROR_SUCCESS) {
+        if (RegOpenKeyExW(GetEliteRegistryRoot(), L"Software\\EliteSoftware\\Win32Explorer\\Settings", 0, KEY_READ, &hKeyMode) == ERROR_SUCCESS) { // - Draftsman-Dan
             DWORD cbMode = sizeof(DWORD);
             RegQueryValueExW(hKeyMode, L"DesktopWallpaperMode", NULL, NULL, (LPBYTE)&wallpaperModeVal, &cbMode);
             RegCloseKey(hKeyMode);

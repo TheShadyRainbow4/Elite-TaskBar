@@ -122,22 +122,22 @@ function Save-Settings {
         $portable = if ($chk_PortableMirror.Checked) { 1 } else { 0 }
         
         # Ensure registry keys exist for both roots
-        if (!(Test-Path "HKCU:\Software\EliteSoftware\Win32Explorer\Advanced")) {
-            New-Item -Path "HKCU:\Software\EliteSoftware\Win32Explorer\Advanced" -Force | Out-Null
+        if (!(Test-Path "HKCU:\Software\EliteSoftware\Win32Explorer\Settings")) {
+            New-Item -Path "HKCU:\Software\EliteSoftware\Win32Explorer\Settings" -Force | Out-Null
         }
-        Set-ItemProperty -Path "HKCU:\Software\EliteSoftware\Win32Explorer\Advanced" -Name "EnablePortableMirror" -Value $portable -Type DWord
+        Set-ItemProperty -Path "HKCU:\Software\EliteSoftware\Win32Explorer\Settings" -Name "EnablePortableMirror" -Value $portable -Type DWord
         
         try {
-            if (!(Test-Path "HKLM:\Software\EliteSoftware\Win32Explorer\Advanced")) {
-                New-Item -Path "HKLM:\Software\EliteSoftware\Win32Explorer\Advanced" -Force -ErrorAction SilentlyContinue | Out-Null
+            if (!(Test-Path "HKLM:\Software\EliteSoftware\Win32Explorer\Settings")) {
+                New-Item -Path "HKLM:\Software\EliteSoftware\Win32Explorer\Settings" -Force -ErrorAction SilentlyContinue | Out-Null
             }
-            Set-ItemProperty -Path "HKLM:\Software\EliteSoftware\Win32Explorer\Advanced" -Name "EnablePortableMirror" -Value $portable -Type DWord -ErrorAction SilentlyContinue
+            Set-ItemProperty -Path "HKLM:\Software\EliteSoftware\Win32Explorer\Settings" -Name "EnablePortableMirror" -Value $portable -Type DWord -ErrorAction SilentlyContinue
         } catch {}
 
         if ($chk_PortableMirror.Checked) {
-            $global:regPathElite = "HKLM:\Software\EliteSoftware\Win32Explorer\Advanced"
+            $global:regPathElite = "HKLM:\Software\EliteSoftware\Win32Explorer\Settings"
         } else {
-            $global:regPathElite = "HKCU:\Software\EliteSoftware\Win32Explorer\Advanced"
+            $global:regPathElite = "HKCU:\Software\EliteSoftware\Win32Explorer\Settings"
         }
 
         if (!(Test-Path $global:regPathElite)) {
@@ -269,8 +269,8 @@ function Save-Settings {
 Save-Settings
 
 # Verify that EnablePortableMirror is in HKCU, HKLM and config.xml
-$hkcuPM = (Get-ItemProperty -Path "HKCU:\Software\EliteSoftware\Win32Explorer\Advanced" -Name "EnablePortableMirror" -ErrorAction SilentlyContinue).EnablePortableMirror
-$hklmPM = (Get-ItemProperty -Path "HKLM:\Software\EliteSoftware\Win32Explorer\Advanced" -Name "EnablePortableMirror" -ErrorAction SilentlyContinue).EnablePortableMirror
+$hkcuPM = (Get-ItemProperty -Path "HKCU:\Software\EliteSoftware\Win32Explorer\Settings" -Name "EnablePortableMirror" -ErrorAction SilentlyContinue).EnablePortableMirror
+$hklmPM = (Get-ItemProperty -Path "HKLM:\Software\EliteSoftware\Win32Explorer\Settings" -Name "EnablePortableMirror" -ErrorAction SilentlyContinue).EnablePortableMirror
 $xmlPM = $false
 if (Test-Path $xmlPath) {
     [xml]$xml = Get-Content $xmlPath

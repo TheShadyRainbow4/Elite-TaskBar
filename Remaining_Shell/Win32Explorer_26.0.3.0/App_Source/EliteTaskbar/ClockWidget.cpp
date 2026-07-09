@@ -1,3 +1,4 @@
+#include "stdafx.h" // - Draftsman-Dan
 #include "ClockWidget.h"
 #include <gdiplus.h>
 #include <string>

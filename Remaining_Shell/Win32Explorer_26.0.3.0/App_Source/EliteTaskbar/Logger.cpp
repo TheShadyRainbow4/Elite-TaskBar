@@ -1,3 +1,4 @@
+#include "stdafx.h" // - Draftsman-Dan
 #include "Logger.h"
 #include <windows.h>
 #include <fstream>

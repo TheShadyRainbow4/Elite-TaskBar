@@ -245,12 +245,13 @@ try {
     # ----------------- TEST 2: Start Menu Tab (No Hover) -----------------
     Write-Host "`n[TEST 2] Verifying Start Menu settings tab layout..." -ForegroundColor Yellow
     
-    # Launch EliteSettings.exe
-    $proc = Start-Process -FilePath $settingsExe -PassThru
+    # Launch EliteSettings.cpl - Draftsman-Dan
+    $cplPath = Join-Path $ScriptDir "BuildOutput\EliteSettings.cpl"
+    Start-Process -FilePath "control.exe" -ArgumentList "`"$cplPath`""
     # [Increase pause to 5 seconds for window retention] - Builder-Bob
     Start-Sleep -Seconds 5
     
-    $hwndSettings = [Win32Helper]::FindProcessWindow($proc.Id, "#32770", "Taskbar and Start Menu Properties")
+    $hwndSettings = [Win32Helper]::FindProcessWindow(0, "#32770", "Taskbar and Start Menu Properties")
     if ($hwndSettings -eq [IntPtr]::Zero) {
         throw "Could not find EliteSettings main window."
     }
@@ -313,8 +314,8 @@ try {
     [Win32Helper]::PostMessage($hwndSettings, 0x0111, [IntPtr]40002, [IntPtr]::Zero) | Out-Null
     Start-Sleep -Seconds 2
     
-    # Find the About dialog window
-    $hwndAbout = [Win32Helper]::FindProcessWindow($proc.Id, "#32770", "About EliteTaskbar")
+    # Find the About dialog window - Draftsman-Dan
+    $hwndAbout = [Win32Helper]::FindProcessWindow(0, "#32770", "About EliteTaskbar")
     if ($hwndAbout -eq [IntPtr]::Zero) {
         throw "Could not find About dialog window."
     }
@@ -398,9 +399,9 @@ try {
     # [Increase pause to 5 seconds for window retention] - Builder-Bob
     Start-Sleep -Seconds 5
     # [Ensure HKLM path is verified instead of HKCU] - Builder-Bob
-    $regSettingsPath = "HKLM:\Software\EliteSoftware\Win32Explorer\Advanced"
+    $regSettingsPath = "HKLM:\Software\EliteSoftware\Win32Explorer\Settings" # - Draftsman-Dan
     if (-not (Test-Path $regSettingsPath)) {
-        New-Item -Path "HKLM:\Software\EliteSoftware\Win32Explorer" -Name "Advanced" -Force | Out-Null
+        New-Item -Path "HKLM:\Software\EliteSoftware\Win32Explorer" -Name "Settings" -Force | Out-Null # - Draftsman-Dan
     }
     Set-ItemProperty -Path $regSettingsPath -Name "EnableEliteTaskbar" -Value 1 -Type DWord -Force
     Set-ItemProperty -Path $regSettingsPath -Name "TaskbarMode" -Value 1 -Type DWord -Force

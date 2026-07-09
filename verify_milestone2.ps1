@@ -106,7 +106,7 @@ public class WinWindowUtil {
 Add-Type -TypeDefinition $code -ErrorAction SilentlyContinue
 
 # Set to Independent Mode
-$pathAdv = "HKCU:\Software\EliteSoftware\Win32Explorer\Advanced"
+$pathAdv = "HKCU:\Software\EliteSoftware\Win32Explorer\Settings"
 if (!(Test-Path $pathAdv)) { New-Item -Path $pathAdv -Force | Out-Null }
 Set-ItemProperty -Path $pathAdv -Name "TaskbarMode" -Value 0 -Type DWord
 

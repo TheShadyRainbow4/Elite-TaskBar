@@ -183,16 +183,14 @@ try {
         Write-Host "[PASS] build_fast.ps1 cleanly removes all old files matching *old*.exe and *old*.cpl." -ForegroundColor Green
     }
 
-    # Launch EliteSettings.exe for remaining UI tests
-    $proc = Start-Process -FilePath $settingsExe -PassThru
+    # Launch EliteSettings.cpl - Draftsman-Dan
+    $cplPath = Join-Path $ScriptDir "BuildOutput\EliteSettings.cpl"
+    Start-Process -FilePath "control.exe" -ArgumentList "`"$cplPath`""
     
     $hwndSettings = [IntPtr]::Zero
     for ($i = 0; $i -lt 20; $i++) {
-        $procSettings = Get-Process -Name EliteSettings -ErrorAction SilentlyContinue
-        if ($procSettings) {
-            $hwndSettings = $procSettings.MainWindowHandle
-            if ($hwndSettings -ne [IntPtr]::Zero) { break }
-        }
+        $hwndSettings = [Win32Helper]::FindProcessWindow(0, "#32770", "Taskbar and Start Menu Properties")
+        if ($hwndSettings -ne [IntPtr]::Zero) { break }
         Start-Sleep -Milliseconds 500
     }
     
@@ -344,9 +342,9 @@ try {
     Write-Host "`n[TEST 4] Verifying Apply button debounce and Win32Explorer process count..." -ForegroundColor Yellow
     
     # Ensure EnableEliteTaskbar = 1 is set in registry so Win32Explorer stays alive on background launch
-    $regSettingsPath = "HKCU:\Software\EliteSoftware\Win32Explorer\Advanced"
+    $regSettingsPath = "HKCU:\Software\EliteSoftware\Win32Explorer\Settings" # - Draftsman-Dan
     if (-not (Test-Path $regSettingsPath)) {
-        New-Item -Path $regSettingsPath -Force | Out-Null
+        New-Item -Path $regSettingsPath -Force | Out-Null # - Draftsman-Dan
     }
     Set-ItemProperty -Path $regSettingsPath -Name "EnableEliteTaskbar" -Value 1 -Type DWord
 
