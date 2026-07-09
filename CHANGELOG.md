@@ -17,6 +17,7 @@ All notable changes to this project will be documented in this file.
 
 ### Fixed
 - **Resolve ODR Violation and Startup Crash**: Renamed the monitor enumeration callbacks to `TaskbarMonitorEnumProc` in `TaskbarWindow.cpp` and `DesktopMonitorEnumProc` in `DesktopWindow.cpp` to prevent linking/definition collisions (ODR violation) and resolve startup crash. - Builder-Bob
+- **Start Button & AppBar Reservation Fixes**: Updated Start Button default mode to properly invoke EliteStartMenu.exe or fallback to the native start menu (via SC_TASKLIST). Fixed AppBar workspace reservation on secondary monitors by removing conditional blocks on SHAppBarMessage calls in TaskbarWindow.cpp. - Antigravity
 
 ### Added
 - **Refine E2E Z-Ordering Check**: Updated the Z-ordering verification check in `run_comprehensive_e2e.ps1` to use a robust window-hierarchy walk using `GetWindow` below the custom desktop, ignoring invisible or desktop windows. - Builder-Bob
