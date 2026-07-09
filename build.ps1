@@ -267,21 +267,8 @@ if (-not $failed -and ($Target -eq "All" -or $Target -eq "PostBuild")) {
         }
     }
     
-    Write-Host "Mirroring files to System32 and SysWOW64..." -ForegroundColor Cyan
-    $sys32 = [Environment]::GetFolderPath("System")
-    $sysWow = [Environment]::GetFolderPath("SystemX86")
-    
-    # Mirror x64 builds to System32
-    if (Test-Path $BuildDir) {
-        Get-ChildItem -Path $BuildDir -Filter "*.exe" -ErrorAction SilentlyContinue | Copy-Item -Destination $sys32 -Force
-        Get-ChildItem -Path $BuildDir -Filter "*.cpl" -ErrorAction SilentlyContinue | Copy-Item -Destination $sys32 -Force
-    }
-    
-    # Mirror x86 builds to SysWOW64
-    if (Test-Path $BuildDirx86) {
-        Get-ChildItem -Path $BuildDirx86 -Filter "*.exe" -ErrorAction SilentlyContinue | Copy-Item -Destination $sysWow -Force
-        Get-ChildItem -Path $BuildDirx86 -Filter "*.cpl" -ErrorAction SilentlyContinue | Copy-Item -Destination $sysWow -Force
-    }
+    Write-Host "Executing deployment script to mirror files via hardlinks..." -ForegroundColor Cyan
+    & "$PSScriptRoot\deploy_hardlinks.ps1" -BuildDir $BuildDir -BuildDirx86 $BuildDirx86
 
     
     Write-Host "Auto-committing submodules and main repository..." -ForegroundColor Cyan
