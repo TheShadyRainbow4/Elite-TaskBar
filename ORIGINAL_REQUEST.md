@@ -523,6 +523,29 @@ CRITICAL BUG REPORT FROM USER: "active applications are now unstyled why are the
 2. If your goal was to make the entire bounding box clickable, you must accomplish that through standard Toolbar hit-testing, margin/padding adjustments (`TB_SETPADDING`), or `WM_LBUTTONDOWN` coordinate forwarding—**not** by hijacking the entire paint cycle and destroying the working native styles.
 3. Fix the active application button styles back to how they originally looked.
 
+## Follow-up — 2026-07-09T03:41:05Z
+
+URGENT CLARIFICATIONS AND BUG REPORTS FROM USER:
+
+1. **Misapplied Fix (Clickable Areas):** The user stated: "the entire area not clickable was a problem in the file browser though nothing to do with taskbar". 
+   *Action Required:* You applied the clickable area fix to the taskbar buttons, which broke them. You must REVERT the taskbar button edits completely and leave the taskbar alone in this regard. The clickable area fix (making the whole hover area clickable instead of just text) needs to be applied to the **FILE BROWSER** (e.g., Win32Explorer's listview, treeview, or custom controls), NOT the taskbar!
+
+2. **Broken Desktop Background:** The user stated: "no desktop background either what gives so many fully working features."
+   *Action Required:* You have somehow broken the desktop background rendering. Check `DesktopWindow.cpp` or the `IShellFolderView` initialization. The custom desktop MUST render the user's native Windows wallpaper. It cannot be black or blank. Figure out what broke the wallpaper rendering and restore the previously working desktop background immediately! DO NOT BREAK EXISTING WORKING FEATURES.
+
+## Follow-up — 2026-07-09T03:41:50Z
+
+EMERGENCY OVERRIDE FROM USER: "no they need to fix what they broke first"
+
+**HALT ALL NEW FEATURE DEVELOPMENT IMMEDIATELY.** 
+You are strictly forbidden from working on the file browser clickable areas, the settings CPL transition, or any other new features right now.
+
+Your SOLE and EXCLUSIVE priorities are to fix the regressions you caused:
+1. **Restore Native Taskbar Styling:** Completely rip out the custom prepaint cycle that broke the taskbar active applications. Ensure it renders correctly with the native Windows `TaskBand` theme.
+2. **Restore Desktop Background:** Fix whatever you broke in `DesktopWindow.cpp` (or the initialization chain) so the native desktop wallpaper renders correctly again instead of being blank/black.
+
+Do not proceed to any other task until these two regressions are resolved and verified.
+
 
 
 
