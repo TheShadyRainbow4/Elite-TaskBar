@@ -667,3 +667,8 @@ All notable changes to this project will be documented in this file.
 
 
 
+
+### UI Layout Fixes (Layout Engineer)
+- Fixed system tray flyout coordinate math by dynamically mapping the native TrayNotifyWnd position, ensuring flyouts spawn on the correct monitor.
+- Removed the massive white bar / vertical scroll arrows bug by applying the PGS_HORZ style to the paginator (SysPager).
+- Eliminated massive visual gaps between the tray and the clock by correctly filtering hidden buttons during the horizontal tray space calculation.
