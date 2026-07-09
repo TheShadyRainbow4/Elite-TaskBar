@@ -101,7 +101,7 @@ $enumProc = [Win32+EnumWindowsProc]{
     param($hWnd, $lParam)
     $sb = New-Object System.Text.StringBuilder 260
     [Win32]::GetClassNameW($hWnd, $sb, $sb.Capacity) | Out-Null
-    if ($sb.ToString() -eq "Elite_SecondaryTrayWnd") {
+    if ($sb.ToString() -eq "Shell_SecondaryTrayWnd") {
         # Check process ID ownership
         $procId = 0
         [Win32]::GetWindowThreadProcessId($hWnd, [ref]$procId) | Out-Null
@@ -140,7 +140,7 @@ foreach ($hwnd in $hwndList) {
         $firstHwnd = $hwnd
     }
 
-    # Find tray toolbar child: Elite_SecondaryTrayWnd -> TrayNotifyWnd -> SysPager -> ToolbarWindow32
+    # Find tray toolbar child: Shell_SecondaryTrayWnd -> TrayNotifyWnd -> SysPager -> ToolbarWindow32
     $hNotify = [Win32]::FindWindowExW($hwnd, [IntPtr]::Zero, "TrayNotifyWnd", $null)
     if ($hNotify -ne 0) {
         $hPager = [Win32]::FindWindowExW($hNotify, [IntPtr]::Zero, "SysPager", $null)

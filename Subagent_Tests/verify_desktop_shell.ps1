@@ -480,7 +480,7 @@ Write-Host "`n[TEST 7] Verifying Start Button click triggers Open-Shell fallback
 
 # Find main taskbar window (class Shell_TrayWnd in Replace mode)
 $hwndTaskbar = [DesktopShellTester]::FindWindowW("Shell_TrayWnd", $null)
-$hwndStartOrb = [DesktopShellTester]::FindWindowW("Elite_StartOrbWnd", $null)
+$hwndStartOrb = [DesktopShellTester]::FindWindowW("StartButtonWnd", $null) # - Draftsman-Dan
 
 Write-Host "Taskbar HWND: $hwndTaskbar | Start Button HWND: $hwndStartOrb" -ForegroundColor Cyan
 

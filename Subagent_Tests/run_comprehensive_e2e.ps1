@@ -392,22 +392,33 @@ try {
     # ----------------- TEST 4: Apply Button Debounce (No Multi-Spawn) -----------------
     Write-Host "`n[TEST 4] Verifying Apply button debounce and Win32Explorer process count..." -ForegroundColor Yellow
     
-    # Kill any running Win32Explorer instances first, then start exactly one to set a baseline
-    Get-Process -Name Win32Explorer -ErrorAction SilentlyContinue | Stop-Process -Force
+    # Kill any running Win32Explorer/EliteTaskbar instances first to set a clean baseline
+    Get-Process -Name Win32Explorer, EliteTaskbar -ErrorAction SilentlyContinue | Stop-Process -Force
     Start-Sleep -Milliseconds 500
+
+    # Write settings to HKCU and HKLM to ensure they are read regardless of Portable Mirror mode
+    $regSettingsPathLM = "HKLM:\Software\EliteSoftware\Win32Explorer\Settings" # - Draftsman-Dan
+    if (-not (Test-Path $regSettingsPathLM)) {
+        New-Item -Path "HKLM:\Software\EliteSoftware\Win32Explorer" -Name "Settings" -Force | Out-Null # - Draftsman-Dan
+    }
+    Set-ItemProperty -Path $regSettingsPathLM -Name "EnableEliteTaskbar" -Value 1 -Type DWord -Force
+    Set-ItemProperty -Path $regSettingsPathLM -Name "TaskbarMode" -Value 1 -Type DWord -Force
+    Set-ItemProperty -Path $regSettingsPathLM -Name "DesktopReplacementEnabled" -Value 1 -Type DWord -Force
+    Set-ItemProperty -Path $regSettingsPathLM -Name "ForceProgmanAllDisplays" -Value 1 -Type DWord -Force
+
+    $regSettingsPathCU = "HKCU:\Software\EliteSoftware\Win32Explorer\Settings" # - Draftsman-Dan
+    if (-not (Test-Path $regSettingsPathCU)) {
+        New-Item -Path "HKCU:\Software\EliteSoftware\Win32Explorer" -Name "Settings" -Force | Out-Null # - Draftsman-Dan
+    }
+    Set-ItemProperty -Path $regSettingsPathCU -Name "EnableEliteTaskbar" -Value 1 -Type DWord -Force
+    Set-ItemProperty -Path $regSettingsPathCU -Name "TaskbarMode" -Value 1 -Type DWord -Force
+    Set-ItemProperty -Path $regSettingsPathCU -Name "DesktopReplacementEnabled" -Value 1 -Type DWord -Force
+    Set-ItemProperty -Path $regSettingsPathCU -Name "ForceProgmanAllDisplays" -Value 1 -Type DWord -Force
+
+    Start-Sleep -Seconds 1
     Start-Process -FilePath "Win32Explorer.exe"
     # [Increase pause to 5 seconds for window retention] - Builder-Bob
     Start-Sleep -Seconds 5
-    # [Ensure HKLM path is verified instead of HKCU] - Builder-Bob
-    $regSettingsPath = "HKLM:\Software\EliteSoftware\Win32Explorer\Settings" # - Draftsman-Dan
-    if (-not (Test-Path $regSettingsPath)) {
-        New-Item -Path "HKLM:\Software\EliteSoftware\Win32Explorer" -Name "Settings" -Force | Out-Null # - Draftsman-Dan
-    }
-    Set-ItemProperty -Path $regSettingsPath -Name "EnableEliteTaskbar" -Value 1 -Type DWord -Force
-    Set-ItemProperty -Path $regSettingsPath -Name "TaskbarMode" -Value 1 -Type DWord -Force
-    Set-ItemProperty -Path $regSettingsPath -Name "DesktopReplacementEnabled" -Value 1 -Type DWord -Force
-    Set-ItemProperty -Path $regSettingsPath -Name "ForceProgmanAllDisplays" -Value 1 -Type DWord -Force
-    Start-Sleep -Seconds 1
     
     # Rapidly click Apply button (ID 0x3021 / 12321) 3 times
     Write-Host "Sending rapid Apply commands..." -ForegroundColor Cyan
@@ -440,7 +451,7 @@ try {
     # 5.1 Z-ordering: Query window positions and verify topmost taskbar and bottom custom desktop
     $hwndTaskbar = [Win32Helper]::FindVisibleWindow("Shell_TrayWnd")
     if ($hwndTaskbar -eq [IntPtr]::Zero) {
-        $hwndTaskbar = [Win32Helper]::FindVisibleWindow("Elite_SecondaryTrayWnd")
+        $hwndTaskbar = [Win32Helper]::FindVisibleWindow("Shell_SecondaryTrayWnd") # - Draftsman-Dan
     }
     if ($hwndTaskbar -eq [IntPtr]::Zero) {
         $hwndTaskbar = [Win32Helper]::FindVisibleWindow("Shell_SecondaryTrayWnd")
@@ -467,7 +478,7 @@ try {
                 $sbClass = New-Object System.Text.StringBuilder 260
                 [Win32Helper]::GetClassName($next, $sbClass, 260) | Out-Null
                 $clsName = $sbClass.ToString()
-                if ($clsName -ne "EliteDesktopSecondary" -and $clsName -ne "Progman" -and $clsName -ne "WorkerW") {
+                if ($clsName -ne "DesktopSecondary" -and $clsName -ne "Progman" -and $clsName -ne "WorkerW") { # - Draftsman-Dan
                     $isAtBottom = $false
                     Write-Host "Found visible window below desktop in Z-order: HWND=$next, Class=$clsName" -ForegroundColor Gray
                     break
@@ -508,12 +519,12 @@ try {
         Write-Host "[FAIL] Taskbar window not found." -ForegroundColor Red
     }
     
-    # 5.3 Desktop multi-monitor rendering: L"EliteDesktopSecondary" on secondary monitors
+    # 5.3 Desktop multi-monitor rendering: L"DesktopSecondary" on secondary monitors
     Add-Type -AssemblyName System.Windows.Forms
     $monitors = [System.Windows.Forms.Screen]::AllScreens
     $expectedSecondary = $monitors.Count - 1
     
-    $secondaryWindows = [Win32Helper]::FindAllWindowsByClass("EliteDesktopSecondary")
+    $secondaryWindows = [Win32Helper]::FindAllWindowsByClass("DesktopSecondary") # - Draftsman-Dan
     $actualSecondary = $secondaryWindows.Count
     
     if ($actualSecondary -eq $expectedSecondary) {

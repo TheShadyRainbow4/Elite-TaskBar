@@ -113,9 +113,9 @@ Set-ItemProperty -Path $pathAdv -Name "TaskbarMode" -Value 0 -Type DWord
 $procTaskbar = Start-Process -FilePath $taskbarPath -WorkingDirectory $ScriptDir -PassThru
 Start-Sleep -Seconds 3
 
-$hwndTaskbar = [WinWindowUtil]::FindWindowW("Elite_SecondaryTrayWnd", $null)
+$hwndTaskbar = [WinWindowUtil]::FindWindowW("Shell_SecondaryTrayWnd", $null) # - Draftsman-Dan
 if ($hwndTaskbar -ne 0) {
-    Write-Host "[PASS] EliteTaskbar.exe launched successfully and registered window with class 'Elite_SecondaryTrayWnd' (HWND: $hwndTaskbar)" -ForegroundColor Green
+    Write-Host "[PASS] EliteTaskbar.exe launched successfully and registered window with class 'Shell_SecondaryTrayWnd' (HWND: $hwndTaskbar)" -ForegroundColor Green # - Draftsman-Dan
     
     # Send Quit command via WM_COMMAND (3014 - Exit All Taskbars)
     [WinWindowUtil]::SendMessage($hwndTaskbar, 0x0111, [IntPtr]3014, [IntPtr]0)
@@ -127,7 +127,7 @@ if ($hwndTaskbar -ne 0) {
         Stop-Process -Id $procTaskbar.Id -Force
     }
 } else {
-    Write-Host "[FAIL] EliteTaskbar.exe did not create a window of class 'Elite_SecondaryTrayWnd'." -ForegroundColor Red
+    Write-Host "[FAIL] EliteTaskbar.exe did not create a window of class 'Shell_SecondaryTrayWnd'." -ForegroundColor Red # - Draftsman-Dan
     Stop-Process -Id $procTaskbar.Id -Force
 }
 

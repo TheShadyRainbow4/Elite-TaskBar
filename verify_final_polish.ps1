@@ -301,11 +301,11 @@ try {
     # B. Search for Taskbar window
     $hwndTaskbar = [Win32Helper]::FindWindowW("Shell_TrayWnd", $null)
     if ($hwndTaskbar -eq [IntPtr]::Zero) {
-        $hwndTaskbar = [Win32Helper]::FindWindowW("Elite_SecondaryTrayWnd", $null)
+        $hwndTaskbar = [Win32Helper]::FindWindowW("Shell_SecondaryTrayWnd", $null) # - Draftsman-Dan
     }
     
     if ($hwndTaskbar -eq [IntPtr]::Zero) {
-        throw "Could not find Taskbar window (class 'Shell_TrayWnd' or 'Elite_SecondaryTrayWnd')."
+        throw "Could not find Taskbar window (class 'Shell_TrayWnd' or 'Shell_SecondaryTrayWnd')." # - Draftsman-Dan
     }
     Write-Host "Taskbar window found: $hwndTaskbar" -ForegroundColor Green
 
