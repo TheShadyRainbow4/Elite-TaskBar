@@ -3769,3 +3769,4 @@ void TaskbarWindow::Cleanup() {
 bool IsEliteTaskbarRunning() {
     return !g_Taskbars.empty();
 }
+

@@ -305,7 +305,7 @@ LRESULT CALLBACK OrbWndProc(HWND hwnd, UINT uMsg, WPARAM wParam, LPARAM lParam) 
                 
                 // SetWindowPos(hwnd, HWND_TOPMOST, 0, 0, 0, 0, SWP_NOMOVE | SWP_NOSIZE | SWP_NOACTIVATE); // Removed to fix flashing
                 
-                DWORD mode = 0;
+                DWORD mode = 2;
                 HKEY hKey;
                 if (RegOpenKeyExW(GetEliteRegistryRoot(), L"Software\\EliteSoftware\\Win32Explorer\\Advanced", 0, KEY_READ, &hKey) == ERROR_SUCCESS) {
                     DWORD cbData = sizeof(DWORD);
@@ -440,3 +440,4 @@ LRESULT CALLBACK OrbWndProc(HWND hwnd, UINT uMsg, WPARAM wParam, LPARAM lParam) 
     }
     return DefWindowProcW(hwnd, uMsg, wParam, lParam);
 }
+
