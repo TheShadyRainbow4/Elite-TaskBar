@@ -2363,8 +2363,10 @@ INT_PTR CALLBACK ExplorerSettingsDlgProc(HWND hwndDlg, UINT uMsg, WPARAM wParam,
         SendMessageW(hwndCombo, CB_SETITEMDATA, idx, (LPARAM)1);
         idx = (int)SendMessageW(hwndCombo, CB_ADDSTRING, 0, (LPARAM)L"Large Icons");
         SendMessageW(hwndCombo, CB_SETITEMDATA, idx, (LPARAM)8);
-        idx = (int)SendMessageW(hwndCombo, CB_ADDSTRING, 0, (LPARAM)L"Extra Large Icons");
+                idx = (int)SendMessageW(hwndCombo, CB_ADDSTRING, 0, (LPARAM)L"Extra Large Icons");
         SendMessageW(hwndCombo, CB_SETITEMDATA, idx, (LPARAM)7);
+        idx = (int)SendMessageW(hwndCombo, CB_ADDSTRING, 0, (LPARAM)L"Tile / Thumbnail");
+        SendMessageW(hwndCombo, CB_SETITEMDATA, idx, (LPARAM)6);
 
         DWORD defaultFolderView = 12;
         DWORD defaultToThumbnailMirrors = 1;
@@ -2545,6 +2547,81 @@ INT_PTR CALLBACK DWMSettingsDlgProc(HWND hwndDlg, UINT uMsg, WPARAM wParam, LPAR
     return FALSE;
 }
 
+
+#include <commdlg.h>
+
+void PromptForColor(HWND hwndDlg, const wchar_t* regValueName, int sysColorIndex) {
+    CHOOSECOLORW cc = { sizeof(CHOOSECOLORW) };
+    static COLORREF acrCustClr[16];
+    cc.hwndOwner = hwndDlg;
+    cc.lpCustColors = (LPDWORD)acrCustClr;
+    cc.rgbResult = GetSysColor(sysColorIndex);
+    cc.Flags = CC_FULLOPEN | CC_RGBINIT;
+    
+    if (ChooseColorW(&cc)) {
+        wchar_t colorStr[32];
+        swprintf_s(colorStr, L"%d %d %d", GetRValue(cc.rgbResult), GetGValue(cc.rgbResult), GetBValue(cc.rgbResult));
+        HKEY hKey;
+        if (RegOpenKeyExW(HKEY_CURRENT_USER, L"Control Panel\\Colors", 0, KEY_WRITE, &hKey) == ERROR_SUCCESS) {
+            RegSetValueExW(hKey, regValueName, 0, REG_SZ, (const BYTE*)colorStr, (DWORD)(wcslen(colorStr) + 1) * sizeof(wchar_t));
+            RegCloseKey(hKey);
+            int elements[1] = { sysColorIndex };
+            DWORD colors[1] = { cc.rgbResult };
+            SetSysColors(1, elements, colors);
+            SendMessageTimeoutW(HWND_BROADCAST, WM_SYSCOLORCHANGE, 0, 0, SMTO_ABORTIFHUNG, 500, NULL);
+        }
+    }
+}
+
+void PromptForFont(HWND hwndDlg) {
+    CHOOSEFONTW cf = { sizeof(CHOOSEFONTW) };
+    LOGFONTW lf = { 0 };
+    NONCLIENTMETRICSW ncm = { sizeof(NONCLIENTMETRICSW) };
+    SystemParametersInfoW(SPI_GETNONCLIENTMETRICS, sizeof(NONCLIENTMETRICSW), &ncm, 0);
+    lf = ncm.lfMessageFont;
+
+    cf.hwndOwner = hwndDlg;
+    cf.lpLogFont = &lf;
+    cf.Flags = CF_SCREENFONTS | CF_INITTOLOGFONTSTRUCT;
+    if (ChooseFontW(&cf)) {
+        ncm.lfMessageFont = lf;
+        ncm.lfCaptionFont = lf;
+        ncm.lfMenuFont = lf;
+        ncm.lfStatusFont = lf;
+        ncm.lfSmCaptionFont = lf;
+        SystemParametersInfoW(SPI_SETNONCLIENTMETRICS, sizeof(NONCLIENTMETRICSW), &ncm, SPIF_UPDATEINIFILE | SPIF_SENDCHANGE);
+    }
+}
+
+INT_PTR CALLBACK AdvancedAppearanceDlgProc(HWND hwndDlg, UINT uMsg, WPARAM wParam, LPARAM lParam) {
+    switch (uMsg) {
+    case WM_INITDIALOG:
+        return TRUE;
+    case WM_COMMAND: {
+        WORD wID = LOWORD(wParam);
+        if (wID == IDC_ADV_COLOR_HIGHLIGHT) {
+            PromptForColor(hwndDlg, L"Hilight", COLOR_HIGHLIGHT);
+        } else if (wID == IDC_ADV_COLOR_DESKTOP) {
+            PromptForColor(hwndDlg, L"Background", COLOR_BACKGROUND);
+        } else if (wID == IDC_ADV_COLOR_ACTIVETITLE) {
+            PromptForColor(hwndDlg, L"ActiveTitle", COLOR_ACTIVECAPTION);
+        } else if (wID == IDC_ADV_COLOR_GRADIENT) {
+            PromptForColor(hwndDlg, L"GradientActiveTitle", COLOR_GRADIENTACTIVECAPTION);
+        } else if (wID == IDC_ADV_COLOR_TEXT) {
+            PromptForColor(hwndDlg, L"WindowText", COLOR_WINDOWTEXT);
+        } else if (wID == IDC_ADV_COLOR_CAPTIONTEXT) {
+            PromptForColor(hwndDlg, L"TitleText", COLOR_CAPTIONTEXT);
+        } else if (wID == IDC_ADV_FONT) {
+            PromptForFont(hwndDlg);
+        } else if (wID == IDOK || wID == IDCANCEL) {
+            EndDialog(hwndDlg, 0);
+        }
+        break;
+    }
+    }
+    return FALSE;
+}
+
 INT_PTR CALLBACK ColorsSettingsDlgProc(HWND hwndDlg, UINT uMsg, WPARAM wParam, LPARAM lParam) {
     switch (uMsg) {
     case WM_INITDIALOG: {
@@ -2584,6 +2661,10 @@ INT_PTR CALLBACK ColorsSettingsDlgProc(HWND hwndDlg, UINT uMsg, WPARAM wParam, L
     }
     case WM_COMMAND: {
         WORD wNotifyCode = HIWORD(wParam);
+                if (wNotifyCode == BN_CLICKED && LOWORD(wParam) == IDC_ADVANCED_APPEARANCE) {
+            DialogBoxParamW(g_hInstance, MAKEINTRESOURCEW(IDD_ADVANCED_APPEARANCE), hwndDlg, AdvancedAppearanceDlgProc, 0);
+            return TRUE;
+        }
         if (wNotifyCode == BN_CLICKED || wNotifyCode == EN_CHANGE) {
             SendMessageW(GetParent(hwndDlg), PSM_CHANGED, (WPARAM)hwndDlg, 0);
         }
@@ -2780,6 +2861,7 @@ void ShowSecretDLLScanner(HWND hwndOwner) {
 }
 
 // Trigger build by worker_m7_gen2
+
 
 
 

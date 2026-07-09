@@ -202,6 +202,7 @@ BEGIN
     GROUPBOX        "System & App Theme Mode", IDC_STATIC, 7, 85, 238, 55
     CONTROL         "Use Dark Mode for Windows (Default)", IDC_COLORS_WINDOWS_DARK, "Button", BS_AUTOCHECKBOX | WS_TABSTOP, 14, 100, 220, 10
     CONTROL         "Use Dark Mode for Applications", IDC_COLORS_APP_DARK, "Button", BS_AUTOCHECKBOX | WS_TABSTOP, 14, 115, 220, 10
+    PUSHBUTTON      "Advanced Appearance...", IDC_ADVANCED_APPEARANCE, 14, 135, 120, 14, WS_TABSTOP
 END
 
 IDD_HELP_DIALOG DIALOGEX 0, 0, 250, 180
@@ -228,4 +229,21 @@ END
 
 
 
+
+
+IDD_ADVANCED_APPEARANCE DIALOGEX 0, 0, 252, 218
+STYLE DS_SETFONT | DS_MODALFRAME | WS_POPUP | WS_CAPTION | WS_SYSMENU
+CAPTION "Advanced Appearance"
+FONT 8, "Segoe UI", 400, 0, 0x1
+BEGIN
+    GROUPBOX        "Advanced Appearance Settings", IDC_STATIC, 7, 7, 238, 180
+    PUSHBUTTON      "Highlight Color", IDC_ADV_COLOR_HIGHLIGHT, 14, 20, 100, 14
+    PUSHBUTTON      "Desktop Color", IDC_ADV_COLOR_DESKTOP, 14, 40, 100, 14
+    PUSHBUTTON      "Active Titlebar Color", IDC_ADV_COLOR_ACTIVETITLE, 14, 60, 100, 14
+    PUSHBUTTON      "Titlebar Gradient", IDC_ADV_COLOR_GRADIENT, 14, 80, 100, 14
+    PUSHBUTTON      "Window Text Color", IDC_ADV_COLOR_TEXT, 14, 100, 100, 14
+    PUSHBUTTON      "Caption Text Color", IDC_ADV_COLOR_CAPTIONTEXT, 14, 120, 100, 14
+    PUSHBUTTON      "Font Style & Size", IDC_ADV_FONT, 14, 140, 100, 14
+    PUSHBUTTON      "Done", IDOK, 190, 195, 50, 14
+END
 

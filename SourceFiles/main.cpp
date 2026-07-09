@@ -20,7 +20,7 @@ HINSTANCE g_hInstance = NULL;
 void QueryOperationalMode() {
     HKEY hKey;
     LSTATUS status = RegOpenKeyExW(GetEliteRegistryRoot(), L"Software\\EliteSoftware\\Win32Explorer\\Advanced", 0, KEY_READ, &hKey);
-    g_Config.Mode = TaskbarMode::Independent; // Default
+    g_Config.Mode = TaskbarMode::SecondaryOnly; // Default
     if (status == ERROR_SUCCESS) {
         DWORD dwValue = 0;
         DWORD bufferSize = sizeof(DWORD);

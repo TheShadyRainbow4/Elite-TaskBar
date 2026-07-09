@@ -3700,7 +3700,7 @@ bool TaskbarWindow::Initialize(HINSTANCE hInstance) {
         RegCloseKey(hKeyForce);
     }
 
-    if ((g_Config.Mode == TaskbarMode::Replace || forceProgman) && desktopReplaceEnabled) {
+    if ((g_Config.Mode == TaskbarMode::Replace || g_Config.Mode == TaskbarMode::SecondaryOnly || forceProgman) && desktopReplaceEnabled) {
         DesktopWindow::Initialize();
     }
 
