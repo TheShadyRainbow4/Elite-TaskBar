@@ -19,6 +19,7 @@ All notable changes to this project will be documented in this file.
 - **Resolve ODR Violation and Startup Crash**: Renamed the monitor enumeration callbacks to `TaskbarMonitorEnumProc` in `TaskbarWindow.cpp` and `DesktopMonitorEnumProc` in `DesktopWindow.cpp` to prevent linking/definition collisions (ODR violation) and resolve startup crash. - Builder-Bob
 - **Desktop View Settings Integration**: Updated `DesktopWindow.cpp` to correctly read `DefaultFolderView` from the `HKLM\Software\EliteTaskbar` registry key and map it to native `FVM_*` modes, ensuring desktop views match user settings.
 - **Desktop Visibility on Primary Monitor**: Discovered that when in `SecondaryOnly` mode, the custom desktop was drawing behind the native desktop on the primary monitor, and secondary monitors only drew wallpaper. E2E fixes for full hybrid desktop integration are pending.
+- **Start Button & AppBar Reservation Fixes**: Updated Start Button default mode to properly invoke EliteStartMenu.exe or fallback to the native start menu (via SC_TASKLIST). Fixed AppBar workspace reservation on secondary monitors by removing conditional blocks on SHAppBarMessage calls in TaskbarWindow.cpp. - Antigravity
 
 ### Added
 - **Extended Folder Views**: Added missing context menu accelerators and command routing for thumbnail and tile view modes (e.g., `IDM_VIEW_SMALLICONTILES`, `IDM_VIEW_THUMBNAILLIST`) into `BrowserCommandController.cpp`, `MainWndSwitch.cpp`, and `AcceleratorMappings.h`. - Susan Gemm
