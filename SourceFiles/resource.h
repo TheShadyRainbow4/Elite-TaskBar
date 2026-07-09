@@ -108,6 +108,7 @@
 #define IDD_EXPLORER_PROPS              243
 #define IDD_DWM_PROPS                   244
 #define IDD_COLORS_PROPS                245
+#define IDD_ADVANCED_APPEARANCE         246
 
 #define IDC_EXPLORER_HIDDEN_FILES       340
 #define IDC_EXPLORER_EXTENSIONS         341
@@ -122,7 +123,15 @@
 #define IDC_COLORS_CLASSIC              361
 #define IDC_COLORS_WINDOWS_DARK         362
 #define IDC_COLORS_APP_DARK             363
+#define IDC_ADVANCED_APPEARANCE         364
+#define IDC_ADV_COLOR_HIGHLIGHT         365
+#define IDC_ADV_COLOR_DESKTOP           366
+#define IDC_ADV_COLOR_ACTIVETITLE       367
+#define IDC_ADV_COLOR_GRADIENT          368
+#define IDC_ADV_COLOR_TEXT              369
 #define IDC_PRIMARY_SHELL_MODE          370
+#define IDC_ADV_COLOR_CAPTIONTEXT       371
+#define IDC_ADV_FONT                    372
 
 #define IDC_EXPLORER_ENABLE_TASKBAR      380
 #define IDC_EXPLORER_ENABLE_STARTMENU    381
@@ -135,6 +144,7 @@
 #define IDC_MANUAL_TRAY_WIDTH            390
 #define IDC_EXPLORER_FOLDER_VIEW_DEFAULT 391
 #define IDC_EXPLORER_THUMBNAIL_MIRROR_VIEWS 392
+
 
 
 
