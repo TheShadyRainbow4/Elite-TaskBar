@@ -17,6 +17,11 @@ All notable changes to this project will be documented in this file.
 
 ### Fixed
 - **Resolve ODR Violation and Startup Crash**: Renamed the monitor enumeration callbacks to `TaskbarMonitorEnumProc` in `TaskbarWindow.cpp` and `DesktopMonitorEnumProc` in `DesktopWindow.cpp` to prevent linking/definition collisions (ODR violation) and resolve startup crash. - Builder-Bob
+- **Desktop View Settings Integration**: Updated `DesktopWindow.cpp` to correctly read `DefaultFolderView` from the `HKLM\Software\EliteTaskbar` registry key and map it to native `FVM_*` modes, ensuring desktop views match user settings.
+- **Desktop Visibility on Primary Monitor**: Discovered that when in `SecondaryOnly` mode, the custom desktop was drawing behind the native desktop on the primary monitor, and secondary monitors only drew wallpaper. E2E fixes for full hybrid desktop integration are pending.
+
+### Added
+- **Extended Folder Views**: Added missing context menu accelerators and command routing for thumbnail and tile view modes (e.g., `IDM_VIEW_SMALLICONTILES`, `IDM_VIEW_THUMBNAILLIST`) into `BrowserCommandController.cpp`, `MainWndSwitch.cpp`, and `AcceleratorMappings.h`. - Susan Gemm
 
 ### Added
 - **Refine E2E Z-Ordering Check**: Updated the Z-ordering verification check in `run_comprehensive_e2e.ps1` to use a robust window-hierarchy walk using `GetWindow` below the custom desktop, ignoring invisible or desktop windows. - Builder-Bob
@@ -666,4 +671,11 @@ All notable changes to this project will be documented in this file.
 
 
 
+
+
+### [2026-07-08] Unified Shell, Tray UI, Start Button, and Settings Fixes
+- **TaskbarWindow.cpp**: Corrected ABM_NEW and ABM_SETPOS logic to apply strictly per-monitor. Maximized windows now respect the custom taskbar on secondary displays without being obscured. Tray flyout math was refactored to spawn directly centered above the clicked icon rather than snapping to the main monitor.
+- **StartButton.cpp**: Injected a direct process-spawning fallback mechanism that detects if EliteStartMenu.exe is absent and triggers the native SC_TASKLIST command to open the default Windows Start Menu.
+- **TaskbarProperties.cpp & EliteSettings.ps1**: Completely rebuilt the Advanced Appearance color and font pickers using native Win32 ChooseColorW and ChooseFontW to mimic classic Windows UI customization. Re-routed all backend read/write logic strictly to HKLM to ensure the settings apply globally as an OS appliance.
+- **main.cpp**: Patched the backend configuration initialization to query HKLM instead of HKCU. Changed the default out-of-the-box configuration from Independent mode to SecondaryOnly (Hybrid) mode, restoring the native taskbar to the primary monitor while ensuring the custom desktop layer safely initiates across all screens.
 

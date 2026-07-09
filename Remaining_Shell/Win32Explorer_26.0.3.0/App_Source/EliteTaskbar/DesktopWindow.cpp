@@ -292,7 +292,6 @@ LRESULT CALLBACK SecondaryProgmanWndProc(HWND hwnd, UINT uMsg, WPARAM wParam, LP
 static IShellView* s_pDesktopView = nullptr;
 static CDesktopShellBrowser* s_pDesktopBrowser = nullptr;
 static HWND s_hwndDesktopView = NULL;
-static std::vector<HWND> s_secondaryDesktopWnds;
 
 namespace DesktopWindow {
     bool Initialize() {
@@ -396,19 +395,10 @@ namespace DesktopWindow {
 
         DesktopMonitorInfo primaryMon;
         primaryMon.isPrimary = true;
-        primaryMon.rect.left = 0;
-        primaryMon.rect.top = 0;
-        primaryMon.rect.right = GetSystemMetrics(SM_CXSCREEN);
-        primaryMon.rect.bottom = GetSystemMetrics(SM_CYSCREEN);
-
-        std::vector<DesktopMonitorInfo> secondaryMons;
-        for (const auto& m : monitors) {
-            if (m.isPrimary) {
-                primaryMon = m;
-            } else {
-                secondaryMons.push_back(m);
-            }
-        }
+        primaryMon.rect.left = GetSystemMetrics(SM_XVIRTUALSCREEN);
+        primaryMon.rect.top = GetSystemMetrics(SM_YVIRTUALSCREEN);
+        primaryMon.rect.right = primaryMon.rect.left + GetSystemMetrics(SM_CXVIRTUALSCREEN);
+        primaryMon.rect.bottom = primaryMon.rect.top + GetSystemMetrics(SM_CYVIRTUALSCREEN);
 
         int x = primaryMon.rect.left;
         int y = primaryMon.rect.top;
@@ -432,25 +422,6 @@ namespace DesktopWindow {
         // Force bottom Z-order positioning
         SetWindowPos(s_hProgman, HWND_BOTTOM, x, y, cx, cy, SWP_SHOWWINDOW | SWP_NOACTIVATE);
 
-        // Spawn secondary desktop windows for multi-monitor wallpaper painting - Builder-Bob
-        for (const auto& m : secondaryMons) {
-            HWND hwndSec = CreateWindowExW(
-                WS_EX_TOOLWINDOW,
-                L"EliteDesktopSecondary",
-                L"Secondary Program Manager",
-                WS_POPUP | WS_VISIBLE | WS_CLIPCHILDREN | WS_CLIPSIBLINGS,
-                m.rect.left, m.rect.top,
-                m.rect.right - m.rect.left, m.rect.bottom - m.rect.top,
-                NULL, NULL, hInst, NULL
-            );
-            if (hwndSec) {
-                SetWindowPos(hwndSec, HWND_BOTTOM, m.rect.left, m.rect.top,
-                    m.rect.right - m.rect.left, m.rect.bottom - m.rect.top,
-                    SWP_SHOWWINDOW | SWP_NOACTIVATE);
-                s_secondaryDesktopWnds.push_back(hwndSec);
-            }
-        }
-
         Logger::Log(L"Custom Progman window initialized successfully.");
         return true;
     }
@@ -471,14 +442,6 @@ namespace DesktopWindow {
             DestroyWindow(s_hProgman);
             s_hProgman = NULL;
         }
-
-        // Destroy secondary desktop windows - Builder-Bob
-        for (HWND hwndSec : s_secondaryDesktopWnds) {
-            if (IsWindow(hwndSec)) {
-                DestroyWindow(hwndSec);
-            }
-        }
-        s_secondaryDesktopWnds.clear();
 
         HINSTANCE hInst = GetModuleHandleW(NULL);
         UnregisterClassW(L"Progman", hInst);
@@ -611,33 +574,7 @@ LRESULT CALLBACK ProgmanWndProc(HWND hwnd, UINT uMsg, WPARAM wParam, LPARAM lPar
         if (hwndDefView) {
             SetWindowPos(hwndDefView, NULL, 0, 0, cx, cy, SWP_NOZORDER | SWP_NOACTIVATE);
         }
-
-        // Recreate secondary windows - Builder-Bob
-        for (HWND hwndSec : s_secondaryDesktopWnds) {
-            if (IsWindow(hwndSec)) {
-                DestroyWindow(hwndSec);
-            }
-        }
-        s_secondaryDesktopWnds.clear();
-
-        HINSTANCE hInst = GetModuleHandleW(NULL);
-        for (const auto& m : secondaryMons) {
-            HWND hwndSec = CreateWindowExW(
-                WS_EX_TOOLWINDOW,
-                L"EliteDesktopSecondary",
-                L"Secondary Program Manager",
-                WS_POPUP | WS_VISIBLE | WS_CLIPCHILDREN | WS_CLIPSIBLINGS,
-                m.rect.left, m.rect.top,
-                m.rect.right - m.rect.left, m.rect.bottom - m.rect.top,
-                NULL, NULL, hInst, NULL
-            );
-            if (hwndSec) {
-                SetWindowPos(hwndSec, HWND_BOTTOM, m.rect.left, m.rect.top,
-                    m.rect.right - m.rect.left, m.rect.bottom - m.rect.top,
-                    SWP_SHOWWINDOW | SWP_NOACTIVATE);
-                s_secondaryDesktopWnds.push_back(hwndSec);
-            }
-        }
+        
         return 0;
     }
     case WM_TIMER: {

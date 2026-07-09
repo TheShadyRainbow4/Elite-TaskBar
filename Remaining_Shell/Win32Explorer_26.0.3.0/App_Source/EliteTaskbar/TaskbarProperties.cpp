@@ -1899,7 +1899,7 @@ INT_PTR CALLBACK DesktopSettingsDlgProc(HWND hwndDlg, UINT uMsg, WPARAM wParam, 
         AddDlgTooltip(hwndDlg, IDC_DESKTOP_THUMBNAILS, L"Render dynamic file previews/thumbnails on the desktop. Premium vibes included.");
         
         HKEY hKey;
-        DWORD replaceVal = 1;
+        DWORD replaceVal = 0;
         DWORD wallpaperVal = 1;
         DWORD iconsVal = 1;
         DWORD forceProgmanVal = 0;

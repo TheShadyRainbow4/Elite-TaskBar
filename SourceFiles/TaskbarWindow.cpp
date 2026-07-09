@@ -3678,10 +3678,10 @@ bool TaskbarWindow::Initialize(HINSTANCE hInstance) {
         return TRUE;
     }, 0);
 
-    bool desktopReplaceEnabled = true;
+    bool desktopReplaceEnabled = false;
     HKEY hKeyDesktop;
     if (RegOpenKeyExW(GetEliteRegistryRoot(), L"Software\\EliteSoftware\\Win32Explorer\\Advanced", 0, KEY_READ, &hKeyDesktop) == ERROR_SUCCESS) {
-        DWORD dwVal = 1;
+        DWORD dwVal = 0;
         DWORD cbData = sizeof(DWORD);
         if (RegQueryValueExW(hKeyDesktop, L"DesktopReplacementEnabled", NULL, NULL, (LPBYTE)&dwVal, &cbData) == ERROR_SUCCESS) {
             desktopReplaceEnabled = (dwVal == 1);
@@ -3700,7 +3700,7 @@ bool TaskbarWindow::Initialize(HINSTANCE hInstance) {
         RegCloseKey(hKeyForce);
     }
 
-    if ((g_Config.Mode == TaskbarMode::Replace || g_Config.Mode == TaskbarMode::SecondaryOnly || forceProgman) && desktopReplaceEnabled) {
+    if ((g_Config.Mode == TaskbarMode::Replace || forceProgman) && desktopReplaceEnabled) {
         DesktopWindow::Initialize();
     }
 
