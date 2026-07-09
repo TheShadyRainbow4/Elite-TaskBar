@@ -58,24 +58,24 @@ Write-Host "Deploying hardlinks to System32 and SysWOW64..." -ForegroundColor Cy
 
 # Mirror x64 builds to System32
 if (Test-Path $BuildDir) {
-    Get-ChildItem -Path $BuildDir -Filter "*.exe" -ErrorAction SilentlyContinue | ForEach-Object { Create-HardLink -SourcePath $_.FullName -DestDir $sys32 }
+    Get-ChildItem -Path $BuildDir -Filter "*.exe" -ErrorAction SilentlyContinue | Where-Object { $_.Name -ne "EliteSettings.exe" } | ForEach-Object { Create-HardLink -SourcePath $_.FullName -DestDir $sys32 }
     Get-ChildItem -Path $BuildDir -Filter "*.cpl" -ErrorAction SilentlyContinue | ForEach-Object { Create-HardLink -SourcePath $_.FullName -DestDir $sys32 }
     
     # Mirror into Win32Explorer folders
     $subDir1 = "$PSScriptRoot\Win32Explorer_26.0.3.0"
     $subDir2 = "$PSScriptRoot\Remaining_Shell\Win32Explorer_26.0.3.0"
     if (Test-Path $subDir1) {
-        Get-ChildItem -Path $BuildDir -Filter "*.exe" -ErrorAction SilentlyContinue | ForEach-Object { Create-HardLink -SourcePath $_.FullName -DestDir $subDir1 }
+        Get-ChildItem -Path $BuildDir -Filter "*.exe" -ErrorAction SilentlyContinue | Where-Object { $_.Name -ne "EliteSettings.exe" } | ForEach-Object { Create-HardLink -SourcePath $_.FullName -DestDir $subDir1 }
         Get-ChildItem -Path $BuildDir -Filter "*.cpl" -ErrorAction SilentlyContinue | ForEach-Object { Create-HardLink -SourcePath $_.FullName -DestDir $subDir1 }
     }
     if (Test-Path $subDir2) {
-        Get-ChildItem -Path $BuildDir -Filter "*.exe" -ErrorAction SilentlyContinue | ForEach-Object { Create-HardLink -SourcePath $_.FullName -DestDir $subDir2 }
+        Get-ChildItem -Path $BuildDir -Filter "*.exe" -ErrorAction SilentlyContinue | Where-Object { $_.Name -ne "EliteSettings.exe" } | ForEach-Object { Create-HardLink -SourcePath $_.FullName -DestDir $subDir2 }
         Get-ChildItem -Path $BuildDir -Filter "*.cpl" -ErrorAction SilentlyContinue | ForEach-Object { Create-HardLink -SourcePath $_.FullName -DestDir $subDir2 }
     }
 }
 
 # Mirror x86 builds to SysWOW64
 if (Test-Path $BuildDirx86) {
-    Get-ChildItem -Path $BuildDirx86 -Filter "*.exe" -ErrorAction SilentlyContinue | ForEach-Object { Create-HardLink -SourcePath $_.FullName -DestDir $sysWow }
+    Get-ChildItem -Path $BuildDirx86 -Filter "*.exe" -ErrorAction SilentlyContinue | Where-Object { $_.Name -ne "EliteSettings_x86.exe" } | ForEach-Object { Create-HardLink -SourcePath $_.FullName -DestDir $sysWow }
     Get-ChildItem -Path $BuildDirx86 -Filter "*.cpl" -ErrorAction SilentlyContinue | ForEach-Object { Create-HardLink -SourcePath $_.FullName -DestDir $sysWow }
 }

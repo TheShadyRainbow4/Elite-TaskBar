@@ -54,7 +54,7 @@ This document serves as a high-level map and explanation for all files within th
     - Restores the native desktop windows to visible state upon cleanup to ensure seamless co-existence and system stability.
 
 ## Settings & Properties Dialogs
-- **EliteSettingsStub.cpp**: The source file for the `EliteSettings.exe` stub executable. It exists solely to call `ShellExecuteW` to launch `EliteTaskbar.exe /settings`, ensuring that launching the settings dialog from external sources correctly delegates to the main taskbar executable where the property sheet resources live.
+- **EliteSettingsStub.cpp**: Compiled directly into the Control Panel Applet `EliteSettings.cpl` using the `/LD` flag and linked with `settings_resources.res`. Exposes the `CPlApplet` entry point for launching the Settings dialog directly through the Control Panel (`control.exe`) without spawning external processes.
 - **TaskbarProperties.h / TaskbarProperties.cpp**: Implements the **Custom Settings** tabbed property sheet.
   - **Responsibilities**:
     - Replicates the native Windows properties look using `CreatePropertySheetPageW` and `PropertySheetW` (the tabbed applet UI).
