@@ -14,10 +14,17 @@ function Create-HardLink {
     $file = Get-Item $SourcePath
     $targetPath = Join-Path $DestDir $file.Name
 
+    # Force quit running instances of this executable
+    if ($file.Extension -eq '.exe') {
+        Get-Process -Name $file.BaseName -ErrorAction SilentlyContinue | Stop-Process -Force -ErrorAction SilentlyContinue
+        # Add a tiny delay to let the OS release the file lock
+        Start-Sleep -Milliseconds 200
+    }
+
     if (Test-Path $targetPath) {
         Remove-Item -Path $targetPath -Force -ErrorAction SilentlyContinue
         if (Test-Path $targetPath) {
-            $oldName = $file.BaseName + "_old_" + (Get-Date -Format "yyyyMMddHHmmss") + $file.Extension
+            $oldName = $file.BaseName + "_old_" + (Get-Date -Format "yyyyMMddHHmmss") + ".bak"
             Rename-Item -Path $targetPath -NewName $oldName -Force -ErrorAction SilentlyContinue
         }
     }
