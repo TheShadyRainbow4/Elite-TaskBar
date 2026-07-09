@@ -396,24 +396,26 @@ try {
     Get-Process -Name Win32Explorer, EliteTaskbar -ErrorAction SilentlyContinue | Stop-Process -Force
     Start-Sleep -Milliseconds 500
 
-    # Write settings to HKCU and HKLM to ensure they are read regardless of Portable Mirror mode
-    $regSettingsPathLM = "HKLM:\Software\EliteSoftware\Win32Explorer\Settings" # - Draftsman-Dan
-    if (-not (Test-Path $regSettingsPathLM)) {
-        New-Item -Path "HKLM:\Software\EliteSoftware\Win32Explorer" -Name "Settings" -Force | Out-Null # - Draftsman-Dan
+    # Write settings to HKCU, HKLM, and Wow6432Node paths to ensure they are read regardless of redirection
+    $regPaths = @(
+        "HKLM:\Software\EliteSoftware\Win32Explorer\Settings",
+        "HKLM:\Software\Wow6432Node\EliteSoftware\Win32Explorer\Settings",
+        "HKCU:\Software\EliteSoftware\Win32Explorer\Settings",
+        "HKCU:\Software\Wow6432Node\EliteSoftware\Win32Explorer\Settings"
+    )
+    foreach ($path in $regPaths) {
+        $parent = Split-Path $path -Parent
+        if (-not (Test-Path $parent)) {
+            New-Item -Path (Split-Path $parent -Parent) -Name (Split-Path $parent -Leaf) -Force -ErrorAction SilentlyContinue | Out-Null # - Draftsman-Dan
+        }
+        if (-not (Test-Path $path)) {
+            New-Item -Path $parent -Name "Settings" -Force -ErrorAction SilentlyContinue | Out-Null # - Draftsman-Dan
+        }
+        Set-ItemProperty -Path $path -Name "EnableEliteTaskbar" -Value 1 -Type DWord -Force -ErrorAction SilentlyContinue # - Draftsman-Dan
+        Set-ItemProperty -Path $path -Name "TaskbarMode" -Value 1 -Type DWord -Force -ErrorAction SilentlyContinue # - Draftsman-Dan
+        Set-ItemProperty -Path $path -Name "DesktopReplacementEnabled" -Value 1 -Type DWord -Force -ErrorAction SilentlyContinue # - Draftsman-Dan
+        Set-ItemProperty -Path $path -Name "ForceProgmanAllDisplays" -Value 1 -Type DWord -Force -ErrorAction SilentlyContinue # - Draftsman-Dan
     }
-    Set-ItemProperty -Path $regSettingsPathLM -Name "EnableEliteTaskbar" -Value 1 -Type DWord -Force
-    Set-ItemProperty -Path $regSettingsPathLM -Name "TaskbarMode" -Value 1 -Type DWord -Force
-    Set-ItemProperty -Path $regSettingsPathLM -Name "DesktopReplacementEnabled" -Value 1 -Type DWord -Force
-    Set-ItemProperty -Path $regSettingsPathLM -Name "ForceProgmanAllDisplays" -Value 1 -Type DWord -Force
-
-    $regSettingsPathCU = "HKCU:\Software\EliteSoftware\Win32Explorer\Settings" # - Draftsman-Dan
-    if (-not (Test-Path $regSettingsPathCU)) {
-        New-Item -Path "HKCU:\Software\EliteSoftware\Win32Explorer" -Name "Settings" -Force | Out-Null # - Draftsman-Dan
-    }
-    Set-ItemProperty -Path $regSettingsPathCU -Name "EnableEliteTaskbar" -Value 1 -Type DWord -Force
-    Set-ItemProperty -Path $regSettingsPathCU -Name "TaskbarMode" -Value 1 -Type DWord -Force
-    Set-ItemProperty -Path $regSettingsPathCU -Name "DesktopReplacementEnabled" -Value 1 -Type DWord -Force
-    Set-ItemProperty -Path $regSettingsPathCU -Name "ForceProgmanAllDisplays" -Value 1 -Type DWord -Force
 
     Start-Sleep -Seconds 1
     Start-Process -FilePath "Win32Explorer.exe"
