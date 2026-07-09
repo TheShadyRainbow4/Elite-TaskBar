@@ -245,6 +245,27 @@ try {
     # ----------------- TEST 2: Start Menu Tab (No Hover) -----------------
     Write-Host "`n[TEST 2] Verifying Start Menu settings tab layout..." -ForegroundColor Yellow
     
+    # Write settings to HKCU, HKLM, and Wow6432Node paths to ensure Settings UI loads with correct states
+    $regPaths = @(
+        "HKLM:\Software\EliteSoftware\Win32Explorer\Settings",
+        "HKLM:\Software\Wow6432Node\EliteSoftware\Win32Explorer\Settings",
+        "HKCU:\Software\EliteSoftware\Win32Explorer\Settings",
+        "HKCU:\Software\Wow6432Node\EliteSoftware\Win32Explorer\Settings"
+    )
+    foreach ($path in $regPaths) {
+        $parent = Split-Path $path -Parent
+        if (-not (Test-Path $parent)) {
+            New-Item -Path (Split-Path $parent -Parent) -Name (Split-Path $parent -Leaf) -Force -ErrorAction SilentlyContinue | Out-Null # - Draftsman-Dan
+        }
+        if (-not (Test-Path $path)) {
+            New-Item -Path $parent -Name "Settings" -Force -ErrorAction SilentlyContinue | Out-Null # - Draftsman-Dan
+        }
+        Set-ItemProperty -Path $path -Name "EnableEliteTaskbar" -Value 1 -Type DWord -Force -ErrorAction SilentlyContinue # - Draftsman-Dan
+        Set-ItemProperty -Path $path -Name "TaskbarMode" -Value 1 -Type DWord -Force -ErrorAction SilentlyContinue # - Draftsman-Dan
+        Set-ItemProperty -Path $path -Name "DesktopReplacementEnabled" -Value 1 -Type DWord -Force -ErrorAction SilentlyContinue # - Draftsman-Dan
+        Set-ItemProperty -Path $path -Name "ForceProgmanAllDisplays" -Value 1 -Type DWord -Force -ErrorAction SilentlyContinue # - Draftsman-Dan
+    }
+
     # Launch EliteSettings.cpl - Draftsman-Dan
     $cplPath = Join-Path $ScriptDir "BuildOutput\EliteSettings.cpl"
     Start-Process -FilePath "control.exe" -ArgumentList "`"$cplPath`""
