@@ -794,24 +794,28 @@ void UpdateTaskbarLayout(TaskbarInstance* inst) {
             int btnCount = (int)SendMessageW(inst->hToolbar, TB_BUTTONCOUNT, 0, 0);
             if (btnCount > 0) {
                 if (g_Config.EnableTwoRowTray) {
-                    int colCount = (btnCount + 1) / 2;
+                    int visCount = 0;
+                    for (int idx = 0; idx < btnCount; ++idx) {
+                        if (!(SendMessageW(inst->hToolbar, TB_GETSTATE, idx, 0) & TBSTATE_HIDDEN)) visCount++;
+                    }
+                    int colCount = (visCount + 1) / 2;
                     W_tray = colCount * MulDiv(15, dpi, 96) + 4; // 15px per column in two-row mode
                 } else {
                     SendMessageW(inst->hToolbar, TB_AUTOSIZE, 0, 0);
-                    RECT rcLast = { 0 };
-                    if (SendMessageW(inst->hToolbar, TB_GETITEMRECT, btnCount - 1, (LPARAM)&rcLast)) {
-                        int maxWidth = rcLast.right;
-                        for (int idx = 0; idx < btnCount - 1; ++idx) {
-                            RECT rcItem = { 0 };
-                            if (SendMessageW(inst->hToolbar, TB_GETITEMRECT, idx, (LPARAM)&rcItem)) {
-                                if (rcItem.right > maxWidth) {
-                                    maxWidth = rcItem.right;
-                                }
+                    int maxWidth = 0;
+                    for (int idx = 0; idx < btnCount; ++idx) {
+                        if (SendMessageW(inst->hToolbar, TB_GETSTATE, idx, 0) & TBSTATE_HIDDEN) continue;
+                        RECT rcItem = { 0 };
+                        if (SendMessageW(inst->hToolbar, TB_GETITEMRECT, idx, (LPARAM)&rcItem)) {
+                            if (rcItem.right > maxWidth) {
+                                maxWidth = rcItem.right;
                             }
                         }
+                    }
+                    if (maxWidth > 0) {
                         W_tray = maxWidth + 4;
                     } else {
-                        W_tray = btnCount * MulDiv(24, dpi, 96);
+                        W_tray = 0;
                     }
                 }
             } else {
@@ -974,7 +978,20 @@ void StartNativeTaskbarSpoof(HWND hClickedTaskbar) {
         g_SpoofStartTime = GetTickCount();
         RECT rc;
         GetWindowRect(hClickedTaskbar, &rc);
-        SetWindowPos(g_hNativeTaskbar, HWND_TOPMOST, rc.left, rc.top, rc.right - rc.left, rc.bottom - rc.top, SWP_NOACTIVATE);
+        POINT pt;
+        GetCursorPos(&pt);
+        int targetX = rc.left;
+        HWND hNotify = FindWindowExW(g_hNativeTaskbar, NULL, L"TrayNotifyWnd", NULL);
+        if (hNotify) {
+            RECT rcNotify, rcNative;
+            GetWindowRect(hNotify, &rcNotify);
+            GetWindowRect(g_hNativeTaskbar, &rcNative);
+            int offset = rcNotify.left - rcNative.left;
+            targetX = pt.x - offset - ((rcNotify.right - rcNotify.left) / 2);
+        } else {
+            targetX = pt.x - (rc.right - rc.left);
+        }
+        SetWindowPos(g_hNativeTaskbar, HWND_TOPMOST, targetX, rc.top, rc.right - rc.left, rc.bottom - rc.top, SWP_NOACTIVATE);
         ShowWindow(g_hNativeTaskbar, SW_SHOWNOACTIVATE);
     }
 }
@@ -3539,7 +3556,7 @@ bool TaskbarWindow::Initialize(HINSTANCE hInstance) {
             inst->hTrayNotify = CreateWindowExW(0, L"TrayNotifyWnd", L"", WS_CHILD | WS_VISIBLE | WS_CLIPSIBLINGS | WS_CLIPCHILDREN, screenWidth - MulDiv(255, dpi, 96), 0, MulDiv(240, dpi, 96), inst->taskbarHeight, inst->hTaskbar, NULL, hInstance, NULL);
             
             if (enableTray) {
-                inst->hSysPager = CreateWindowExW(0, L"SysPager", L"", WS_CHILD | WS_VISIBLE | WS_CLIPSIBLINGS | WS_CLIPCHILDREN, 0, 0, MulDiv(100, dpi, 96), inst->taskbarHeight, inst->hTrayNotify, NULL, hInstance, NULL);
+                inst->hSysPager = CreateWindowExW(0, L"SysPager", L"", WS_CHILD | WS_VISIBLE | WS_CLIPSIBLINGS | WS_CLIPCHILDREN | 1 /*PGS_HORZ*/, 0, 0, MulDiv(100, dpi, 96), inst->taskbarHeight, inst->hTrayNotify, NULL, hInstance, NULL);
                 SetWindowTheme(inst->hSysPager, L"", L"");
                 SetWindowSubclass(inst->hSysPager, ::SysPagerSubclassProc, 3, 0);
 
