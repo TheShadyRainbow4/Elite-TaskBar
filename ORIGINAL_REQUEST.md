@@ -586,6 +586,20 @@ USER REQUEST VERBATIM: "not co exist as overlay co exist as in only draw taskbar
 
 Fix the initialization logic in `TaskbarWindow.cpp` to correctly skip the primary monitor during taskbar creation if the native shell is alive and running!
 
+## Follow-up — 2026-07-09T04:03:02Z
+
+USER REQUEST VERBATIM: "or if not detected If I run this in winpe or server core it should literally be an entire shell on its own. or be able to be set as such. and should abide by settings inside win32explorers options if its replacing shell folders in there or our settings they should all mirror not just be random messy settings that seem to not know if you set the same thing elsewhere. like I am so confused on how this is happening or why so many features seem to exist twice and not be expanded but like added. in settings I see so many places that seem to have a setting that does the same thing but controls a different version of same feature. the entire suite of exe files makes up the shell win32explorer is the file browser and the cpl should list and manage all settings of the native shell, our shell and win32explorer. inside win32explorer its options window should show its normal settings it has but if they were changed in the cpl it should reflect that there as well not be separate as it makes it impossible to know how it works or if it works. tray it still showing every possible icon for task manager and others as if they were all different entries instead of showing one animated or changing icon. idk how to use this if there are 800 icons for taskmgr when there should only be 1 that changes states. like this is not that hard was clearly outlined and there is literally source code to reference from reactOS and others INSIDE THE FUCKING PROJECT designed to make this not be a damn mess. but clearly I have not been clear enough to make this work. you all did so good developing during previous sessions.."
+
+**CRITICAL BUG REPORTS & DIRECTIVES (READ CAREFULLY):**
+
+1. **System Tray Icon Duplication Bug:** You broke `NIM_MODIFY` in the tray. When an app (like Task Manager) changes its icon state, you are adding a completely new icon instead of updating the existing one. 
+   - *Action:* Look inside the project directory for the ReactOS or reference tray source code that the user provided. Use it! Fix the `NOTIFYICONDATA` parsing so that `hWnd` and `uID` correctly identify and *update* an existing icon instead of spamming 800 duplicates.
+
+2. **Settings Disconnect / Duplicate Features:** The settings in `EliteSettings.cpl` and the internal options window of `Win32Explorer` are completely disconnected. They are controlling duplicate versions of the same features because you aren't pointing them to the same registry keys.
+   - *Action:* Audit the settings logic. `Win32Explorer`'s internal options and `EliteSettings.cpl` MUST read and write to the exact same global registry keys (HKLM). Do not build separate configuration silos. If I change a setting in the CPL, Win32Explorer must instantly reflect it, and vice versa. Clean up this messy duplication.
+
+Stop guessing. Read the provided reference code in the project folder to fix the tray, and unify the registry settings so the CPL and Win32Explorer are perfectly mirrored.
+
 
 
 
