@@ -4,6 +4,9 @@ All notable changes to this project will be documented in this file.
 
 
 ## [Unreleased]
+### Changed
+- **Registry Hive Consolidation (HKLM)**: Completed final purge of `HKEY_CURRENT_USER` references across the entire codebase (`TaskbarProperties.new.cpp`, `TaskbarWindow.cpp`, and `.reg` scripts), updating all reads and writes (including native Microsoft keys like `CurrentVersion\Explorer\Advanced`) to exclusively utilize `HKEY_LOCAL_MACHINE`. This enforces global configuration rules and prevents per-user isolation mismatches.
+- **Registry Key Path Standardization**: Replaced all remaining legacy occurrences of the `Software\EliteSoftware\Win32Explorer\Advanced` subkey path with the standardized `Software\EliteSoftware\Win32Explorer\Settings` path in `TaskbarProperties.cpp` and `TaskbarProperties.new.cpp` for unified and predictable settings storage.
 ### Added
 - **CPL Settings Transition**: Transitioned the settings application from a standalone `EliteSettings.exe` to a native Control Panel Applet (`EliteSettings.cpl`), compiling the settings stub and dialogs directly into the CPL. Modified context menu settings and double-click callbacks in `TaskbarWindow.cpp` to natively launch the CPL via `control.exe`. Legacy settings executables are actively purged from all system target directories upon deployment. - Draftsman-Dan
 - **System Tray & Clock Layout**: Added registry-controlled toggles for `DynamicClockWidth` and `HorizontalTrayChevron` (defaulting to true) to `EliteTaskbarConfig` and dialog properties. Implemented taskbar lock checking `IsTaskbarLocked` to prevent tray resizing when locked. Subclassed mouse events in tray toolbar and clock widget to forward left 0-5px margin drag-resizing to parent notify area. Replaced the `▲` UP arrow with horizontal overflow arrows `<` and `>` when horizontal chevron is active, and dynamically measured clock text using `DT_CALCRECT` to set precise tight margins. - Draftsman-Dan

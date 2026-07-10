@@ -1075,7 +1075,7 @@ std::vector<TaskbarInstance*> g_Taskbars;
 bool IsTaskbarLocked() {
     bool isLocked = true;
     HKEY hKey;
-    if (RegOpenKeyExW(HKEY_CURRENT_USER, L"Software\\Microsoft\\Windows\\CurrentVersion\\Explorer\\Advanced", 0, KEY_READ, &hKey) == ERROR_SUCCESS) {
+    if (RegOpenKeyExW(HKEY_LOCAL_MACHINE, L"Software\\Microsoft\\Windows\\CurrentVersion\\Explorer\\Advanced", 0, KEY_READ, &hKey) == ERROR_SUCCESS) {
         DWORD dwValue = 0;
         DWORD cbData = sizeof(DWORD);
         if (RegQueryValueExW(hKey, L"TaskbarSizeMove", NULL, NULL, (LPBYTE)&dwValue, &cbData) == ERROR_SUCCESS) {
@@ -2525,7 +2525,7 @@ LRESULT CALLBACK TrayClockProc(HWND hwnd, UINT uMsg, WPARAM wParam, LPARAM lPara
     case WM_LBUTTONDOWN: {
         DWORD trayMode = 0;
         HKEY hKey;
-        if (RegOpenKeyExW(HKEY_CURRENT_USER, L"Software\\EliteSoftware\\Win32Explorer\\Settings", 0, KEY_READ, &hKey) == ERROR_SUCCESS) { // - Draftsman-Dan
+        if (RegOpenKeyExW(HKEY_LOCAL_MACHINE, L"Software\\EliteSoftware\\Win32Explorer\\Settings", 0, KEY_READ, &hKey) == ERROR_SUCCESS) { // - Draftsman-Dan
             DWORD cbData = sizeof(DWORD);
             RegQueryValueExW(hKey, L"TrayMode", NULL, NULL, (LPBYTE)&trayMode, &cbData);
             RegCloseKey(hKey);
@@ -2707,7 +2707,7 @@ LRESULT CALLBACK WindowProc(HWND hwnd, UINT uMsg, WPARAM wParam, LPARAM lParam) 
         if (inst) {
             int baseHeight = 40;
             HKEY hKeySmall;
-            if (RegOpenKeyExW(HKEY_CURRENT_USER, L"Software\\Microsoft\\Windows\\CurrentVersion\\Explorer\\Advanced", 0, KEY_READ, &hKeySmall) == ERROR_SUCCESS) {
+            if (RegOpenKeyExW(HKEY_LOCAL_MACHINE, L"Software\\Microsoft\\Windows\\CurrentVersion\\Explorer\\Advanced", 0, KEY_READ, &hKeySmall) == ERROR_SUCCESS) {
                 DWORD dwVal = 0, cbData = sizeof(DWORD);
                 if (RegQueryValueExW(hKeySmall, L"TaskbarSmallIcons", NULL, NULL, (LPBYTE)&dwVal, &cbData) == ERROR_SUCCESS) {
                     baseHeight = (dwVal == 1) ? 30 : 40;
@@ -2861,7 +2861,7 @@ LRESULT CALLBACK WindowProc(HWND hwnd, UINT uMsg, WPARAM wParam, LPARAM lParam) 
                 bool isVisible = IsWindowVisible(hListView);
                 ShowWindow(hListView, isVisible ? SW_HIDE : SW_SHOW);
                 HKEY hKey;
-                if (RegOpenKeyExW(HKEY_CURRENT_USER, L"Software\\Microsoft\\Windows\\CurrentVersion\\Explorer\\Advanced", 0, KEY_WRITE, &hKey) == ERROR_SUCCESS) {
+                if (RegOpenKeyExW(HKEY_LOCAL_MACHINE, L"Software\\Microsoft\\Windows\\CurrentVersion\\Explorer\\Advanced", 0, KEY_WRITE, &hKey) == ERROR_SUCCESS) {
                     DWORD dwHide = isVisible ? 1 : 0;
                     RegSetValueExW(hKey, L"HideIcons", 0, REG_DWORD, (const BYTE*)&dwHide, sizeof(DWORD));
                     RegCloseKey(hKey);
@@ -3060,7 +3060,7 @@ LRESULT CALLBACK WindowProc(HWND hwnd, UINT uMsg, WPARAM wParam, LPARAM lParam) 
             
             bool isLocked = false;
             HKEY hKey;
-            if (RegOpenKeyExW(HKEY_CURRENT_USER, L"Software\\Microsoft\\Windows\\CurrentVersion\\Explorer\\Advanced", 0, KEY_READ, &hKey) == ERROR_SUCCESS) {
+            if (RegOpenKeyExW(HKEY_LOCAL_MACHINE, L"Software\\Microsoft\\Windows\\CurrentVersion\\Explorer\\Advanced", 0, KEY_READ, &hKey) == ERROR_SUCCESS) {
                 DWORD dwValue = 0;
                 DWORD cbData = sizeof(DWORD);
                 if (RegQueryValueExW(hKey, L"TaskbarSizeMove", NULL, NULL, (LPBYTE)&dwValue, &cbData) == ERROR_SUCCESS) {
@@ -3173,7 +3173,7 @@ LRESULT CALLBACK WindowProc(HWND hwnd, UINT uMsg, WPARAM wParam, LPARAM lParam) 
                 if (g_hNativeTaskbar) PostMessageW(g_hNativeTaskbar, WM_COMMAND, 424, 0); // 424 is ID_LOCKTASKBAR
                 else {
                     HKEY hKey;
-                    if (RegOpenKeyExW(HKEY_CURRENT_USER, L"Software\\Microsoft\\Windows\\CurrentVersion\\Explorer\\Advanced", 0, KEY_READ | KEY_WRITE, &hKey) == ERROR_SUCCESS) {
+                    if (RegOpenKeyExW(HKEY_LOCAL_MACHINE, L"Software\\Microsoft\\Windows\\CurrentVersion\\Explorer\\Advanced", 0, KEY_READ | KEY_WRITE, &hKey) == ERROR_SUCCESS) {
                         DWORD dwValue = 0;
                         DWORD cbData = sizeof(DWORD);
                         if (RegQueryValueExW(hKey, L"TaskbarSizeMove", NULL, NULL, (LPBYTE)&dwValue, &cbData) == ERROR_SUCCESS) {
@@ -3258,7 +3258,7 @@ LRESULT CALLBACK WindowProc(HWND hwnd, UINT uMsg, WPARAM wParam, LPARAM lParam) 
             
             bool isLocked = false;
             HKEY hKey;
-            if (RegOpenKeyExW(HKEY_CURRENT_USER, L"Software\\Microsoft\\Windows\\CurrentVersion\\Explorer\\Advanced", 0, KEY_READ, &hKey) == ERROR_SUCCESS) {
+            if (RegOpenKeyExW(HKEY_LOCAL_MACHINE, L"Software\\Microsoft\\Windows\\CurrentVersion\\Explorer\\Advanced", 0, KEY_READ, &hKey) == ERROR_SUCCESS) {
                 DWORD dwValue = 0;
                 DWORD cbData = sizeof(DWORD);
                 if (RegQueryValueExW(hKey, L"TaskbarSizeMove", NULL, NULL, (LPBYTE)&dwValue, &cbData) == ERROR_SUCCESS) {
@@ -3538,7 +3538,7 @@ bool TaskbarWindow::Initialize(HINSTANCE hInstance) {
 
     int taskbarHeight = 40; // Default fallback
     HKEY hKey;
-    if (RegOpenKeyExW(HKEY_CURRENT_USER, L"Software\\Microsoft\\Windows\\CurrentVersion\\Explorer\\Advanced", 0, KEY_READ, &hKey) == ERROR_SUCCESS) {
+    if (RegOpenKeyExW(HKEY_LOCAL_MACHINE, L"Software\\Microsoft\\Windows\\CurrentVersion\\Explorer\\Advanced", 0, KEY_READ, &hKey) == ERROR_SUCCESS) {
         DWORD dwValue = 0;
         DWORD cbData = sizeof(DWORD);
         if (RegQueryValueExW(hKey, L"TaskbarSmallIcons", NULL, NULL, (LPBYTE)&dwValue, &cbData) == ERROR_SUCCESS) {
@@ -3661,7 +3661,7 @@ bool TaskbarWindow::Initialize(HINSTANCE hInstance) {
         int baseHeight = 40;
         {
             HKEY hKeySmall;
-            if (RegOpenKeyExW(HKEY_CURRENT_USER, L"Software\\Microsoft\\Windows\\CurrentVersion\\Explorer\\Advanced", 0, KEY_READ, &hKeySmall) == ERROR_SUCCESS) {
+            if (RegOpenKeyExW(HKEY_LOCAL_MACHINE, L"Software\\Microsoft\\Windows\\CurrentVersion\\Explorer\\Advanced", 0, KEY_READ, &hKeySmall) == ERROR_SUCCESS) {
                 DWORD dwValue = 0;
                 DWORD cbData = sizeof(DWORD);
                 if (RegQueryValueExW(hKeySmall, L"TaskbarSmallIcons", NULL, NULL, (LPBYTE)&dwValue, &cbData) == ERROR_SUCCESS) {

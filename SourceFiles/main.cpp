@@ -182,7 +182,7 @@ int EXCEPTION_EXECUTE_HANDLER_FUNC(unsigned int code, struct _EXCEPTION_POINTERS
 
 void PerformBootSynchronization() {
     HKEY hMasterKey = NULL;
-    if (RegOpenKeyExW(HKEY_CURRENT_USER, L"Software\\EliteSoftware\\Win32Explorer\\Master", 0, KEY_READ, &hMasterKey) != ERROR_SUCCESS) {
+    if (RegOpenKeyExW(HKEY_LOCAL_MACHINE, L"Software\\EliteSoftware\\Win32Explorer\\Settings", 0, KEY_READ, &hMasterKey) != ERROR_SUCCESS) {
         return;
     }
     
@@ -204,21 +204,21 @@ void PerformBootSynchronization() {
         // Sync to native Windows registry paths
         if (_wcsicmp(valueName, L"Hidden") == 0) {
             HKEY hNative = NULL;
-            if (RegCreateKeyExW(HKEY_CURRENT_USER, L"Software\\Microsoft\\Windows\\CurrentVersion\\Explorer\\Advanced", 0, NULL, REG_OPTION_NON_VOLATILE, KEY_WRITE, NULL, &hNative, NULL) == ERROR_SUCCESS) {
+            if (RegCreateKeyExW(HKEY_LOCAL_MACHINE, L"Software\\Microsoft\\Windows\\CurrentVersion\\Explorer\\Advanced", 0, NULL, REG_OPTION_NON_VOLATILE, KEY_WRITE, NULL, &hNative, NULL) == ERROR_SUCCESS) {
                 RegSetValueExW(hNative, L"Hidden", 0, dwType, valData, cbValData);
                 RegCloseKey(hNative);
             }
         }
         else if (_wcsicmp(valueName, L"HideFileExt") == 0) {
             HKEY hNative = NULL;
-            if (RegCreateKeyExW(HKEY_CURRENT_USER, L"Software\\Microsoft\\Windows\\CurrentVersion\\Explorer\\Advanced", 0, NULL, REG_OPTION_NON_VOLATILE, KEY_WRITE, NULL, &hNative, NULL) == ERROR_SUCCESS) {
+            if (RegCreateKeyExW(HKEY_LOCAL_MACHINE, L"Software\\Microsoft\\Windows\\CurrentVersion\\Explorer\\Advanced", 0, NULL, REG_OPTION_NON_VOLATILE, KEY_WRITE, NULL, &hNative, NULL) == ERROR_SUCCESS) {
                 RegSetValueExW(hNative, L"HideFileExt", 0, dwType, valData, cbValData);
                 RegCloseKey(hNative);
             }
         }
         else if (_wcsicmp(valueName, L"DwmAnimationsEnabled") == 0) {
             HKEY hNative = NULL;
-            if (RegCreateKeyExW(HKEY_CURRENT_USER, L"Control Panel\\Desktop\\WindowMetrics", 0, NULL, REG_OPTION_NON_VOLATILE, KEY_WRITE, NULL, &hNative, NULL) == ERROR_SUCCESS) {
+            if (RegCreateKeyExW(HKEY_LOCAL_MACHINE, L"Control Panel\\Desktop\\WindowMetrics", 0, NULL, REG_OPTION_NON_VOLATILE, KEY_WRITE, NULL, &hNative, NULL) == ERROR_SUCCESS) {
                 DWORD val = *(DWORD*)valData;
                 const wchar_t* strVal = val ? L"1" : L"0";
                 RegSetValueExW(hNative, L"MinAnimate", 0, REG_SZ, (const BYTE*)strVal, (DWORD)(wcslen(strVal) + 1) * sizeof(wchar_t));
@@ -230,14 +230,14 @@ void PerformBootSynchronization() {
         }
         else if (_wcsicmp(valueName, L"DwmGlassEnabled") == 0) {
             HKEY hNative = NULL;
-            if (RegCreateKeyExW(HKEY_CURRENT_USER, L"Software\\Microsoft\\Windows\\DWM", 0, NULL, REG_OPTION_NON_VOLATILE, KEY_WRITE, NULL, &hNative, NULL) == ERROR_SUCCESS) {
+            if (RegCreateKeyExW(HKEY_LOCAL_MACHINE, L"Software\\Microsoft\\Windows\\DWM", 0, NULL, REG_OPTION_NON_VOLATILE, KEY_WRITE, NULL, &hNative, NULL) == ERROR_SUCCESS) {
                 RegSetValueExW(hNative, L"Composition", 0, dwType, valData, cbValData);
                 RegCloseKey(hNative);
             }
         }
         else if (_wcsicmp(valueName, L"DwmBorderSize") == 0) {
             HKEY hNative = NULL;
-            if (RegCreateKeyExW(HKEY_CURRENT_USER, L"Control Panel\\Desktop\\WindowMetrics", 0, NULL, REG_OPTION_NON_VOLATILE, KEY_WRITE, NULL, &hNative, NULL) == ERROR_SUCCESS) {
+            if (RegCreateKeyExW(HKEY_LOCAL_MACHINE, L"Control Panel\\Desktop\\WindowMetrics", 0, NULL, REG_OPTION_NON_VOLATILE, KEY_WRITE, NULL, &hNative, NULL) == ERROR_SUCCESS) {
                 wchar_t strVal[32];
                 swprintf_s(strVal, L"%lu", *(DWORD*)valData);
                 RegSetValueExW(hNative, L"BorderWidth", 0, REG_SZ, (const BYTE*)strVal, (DWORD)(wcslen(strVal) + 1) * sizeof(wchar_t));
@@ -246,7 +246,7 @@ void PerformBootSynchronization() {
         }
         else if (_wcsicmp(valueName, L"DesktopIconsEnabled") == 0) {
             HKEY hNative = NULL;
-            if (RegCreateKeyExW(HKEY_CURRENT_USER, L"Software\\Microsoft\\Windows\\CurrentVersion\\Explorer\\Advanced", 0, NULL, REG_OPTION_NON_VOLATILE, KEY_WRITE, NULL, &hNative, NULL) == ERROR_SUCCESS) {
+            if (RegCreateKeyExW(HKEY_LOCAL_MACHINE, L"Software\\Microsoft\\Windows\\CurrentVersion\\Explorer\\Advanced", 0, NULL, REG_OPTION_NON_VOLATILE, KEY_WRITE, NULL, &hNative, NULL) == ERROR_SUCCESS) {
                 DWORD val = *(DWORD*)valData;
                 DWORD hideVal = val ? 0 : 1;
                 RegSetValueExW(hNative, L"HideIcons", 0, REG_DWORD, (const BYTE*)&hideVal, sizeof(DWORD));

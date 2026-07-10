@@ -1,21 +1,21 @@
 Windows Registry Editor Version 5.00
 
 ; Define Win32Explorer verbs for Directory (file system) and Folder (all namespace)
-[HKEY_CURRENT_USER\Software\Classes\Directory\shell\openinWin32Explorer]
+[HKEY_LOCAL_MACHINE\Software\Classes\Directory\shell\openinWin32Explorer]
 @="Open in Win32Explorer"
 
-[HKEY_CURRENT_USER\Software\Classes\Directory\shell\openinWin32Explorer\command]
+[HKEY_LOCAL_MACHINE\Software\Classes\Directory\shell\openinWin32Explorer\command]
 @="\"C:\\Users\\Administrator\\Desktop\\Elite-TaskBar\\BuildOutput\\Win32Explorer.exe\" \"%1\""
 
-[HKEY_CURRENT_USER\Software\Classes\Folder\shell\openinWin32Explorer]
+[HKEY_LOCAL_MACHINE\Software\Classes\Folder\shell\openinWin32Explorer]
 @="Open in Win32Explorer"
 
-[HKEY_CURRENT_USER\Software\Classes\Folder\shell\openinWin32Explorer\command]
+[HKEY_LOCAL_MACHINE\Software\Classes\Folder\shell\openinWin32Explorer\command]
 @="\"C:\\Users\\Administrator\\Desktop\\Elite-TaskBar\\BuildOutput\\Win32Explorer.exe\" \"%1\""
 
 ; Set Win32Explorer as the default verb for folder browsing
-[HKEY_CURRENT_USER\Software\Classes\Directory\shell]
+[HKEY_LOCAL_MACHINE\Software\Classes\Directory\shell]
 @="openinWin32Explorer"
 
-[HKEY_CURRENT_USER\Software\Classes\Folder\shell]
+[HKEY_LOCAL_MACHINE\Software\Classes\Folder\shell]
 @="openinWin32Explorer"

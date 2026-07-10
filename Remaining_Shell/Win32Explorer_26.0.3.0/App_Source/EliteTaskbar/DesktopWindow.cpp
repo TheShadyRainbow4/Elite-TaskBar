@@ -1329,7 +1329,7 @@ void DrawWallpaper(HWND hwnd, HDC hdc, int scrW, int scrH) {
 
         // Native wallpaper engine reads directly from HKCU\Control Panel\Desktop
         if (drawWallpaper) {
-            if (RegOpenKeyExW(HKEY_CURRENT_USER, L"Control Panel\\Desktop", 0, KEY_READ, &hKey) == ERROR_SUCCESS) {
+            if (RegOpenKeyExW(HKEY_LOCAL_MACHINE, L"Control Panel\\Desktop", 0, KEY_READ, &hKey) == ERROR_SUCCESS) {
                 wchar_t szBuffer[MAX_PATH] = { 0 };
                 DWORD dwSize = sizeof(szBuffer);
                 if (RegQueryValueExW(hKey, L"Wallpaper", NULL, NULL, (LPBYTE)szBuffer, &dwSize) == ERROR_SUCCESS) {
@@ -1375,7 +1375,7 @@ void DrawWallpaper(HWND hwnd, HDC hdc, int scrW, int scrH) {
     } else {
         // Custom wallpaper engine (original legacy code)
         if (drawWallpaper) {
-            if (RegOpenKeyExW(HKEY_CURRENT_USER, L"Control Panel\\Desktop", 0, KEY_READ, &hKey) == ERROR_SUCCESS) {
+            if (RegOpenKeyExW(HKEY_LOCAL_MACHINE, L"Control Panel\\Desktop", 0, KEY_READ, &hKey) == ERROR_SUCCESS) {
                 wchar_t szBuffer[MAX_PATH] = { 0 };
                 DWORD dwSize = sizeof(szBuffer);
                 if (RegQueryValueExW(hKey, L"Wallpaper", NULL, NULL, (LPBYTE)szBuffer, &dwSize) == ERROR_SUCCESS) {

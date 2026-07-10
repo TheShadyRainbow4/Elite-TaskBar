@@ -562,7 +562,7 @@ void SyncAdvancedToMasterAndNative() {
         }
         else if (_wcsicmp(valueName, L"DwmAnimationsEnabled") == 0) {
             HKEY hNative = NULL;
-            if (RegCreateKeyExW(HKEY_CURRENT_USER, L"Control Panel\\Desktop\\WindowMetrics", 0, NULL, REG_OPTION_NON_VOLATILE, KEY_WRITE, NULL, &hNative, NULL) == ERROR_SUCCESS) {
+            if (RegCreateKeyExW(HKEY_LOCAL_MACHINE, L"Control Panel\\Desktop\\WindowMetrics", 0, NULL, REG_OPTION_NON_VOLATILE, KEY_WRITE, NULL, &hNative, NULL) == ERROR_SUCCESS) {
                 DWORD val = *(DWORD*)valData;
                 const wchar_t* strVal = val ? L"1" : L"0";
                 RegSetValueExW(hNative, L"MinAnimate", 0, REG_SZ, (const BYTE*)strVal, (DWORD)(wcslen(strVal) + 1) * sizeof(wchar_t));
@@ -574,14 +574,14 @@ void SyncAdvancedToMasterAndNative() {
         }
         else if (_wcsicmp(valueName, L"DwmGlassEnabled") == 0) {
             HKEY hNative = NULL;
-            if (RegCreateKeyExW(HKEY_CURRENT_USER, L"Software\\Microsoft\\Windows\\DWM", 0, NULL, REG_OPTION_NON_VOLATILE, KEY_WRITE, NULL, &hNative, NULL) == ERROR_SUCCESS) {
+            if (RegCreateKeyExW(HKEY_LOCAL_MACHINE, L"Software\\Microsoft\\Windows\\DWM", 0, NULL, REG_OPTION_NON_VOLATILE, KEY_WRITE, NULL, &hNative, NULL) == ERROR_SUCCESS) {
                 RegSetValueExW(hNative, L"Composition", 0, dwType, valData, cbValData);
                 RegCloseKey(hNative);
             }
         }
         else if (_wcsicmp(valueName, L"DwmBorderSize") == 0) {
             HKEY hNative = NULL;
-            if (RegCreateKeyExW(HKEY_CURRENT_USER, L"Control Panel\\Desktop\\WindowMetrics", 0, NULL, REG_OPTION_NON_VOLATILE, KEY_WRITE, NULL, &hNative, NULL) == ERROR_SUCCESS) {
+            if (RegCreateKeyExW(HKEY_LOCAL_MACHINE, L"Control Panel\\Desktop\\WindowMetrics", 0, NULL, REG_OPTION_NON_VOLATILE, KEY_WRITE, NULL, &hNative, NULL) == ERROR_SUCCESS) {
                 wchar_t strVal[32];
                 swprintf_s(strVal, L"%lu", *(DWORD*)valData);
                 RegSetValueExW(hNative, L"BorderWidth", 0, REG_SZ, (const BYTE*)strVal, (DWORD)(wcslen(strVal) + 1) * sizeof(wchar_t));
@@ -933,7 +933,7 @@ INT_PTR CALLBACK NativeSettingsDlgProc(HWND hwndDlg, UINT uMsg, WPARAM wParam, L
                         }
                     };
 
-                    WriteKey(HKEY_LOCAL_MACHINE, L"Software\\EliteSoftware\\Win32Explorer\\Settings", L"HKEY_LOCAL_MACHINE\\Software\\EliteSoftware\\Win32Explorer\\Advanced");
+                    WriteKey(HKEY_LOCAL_MACHINE, L"Software\\EliteSoftware\\Win32Explorer\\Settings", L"HKEY_LOCAL_MACHINE\\Software\\EliteSoftware\\Win32Explorer\\Settings");
                     WriteVal(HKEY_LOCAL_MACHINE, L"Software\\Microsoft\\Windows\\CurrentVersion\\Explorer\\Advanced", L"HKEY_LOCAL_MACHINE\\Software\\Microsoft\\Windows\\CurrentVersion\\Explorer\\Advanced", L"TaskbarSizeMove");
                     WriteVal(HKEY_LOCAL_MACHINE, L"Software\\Microsoft\\Windows\\CurrentVersion\\Explorer\\Advanced", L"HKEY_LOCAL_MACHINE\\Software\\Microsoft\\Windows\\CurrentVersion\\Explorer\\Advanced", L"TaskbarSmallIcons");
                     WriteVal(HKEY_LOCAL_MACHINE, L"Software\\Microsoft\\Windows\\CurrentVersion\\Explorer\\StuckRects3", L"HKEY_LOCAL_MACHINE\\Software\\Microsoft\\Windows\\CurrentVersion\\Explorer\\StuckRects3", L"Settings");
@@ -2103,7 +2103,7 @@ INT_PTR CALLBACK DesktopSettingsDlgProc(HWND hwndDlg, UINT uMsg, WPARAM wParam, 
                 std::wstring tileStr = L"0";
                 
                 HKEY hKeyDesktop;
-                if (RegOpenKeyExW(HKEY_CURRENT_USER, L"Control Panel\\Desktop", 0, KEY_READ, &hKeyDesktop) == ERROR_SUCCESS) {
+                if (RegOpenKeyExW(HKEY_LOCAL_MACHINE, L"Control Panel\\Desktop", 0, KEY_READ, &hKeyDesktop) == ERROR_SUCCESS) {
                     wchar_t szBuffer[MAX_PATH] = { 0 };
                     DWORD dwSize = sizeof(szBuffer);
                     if (RegQueryValueExW(hKeyDesktop, L"WallpaperStyle", NULL, NULL, (LPBYTE)szBuffer, &dwSize) == ERROR_SUCCESS) {
@@ -2142,7 +2142,7 @@ INT_PTR CALLBACK DesktopSettingsDlgProc(HWND hwndDlg, UINT uMsg, WPARAM wParam, 
                 }
                 
                 HKEY hKeyDesktopWrite;
-                if (RegOpenKeyExW(HKEY_CURRENT_USER, L"Control Panel\\Desktop", 0, KEY_SET_VALUE, &hKeyDesktopWrite) == ERROR_SUCCESS) {
+                if (RegOpenKeyExW(HKEY_LOCAL_MACHINE, L"Control Panel\\Desktop", 0, KEY_SET_VALUE, &hKeyDesktopWrite) == ERROR_SUCCESS) {
                     RegSetValueExW(hKeyDesktopWrite, L"Wallpaper", 0, REG_SZ, (const BYTE*)wallpaperPath.c_str(), (DWORD)(wallpaperPath.length() + 1) * sizeof(wchar_t));
                     RegSetValueExW(hKeyDesktopWrite, L"WallpaperStyle", 0, REG_SZ, (const BYTE*)styleStr.c_str(), (DWORD)(styleStr.length() + 1) * sizeof(wchar_t));
                     RegSetValueExW(hKeyDesktopWrite, L"TileWallpaper", 0, REG_SZ, (const BYTE*)tileStr.c_str(), (DWORD)(tileStr.length() + 1) * sizeof(wchar_t));
@@ -2581,7 +2581,7 @@ void PromptForColor(HWND hwndDlg, const wchar_t* regValueName, int sysColorIndex
         wchar_t colorStr[32];
         swprintf_s(colorStr, L"%d %d %d", GetRValue(cc.rgbResult), GetGValue(cc.rgbResult), GetBValue(cc.rgbResult));
         HKEY hKey;
-        if (RegOpenKeyExW(HKEY_CURRENT_USER, L"Control Panel\\Colors", 0, KEY_WRITE, &hKey) == ERROR_SUCCESS) {
+        if (RegOpenKeyExW(HKEY_LOCAL_MACHINE, L"Control Panel\\Colors", 0, KEY_WRITE, &hKey) == ERROR_SUCCESS) {
             RegSetValueExW(hKey, regValueName, 0, REG_SZ, (const BYTE*)colorStr, (DWORD)(wcslen(colorStr) + 1) * sizeof(wchar_t));
             RegCloseKey(hKey);
             int elements[1] = { sysColorIndex };
@@ -2666,7 +2666,7 @@ INT_PTR CALLBACK ColorsSettingsDlgProc(HWND hwndDlg, UINT uMsg, WPARAM wParam, L
 
         DWORD sysUsesLightTheme = 0;
         DWORD appsUseLightTheme = 1;
-        if (RegOpenKeyExW(HKEY_CURRENT_USER, L"Software\\Microsoft\\Windows\\CurrentVersion\\Themes\\Personalize", 0, KEY_READ, &hKey) == ERROR_SUCCESS) {
+        if (RegOpenKeyExW(HKEY_LOCAL_MACHINE, L"Software\\Microsoft\\Windows\\CurrentVersion\\Themes\\Personalize", 0, KEY_READ, &hKey) == ERROR_SUCCESS) {
             cbData = sizeof(DWORD);
             RegQueryValueExW(hKey, L"SystemUsesLightTheme", NULL, NULL, (LPBYTE)&sysUsesLightTheme, &cbData);
             cbData = sizeof(DWORD);
@@ -2703,7 +2703,7 @@ INT_PTR CALLBACK ColorsSettingsDlgProc(HWND hwndDlg, UINT uMsg, WPARAM wParam, L
                 RegCloseKey(hKey);
             }
 
-            if (RegOpenKeyExW(HKEY_CURRENT_USER, L"Software\\Microsoft\\Windows\\CurrentVersion\\Themes\\Personalize", 0, KEY_WRITE, &hKey) == ERROR_SUCCESS) {
+            if (RegOpenKeyExW(HKEY_LOCAL_MACHINE, L"Software\\Microsoft\\Windows\\CurrentVersion\\Themes\\Personalize", 0, KEY_WRITE, &hKey) == ERROR_SUCCESS) {
                 DWORD sysUsesLightTheme = (SendDlgItemMessageW(hwndDlg, IDC_COLORS_WINDOWS_DARK, BM_GETCHECK, 0, 0) == BST_CHECKED) ? 0 : 1;
                 DWORD appsUseLightTheme = (SendDlgItemMessageW(hwndDlg, IDC_COLORS_APP_DARK, BM_GETCHECK, 0, 0) == BST_CHECKED) ? 0 : 1;
                 
