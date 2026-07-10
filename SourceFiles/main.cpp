@@ -39,9 +39,12 @@ HINSTANCE g_hInstance = NULL;
 
 void QueryOperationalMode() {
     HKEY hKey;
-    LSTATUS status = RegOpenKeyExW(GetEliteRegistryRoot(), L"Software\\EliteSoftware\\Win32Explorer\\Settings", 0, KEY_READ | KEY_WRITE, &hKey); // - Draftsman-Dan
+    LSTATUS status = RegOpenKeyExW(GetEliteRegistryRoot(), L"Software\\EliteSoftware\\Win32Explorer\\Settings", 0, KEY_READ, &hKey); // - Draftsman-Dan
     if (status != ERROR_SUCCESS) {
-        status = RegCreateKeyExW(GetEliteRegistryRoot(), L"Software\\EliteSoftware\\Win32Explorer\\Settings", 0, NULL, REG_OPTION_NON_VOLATILE, KEY_READ | KEY_WRITE, NULL, &hKey, NULL); // - Draftsman-Dan
+        status = RegOpenKeyExW(GetEliteRegistryRoot(), L"Software\\EliteSoftware\\Win32Explorer\\Settings", 0, KEY_READ | KEY_WRITE, &hKey); // - Draftsman-Dan
+        if (status != ERROR_SUCCESS) {
+            status = RegCreateKeyExW(GetEliteRegistryRoot(), L"Software\\EliteSoftware\\Win32Explorer\\Settings", 0, NULL, REG_OPTION_NON_VOLATILE, KEY_READ | KEY_WRITE, NULL, &hKey, NULL); // - Draftsman-Dan
+        }
     }
     g_Config.Mode = TaskbarMode::SecondaryOnly; // Default
     bool modeFound = false;
