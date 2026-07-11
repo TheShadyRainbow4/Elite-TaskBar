@@ -23,3 +23,10 @@
 ## 6. Tray Icon State Changes (NIM_MODIFY)
 - **Issue:** Apps that rapidly change their tray icons (like Task Manager CPU usage) were creating hundreds of duplicate icons instead of updating the existing one.
 - **Status:** A fix utilizing `guidItem` and `bUseGUID` was drafted, but it requires final testing to ensure state changes (`NIM_MODIFY`) correctly update existing tray icons without spawning duplicates.
+
+## 7. Remaining Pending Features
+- **Full Deskband Support & Folders**: Native implementation of QuickLaunch, toolbars, deskbands and folder toolbars, allowing different toolbars per taskbar monitor.
+- **Explorer Integration**: File browser compatibility must remain fully functional while running as shell.
+- **Native Windows 7 Flyout Mode**: Restore and integrate native Windows 7 Notification Area flyout UI functionality.
+- **Legacy Tray Mode**: Implement ReactOS-style classic linear tray logic as an alternate selectable mode.
+- **Settings Menu Expansion**: Populate all tabs with all settings, implementing switching between OpenShell, Native Menu, and custom combinations based on triggers.
