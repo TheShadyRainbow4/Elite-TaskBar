@@ -84,41 +84,12 @@ if (-not (Test-Path $submodDirRemaining)) {
     New-Item -ItemType Directory -Path $submodDirRemaining -Force | Out-Null
 }
 
-# Copy to main submodule
-Copy-Item (Join-Path $SourceDir "resource.h") -Destination (Join-Path $submodDir "resource.h") -Force
-Copy-Item (Join-Path $SourceDir "resources.rc") -Destination (Join-Path $submodDir "resources.rc") -Force
-Copy-Item (Join-Path $SourceDir "TaskbarProperties.cpp") -Destination (Join-Path $submodDir "TaskbarProperties.cpp") -Force
-Copy-Item (Join-Path $SourceDir "DesktopWindow.cpp") -Destination (Join-Path $submodDir "DesktopWindow.cpp") -Force
-Copy-Item (Join-Path $SourceDir "DesktopWindow.h") -Destination (Join-Path $submodDir "DesktopWindow.h") -Force # - Draftsman-Dan
-Copy-Item (Join-Path $SourceDir "TaskbarWindow.cpp") -Destination (Join-Path $submodDir "TaskbarWindow.cpp") -Force # - Draftsman-Dan
-Copy-Item (Join-Path $SourceDir "TaskbarWindow.h") -Destination (Join-Path $submodDir "TaskbarWindow.h") -Force # - Draftsman-Dan
-Copy-Item (Join-Path $SourceDir "StartButton.cpp") -Destination (Join-Path $submodDir "StartButton.cpp") -Force # - Draftsman-Dan
-Copy-Item (Join-Path $SourceDir "StartButton.h") -Destination (Join-Path $submodDir "StartButton.h") -Force # - Draftsman-Dan
-Copy-Item (Join-Path $SourceDir "Config.h") -Destination (Join-Path $submodDir "Config.h") -Force # - Draftsman-Dan
-Copy-Item (Join-Path $SourceDir "TrayIconScraper.h") -Destination (Join-Path $submodDir "TrayIconScraper.h") -Force # - Draftsman-Dan
-Copy-Item (Join-Path $SourceDir "TrayIconScraper.cpp") -Destination (Join-Path $submodDir "TrayIconScraper.cpp") -Force # - Draftsman-Dan
-Copy-Item (Join-Path $SourceDir "Logger.h") -Destination (Join-Path $submodDir "Logger.h") -Force # - Draftsman-Dan
-Copy-Item (Join-Path $SourceDir "Logger.cpp") -Destination (Join-Path $submodDir "Logger.cpp") -Force # - Draftsman-Dan
-Copy-Item (Join-Path $SourceDir "ClockWidget.h") -Destination (Join-Path $submodDir "ClockWidget.h") -Force # - Draftsman-Dan
-Copy-Item (Join-Path $SourceDir "ClockWidget.cpp") -Destination (Join-Path $submodDir "ClockWidget.cpp") -Force # - Draftsman-Dan
-
-# Copy to remaining shell submodule
-Copy-Item (Join-Path $SourceDir "resource.h") -Destination (Join-Path $submodDirRemaining "resource.h") -Force
-Copy-Item (Join-Path $SourceDir "resources.rc") -Destination (Join-Path $submodDirRemaining "resources.rc") -Force
-Copy-Item (Join-Path $SourceDir "TaskbarProperties.cpp") -Destination (Join-Path $submodDirRemaining "TaskbarProperties.cpp") -Force
-Copy-Item (Join-Path $SourceDir "DesktopWindow.cpp") -Destination (Join-Path $submodDirRemaining "DesktopWindow.cpp") -Force
-Copy-Item (Join-Path $SourceDir "DesktopWindow.h") -Destination (Join-Path $submodDirRemaining "DesktopWindow.h") -Force # - Draftsman-Dan
-Copy-Item (Join-Path $SourceDir "TaskbarWindow.cpp") -Destination (Join-Path $submodDirRemaining "TaskbarWindow.cpp") -Force # - Draftsman-Dan
-Copy-Item (Join-Path $SourceDir "TaskbarWindow.h") -Destination (Join-Path $submodDirRemaining "TaskbarWindow.h") -Force # - Draftsman-Dan
-Copy-Item (Join-Path $SourceDir "StartButton.cpp") -Destination (Join-Path $submodDirRemaining "StartButton.cpp") -Force # - Draftsman-Dan
-Copy-Item (Join-Path $SourceDir "StartButton.h") -Destination (Join-Path $submodDirRemaining "StartButton.h") -Force # - Draftsman-Dan
-Copy-Item (Join-Path $SourceDir "Config.h") -Destination (Join-Path $submodDirRemaining "Config.h") -Force # - Draftsman-Dan
-Copy-Item (Join-Path $SourceDir "TrayIconScraper.h") -Destination (Join-Path $submodDirRemaining "TrayIconScraper.h") -Force # - Draftsman-Dan
-Copy-Item (Join-Path $SourceDir "TrayIconScraper.cpp") -Destination (Join-Path $submodDirRemaining "TrayIconScraper.cpp") -Force # - Draftsman-Dan
-Copy-Item (Join-Path $SourceDir "Logger.h") -Destination (Join-Path $submodDirRemaining "Logger.h") -Force # - Draftsman-Dan
-Copy-Item (Join-Path $SourceDir "Logger.cpp") -Destination (Join-Path $submodDirRemaining "Logger.cpp") -Force # - Draftsman-Dan
-Copy-Item (Join-Path $SourceDir "ClockWidget.h") -Destination (Join-Path $submodDirRemaining "ClockWidget.h") -Force # - Draftsman-Dan
-Copy-Item (Join-Path $SourceDir "ClockWidget.cpp") -Destination (Join-Path $submodDirRemaining "ClockWidget.cpp") -Force # - Draftsman-Dan
+# Dynamically copy all source files to submodules - Draftsman-Dan-Gen2
+Get-ChildItem -Path $SourceDir -File | ForEach-Object {
+    $fileName = $_.Name
+    Copy-Item $_.FullName -Destination (Join-Path $submodDir $fileName) -Force
+    Copy-Item $_.FullName -Destination (Join-Path $submodDirRemaining $fileName) -Force
+}
 
 # Adjust resource paths in the copied resources.rc for submodule compilation contexts
 $targetRc = Join-Path $submodDir "resources.rc"

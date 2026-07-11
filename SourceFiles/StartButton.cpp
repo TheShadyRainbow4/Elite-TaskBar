@@ -83,6 +83,7 @@ static bool LaunchOpenShellMenu() {
     return false;
 }
 
+static WNDPROC s_OriginalButtonProc = nullptr; // - Draftsman-Dan-Gen2
 LRESULT CALLBACK OrbWndProc(HWND hwnd, UINT uMsg, WPARAM wParam, LPARAM lParam);
 
 
@@ -122,7 +123,7 @@ bool StartButton::Initialize(HINSTANCE hInstance, HWND hParentTaskbar, int monit
     
     m_hOrbWnd = CreateWindowExW(
         WS_EX_LAYERED | WS_EX_TOOLWINDOW | WS_EX_TOPMOST,
-        L"StartButtonWnd", L"", // - Draftsman-Dan
+        L"Button", L"", // - Draftsman-Dan-Gen2
         WS_POPUP,
         0, 0, 54, 54,
         NULL, NULL, hInstance, this
@@ -130,6 +131,8 @@ bool StartButton::Initialize(HINSTANCE hInstance, HWND hParentTaskbar, int monit
     
     if (m_hOrbWnd) {
         SetWindowLongPtr(m_hOrbWnd, GWLP_USERDATA, (LONG_PTR)this);
+        // Subclass standard Button proc to OrbWndProc - Draftsman-Dan-Gen2
+        s_OriginalButtonProc = (WNDPROC)SetWindowLongPtrW(m_hOrbWnd, GWLP_WNDPROC, (LONG_PTR)OrbWndProc); // - Draftsman-Dan-Gen2
         SetTimer(m_hOrbWnd, 1, 50, NULL);
     }
     

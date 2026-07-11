@@ -1,0 +1,1 @@
+#define IDI_STUB_ICON 101

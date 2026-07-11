@@ -2838,8 +2838,16 @@ LRESULT CALLBACK WindowProc(HWND hwnd, UINT uMsg, WPARAM wParam, LPARAM lParam) 
             extern void ShowAboutDialog(HWND hwndOwner);
             ShowAboutDialog(hwnd);
         } else if (lParam == WM_LBUTTONDBLCLK) {
-            ShellExecuteW(hwnd, L"open", L"control.exe", L"EliteSettings.cpl", NULL, SW_SHOWNORMAL); // - Draftsman-Dan
-        }
+            wchar_t modulePath[MAX_PATH];
+            if (GetModuleFileNameW(NULL, modulePath, MAX_PATH)) {
+                std::wstring pathStr(modulePath);
+                size_t lastSlash = pathStr.find_last_of(L"\\/");
+                if (lastSlash != std::wstring::npos) {
+                    std::wstring settingsCpl = pathStr.substr(0, lastSlash) + L"\\EliteSettings.cpl";
+                    std::wstring parameters = L"\"" + settingsCpl + L"\"";
+                    ShellExecuteW(hwnd, L"open", L"control.exe", parameters.c_str(), NULL, SW_SHOWNORMAL);
+                }
+            }        }
         return 0;
     }
     case WM_TRAY_CALLBACK_DESKTOP: {
@@ -3193,9 +3201,19 @@ LRESULT CALLBACK WindowProc(HWND hwnd, UINT uMsg, WPARAM wParam, LPARAM lParam) 
                 if (g_hNativeTaskbar) PostMessageW(g_hNativeTaskbar, WM_COMMAND, 413, 0); // 413 is ID_SHELL_CMD_PROPERTIES
                 else ShellExecuteW(hwnd, L"open", L"rundll32.exe", L"shell32.dll,Options_RunDLL 1", NULL, SW_SHOWNORMAL);
                 break;
-            case IDM_TASKBAR_SETTINGS:
-                ShellExecuteW(hwnd, L"open", L"control.exe", L"EliteSettings.cpl", NULL, SW_SHOWNORMAL); // - Draftsman-Dan
+            case IDM_TASKBAR_SETTINGS: {
+                wchar_t modulePath[MAX_PATH];
+                if (GetModuleFileNameW(NULL, modulePath, MAX_PATH)) {
+                    std::wstring pathStr(modulePath);
+                    size_t lastSlash = pathStr.find_last_of(L"\\/");
+                    if (lastSlash != std::wstring::npos) {
+                        std::wstring settingsCpl = pathStr.substr(0, lastSlash) + L"\\EliteSettings.cpl";
+                        std::wstring parameters = L"\"" + settingsCpl + L"\"";
+                        ShellExecuteW(hwnd, L"open", L"control.exe", parameters.c_str(), NULL, SW_SHOWNORMAL);
+                    }
+                }
                 break;
+            }
 
             case IDM_EXIT_ELITETASKBAR:
                 SendMessageW(hwnd, WM_CLOSE, 0, 0);

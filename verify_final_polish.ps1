@@ -276,22 +276,8 @@ try {
     # Query UI elements/windows
     Write-Host "Querying UI window handles..." -ForegroundColor Cyan
     
-    # A. Search for Progman desktop window class
-    $hwndProgman = [IntPtr]::Zero
-    $callback = [Win32Helper+EnumWindowsProc]{ # - Draftsman-Dan
-        param($hWnd, $lParam)
-        $sbClass = New-Object System.Text.StringBuilder 260
-        [Win32Helper]::GetClassNameW($hWnd, $sbClass, $sbClass.Capacity) | Out-Null
-        if ($sbClass.ToString() -eq "Progman") {
-            $procId = 0
-            [Win32Helper]::GetWindowThreadProcessId($hWnd, [ref]$procId) | Out-Null
-            if ($procId -eq $proc.Id) {
-                $script:hwndProgman = $hWnd
-            }
-        }
-        return $true
-    }
-    [Win32Helper]::EnumWindows($callback, [IntPtr]::Zero) | Out-Null # - Draftsman-Dan
+    # A. Search for Progman desktop window class using direct helper to avoid delegate GC crash - Draftsman-Dan-Gen2\r
+    $hwndProgman = [Win32Helper]::FindProcessWindow($proc.Id, "Progman") # - Draftsman-Dan-Gen2
 
     if ($hwndProgman -eq [IntPtr]::Zero) {
         throw "Could not find custom desktop replacement window (class 'Progman') belonging to EliteTaskbar PID $($proc.Id)."
