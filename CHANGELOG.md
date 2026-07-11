@@ -4,6 +4,13 @@ All notable changes to this project will be documented in this file.
 
 
 ## [Unreleased]
+### Fixed
+- **Win32Explorer Thumbnail View Rendering Fix**: Patched HandleThumbnails.cpp to properly support 32-bit transparent icons during scaling by leveraging ImageList_AddMasked and ILC_COLOR32 correctly, and initialized background brushes to resolve black/invisible thumbnail icons.
+
+### Changed
+- **Win32Explorer Global Registry Settings Update**: Enforced default view layout (ViewMode: Tiles, Group by Type, Ascending, Headers visible) via direct registry injection to HKCU\Software\EliteSoftware\Win32Explorer\Settings to fulfill the user's explicit request.
+- **Global Executable Linkage via SysWOW64**: Executed deploy_hardlinks.ps1 to successfully force-link all compiled .exe files into native System32 and SysWOW64 directories, granting seamless system-wide CLI access.
+- **Taskbar CPL Settings Menu Redirection Check**: Verified and confirmed TaskbarWindow.cpp natively points the right-click settings context menu to EliteSettings.cpl.
 ### Changed
 - **Registry Hive Consolidation (HKLM)**: Completed final purge of `HKEY_CURRENT_USER` references across the entire codebase (`TaskbarProperties.new.cpp`, `TaskbarWindow.cpp`, and `.reg` scripts), updating all reads and writes (including native Microsoft keys like `CurrentVersion\Explorer\Advanced`) to exclusively utilize `HKEY_LOCAL_MACHINE`. This enforces global configuration rules and prevents per-user isolation mismatches.
 - **Registry Key Path Standardization**: Replaced all remaining legacy occurrences of the `Software\EliteSoftware\Win32Explorer\Advanced` subkey path with the standardized `Software\EliteSoftware\Win32Explorer\Settings` path in `TaskbarProperties.cpp` and `TaskbarProperties.new.cpp` for unified and predictable settings storage.
@@ -291,6 +298,13 @@ All notable changes to this project will be documented in this file.
 - Modified `build_Win32Explorer.ps1` to explicitly copy the compiled `Win32Explorer.exe` directly into the `Elite-TaskBar` project root directory upon successful compilation.
 
 ## [Unreleased]
+### Fixed
+- **Win32Explorer Thumbnail View Rendering Fix**: Patched HandleThumbnails.cpp to properly support 32-bit transparent icons during scaling by leveraging ImageList_AddMasked and ILC_COLOR32 correctly, and initialized background brushes to resolve black/invisible thumbnail icons.
+
+### Changed
+- **Win32Explorer Global Registry Settings Update**: Enforced default view layout (ViewMode: Tiles, Group by Type, Ascending, Headers visible) via direct registry injection to HKCU\Software\EliteSoftware\Win32Explorer\Settings to fulfill the user's explicit request.
+- **Global Executable Linkage via SysWOW64**: Executed deploy_hardlinks.ps1 to successfully force-link all compiled .exe files into native System32 and SysWOW64 directories, granting seamless system-wide CLI access.
+- **Taskbar CPL Settings Menu Redirection Check**: Verified and confirmed TaskbarWindow.cpp natively points the right-click settings context menu to EliteSettings.cpl.
 ### Changed
 - **Registry Roots for Portable Mirror**: Added `useHKLM` parameter to `RegistryAppStorageFactory::MaybeCreate`, `OpenKeyForLoad`, and `CreateKeyForSave` function declarations and implementations to support dynamic registry roots (HKLM vs HKCU) based on Portable Mirror Mode. Added `enablePortableMirror` field to `Config` struct in `Config.h` and integrated registry load/save calls in `ConfigRegistryStorage.cpp` and XML load/save calls in `ConfigXmlStorage.cpp`. Updated `App::LoadSettings` and `App::SaveSettings` in `App.cpp` to dynamically load and save settings to HKLM and XML when Portable Mirror Mode is active. Added new control IDs (`IDC_PORTABLE_MIRROR`, etc.) to `resource.h`. Updated `resources.rc` to add Portable Mirror checkbox and Replace Explorer options to the settings UI templates. Added `GetEliteRegistryRoot()` inline function to `SourceFiles/Config.h`. Updated `main.cpp`, `StartButton.cpp`, and `TaskbarWindow.cpp` to dynamically load the Advanced key using `GetEliteRegistryRoot()`. Modified `TaskbarSettingsDlgProc`, `NativeSettingsDlgProc`, and other dialog procedures in `TaskbarProperties.cpp` to load/save Portable Mirror mode, Replace Explorer options, and multi-monitor/debug options using dynamic roots. Added `SetDefaultFileManagerCPP()` to `TaskbarProperties.cpp` for native Explorer replacement. Added Portable Mirror checkbox and Native Settings tab with Explorer Replacement options to `EliteSettings.ps1`. Updated `Load-Settings` and `Save-Settings` in `EliteSettings.ps1` to support XML/HKLM dual-saving and unconditional registry cleanup. Repaired CPL compilation in `build_settings.ps1` to compile `EliteSettingsCpl.cpp` and link `settings_cpl.res` instead of overwriting the PS2EXE compiled `EliteSettings.exe`. Included `Config.h` in `StartButton.cpp`. Updated the master architectural ledger (`BuildGuide-FeatureRequirement_CheckList.md`).
 
@@ -331,6 +345,13 @@ All notable changes to this project will be documented in this file.
 
 
 ## [Unreleased]
+### Fixed
+- **Win32Explorer Thumbnail View Rendering Fix**: Patched HandleThumbnails.cpp to properly support 32-bit transparent icons during scaling by leveraging ImageList_AddMasked and ILC_COLOR32 correctly, and initialized background brushes to resolve black/invisible thumbnail icons.
+
+### Changed
+- **Win32Explorer Global Registry Settings Update**: Enforced default view layout (ViewMode: Tiles, Group by Type, Ascending, Headers visible) via direct registry injection to HKCU\Software\EliteSoftware\Win32Explorer\Settings to fulfill the user's explicit request.
+- **Global Executable Linkage via SysWOW64**: Executed deploy_hardlinks.ps1 to successfully force-link all compiled .exe files into native System32 and SysWOW64 directories, granting seamless system-wide CLI access.
+- **Taskbar CPL Settings Menu Redirection Check**: Verified and confirmed TaskbarWindow.cpp natively points the right-click settings context menu to EliteSettings.cpl.
 - Separated execution flow in WinMain.cpp so EliteTaskbar.exe and Win32Explorer.exe run independently, fixing the issue where closing one closes the other.
 - Scaled down the tab close button in ToolbarHelper.cpp to 8x8 to prevent it from overlapping the tab edges.
 
@@ -488,6 +509,13 @@ All notable changes to this project will be documented in this file.
 - Modified `build_Win32Explorer.ps1` to explicitly copy the compiled `Win32Explorer.exe` directly into the `Elite-TaskBar` project root directory upon successful compilation.
 
 ## [Unreleased]
+### Fixed
+- **Win32Explorer Thumbnail View Rendering Fix**: Patched HandleThumbnails.cpp to properly support 32-bit transparent icons during scaling by leveraging ImageList_AddMasked and ILC_COLOR32 correctly, and initialized background brushes to resolve black/invisible thumbnail icons.
+
+### Changed
+- **Win32Explorer Global Registry Settings Update**: Enforced default view layout (ViewMode: Tiles, Group by Type, Ascending, Headers visible) via direct registry injection to HKCU\Software\EliteSoftware\Win32Explorer\Settings to fulfill the user's explicit request.
+- **Global Executable Linkage via SysWOW64**: Executed deploy_hardlinks.ps1 to successfully force-link all compiled .exe files into native System32 and SysWOW64 directories, granting seamless system-wide CLI access.
+- **Taskbar CPL Settings Menu Redirection Check**: Verified and confirmed TaskbarWindow.cpp natively points the right-click settings context menu to EliteSettings.cpl.
 ### Added
 - **Desktop Personalization Overrides (Milestone 7)**: Implemented dual-engine wallpaper options switchable at runtime. Supports a registry key toggle `UseNativeWallpaperEngine` under `Software\EliteSoftware\Win32Explorer\Advanced` (defaults to 1). When enabled, reads wallpaper path and style directly from `Control Panel\Desktop` registry keys (`Wallpaper`, `WallpaperStyle`, `TileWallpaper`) and applies changes natively using `SystemParametersInfoW`. When disabled, falls back to the custom GDI+ rendering engine.
 - **ListView Enhancements (Milestone 7)**: Upgraded desktop listview container with custom native Explorer themes (`SetWindowTheme` using `"Explorer"`), a high-resolution 48x48 system image list (`SHGetImageList`), and free drag-and-drop icon placement by removing standard automatic grid alignment (`LVS_AUTOARRANGE`) and triggering `ListView_Arrange`.
@@ -555,6 +583,13 @@ All notable changes to this project will be documented in this file.
 
 
 ## [Unreleased]
+### Fixed
+- **Win32Explorer Thumbnail View Rendering Fix**: Patched HandleThumbnails.cpp to properly support 32-bit transparent icons during scaling by leveraging ImageList_AddMasked and ILC_COLOR32 correctly, and initialized background brushes to resolve black/invisible thumbnail icons.
+
+### Changed
+- **Win32Explorer Global Registry Settings Update**: Enforced default view layout (ViewMode: Tiles, Group by Type, Ascending, Headers visible) via direct registry injection to HKCU\Software\EliteSoftware\Win32Explorer\Settings to fulfill the user's explicit request.
+- **Global Executable Linkage via SysWOW64**: Executed deploy_hardlinks.ps1 to successfully force-link all compiled .exe files into native System32 and SysWOW64 directories, granting seamless system-wide CLI access.
+- **Taskbar CPL Settings Menu Redirection Check**: Verified and confirmed TaskbarWindow.cpp natively points the right-click settings context menu to EliteSettings.cpl.
 - Separated execution flow in WinMain.cpp so EliteTaskbar.exe and Win32Explorer.exe run independently, fixing the issue where closing one closes the other.
 - Scaled down the tab close button in ToolbarHelper.cpp to 8x8 to prevent it from overlapping the tab edges.
 
@@ -715,3 +750,4 @@ All notable changes to this project will be documented in this file.
   - Updated pre-build sync phase to copy `TaskbarWindow.cpp`, `StartButton.cpp`, and `Config.h` to both submodule directories.
 - **verify_final_polish.ps1**:
   - Assigned `EnumWindows` callback scriptblock to a local variable delegate `$callback` to prevent garbage-collection crash.
+

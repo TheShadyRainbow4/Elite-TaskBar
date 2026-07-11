@@ -3207,7 +3207,11 @@ LRESULT CALLBACK WindowProc(HWND hwnd, UINT uMsg, WPARAM wParam, LPARAM lParam) 
                     std::wstring pathStr(modulePath);
                     size_t lastSlash = pathStr.find_last_of(L"\\/");
                     if (lastSlash != std::wstring::npos) {
+#ifdef _WIN64
                         std::wstring settingsCpl = pathStr.substr(0, lastSlash) + L"\\EliteSettings.cpl";
+#else
+                        std::wstring settingsCpl = pathStr.substr(0, lastSlash) + L"\\EliteSettings_x86.cpl";
+#endif
                         std::wstring parameters = L"\"" + settingsCpl + L"\"";
                         ShellExecuteW(hwnd, L"open", L"control.exe", parameters.c_str(), NULL, SW_SHOWNORMAL);
                     }

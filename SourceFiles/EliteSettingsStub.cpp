@@ -70,7 +70,7 @@ extern "C" __declspec(dllexport) LONG APIENTRY CPlApplet(HWND hwndCPl, UINT uMsg
             wcscpy_s(info->szName, L"Elite Taskbar");
             wcscpy_s(info->szInfo, L"Configure Elite Taskbar");
             wcscpy_s(info->szHelpFile, L"");
-            return 1; 
+            return 0; 
         }
         case CPL_DBLCLK:
             LaunchSettings(g_hInstance, hwndCPl);
