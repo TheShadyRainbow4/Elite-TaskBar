@@ -361,7 +361,6 @@ int GetDpiForWindowHelper(HWND hwnd) {
 // Calculate the number of icons that fit in the tray - Builder-Bob
 int GetTrayVisibleLimit(HWND hwndTrayNotify, int dpi, int totalVisible) {
     bool bIsWin7Mode = (g_Config.OverflowMode == TrayOverflowMode::Win7Flyout);
-    bool bIsExpanded = (GetPropW(hwndTrayNotify, L"TrayExpanded") != NULL);
     
     if (g_Config.ManualTrayWidth > 0) {
         int W_tray = MulDiv(g_Config.ManualTrayWidth, dpi, 96);
@@ -380,11 +379,7 @@ int GetTrayVisibleLimit(HWND hwndTrayNotify, int dpi, int totalVisible) {
         if (bIsWin7Mode) {
             return TRAY_LIMIT;
         } else {
-            if (bIsExpanded) {
-                return totalVisible;
-            } else {
-                return g_Config.EnableTwoRowTray ? 8 : 5;
-            }
+            return g_Config.EnableTwoRowTray ? 8 : 5;
         }
     }
 }
@@ -878,8 +873,9 @@ void UpdateTaskbarLayout(TaskbarInstance* inst) {
 
         int limit = GetTrayVisibleLimit(inst->hTrayNotify, dpi, totalVisible);
         bool hasOverflow = (totalVisible > limit);
+        bool bIsExpanded = (GetPropW(inst->hTrayNotify, L"TrayExpanded") != NULL);
 
-        if (g_Config.ManualTrayWidth > 0) {
+        if (g_Config.ManualTrayWidth > 0 && !bIsExpanded) {
             W_tray = MulDiv(g_Config.ManualTrayWidth, dpi, 96);
         } else if (inst->hToolbar && enableTray) { // Compute tray layout width dynamically
             int btnCount = (int)SendMessageW(inst->hToolbar, TB_BUTTONCOUNT, 0, 0);
@@ -887,7 +883,7 @@ void UpdateTaskbarLayout(TaskbarInstance* inst) {
                 // First, enforce the visibility limit on the buttons
                 for (int idx = 0; idx < btnCount; ++idx) {
                     LRESULT state = SendMessageW(inst->hToolbar, TB_GETSTATE, idx, 0);
-                    if (totalVisible > limit && idx < (totalVisible - limit)) {
+                    if (!bIsExpanded && totalVisible > limit && idx < (totalVisible - limit)) {
                         state |= TBSTATE_HIDDEN;
                     } else {
                         state &= ~TBSTATE_HIDDEN;
@@ -969,19 +965,14 @@ void UpdateTaskbarLayout(TaskbarInstance* inst) {
 
         // Position Rebar control - Builder-Bob
         if (inst->hRebar && SendMessageW(inst->hRebar, RB_GETBANDCOUNT, 0, 0) > 0) {
-            int xRebar = startButtonWidth + MulDiv(6, dpi, 96);
-            int wRebar = xNotifyStart - xRebar;
+            int xRebar = xTaskSwitch;
             int rebarWidth = MulDiv(150, dpi, 96);
             if (widthTaskSwitch > rebarWidth + MulDiv(20, dpi, 96)) {
                 widthTaskSwitch -= rebarWidth;
-                xRebar = xTaskSwitch + widthTaskSwitch + MulDiv(6, dpi, 96);
-                wRebar = rebarWidth - MulDiv(6, dpi, 96);
-            } else {
-                wRebar = 0;
-            }
-            if (wRebar > 0) {
+                int wRebar = rebarWidth;
                 SetWindowPos(inst->hRebar, NULL, xRebar, 0, wRebar, taskbarHeight, SWP_NOZORDER | SWP_NOACTIVATE);
                 ShowWindow(inst->hRebar, SW_SHOW);
+                xTaskSwitch += wRebar; // Shift task switch to the right of Rebar
             } else {
                 ShowWindow(inst->hRebar, SW_HIDE);
             }
@@ -3832,6 +3823,7 @@ bool TaskbarWindow::Initialize(HINSTANCE hInstance) {
             inst->hTaskbar, NULL, hInstance, NULL
         );
         if (inst->hRebar) {
+            SendMessageW(inst->hRebar, RB_SETBKCOLOR, 0, CLR_NONE);
             LoadFolderToolbars(inst->hRebar);
         }
 

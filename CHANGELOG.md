@@ -751,3 +751,11 @@ All notable changes to this project will be documented in this file.
 - **verify_final_polish.ps1**:
   - Assigned `EnumWindows` callback scriptblock to a local variable delegate `$callback` to prevent garbage-collection crash.
 
+
+### Added
+- Added an exported stub for `ImportSettingsW` to `EliteSettingsStub.cpp` to suppress the Rundll32 error dialog when Win32Explorer's Options dialog attempts to save settings globally. (The global sync is deprecated in favor of AppData configurations).
+
+### Fixed
+- Fixed a path resolution bug where the Taskbar would look for `EliteSettings.cpl` instead of `EliteSettings_x86.cpl` when running in 32-bit mode.
+- Fixed the deployment script (`deploy_hardlinks.ps1`) to perform a proper physical file copy instead of creating hardlinks to ensure independent file separation in system folders.
+

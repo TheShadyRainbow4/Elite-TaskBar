@@ -81,3 +81,10 @@ extern "C" __declspec(dllexport) LONG APIENTRY CPlApplet(HWND hwndCPl, UINT uMsg
     }
     return 0;
 }
+
+// Stub for Win32Explorer's OptionsDialog elevated HKLM sync
+// Win32Explorer attempts to call rundll32 EliteSettings.cpl,ImportSettingsW <config.xml>
+extern "C" __declspec(dllexport) void CALLBACK ImportSettingsW(HWND hwnd, HINSTANCE hinst, LPWSTR lpszCmdLine, int nCmdShow) {
+    // Currently, Win32Explorer settings are managed in HKCU and AppData.
+    // This stub prevents the rundll32 missing entry error dialog.
+}

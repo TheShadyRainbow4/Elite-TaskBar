@@ -47,10 +47,10 @@ function Create-HardLink {
     
     # Create the hard link
     try {
-        New-Item -ItemType HardLink -Path $targetPath -Target $SourcePath -Force -ErrorAction Stop | Out-Null
-        Write-Host "Linked $($file.Name) -> $targetPath" -ForegroundColor Green
+        Copy-Item -Path $SourcePath -Destination $targetPath -Force -ErrorAction Stop
+        Write-Host "Copied $($file.Name) -> $targetPath" -ForegroundColor Green
     } catch {
-        Write-Host "Failed to link $($file.Name) to $targetPath : $($_.Exception.Message)" -ForegroundColor Red
+        Write-Host "Failed to copy $($file.Name) to $targetPath : $($_.Exception.Message)" -ForegroundColor Red
     }
 }
 
