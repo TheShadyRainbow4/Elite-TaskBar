@@ -2960,12 +2960,41 @@ LRESULT CALLBACK WindowProc(HWND hwnd, UINT uMsg, WPARAM wParam, LPARAM lParam) 
         HDC hdc = (HDC)wParam;
         RECT rcClient;
         GetClientRect(hwnd, &rcClient);
-        HTHEME hTheme = OpenThemeData(hwnd, L"Taskbar");
-        if (hTheme) {
-            DrawThemeBackground(hTheme, hdc, 1 /*TBP_BACKGROUNDBOTTOM*/, 0, &rcClient, NULL);
-            CloseThemeData(hTheme);
+        
+        static Gdiplus::Image* s_TaskbarBgImage = NULL;
+        static bool s_triedLoadingBg = false;
+        if (!s_TaskbarBgImage && !s_triedLoadingBg) {
+            s_triedLoadingBg = true;
+            WCHAR exePath[MAX_PATH];
+            GetModuleFileNameW(NULL, exePath, MAX_PATH);
+            PathRemoveFileSpecW(exePath);
+            std::wstring bgPath = std::wstring(exePath) + L"\\Resources\\VistaTaskBarBasic.png";
+            s_TaskbarBgImage = Gdiplus::Image::FromFile(bgPath.c_str());
+            if (s_TaskbarBgImage && s_TaskbarBgImage->GetLastStatus() != Gdiplus::Ok) {
+                delete s_TaskbarBgImage;
+                s_TaskbarBgImage = NULL;
+            }
+        }
+
+        DWORD dwTransEnabled = 0;
+        HKEY hKeyTrans = NULL;
+        if (RegOpenKeyExW(GetEliteRegistryRoot(), L"Software\\EliteSoftware\\Win32Explorer\\Settings", 0, KEY_READ, &hKeyTrans) == ERROR_SUCCESS) {
+            DWORD cbData = sizeof(DWORD);
+            RegQueryValueExW(hKeyTrans, L"TaskbarTransparencyEnabled", NULL, NULL, (LPBYTE)&dwTransEnabled, &cbData);
+            RegCloseKey(hKeyTrans);
+        }
+
+        if (dwTransEnabled && s_TaskbarBgImage) {
+            Gdiplus::Graphics graphics(hdc);
+            graphics.DrawImage(s_TaskbarBgImage, 0, 0, rcClient.right - rcClient.left, rcClient.bottom - rcClient.top);
         } else {
-            FillRect(hdc, &rcClient, GetSysColorBrush(COLOR_3DFACE));
+            HTHEME hTheme = OpenThemeData(hwnd, L"Taskbar");
+            if (hTheme) {
+                DrawThemeBackground(hTheme, hdc, 1 /*TBP_BACKGROUNDBOTTOM*/, 0, &rcClient, NULL);
+                CloseThemeData(hTheme);
+            } else {
+                FillRect(hdc, &rcClient, GetSysColorBrush(COLOR_3DFACE));
+            }
         }
         return 1;
     }
@@ -2975,15 +3004,43 @@ LRESULT CALLBACK WindowProc(HWND hwnd, UINT uMsg, WPARAM wParam, LPARAM lParam) 
         RECT rcClient;
         GetClientRect(hwnd, &rcClient);
         
-        // Draw Taskbar Background using System Theme (UXTheme)
-        HTHEME hTheme = OpenThemeData(hwnd, L"Taskbar");
-        if (hTheme) {
-            DrawThemeBackground(hTheme, hdc, 1 /*TBP_BACKGROUNDBOTTOM*/, 0, &rcClient, NULL);
-            CloseThemeData(hTheme);
+        static Gdiplus::Image* s_TaskbarBgImage = NULL;
+        static bool s_triedLoadingBg = false;
+        if (!s_TaskbarBgImage && !s_triedLoadingBg) {
+            s_triedLoadingBg = true;
+            WCHAR exePath[MAX_PATH];
+            GetModuleFileNameW(NULL, exePath, MAX_PATH);
+            PathRemoveFileSpecW(exePath);
+            std::wstring bgPath = std::wstring(exePath) + L"\\Resources\\VistaTaskBarBasic.png";
+            s_TaskbarBgImage = Gdiplus::Image::FromFile(bgPath.c_str());
+            if (s_TaskbarBgImage && s_TaskbarBgImage->GetLastStatus() != Gdiplus::Ok) {
+                delete s_TaskbarBgImage;
+                s_TaskbarBgImage = NULL;
+            }
+        }
+
+        DWORD dwTransEnabled = 0;
+        HKEY hKeyTrans = NULL;
+        if (RegOpenKeyExW(GetEliteRegistryRoot(), L"Software\\EliteSoftware\\Win32Explorer\\Settings", 0, KEY_READ, &hKeyTrans) == ERROR_SUCCESS) {
+            DWORD cbData = sizeof(DWORD);
+            RegQueryValueExW(hKeyTrans, L"TaskbarTransparencyEnabled", NULL, NULL, (LPBYTE)&dwTransEnabled, &cbData);
+            RegCloseKey(hKeyTrans);
+        }
+
+        if (dwTransEnabled && s_TaskbarBgImage) {
+            Gdiplus::Graphics graphics(hdc);
+            graphics.DrawImage(s_TaskbarBgImage, 0, 0, rcClient.right - rcClient.left, rcClient.bottom - rcClient.top);
         } else {
-            HBRUSH hbr = GetSysColorBrush(COLOR_3DFACE);
-            FillRect(hdc, &rcClient, hbr);
-            // Don't delete system brushes
+            // Draw Taskbar Background using System Theme (UXTheme)
+            HTHEME hTheme = OpenThemeData(hwnd, L"Taskbar");
+            if (hTheme) {
+                DrawThemeBackground(hTheme, hdc, 1 /*TBP_BACKGROUNDBOTTOM*/, 0, &rcClient, NULL);
+                CloseThemeData(hTheme);
+            } else {
+                HBRUSH hbr = GetSysColorBrush(COLOR_3DFACE);
+                FillRect(hdc, &rcClient, hbr);
+                // Don't delete system brushes
+            }
         }
 
         EndPaint(hwnd, &ps);

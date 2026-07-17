@@ -418,7 +418,7 @@ LRESULT CALLBACK OrbWndProc(HWND hwnd, UINT uMsg, WPARAM wParam, LPARAM lParam) 
                     PathAppendW(path, L"EliteStartMenu.exe");
                     
                     WCHAR args[256];
-                    wsprintfW(args, L"\"%s\" -MonitorIndex %d -TaskbarY %d", path, pThis->GetMonitorIndex(), pt.y);
+                    wsprintfW(args, L"\"%s\" -nohook -monitor %d", path, pThis->GetMonitorIndex());
                     
                     STARTUPINFOW si = { sizeof(si) };
                     PROCESS_INFORMATION pi;
