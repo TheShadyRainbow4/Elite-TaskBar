@@ -210,28 +210,31 @@ if (-not $failed -and ($Target -eq "All" -or $Target -eq "Win32Explorer")) {
     Set-Location $origDir
 }
 
-if (-not $failed -and ($Target -eq "All" -or $Target -eq "StartMenu") -and (Test-Path "$ScriptDir\SourceFiles\EliteStartMenu.cpp")) {
-    # 2. Compile EliteStartMenu (Native C++ - PS2EXE is forbidden)
+if (-not $failed -and ($Target -eq "All" -or $Target -eq "StartMenu")) {
+    # 2. Build Open Shell (replaces EliteStartMenu stub)
     try {
-        Write-Host 'Compiling EliteStartMenu (Native C++)...' -ForegroundColor Cyan
-        $startMenuSrc = "`"$ScriptDir\SourceFiles\EliteStartMenu.cpp`""
-        $startMenuRc  = "`"$ScriptDir\SourceFiles\EliteStartMenu.rc`""
-        $startMenuLibs = "user32.lib shell32.lib shlwapi.lib comctl32.lib advapi32.lib uxtheme.lib gdi32.lib ole32.lib"
-        $startMenuManifest = "`"$ScriptDir\SourceFiles\cpl.manifest`""
-
-        # x64 build
-        cmd.exe /c "cd /d `"$BuildDir`" && call `"$vsDevCmd`" -arch=x64 && rc.exe /fo `"$BuildDir\ResourceFiles\startmenu_resources.res`" $startMenuRc"
-        if ($LASTEXITCODE -ne 0) { throw "EliteStartMenu x64 RC failed" }
-        cmd.exe /c "cd /d `"$BuildDir`" && call `"$vsDevCmd`" -arch=x64 && cl.exe /FS /EHsc /MT /DNDEBUG /Fe`"$BuildDir\EliteStartMenu.exe`" /Fo`"$BuildDir\ObjectFiles/`" $startMenuSrc `"$BuildDir\ResourceFiles\startmenu_resources.res`" $startMenuLibs /link /MANIFEST:EMBED /MANIFESTINPUT:$startMenuManifest /MANIFESTUAC:NO"
-        if ($LASTEXITCODE -ne 0) { throw "EliteStartMenu x64 cl failed" }
-
-        # x86 build
-        cmd.exe /c "cd /d `"$BuildDirx86`" && call `"$vsDevCmd`" -arch=x86 && rc.exe /fo `"$BuildDirx86\ResourceFiles\startmenu_resources.res`" $startMenuRc"
-        if ($LASTEXITCODE -ne 0) { throw "EliteStartMenu x86 RC failed" }
-        cmd.exe /c "cd /d `"$BuildDirx86`" && call `"$vsDevCmd`" -arch=x86 && cl.exe /FS /EHsc /MT /DNDEBUG /Fe`"$BuildDirx86\EliteStartMenu.exe`" /Fo`"$BuildDirx86\ObjectFiles/`" $startMenuSrc `"$BuildDirx86\ResourceFiles\startmenu_resources.res`" $startMenuLibs /link /MANIFEST:EMBED /MANIFESTINPUT:$startMenuManifest /MANIFESTUAC:NO"
-        if ($LASTEXITCODE -ne 0) { throw "EliteStartMenu x86 cl failed" }
+        Write-Host 'Building Open Shell (StartMenu & StartMenuDLL)...' -ForegroundColor Cyan
+        $slnPath = "`"$ScriptDir\Open-Shell-Menu-Source\Src\OpenShell.sln`""
+        
+        $buildOpenShellCmd = "MSBuild.exe $slnPath /m /t:StartMenu:Rebuild;StartMenuDLL:Rebuild /p:Configuration=`"Release`" /p:Platform=`"x64`" /nologo"
+        
+        cmd.exe /c "cd /d `"$ScriptDir`" && call `"$VsDevCmd`" -arch=x64 && $buildOpenShellCmd"
+        if ($LASTEXITCODE -ne 0) { throw "Open Shell Build failed with exit code $LASTEXITCODE" }
+        
+        Write-Host 'Copying Open Shell binaries to BuildOutput...' -ForegroundColor Cyan
+        Copy-Item -Path "$ScriptDir\Open-Shell-Menu-Source\build\bin\Release64\StartMenu.exe" -Destination "$BuildDir\EliteStartMenu.exe" -Force
+        Copy-Item -Path "$ScriptDir\Open-Shell-Menu-Source\build\bin\Release64\StartMenuDLL.dll" -Destination "$BuildDir\StartMenuDLL.dll" -Force
+        
+        Write-Host 'Building Open Shell (x86)...' -ForegroundColor Cyan
+        $buildOpenShellx86Cmd = "MSBuild.exe $slnPath /m /t:StartMenu:Rebuild;StartMenuDLL:Rebuild /p:Configuration=`"Release`" /p:Platform=`"Win32`" /nologo"
+        cmd.exe /c "cd /d `"$ScriptDir`" && call `"$VsDevCmd`" -arch=x86 && $buildOpenShellx86Cmd"
+        if ($LASTEXITCODE -ne 0) { throw "Open Shell x86 Build failed with exit code $LASTEXITCODE" }
+        Copy-Item -Path "$ScriptDir\Open-Shell-Menu-Source\build\bin\Release\StartMenu.exe" -Destination "$BuildDirx86\EliteStartMenu.exe" -Force
+        Copy-Item -Path "$ScriptDir\Open-Shell-Menu-Source\build\bin\Release\StartMenuDLL.dll" -Destination "$BuildDirx86\StartMenuDLL.dll" -Force
+        
+        Write-Host 'Open Shell built and copied successfully.' -ForegroundColor Green
     } catch {
-        Write-Error "EliteStartMenu compilation failed: $_"
+        Write-Error "Failed to build Open Shell: $_"
         $failed = $true
     }
 }
@@ -285,14 +288,13 @@ if (-not $failed -and ($Target -eq "All" -or $Target -eq "PostBuild")) {
     Get-ChildItem -Path $PSScriptRoot -Filter ".git" -Recurse -Directory -Force -ErrorAction SilentlyContinue | ForEach-Object {
         $repoPath = $_.Parent.FullName
         if ($repoPath -ne $PSScriptRoot) {
-            git -C $repoPath add .
-            git -C $repoPath commit -m "Auto-commit after successful build (build.ps1)"
+            cmd.exe /c "cd /d `"$repoPath`" && git add . && git commit -m `"Auto-commit after successful build (build.ps1)`" && git push"
         }
     }
     
     git add .
     git commit -m "Auto-commit after successful build (build.ps1)"
-    # git push origin HEAD
+    git push origin HEAD
     $ErrorActionPreference = 'Stop'
     
     Write-Host "Done!" -ForegroundColor Green

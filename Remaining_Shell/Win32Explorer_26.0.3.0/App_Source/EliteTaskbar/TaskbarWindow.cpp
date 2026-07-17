@@ -3653,6 +3653,23 @@ bool TaskbarWindow::Initialize(HINSTANCE hInstance) {
     g_uTaskbarCreatedMsg = RegisterWindowMessageW(L"TaskbarCreated");
     g_uShellHookMsg = RegisterWindowMessageW(L"SHELLHOOK");
 
+    // UIPI Bypass to allow lower privilege processes (like un-elevated Explorer or apps)
+    // to interact with the taskbar (e.g. drag and drop, shell hooks, etc).
+    typedef BOOL (WINAPI *tChangeWindowMessageFilterEx)(HWND hWnd, UINT message, DWORD action, PCHANGEFILTERSTRUCT pChangeFilterStruct);
+    HMODULE hUser32 = GetModuleHandleW(L"user32.dll");
+    if (hUser32) {
+        tChangeWindowMessageFilterEx pChangeWindowMessageFilterEx = (tChangeWindowMessageFilterEx)GetProcAddress(hUser32, "ChangeWindowMessageFilterEx");
+        if (pChangeWindowMessageFilterEx) {
+            // We can't apply to a specific HWND yet since it's not created, 
+            // but ChangeWindowMessageFilter applies globally to the process.
+            ChangeWindowMessageFilter(g_uTaskbarCreatedMsg, MSGFLT_ADD);
+            ChangeWindowMessageFilter(g_uShellHookMsg, MSGFLT_ADD);
+            ChangeWindowMessageFilter(WM_DROPFILES, MSGFLT_ADD);
+            ChangeWindowMessageFilter(WM_COPYDATA, MSGFLT_ADD);
+            ChangeWindowMessageFilter(WM_COMMAND, MSGFLT_ADD); // For basic IPC
+        }
+    }
+
     WNDCLASSW wcPrev = {0};
     wcPrev.lpfnWndProc = PreviewWndProc;
     wcPrev.hInstance = hInstance;
