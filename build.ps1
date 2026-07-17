@@ -210,12 +210,26 @@ if (-not $failed -and ($Target -eq "All" -or $Target -eq "Win32Explorer")) {
     Set-Location $origDir
 }
 
-if (-not $failed -and ($Target -eq "All" -or $Target -eq "StartMenu") -and (Test-Path "$ScriptDir\EliteStartMenu.ps1")) {
-    # 2. Compile EliteStartMenu
+if (-not $failed -and ($Target -eq "All" -or $Target -eq "StartMenu") -and (Test-Path "$ScriptDir\SourceFiles\EliteStartMenu.cpp")) {
+    # 2. Compile EliteStartMenu (Native C++ - PS2EXE is forbidden)
     try {
-        Write-Host 'Compiling EliteStartMenu...' -ForegroundColor Cyan
-        Invoke-ps2exe -inputFile "$ScriptDir\EliteStartMenu.ps1" -outputFile "$BuildDir\EliteStartMenu.exe" -noConsole -STA -iconFile "$ScriptDir\Resources\PREFERENCES.ico"
-        Invoke-ps2exe -inputFile "$ScriptDir\EliteStartMenu.ps1" -outputFile "$BuildDirx86\EliteStartMenu.exe" -noConsole -STA -iconFile "$ScriptDir\Resources\PREFERENCES.ico" -x86
+        Write-Host 'Compiling EliteStartMenu (Native C++)...' -ForegroundColor Cyan
+        $startMenuSrc = "`"$ScriptDir\SourceFiles\EliteStartMenu.cpp`""
+        $startMenuRc  = "`"$ScriptDir\SourceFiles\EliteStartMenu.rc`""
+        $startMenuLibs = "user32.lib shell32.lib shlwapi.lib comctl32.lib advapi32.lib uxtheme.lib gdi32.lib ole32.lib"
+        $startMenuManifest = "`"$ScriptDir\SourceFiles\cpl.manifest`""
+
+        # x64 build
+        cmd.exe /c "cd /d `"$BuildDir`" && call `"$vsDevCmd`" -arch=x64 && rc.exe /fo `"$BuildDir\ResourceFiles\startmenu_resources.res`" $startMenuRc"
+        if ($LASTEXITCODE -ne 0) { throw "EliteStartMenu x64 RC failed" }
+        cmd.exe /c "cd /d `"$BuildDir`" && call `"$vsDevCmd`" -arch=x64 && cl.exe /FS /EHsc /MT /DNDEBUG /Fe`"$BuildDir\EliteStartMenu.exe`" /Fo`"$BuildDir\ObjectFiles/`" $startMenuSrc `"$BuildDir\ResourceFiles\startmenu_resources.res`" $startMenuLibs /link /MANIFEST:EMBED /MANIFESTINPUT:$startMenuManifest /MANIFESTUAC:NO"
+        if ($LASTEXITCODE -ne 0) { throw "EliteStartMenu x64 cl failed" }
+
+        # x86 build
+        cmd.exe /c "cd /d `"$BuildDirx86`" && call `"$vsDevCmd`" -arch=x86 && rc.exe /fo `"$BuildDirx86\ResourceFiles\startmenu_resources.res`" $startMenuRc"
+        if ($LASTEXITCODE -ne 0) { throw "EliteStartMenu x86 RC failed" }
+        cmd.exe /c "cd /d `"$BuildDirx86`" && call `"$vsDevCmd`" -arch=x86 && cl.exe /FS /EHsc /MT /DNDEBUG /Fe`"$BuildDirx86\EliteStartMenu.exe`" /Fo`"$BuildDirx86\ObjectFiles/`" $startMenuSrc `"$BuildDirx86\ResourceFiles\startmenu_resources.res`" $startMenuLibs /link /MANIFEST:EMBED /MANIFESTINPUT:$startMenuManifest /MANIFESTUAC:NO"
+        if ($LASTEXITCODE -ne 0) { throw "EliteStartMenu x86 cl failed" }
     } catch {
         Write-Error "EliteStartMenu compilation failed: $_"
         $failed = $true

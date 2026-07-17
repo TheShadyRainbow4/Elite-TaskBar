@@ -12,7 +12,7 @@ IDB_START_ORB_SAPPHIRE RCDATA "EliteTaskbar\\Resources\\StartOrb\\sapphire.png"
 IDB_START_ORB_URANUS RCDATA "EliteTaskbar\\Resources\\StartOrb\\uranus.png"
 IDB_START_ORB_VIENNABOTTOM RCDATA "EliteTaskbar\\Resources\\StartOrb\\vienna bottom.png"
 
-IDD_TASKBAR_PROPS DIALOGEX 0, 0, 252, 275
+IDD_TASKBAR_PROPS DIALOGEX 0, 0, 252, 350
 STYLE DS_SETFONT | WS_CHILD | WS_DISABLED | WS_CAPTION | DS_CONTROL
 CAPTION "Taskbar"
 FONT 8, "Segoe UI Semibold", 600, 0, 0x1
@@ -43,6 +43,13 @@ BEGIN
     LTEXT           "Manual Tray Width:", IDC_STATIC, 14, 234, 65, 8
     EDITTEXT        IDC_MANUAL_TRAY_WIDTH, 85, 232, 40, 12, ES_NUMBER | WS_TABSTOP
     LTEXT           "px (0 = Auto)", IDC_STATIC, 130, 234, 50, 8
+
+    GROUPBOX        "Transparency && Blur", IDC_STATIC, 7, 275, 240, 70
+    CONTROL         "Enable taskbar transparency", IDC_TASKBAR_TRANSPARENCY, "Button", BS_AUTOCHECKBOX | WS_TABSTOP, 14, 287, 160, 10
+    LTEXT           "Opacity:", IDC_TASKBAR_ALPHA_LABEL, 14, 303, 35, 8
+    CONTROL         "", IDC_TASKBAR_ALPHA_SLIDER, "msctls_trackbar32", TBS_HORZ | WS_TABSTOP, 52, 301, 185, 16
+    LTEXT           "Blur:", IDC_TASKBAR_BLUR_LABEL, 14, 323, 35, 8
+    CONTROL         "", IDC_TASKBAR_BLUR_SLIDER, "msctls_trackbar32", TBS_HORZ | WS_TABSTOP, 52, 321, 185, 16
 END
 
 IDD_NATIVE_PROPS DIALOGEX 0, 0, 252, 218

@@ -597,6 +597,83 @@ void SyncAdvancedToMasterAndNative() {
                 RegCloseKey(hNative);
             }
         }
+        else if (_wcsicmp(valueName, L"TaskbarSmallIcons") == 0) {
+            HKEY hNative = NULL;
+            if (RegCreateKeyExW(HKEY_LOCAL_MACHINE, L"Software\\Microsoft\\Windows\\CurrentVersion\\Explorer\\Advanced", 0, NULL, REG_OPTION_NON_VOLATILE, KEY_WRITE, NULL, &hNative, NULL) == ERROR_SUCCESS) {
+                RegSetValueExW(hNative, L"TaskbarSmallIcons", 0, dwType, valData, cbValData);
+                RegCloseKey(hNative);
+            }
+            if (RegCreateKeyExW(HKEY_CURRENT_USER, L"Software\\Microsoft\\Windows\\CurrentVersion\\Explorer\\Advanced", 0, NULL, REG_OPTION_NON_VOLATILE, KEY_WRITE, NULL, &hNative, NULL) == ERROR_SUCCESS) {
+                RegSetValueExW(hNative, L"TaskbarSmallIcons", 0, dwType, valData, cbValData);
+                RegCloseKey(hNative);
+            }
+        }
+        else if (_wcsicmp(valueName, L"TaskbarSizeMove") == 0) {
+            HKEY hNative = NULL;
+            if (RegCreateKeyExW(HKEY_LOCAL_MACHINE, L"Software\\Microsoft\\Windows\\CurrentVersion\\Explorer\\Advanced", 0, NULL, REG_OPTION_NON_VOLATILE, KEY_WRITE, NULL, &hNative, NULL) == ERROR_SUCCESS) {
+                RegSetValueExW(hNative, L"TaskbarSizeMove", 0, dwType, valData, cbValData);
+                RegCloseKey(hNative);
+            }
+            if (RegCreateKeyExW(HKEY_CURRENT_USER, L"Software\\Microsoft\\Windows\\CurrentVersion\\Explorer\\Advanced", 0, NULL, REG_OPTION_NON_VOLATILE, KEY_WRITE, NULL, &hNative, NULL) == ERROR_SUCCESS) {
+                RegSetValueExW(hNative, L"TaskbarSizeMove", 0, dwType, valData, cbValData);
+                RegCloseKey(hNative);
+            }
+        }
+        else if (_wcsicmp(valueName, L"TaskbarGlomLevel") == 0) {
+            HKEY hNative = NULL;
+            if (RegCreateKeyExW(HKEY_LOCAL_MACHINE, L"Software\\Microsoft\\Windows\\CurrentVersion\\Explorer\\Advanced", 0, NULL, REG_OPTION_NON_VOLATILE, KEY_WRITE, NULL, &hNative, NULL) == ERROR_SUCCESS) {
+                RegSetValueExW(hNative, L"TaskbarGlomLevel", 0, dwType, valData, cbValData);
+                RegCloseKey(hNative);
+            }
+            if (RegCreateKeyExW(HKEY_CURRENT_USER, L"Software\\Microsoft\\Windows\\CurrentVersion\\Explorer\\Advanced", 0, NULL, REG_OPTION_NON_VOLATILE, KEY_WRITE, NULL, &hNative, NULL) == ERROR_SUCCESS) {
+                RegSetValueExW(hNative, L"TaskbarGlomLevel", 0, dwType, valData, cbValData);
+                RegCloseKey(hNative);
+            }
+        }
+        else if (_wcsicmp(valueName, L"ShowStatusBar") == 0) {
+            HKEY hNative = NULL;
+            if (RegCreateKeyExW(HKEY_LOCAL_MACHINE, L"Software\\Microsoft\\Windows\\CurrentVersion\\Explorer\\Advanced", 0, NULL, REG_OPTION_NON_VOLATILE, KEY_WRITE, NULL, &hNative, NULL) == ERROR_SUCCESS) {
+                RegSetValueExW(hNative, L"ShowStatusBar", 0, dwType, valData, cbValData);
+                RegCloseKey(hNative);
+            }
+            if (RegCreateKeyExW(HKEY_CURRENT_USER, L"Software\\Microsoft\\Windows\\CurrentVersion\\Explorer\\Advanced", 0, NULL, REG_OPTION_NON_VOLATILE, KEY_WRITE, NULL, &hNative, NULL) == ERROR_SUCCESS) {
+                RegSetValueExW(hNative, L"ShowStatusBar", 0, dwType, valData, cbValData);
+                RegCloseKey(hNative);
+            }
+        }
+        else if (_wcsicmp(valueName, L"ShowCompPath") == 0) {
+            HKEY hNative = NULL;
+            if (RegCreateKeyExW(HKEY_LOCAL_MACHINE, L"Software\\Microsoft\\Windows\\CurrentVersion\\Explorer\\Advanced", 0, NULL, REG_OPTION_NON_VOLATILE, KEY_WRITE, NULL, &hNative, NULL) == ERROR_SUCCESS) {
+                RegSetValueExW(hNative, L"ShowCompPath", 0, dwType, valData, cbValData);
+                RegCloseKey(hNative);
+            }
+            if (RegCreateKeyExW(HKEY_CURRENT_USER, L"Software\\Microsoft\\Windows\\CurrentVersion\\Explorer\\Advanced", 0, NULL, REG_OPTION_NON_VOLATILE, KEY_WRITE, NULL, &hNative, NULL) == ERROR_SUCCESS) {
+                RegSetValueExW(hNative, L"ShowCompPath", 0, dwType, valData, cbValData);
+                RegCloseKey(hNative);
+            }
+        }
+        else if (_wcsicmp(valueName, L"ShowInfoTip") == 0) {
+            HKEY hNative = NULL;
+            if (RegCreateKeyExW(HKEY_LOCAL_MACHINE, L"Software\\Microsoft\\Windows\\CurrentVersion\\Explorer\\Advanced", 0, NULL, REG_OPTION_NON_VOLATILE, KEY_WRITE, NULL, &hNative, NULL) == ERROR_SUCCESS) {
+                RegSetValueExW(hNative, L"ShowInfoTip", 0, dwType, valData, cbValData);
+                RegCloseKey(hNative);
+            }
+            if (RegCreateKeyExW(HKEY_CURRENT_USER, L"Software\\Microsoft\\Windows\\CurrentVersion\\Explorer\\Advanced", 0, NULL, REG_OPTION_NON_VOLATILE, KEY_WRITE, NULL, &hNative, NULL) == ERROR_SUCCESS) {
+                RegSetValueExW(hNative, L"ShowInfoTip", 0, dwType, valData, cbValData);
+                RegCloseKey(hNative);
+            }
+        }
+        else if (_wcsicmp(valueName, L"EnableAutoTray") == 0) {
+            HKEY hNative = NULL;
+            if (RegCreateKeyExW(HKEY_LOCAL_MACHINE, L"Software\\Microsoft\\Windows\\CurrentVersion\\Explorer", 0, NULL, REG_OPTION_NON_VOLATILE, KEY_WRITE, NULL, &hNative, NULL) == ERROR_SUCCESS) {
+                RegSetValueExW(hNative, L"EnableAutoTray", 0, dwType, valData, cbValData);
+                RegCloseKey(hNative);
+            }
+            if (RegCreateKeyExW(HKEY_CURRENT_USER, L"Software\\Microsoft\\Windows\\CurrentVersion\\Explorer", 0, NULL, REG_OPTION_NON_VOLATILE, KEY_WRITE, NULL, &hNative, NULL) == ERROR_SUCCESS) {
+                RegSetValueExW(hNative, L"EnableAutoTray", 0, dwType, valData, cbValData);
+                RegCloseKey(hNative);
+            }
+        }
         
         dwIndex++;
         cbValueName = 16384;
@@ -868,6 +945,31 @@ INT_PTR CALLBACK NativeSettingsDlgProc(HWND hwndDlg, UINT uMsg, WPARAM wParam, L
                 SendDlgItemMessageW(hwndDlg, IDC_SMALL_ICONS, BM_SETCHECK, dwValue ? BST_CHECKED : BST_UNCHECKED, 0);
             RegCloseKey(hKey);
         }
+        // Transparency controls init
+        if (RegOpenKeyExW(GetEliteRegistryRoot(), L"Software\\EliteSoftware\\Win32Explorer\\Settings", 0, KEY_READ, &hKey) == ERROR_SUCCESS) {
+            DWORD dwValue = 0, cbData = sizeof(DWORD);
+            SendDlgItemMessageW(hwndDlg, IDC_TASKBAR_ALPHA_SLIDER, TBM_SETRANGE, TRUE, MAKELONG(0, 255));
+            SendDlgItemMessageW(hwndDlg, IDC_TASKBAR_BLUR_SLIDER, TBM_SETRANGE, TRUE, MAKELONG(0, 100));
+            cbData = sizeof(DWORD);
+            if (RegQueryValueExW(hKey, L"TaskbarTransparencyEnabled", NULL, NULL, (LPBYTE)&dwValue, &cbData) == ERROR_SUCCESS)
+                SendDlgItemMessageW(hwndDlg, IDC_TASKBAR_TRANSPARENCY, BM_SETCHECK, dwValue ? BST_CHECKED : BST_UNCHECKED, 0);
+            cbData = sizeof(DWORD);
+            dwValue = 200; // default alpha
+            if (RegQueryValueExW(hKey, L"TaskbarAlpha", NULL, NULL, (LPBYTE)&dwValue, &cbData) == ERROR_SUCCESS)
+                SendDlgItemMessageW(hwndDlg, IDC_TASKBAR_ALPHA_SLIDER, TBM_SETPOS, TRUE, dwValue);
+            else
+                SendDlgItemMessageW(hwndDlg, IDC_TASKBAR_ALPHA_SLIDER, TBM_SETPOS, TRUE, 200);
+            cbData = sizeof(DWORD);
+            dwValue = 50; // default blur
+            if (RegQueryValueExW(hKey, L"TaskbarBlurAmount", NULL, NULL, (LPBYTE)&dwValue, &cbData) == ERROR_SUCCESS)
+                SendDlgItemMessageW(hwndDlg, IDC_TASKBAR_BLUR_SLIDER, TBM_SETPOS, TRUE, dwValue);
+            else
+                SendDlgItemMessageW(hwndDlg, IDC_TASKBAR_BLUR_SLIDER, TBM_SETPOS, TRUE, 50);
+            RegCloseKey(hKey);
+        }
+        AddDlgTooltip(hwndDlg, IDC_TASKBAR_TRANSPARENCY, L"Enable transparent taskbar background. Your wallpaper will shine through, as nature intended.");
+        AddDlgTooltip(hwndDlg, IDC_TASKBAR_ALPHA_SLIDER, L"Adjust taskbar opacity. 0 = invisible (not recommended), 255 = fully opaque.");
+        AddDlgTooltip(hwndDlg, IDC_TASKBAR_BLUR_SLIDER, L"Adjust the blur amount behind the taskbar. Higher values = more dreamlike.");
         if (RegOpenKeyExW(HKEY_LOCAL_MACHINE, L"Software\\Microsoft\\Windows\\CurrentVersion\\Explorer\\StuckRects3", 0, KEY_READ, &hKey) == ERROR_SUCCESS) {
             BYTE blob[64];
             DWORD cbData = sizeof(blob);
@@ -972,20 +1074,40 @@ INT_PTR CALLBACK NativeSettingsDlgProc(HWND hwndDlg, UINT uMsg, WPARAM wParam, L
         LPNMHDR lpnm = (LPNMHDR)lParam;
         if (lpnm->code == PSN_APPLY) {
             HKEY hKey;
+            HKEY hKeyHKCU = NULL;
+            // Open HKCU mirror key for all PSN_APPLY writes
+            RegCreateKeyExW(HKEY_CURRENT_USER, L"Software\\EliteSoftware\\Win32Explorer\\Settings", 0, NULL, REG_OPTION_NON_VOLATILE, KEY_READ | KEY_WRITE, NULL, &hKeyHKCU, NULL);
+
             if (RegCreateKeyExW(GetEliteRegistryRoot(), L"Software\\EliteSoftware\\Win32Explorer\\Settings", 0, NULL, REG_OPTION_NON_VOLATILE, KEY_READ | KEY_WRITE, NULL, &hKey, NULL) == ERROR_SUCCESS) {
                 DWORD nativeSync = (SendDlgItemMessageW(hwndDlg, IDC_NATIVE_REGISTRY_MODE, BM_GETCHECK, 0, 0) == BST_CHECKED) ? 1 : 0;
                 RegSetValueExW(hKey, L"NativeRegistryMode", 0, REG_DWORD, (const BYTE*)&nativeSync, sizeof(DWORD));
+                if (hKeyHKCU) RegSetValueExW(hKeyHKCU, L"NativeRegistryMode", 0, REG_DWORD, (const BYTE*)&nativeSync, sizeof(DWORD));
                 
                 DWORD useNativeBand = (SendDlgItemMessageW(hwndDlg, IDC_USE_NATIVE_TASKBAND, BM_GETCHECK, 0, 0) == BST_CHECKED) ? 1 : 0;
                 RegSetValueExW(hKey, L"UseNativeTaskBand", 0, REG_DWORD, (const BYTE*)&useNativeBand, sizeof(DWORD));
+                if (hKeyHKCU) RegSetValueExW(hKeyHKCU, L"UseNativeTaskBand", 0, REG_DWORD, (const BYTE*)&useNativeBand, sizeof(DWORD));
                 
                 DWORD trayMode = (SendDlgItemMessageW(hwndDlg, IDC_TRAY_LEGACY, BM_GETCHECK, 0, 0) == BST_CHECKED) ? 1 : 0;
                 RegSetValueExW(hKey, L"TrayMode", 0, REG_DWORD, (const BYTE*)&trayMode, sizeof(DWORD));
+                if (hKeyHKCU) RegSetValueExW(hKeyHKCU, L"TrayMode", 0, REG_DWORD, (const BYTE*)&trayMode, sizeof(DWORD));
 
                 DWORD replaceMode = 1;
                 if (SendDlgItemMessageW(hwndDlg, IDC_REPLACE_EXPLORER_FILESYS, BM_GETCHECK, 0, 0) == BST_CHECKED) replaceMode = 2;
                 else if (SendDlgItemMessageW(hwndDlg, IDC_REPLACE_EXPLORER_ALL, BM_GETCHECK, 0, 0) == BST_CHECKED) replaceMode = 3;
                 RegSetValueExW(hKey, L"ReplaceExplorerMode", 0, REG_DWORD, (const BYTE*)&replaceMode, sizeof(DWORD));
+                if (hKeyHKCU) RegSetValueExW(hKeyHKCU, L"ReplaceExplorerMode", 0, REG_DWORD, (const BYTE*)&replaceMode, sizeof(DWORD));
+
+                // Transparency and blur controls
+                DWORD taskbarTransparency = (SendDlgItemMessageW(hwndDlg, IDC_TASKBAR_TRANSPARENCY, BM_GETCHECK, 0, 0) == BST_CHECKED) ? 1 : 0;
+                RegSetValueExW(hKey, L"TaskbarTransparencyEnabled", 0, REG_DWORD, (const BYTE*)&taskbarTransparency, sizeof(DWORD));
+                if (hKeyHKCU) RegSetValueExW(hKeyHKCU, L"TaskbarTransparencyEnabled", 0, REG_DWORD, (const BYTE*)&taskbarTransparency, sizeof(DWORD));
+                DWORD alphaValue = (DWORD)SendDlgItemMessageW(hwndDlg, IDC_TASKBAR_ALPHA_SLIDER, TBM_GETPOS, 0, 0);
+                RegSetValueExW(hKey, L"TaskbarAlpha", 0, REG_DWORD, (const BYTE*)&alphaValue, sizeof(DWORD));
+                if (hKeyHKCU) RegSetValueExW(hKeyHKCU, L"TaskbarAlpha", 0, REG_DWORD, (const BYTE*)&alphaValue, sizeof(DWORD));
+                DWORD blurValue = (DWORD)SendDlgItemMessageW(hwndDlg, IDC_TASKBAR_BLUR_SLIDER, TBM_GETPOS, 0, 0);
+                RegSetValueExW(hKey, L"TaskbarBlurAmount", 0, REG_DWORD, (const BYTE*)&blurValue, sizeof(DWORD));
+                if (hKeyHKCU) RegSetValueExW(hKeyHKCU, L"TaskbarBlurAmount", 0, REG_DWORD, (const BYTE*)&blurValue, sizeof(DWORD));
+
                 RegCloseKey(hKey);
 
                 SetDefaultFileManagerCPP(replaceMode);
@@ -1009,8 +1131,10 @@ INT_PTR CALLBACK NativeSettingsDlgProc(HWND hwndDlg, UINT uMsg, WPARAM wParam, L
             
             DWORD locked = (SendDlgItemMessageW(hwndDlg, IDC_LOCK_TASKBAR, BM_GETCHECK, 0, 0) == BST_CHECKED) ? 0 : 1;
             SaveToNativeRegistry(L"TaskbarSizeMove", locked);
+            if (hKeyHKCU) RegSetValueExW(hKeyHKCU, L"TaskbarSizeMove", 0, REG_DWORD, (const BYTE*)&locked, sizeof(DWORD));
             DWORD smallIcons = (SendDlgItemMessageW(hwndDlg, IDC_SMALL_ICONS, BM_GETCHECK, 0, 0) == BST_CHECKED) ? 1 : 0;
             SaveToNativeRegistry(L"TaskbarSmallIcons", smallIcons);
+            if (hKeyHKCU) RegSetValueExW(hKeyHKCU, L"TaskbarSmallIcons", 0, REG_DWORD, (const BYTE*)&smallIcons, sizeof(DWORD));
             
             if (RegCreateKeyExW(HKEY_LOCAL_MACHINE, L"Software\\Microsoft\\Windows\\CurrentVersion\\Explorer\\StuckRects3", 0, NULL, REG_OPTION_NON_VOLATILE, KEY_READ | KEY_WRITE, NULL, &hKey, NULL) == ERROR_SUCCESS) {
                 BYTE blob[64];
@@ -1022,6 +1146,8 @@ INT_PTR CALLBACK NativeSettingsDlgProc(HWND hwndDlg, UINT uMsg, WPARAM wParam, L
                 }
                 RegCloseKey(hKey);
             }
+
+            if (hKeyHKCU) RegCloseKey(hKeyHKCU);
             NotifySettingsChange();
             SendMessageW(GetParent(hwndDlg), PSM_UNCHANGED, (WPARAM)hwndDlg, 0);
             SetWindowLongPtr(hwndDlg, DWLP_MSGRESULT, PSNRET_NOERROR);

@@ -12,6 +12,7 @@
 #include <dwmapi.h>
 #include <windowsx.h>
 #include <uxtheme.h>
+#include <vssym32.h>
 #include <vector>
 #include <shellapi.h>
 #include <shobjidl.h>
@@ -2920,6 +2921,26 @@ LRESULT CALLBACK WindowProc(HWND hwnd, UINT uMsg, WPARAM wParam, LPARAM lParam) 
         bb.fEnable = TRUE;
         bb.hRgnBlur = NULL;
         DwmEnableBlurBehindWindow(hwnd, &bb);
+
+        // Read transparency settings
+        HKEY hKeyTrans = NULL;
+        if (RegOpenKeyExW(GetEliteRegistryRoot(), L"Software\\EliteSoftware\\Win32Explorer\\Settings", 0, KEY_READ, &hKeyTrans) == ERROR_SUCCESS) {
+            DWORD dwTransEnabled = 0, dwAlpha = 200, dwBlur = 50;
+            DWORD cbData = sizeof(DWORD);
+            RegQueryValueExW(hKeyTrans, L"TaskbarTransparencyEnabled", NULL, NULL, (LPBYTE)&dwTransEnabled, &cbData);
+            cbData = sizeof(DWORD);
+            RegQueryValueExW(hKeyTrans, L"TaskbarAlpha", NULL, NULL, (LPBYTE)&dwAlpha, &cbData);
+            cbData = sizeof(DWORD);
+            RegQueryValueExW(hKeyTrans, L"TaskbarBlurAmount", NULL, NULL, (LPBYTE)&dwBlur, &cbData);
+            RegCloseKey(hKeyTrans);
+
+            if (dwTransEnabled) {
+                // Make the taskbar window layered for transparency
+                LONG exStyle = GetWindowLongW(hwnd, GWL_EXSTYLE);
+                SetWindowLongW(hwnd, GWL_EXSTYLE, exStyle | WS_EX_LAYERED);
+                SetLayeredWindowAttributes(hwnd, 0, (BYTE)dwAlpha, LWA_ALPHA);
+            }
+        }
         return 0;
     }
     case WM_PRINTCLIENT: {
@@ -2931,7 +2952,7 @@ LRESULT CALLBACK WindowProc(HWND hwnd, UINT uMsg, WPARAM wParam, LPARAM lParam) 
             DrawThemeBackground(hTheme, hdc, 1 /*TBP_BACKGROUNDBOTTOM*/, 0, &rcClient, NULL);
             CloseThemeData(hTheme);
         } else {
-            FillRect(hdc, &rcClient, (HBRUSH)GetStockObject(BLACK_BRUSH));
+            FillRect(hdc, &rcClient, GetSysColorBrush(COLOR_3DFACE));
         }
         return 0;
     }
@@ -2944,7 +2965,7 @@ LRESULT CALLBACK WindowProc(HWND hwnd, UINT uMsg, WPARAM wParam, LPARAM lParam) 
             DrawThemeBackground(hTheme, hdc, 1 /*TBP_BACKGROUNDBOTTOM*/, 0, &rcClient, NULL);
             CloseThemeData(hTheme);
         } else {
-            FillRect(hdc, &rcClient, (HBRUSH)GetStockObject(BLACK_BRUSH));
+            FillRect(hdc, &rcClient, GetSysColorBrush(COLOR_3DFACE));
         }
         return 1;
     }
@@ -2960,9 +2981,9 @@ LRESULT CALLBACK WindowProc(HWND hwnd, UINT uMsg, WPARAM wParam, LPARAM lParam) 
             DrawThemeBackground(hTheme, hdc, 1 /*TBP_BACKGROUNDBOTTOM*/, 0, &rcClient, NULL);
             CloseThemeData(hTheme);
         } else {
-            HBRUSH hbr = CreateSolidBrush(RGB(40, 40, 40));
+            HBRUSH hbr = GetSysColorBrush(COLOR_3DFACE);
             FillRect(hdc, &rcClient, hbr);
-            DeleteObject(hbr);
+            // Don't delete system brushes
         }
 
         EndPaint(hwnd, &ps);
@@ -2977,8 +2998,20 @@ LRESULT CALLBACK WindowProc(HWND hwnd, UINT uMsg, WPARAM wParam, LPARAM lParam) 
                 if (lpNMCustomDraw->nmcd.dwDrawStage == CDDS_PREPAINT) {
                     return CDRF_NOTIFYITEMDRAW;
                 } else if (lpNMCustomDraw->nmcd.dwDrawStage == CDDS_ITEMPREPAINT) {
-                    lpNMCustomDraw->clrText = RGB(255, 255, 255);
-                    return CDRF_DODEFAULT; // - Draftsman-Dan
+                    // Use theme-aware text color instead of hardcoded white
+                    HTHEME hTheme = OpenThemeData(lpNMCustomDraw->nmcd.hdr.hwndFrom, L"Taskbar");
+                    if (hTheme) {
+                        COLORREF textColor;
+                        if (SUCCEEDED(GetThemeColor(hTheme, 0, 0, TMT_TEXTCOLOR, &textColor))) {
+                            lpNMCustomDraw->clrText = textColor;
+                        } else {
+                            lpNMCustomDraw->clrText = GetSysColor(COLOR_BTNTEXT);
+                        }
+                        CloseThemeData(hTheme);
+                    } else {
+                        lpNMCustomDraw->clrText = GetSysColor(COLOR_BTNTEXT);
+                    }
+                    return CDRF_DODEFAULT;
                 }
             }
         }
@@ -3474,6 +3507,27 @@ LRESULT CALLBACK WindowProc(HWND hwnd, UINT uMsg, WPARAM wParam, LPARAM lParam) 
         return 0;
     }
     case WM_SETTINGCHANGE: {
+        if (lParam && wcscmp((LPCWSTR)lParam, L"EliteTaskbarSettings") == 0) {
+            // Re-read transparency settings
+            HKEY hKeyTrans = NULL;
+            if (RegOpenKeyExW(GetEliteRegistryRoot(), L"Software\\EliteSoftware\\Win32Explorer\\Settings", 0, KEY_READ, &hKeyTrans) == ERROR_SUCCESS) {
+                DWORD dwTransEnabled = 0, dwAlpha = 200;
+                DWORD cbData = sizeof(DWORD);
+                RegQueryValueExW(hKeyTrans, L"TaskbarTransparencyEnabled", NULL, NULL, (LPBYTE)&dwTransEnabled, &cbData);
+                cbData = sizeof(DWORD);
+                RegQueryValueExW(hKeyTrans, L"TaskbarAlpha", NULL, NULL, (LPBYTE)&dwAlpha, &cbData);
+                RegCloseKey(hKeyTrans);
+
+                LONG exStyle = GetWindowLongW(hwnd, GWL_EXSTYLE);
+                if (dwTransEnabled) {
+                    SetWindowLongW(hwnd, GWL_EXSTYLE, exStyle | WS_EX_LAYERED);
+                    SetLayeredWindowAttributes(hwnd, 0, (BYTE)dwAlpha, LWA_ALPHA);
+                } else {
+                    SetWindowLongW(hwnd, GWL_EXSTYLE, exStyle & ~WS_EX_LAYERED);
+                }
+                InvalidateRect(hwnd, NULL, TRUE);
+            }
+        }
         // Debounce Settings Change (1000ms delay) to prevent rapid-fire multi-spawns - Builder-Bob
         s_szSettingChangeParam[0] = L'\0';
         if (lParam) {

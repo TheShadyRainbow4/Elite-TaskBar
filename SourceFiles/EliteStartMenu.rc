@@ -1,0 +1,45 @@
+#include <windows.h>
+
+// EliteStartMenu Resource Definitions
+#define IDI_STARTMENU_ICON 101
+#define IDR_STARTMENU_MANIFEST 2
+
+// Icon resource - uses PREFERENCES.ico from Resources folder
+IDI_STARTMENU_ICON ICON "..\Resources\PREFERENCES.ico"
+
+// Manifest resource
+IDR_STARTMENU_MANIFEST RT_MANIFEST "EliteStartMenu.manifest"
+
+// Version Info
+VS_VERSION_INFO VERSIONINFO
+  FILEVERSION 1,0,0,0
+  PRODUCTVERSION 1,0,0,0
+  FILEFLAGSMASK VS_FFI_FILEFLAGSMASK
+#ifdef _DEBUG
+  FILEFLAGS VS_FF_DEBUG
+#else
+  FILEFLAGS 0
+#endif
+  FILEOS VOS_NT_WINDOWS32
+  FILETYPE VFT_APP
+  FILESUBTYPE 0
+BEGIN
+  BLOCK "StringFileInfo"
+  BEGIN
+    BLOCK "040904B0"
+    BEGIN
+      VALUE "CompanyName",      "EliteSoftwareTech Co."
+      VALUE "FileDescription",  "EliteStartMenu - Native C++ Start Menu"
+      VALUE "FileVersion",      "1.0.0.0"
+      VALUE "InternalName",     "EliteStartMenu"
+      VALUE "LegalCopyright",   "Copyright (C) 2026 EliteSoftwareTech Co."
+      VALUE "OriginalFilename", "EliteStartMenu.exe"
+      VALUE "ProductName",      "Elite-TaskBar"
+      VALUE "ProductVersion",   "1.0.0.0"
+    END
+  END
+  BLOCK "VarFileInfo"
+  BEGIN
+    VALUE "Translation", 0x409, 1200
+  END
+END

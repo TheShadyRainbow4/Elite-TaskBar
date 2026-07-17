@@ -2,9 +2,13 @@
 #include <shlwapi.h>
 #include <cpl.h>
 #include <commctrl.h>
+#include <comdef.h>
+#include <msxml6.h>
 
 #pragma comment(lib, "shlwapi.lib")
 #pragma comment(lib, "shell32.lib")
+#pragma comment(lib, "ole32.lib")
+#pragma comment(lib, "oleaut32.lib")
 
 extern void ShowTaskbarProperties(HWND hwndOwner);
 HINSTANCE g_hInstance = NULL;
@@ -82,9 +86,185 @@ extern "C" __declspec(dllexport) LONG APIENTRY CPlApplet(HWND hwndCPl, UINT uMsg
     return 0;
 }
 
-// Stub for Win32Explorer's OptionsDialog elevated HKLM sync
-// Win32Explorer attempts to call rundll32 EliteSettings.cpl,ImportSettingsW <config.xml>
+// ImportSettingsW — called elevated via:
+//   rundll32 EliteSettings.cpl,ImportSettingsW <config.xml>
+// Parses the XML, reads settings, and writes them as DWORDs to
+// HKLM\Software\EliteSoftware\Win32Explorer\Settings.
 extern "C" __declspec(dllexport) void CALLBACK ImportSettingsW(HWND hwnd, HINSTANCE hinst, LPWSTR lpszCmdLine, int nCmdShow) {
-    // Currently, Win32Explorer settings are managed in HKCU and AppData.
-    // This stub prevents the rundll32 missing entry error dialog.
+    if (!lpszCmdLine || !*lpszCmdLine)
+        return;
+
+    // --- Extract the config.xml path from the command line ---
+    // Strip leading/trailing whitespace and optional surrounding quotes.
+    WCHAR szPath[MAX_PATH];
+    LPWSTR pSrc = lpszCmdLine;
+    while (*pSrc == L' ' || *pSrc == L'\t') pSrc++;
+
+    BOOL bQuoted = FALSE;
+    if (*pSrc == L'"') {
+        bQuoted = TRUE;
+        pSrc++;
+    }
+
+    WCHAR *pDst = szPath;
+    WCHAR *pEnd = szPath + MAX_PATH - 1;
+    while (*pSrc && pDst < pEnd) {
+        if (bQuoted && *pSrc == L'"') break;
+        if (!bQuoted && (*pSrc == L' ' || *pSrc == L'\t')) break;
+        *pDst++ = *pSrc++;
+    }
+    *pDst = L'\0';
+
+    if (!szPath[0])
+        return;
+
+    // --- Initialize COM ---
+    HRESULT hrInit = CoInitializeEx(NULL, COINIT_APARTMENTTHREADED);
+    if (FAILED(hrInit) && hrInit != RPC_E_CHANGED_MODE)
+        return;
+
+    // Ensure CoUninitialize is called on every exit path.
+    BOOL bNeedUninit = SUCCEEDED(hrInit);
+
+    do { // Scope block for cleanup via break
+
+        // --- Load the XML document ---
+        IXMLDOMDocument2 *pDoc = NULL;
+        HRESULT hr = CoCreateInstance(
+            __uuidof(DOMDocument60), NULL, CLSCTX_INPROC_SERVER,
+            __uuidof(IXMLDOMDocument2), (void**)&pDoc);
+        if (FAILED(hr) || !pDoc)
+            break;
+
+        pDoc->put_async(VARIANT_FALSE);
+        pDoc->put_validateOnParse(VARIANT_FALSE);
+        pDoc->put_resolveExternals(VARIANT_FALSE);
+
+        // Set XPath as the selection language (required for attribute selectors).
+        pDoc->setProperty(_bstr_t(L"SelectionLanguage"), _variant_t(L"XPath"));
+
+        VARIANT_BOOL vbSuccess = VARIANT_FALSE;
+        hr = pDoc->load(_variant_t(szPath), &vbSuccess);
+        if (FAILED(hr) || vbSuccess != VARIANT_TRUE) {
+            pDoc->Release();
+            break;
+        }
+
+        // --- Open (or create) the target registry key ---
+        HKEY hKey = NULL;
+        LONG lRes = RegCreateKeyExW(
+            HKEY_LOCAL_MACHINE,
+            L"Software\\EliteSoftware\\Win32Explorer\\Settings",
+            0, NULL, REG_OPTION_NON_VOLATILE,
+            KEY_SET_VALUE, NULL, &hKey, NULL);
+        if (lRes != ERROR_SUCCESS || !hKey) {
+            pDoc->Release();
+            break;
+        }
+
+        // --- Settings table ---
+        // Each entry: XML @name, registry value name, is-boolean (yes/no → 1/0).
+        struct SettingEntry {
+            LPCWSTR xmlName;
+            LPCWSTR regName;
+            BOOL    bBoolean; // TRUE = yes/no, FALSE = integer
+        };
+
+        static const SettingEntry settings[] = {
+            { L"EnableEliteTaskbar",       L"EnableEliteTaskbar",       TRUE  },
+            { L"EnableEliteStartMenu",     L"EnableEliteStartMenu",     TRUE  },
+            { L"EnableDefaultGroupByType", L"EnableDefaultGroupByType", TRUE  },
+            { L"EnableNativeViewMode",     L"EnableNativeViewMode",     TRUE  },
+            { L"EnableShellBagsSupport",   L"EnableShellBagsSupport",   TRUE  },
+            { L"ReplaceExplorerMode",      L"ReplaceExplorerMode",      FALSE },
+            { L"ShowHiddenFiles",          L"ShowHiddenFiles",          TRUE  },
+            { L"ShowExtensions",           L"ShowExtensions",           TRUE  },
+        };
+
+        // --- Query each setting and write to registry (HKLM + HKCU) ---
+        for (int i = 0; i < _countof(settings); i++) {
+            // Build XPath: /ExplorerPlusPlus/Settings/Setting[@name='<name>']
+            WCHAR szXPath[256];
+            _snwprintf_s(szXPath, _countof(szXPath), _TRUNCATE,
+                L"/ExplorerPlusPlus/Settings/Setting[@name='%s']",
+                settings[i].xmlName);
+
+            IXMLDOMNode *pNode = NULL;
+            hr = pDoc->selectSingleNode(_bstr_t(szXPath), &pNode);
+            if (FAILED(hr) || !pNode)
+                continue;
+
+            BSTR bstrText = NULL;
+            hr = pNode->get_text(&bstrText);
+            pNode->Release();
+
+            if (FAILED(hr) || !bstrText)
+                continue;
+
+            DWORD dwValue = 0;
+
+            if (settings[i].bBoolean) {
+                // "yes" → 1, anything else → 0
+                if (_wcsicmp(bstrText, L"yes") == 0)
+                    dwValue = 1;
+                else
+                    dwValue = 0;
+            } else {
+                // Integer value (e.g. ReplaceExplorerMode 0-2)
+                dwValue = (DWORD)_wtoi(bstrText);
+            }
+
+            SysFreeString(bstrText);
+
+            // Write to HKLM
+            RegSetValueExW(hKey, settings[i].regName, 0, REG_DWORD,
+                (const BYTE*)&dwValue, sizeof(DWORD));
+        }
+
+        // --- Also write all settings to HKCU for user-level persistence ---
+        HKEY hKeyUser = NULL;
+        LONG lResUser = RegCreateKeyExW(
+            HKEY_CURRENT_USER,
+            L"Software\\EliteSoftware\\Win32Explorer\\Settings",
+            0, NULL, REG_OPTION_NON_VOLATILE,
+            KEY_SET_VALUE, NULL, &hKeyUser, NULL);
+        if (lResUser == ERROR_SUCCESS && hKeyUser) {
+            for (int i = 0; i < _countof(settings); i++) {
+                WCHAR szXPath[256];
+                _snwprintf_s(szXPath, _countof(szXPath), _TRUNCATE,
+                    L"/ExplorerPlusPlus/Settings/Setting[@name='%s']",
+                    settings[i].xmlName);
+
+                IXMLDOMNode *pNode = NULL;
+                hr = pDoc->selectSingleNode(_bstr_t(szXPath), &pNode);
+                if (FAILED(hr) || !pNode)
+                    continue;
+
+                BSTR bstrText = NULL;
+                hr = pNode->get_text(&bstrText);
+                pNode->Release();
+                if (FAILED(hr) || !bstrText)
+                    continue;
+
+                DWORD dwValue = 0;
+                if (settings[i].bBoolean) {
+                    dwValue = (_wcsicmp(bstrText, L"yes") == 0) ? 1 : 0;
+                } else {
+                    dwValue = (DWORD)_wtoi(bstrText);
+                }
+                SysFreeString(bstrText);
+
+                RegSetValueExW(hKeyUser, settings[i].regName, 0, REG_DWORD,
+                    (const BYTE*)&dwValue, sizeof(DWORD));
+            }
+            RegCloseKey(hKeyUser);
+        }
+
+        RegCloseKey(hKey);
+        pDoc->Release();
+
+    } while (0);
+
+    if (bNeedUninit)
+        CoUninitialize();
 }
